@@ -124,36 +124,57 @@ function getJapanTime(): Date {
 
   // テーブル情報更新
   const updateTableInfo = async () => {
-    try {
-      const timeStr = modalMode === 'edit' 
-        ? new Date(
-            new Date().getFullYear(),
-            new Date().getMonth(),
-            new Date().getDate(),
-            formData.editHour,
-            formData.editMinute
-          ).toISOString()
-        : null
-
-      await fetch('/api/tables/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tableId: currentTable,
-          guestName: formData.guestName,
-          castName: formData.castName,
-          timeStr,
-          visitType: formData.visitType
-        })
-      })
+  try {
+    // 新規・編集どちらも現在時刻を送る
+    let timeStr: string
+    
+    if (modalMode === 'new') {
+      // 新規登録時：現在の正確な時刻を5分単位に丸める
+      const now = new Date()
+      const minutes = now.getMinutes()
+      const roundedMinutes = Math.round(minutes / 5) * 5
       
-      setShowModal(false)
-      loadData()
-    } catch (error) {
-      console.error('Error updating table:', error)
-      alert('更新に失敗しました')
+      now.setMinutes(roundedMinutes)
+      now.setSeconds(0)
+      now.setMilliseconds(0)
+      
+      if (roundedMinutes === 60) {
+        now.setMinutes(0)
+        now.setHours(now.getHours() + 1)
+      }
+      
+      timeStr = now.toISOString()
+    } else {
+      // 編集時：選択された時刻
+      const selectedTime = new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        new Date().getDate(),
+        formData.editHour,
+        formData.editMinute
+      )
+      timeStr = selectedTime.toISOString()
     }
+
+    await fetch('/api/tables/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tableId: currentTable,
+        guestName: formData.guestName,
+        castName: formData.castName,
+        timeStr, // 常に時刻を送る
+        visitType: formData.visitType
+      })
+    })
+    
+    setShowModal(false)
+    loadData()
+  } catch (error) {
+    console.error('Error updating table:', error)
+    alert('更新に失敗しました')
   }
+}
 
   // 会計処理
   const checkout = async () => {
