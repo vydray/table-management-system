@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 1. fromテーブルのデータを取得
     const { data: fromData, error: fromError } = await supabase
-      .from('table_status_jst')
+      .from('table_status')
       .select('*')
       .eq('table_name', fromTableId)
       .single()
@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 2. toテーブルが空いているか確認
     const { data: toData, error: toError } = await supabase
-      .from('table_status_jst')
+      .from('table_status')
       .select('guest_name')
       .eq('table_name', toTableId)
       .single()
@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 3. toテーブルにデータをコピー
     const { error: updateToError } = await supabase
-      .from('table_status_jst')
+      .from('table_status')
       .update({
         guest_name: fromData.guest_name,
         cast_name: fromData.cast_name,
@@ -47,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 4. fromテーブルをクリア
     const { error: clearFromError } = await supabase
-      .from('table_status_jst')
+      .from('table_status')
       .update({
         guest_name: null,
         cast_name: null,
