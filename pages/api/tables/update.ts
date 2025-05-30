@@ -1,3 +1,6 @@
+// pages/api/tables/update.ts
+// 注意：更新は元のテーブル（table_status）に対して行う
+
 import { createClient } from '@supabase/supabase-js'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -6,33 +9,46 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 )
 
+// 最も近い5分単位に丸める関数
+function roundToNearest5Minutes(date: Date): Date {
+  const minutes = date.getMinutes()
+  const roundedMinutes = Math.round(minutes / 5) * 5
+  
+  const newDate = new Date(date)
+  newDate.setMinutes(roundedMinutes)
+  newDate.setSeconds(0)
+  newDate.setMilliseconds(0)
+  
+  if (roundedMinutes === 60) {
+    newDate.setMinutes(0)
+    newDate.setHours(newDate.getHours() + 1)
+  }
+  
+  return newDate
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'GET') {
-    // ビューから読み取り（日本時間で取得）
-    const { data, error } = await supabase
-      .from('table_status_jst')  // ← ビューを使用
-      .select('*')
-      .order('table_name')
+  if (req.method === 'POST') {
+    const { tableId, guestName, castName, timeStr, visitType } = req.body
+
+    let entryTime: Date
+    if (timeStr) {
+      entryTime = new Date(timeStr)
+    } else {
+      entryTime = roundToNearest5Minutes(new Date())
+    }
+
+    const { error } = await supabase
+      .from('table_status')  // ← 元のテーブル名を使用！
+      .update({
+        guest_name: guestName,
+        cast_name: castName,
+        entry_time: entryTime.toISOString(),
+        visit_type: visitType
+      })
+      .eq('table_name', tableId)
 
     if (error) return res.status(500).json({ error: error.message })
-
-    const tableData = data.map(row => {
-      const now = new Date()
-      const elapsedMin = row.entry_time 
-        ? Math.floor((now.getTime() - new Date(row.entry_time).getTime()) / 60000) 
-        : null
-
-      return {
-        table: row.table_name,
-        name: row.guest_name || "",
-        oshi: row.cast_name || "",
-        time: row.entry_time || "",
-        visit: row.visit_type || "",
-        elapsed: elapsedMin !== null ? elapsedMin + "分" : "",
-        status: row.guest_name ? "occupied" : "empty"
-      }
-    })
-
-    res.status(200).json(tableData)
+    res.status(200).json({ success: true })
   }
 }
