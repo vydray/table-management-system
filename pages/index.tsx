@@ -130,7 +130,7 @@ function getJapanTime(): Date {
     
     if (modalMode === 'new') {
       // 新規登録時：現在の正確な時刻を5分単位に丸める
-      const now = new Date()
+      const now = getJapanTime()  
       const minutes = now.getMinutes()
       const roundedMinutes = Math.round(minutes / 5) * 5
       
