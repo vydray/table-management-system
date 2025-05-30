@@ -242,7 +242,7 @@ export default function Home() {
         castName: table.oshi,
         visitType: table.visit,
         editHour: time.getHours(),
-        editMinute: Math.floor(time.getMinutes() / 5) * 5
+        editMinute: time.getMinutes()
       })
     }
     
