@@ -123,14 +123,13 @@ function getJapanTime(): Date {
   }, [])
 
   // テーブル情報更新
-  const updateTableInfo = async () => {
+const updateTableInfo = async () => {
   try {
-    // 新規・編集どちらも現在時刻を送る
     let timeStr: string
     
     if (modalMode === 'new') {
-      // 新規登録時：現在の正確な時刻を5分単位に丸める
-      const now = getJapanTime()  
+      // 新規登録時：ブラウザの現在時刻をそのまま使用（ブラウザは日本時間）
+      const now = new Date()
       const minutes = now.getMinutes()
       const roundedMinutes = Math.round(minutes / 5) * 5
       
@@ -163,7 +162,7 @@ function getJapanTime(): Date {
         tableId: currentTable,
         guestName: formData.guestName,
         castName: formData.castName,
-        timeStr, // 常に時刻を送る
+        timeStr,
         visitType: formData.visitType
       })
     })
