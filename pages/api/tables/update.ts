@@ -1,6 +1,3 @@
-// pages/api/tables/update.ts
-// 注意：更新は元のテーブル（table_status）に対して行う
-
 import { createClient } from '@supabase/supabase-js'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -8,6 +5,14 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!
 )
+
+// 日本時間を取得する関数
+function getJapanTime(): Date {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const jstTime = new Date(utc + (9 * 60 * 60000));
+  return jstTime;
+}
 
 // 最も近い5分単位に丸める関数
 function roundToNearest5Minutes(date: Date): Date {
@@ -31,19 +36,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { tableId, guestName, castName, timeStr, visitType } = req.body
 
-    let entryTime: Date
-    if (timeStr) {
-      entryTime = new Date(timeStr)
-    } else {
-      entryTime = roundToNearest5Minutes(new Date())
-    }
-
+    // 新規登録時もフロントエンドから時刻を送る
     const { error } = await supabase
-      .from('table_status')  // ← 元のテーブル名を使用！
+      .from('table_status')
       .update({
         guest_name: guestName,
         cast_name: castName,
-        entry_time: entryTime.toISOString(),
+        entry_time: timeStr, // 常にフロントエンドから送られた時刻を使用
         visit_type: visitType
       })
       .eq('table_name', tableId)
