@@ -48,6 +48,14 @@ export default function Home() {
   const [moveFromTable, setMoveFromTable] = useState('')
   const [showMoveHint, setShowMoveHint] = useState(false)
   
+  // 日本時間を取得する関数
+function getJapanTime(): Date {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const jstTime = new Date(utc + (9 * 60 * 60000));
+  return jstTime;
+}
+
   // フォームの状態
   const [formData, setFormData] = useState({
     guestName: '',
@@ -222,32 +230,33 @@ export default function Home() {
   }
 
   // モーダルを開く
-  const openModal = (table: TableData) => {
-    setCurrentTable(table.table)
-    
-    if (table.status === 'empty') {
-      setModalMode('new')
-      setFormData({
-        guestName: '',
-        castName: '',
-        visitType: '',
-        editHour: new Date().getHours(),
-        editMinute: Math.floor(new Date().getMinutes() / 5) * 5
-      })
-    } else {
-      setModalMode('edit')
-      const time = table.time ? new Date(table.time) : new Date()
-      setFormData({
-        guestName: table.name,
-        castName: table.oshi,
-        visitType: table.visit,
-        editHour: time.getHours(),
-        editMinute: time.getMinutes()
-      })
-    }
-    
-    setShowModal(true)
+const openModal = (table: TableData) => {
+  setCurrentTable(table.table)
+  
+  if (table.status === 'empty') {
+    setModalMode('new')
+    const japanNow = getJapanTime()  // ← ここを修正
+    setFormData({
+      guestName: '',
+      castName: '',
+      visitType: '',
+      editHour: japanNow.getHours(),  // ← ここを修正
+      editMinute: Math.floor(japanNow.getMinutes() / 5) * 5  // ← ここを修正
+    })
+  } else {
+    setModalMode('edit')
+    const time = table.time ? new Date(table.time) : new Date()
+    setFormData({
+      guestName: table.name,
+      castName: table.oshi,
+      visitType: table.visit,
+      editHour: time.getHours(),
+      editMinute: time.getMinutes()
+    })
   }
+  
+  setShowModal(true)
+}
 
   // テーブルコンポーネント
   const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
