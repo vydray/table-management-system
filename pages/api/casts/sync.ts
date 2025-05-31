@@ -35,9 +35,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         count: casts.length,
         timestamp: new Date().toISOString()
       })
-    } catch (error: any) {
+    } catch (error) {
       console.error('同期エラー:', error)
-      res.status(500).json({ error: error.message })
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      res.status(500).json({ error: errorMessage })
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' })
