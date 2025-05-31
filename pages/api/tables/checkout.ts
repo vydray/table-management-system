@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { tableId } = req.body
+    const { tableId, checkoutTime } = req.body  // フロントエンドから日本時間を受け取る
 
     // 現在のデータを取得
     const { data: currentData, error: fetchError } = await supabase
@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (fetchError) return res.status(500).json({ error: fetchError.message })
 
-    // 履歴に追加
+    // 履歴に追加（checkout_timeも日本時間で保存）
     const { error: insertError } = await supabase
       .from('visit_history')
       .insert({
@@ -27,7 +27,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         guest_name: currentData.guest_name,
         cast_name: currentData.cast_name,
         entry_time: currentData.entry_time,
-        visit_type: currentData.visit_type
+        visit_type: currentData.visit_type,
+        checkout_time: checkoutTime  // 日本時間で保存
       })
 
     if (insertError) return res.status(500).json({ error: insertError.message })

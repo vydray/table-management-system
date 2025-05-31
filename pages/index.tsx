@@ -205,23 +205,29 @@ const updateTableInfo = async () => {
 }
 
   // 会計処理
-  const checkout = async () => {
-    if (!confirm(`${currentTable} を会計完了にしますか？`)) return
+const checkout = async () => {
+  if (!confirm(`${currentTable} を会計完了にしますか？`)) return
+  
+  try {
+    // 現在の日本時間を取得
+    const checkoutTime = getJapanTimeString(new Date())
     
-    try {
-      await fetch('/api/tables/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableId: currentTable })
+    await fetch('/api/tables/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        tableId: currentTable,
+        checkoutTime  // 日本時間を送信
       })
-      
-      setShowModal(false)
-      loadData()
-    } catch (error) {
-      console.error('Error checkout:', error)
-      alert('会計処理に失敗しました')
-    }
+    })
+    
+    setShowModal(false)
+    loadData()
+  } catch (error) {
+    console.error('Error checkout:', error)
+    alert('会計処理に失敗しました')
   }
+}
 
   // テーブルクリア
   const clearTable = async () => {
