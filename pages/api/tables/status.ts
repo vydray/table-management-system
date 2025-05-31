@@ -16,19 +16,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (error) return res.status(500).json({ error: error.message })
 
     const tableData = data.map(row => {
-      // 日本時間として保存されているentry_timeを使用
       let elapsedMin = null
       
       if (row.entry_time) {
-        // entry_timeは "YYYY-MM-DD HH:mm:ss" 形式で保存されている
-        // これを日本時間のDateオブジェクトとして扱う
-        const entryTime = new Date(row.entry_time + ' GMT+0900') // 日本時間として解釈
-        
-        // 現在の日本時間を取得
-        const nowJapan = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }))
+        // entry_timeは "YYYY-MM-DD HH:mm:ss" 形式
+        // 直接Dateオブジェクトに変換（ブラウザが日本時間として解釈）
+        const entryTime = new Date(row.entry_time)
+        const now = new Date()
         
         // 経過時間を計算
-        elapsedMin = Math.floor((nowJapan.getTime() - entryTime.getTime()) / 60000)
+        elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
+        
+        // 負の値の場合は0にする
+        if (elapsedMin < 0) elapsedMin = 0
       }
 
       return {
@@ -37,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         oshi: row.cast_name || "",
         time: row.entry_time || "",
         visit: row.visit_type || "",
-        elapsed: elapsedMin !== null && elapsedMin >= 0 ? elapsedMin + "分" : "",
+        elapsed: elapsedMin !== null ? elapsedMin + "分" : "",
         status: row.guest_name ? "occupied" : "empty"
       }
     })
