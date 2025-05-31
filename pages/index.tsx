@@ -12,6 +12,8 @@ interface TableData {
   status: 'empty' | 'occupied'
 }
 
+// pages/index.tsx の tablePositions を以下に置き換え
+
 // テーブルの位置情報
 const tablePositions = {
   'A1': { top: 607, left: 723 },
@@ -21,18 +23,19 @@ const tablePositions = {
   'A5': { top: 223, left: 862 },
   'A6': { top: 223, left: 723 },
   'A7': { top: 223, left: 581 },
-  'A8': { top: 223, left: 438 },
+  // A8を削除
   'B1': { top: 85, left: 759 },
   'B2': { top: 84, left: 607 },
   'B3': { top: 84, left: 454 },
   'B4': { top: 84, left: 302 },
   'B5': { top: 84, left: 149 },
+  'B6': { top: 84, left: 0 },      // B5の左側に配置（新規追加）
   'C1': { top: 230, left: 201 },
   'C2': { top: 230, left: 58 },
   'C3': { top: 358, left: 58 },
   'C4': { top: 486, left: 58 },
   'C5': { top: 614, left: 58 },
-  'C6': { top: 614, left: 201 },
+  // C6を削除（B6になったため）
   '臨時1': { top: 425, left: 363 },
   '臨時2': { top: 425, left: 505 }
 }
