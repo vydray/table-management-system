@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { utcToZonedTime, format } from 'date-fns-tz'
+import { format } from 'date-fns-tz'
+import { utcToZonedTime } from 'date-fns-tz/utcToZonedTime'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
