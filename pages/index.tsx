@@ -123,12 +123,27 @@ function getJapanTime(): Date {
   }, [])
 
   // テーブル情報更新
+// 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
+const getJapanTimeString = (date: Date): string => {
+  // 日本のタイムゾーンオフセットは+9時間
+  const japanTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }))
+  
+  const year = japanTime.getFullYear()
+  const month = String(japanTime.getMonth() + 1).padStart(2, '0')
+  const day = String(japanTime.getDate()).padStart(2, '0')
+  const hours = String(japanTime.getHours()).padStart(2, '0')
+  const minutes = String(japanTime.getMinutes()).padStart(2, '0')
+  const seconds = String(japanTime.getSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
 const updateTableInfo = async () => {
   try {
     let timeStr: string
     
     if (modalMode === 'new') {
-      // 新規登録時：ブラウザの現在時刻をそのまま使用（ブラウザは日本時間）
+      // 新規登録時：現在の日本時間を5分単位に丸める
       const now = new Date()
       const minutes = now.getMinutes()
       const roundedMinutes = Math.round(minutes / 5) * 5
@@ -142,9 +157,10 @@ const updateTableInfo = async () => {
         now.setHours(now.getHours() + 1)
       }
       
-      timeStr = now.toISOString()
+      // 日本時間の文字列として送信
+      timeStr = getJapanTimeString(now)
     } else {
-      // 編集時：選択された時刻
+      // 編集時：選択された時刻を日本時間として送信
       const selectedTime = new Date(
         new Date().getFullYear(),
         new Date().getMonth(),
@@ -152,7 +168,7 @@ const updateTableInfo = async () => {
         formData.editHour,
         formData.editMinute
       )
-      timeStr = selectedTime.toISOString()
+      timeStr = getJapanTimeString(selectedTime)
     }
 
     await fetch('/api/tables/update', {
