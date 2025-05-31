@@ -24,12 +24,12 @@ const tablePositions = {
   'A6': { top: 223, left: 723 },
   'A7': { top: 223, left: 581 },
   // A8を削除
-  'B1': { top: 85, left: 759 },
-  'B2': { top: 84, left: 607 },
-  'B3': { top: 84, left: 454 },
-  'B4': { top: 84, left: 302 },
-  'B5': { top: 84, left: 149 },
-  'B6': { top: 84, left: 0 },      // B5の左側に配置（新規追加）
+  'B1': { top: 85, left: 858 },
+  'B2': { top: 84, left: 705 },
+  'B3': { top: 84, left: 552 },
+  'B4': { top: 84, left: 399 },
+  'B5': { top: 84, left: 246 },
+  'B6': { top: 84, left: 93 },    // B5の左側に配置（新規追加）
   'C1': { top: 230, left: 201 },
   'C2': { top: 230, left: 58 },
   'C3': { top: 358, left: 58 },
