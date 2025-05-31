@@ -9,7 +9,7 @@ const supabase = createClient(
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     const { data, error } = await supabase
-      .from('table_status_jst')
+      .from('table_status')
       .select('table_name')
       .is('guest_name', null)
       .order('table_name')
