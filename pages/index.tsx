@@ -70,37 +70,49 @@ function getJapanTime(): Date {
   const isLongPress = useRef(false)
 
   // データ取得
-  const loadData = async () => {
-    try {
-      const res = await fetch('/api/tables/status')
-      const data: TableData[] = await res.json()
+  // データ取得
+const loadData = async () => {
+  try {
+    const res = await fetch('/api/tables/status')
+    const data: TableData[] = await res.json()
+    
+    const tableMap: Record<string, TableData> = {}
+    
+    // 全テーブルの初期状態を作成
+    Object.keys(tablePositions).forEach(tableId => {
+      tableMap[tableId] = {
+        table: tableId,
+        name: '',
+        oshi: '',
+        time: '',
+        visit: '',
+        elapsed: '',
+        status: 'empty'
+      }
+    })
+    
+    // 取得したデータで更新し、経過時間を計算
+    data.forEach(item => {
+      // 経過時間をフロントエンドで計算
+      let elapsed = ''
+      if (item.time && item.status === 'occupied') {
+        const entryTime = new Date(item.time)
+        const now = new Date()
+        const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
+        elapsed = elapsedMin >= 0 ? elapsedMin + '分' : '0分'
+      }
       
-      const tableMap: Record<string, TableData> = {}
-      
-      // 全テーブルの初期状態を作成
-      Object.keys(tablePositions).forEach(tableId => {
-        tableMap[tableId] = {
-          table: tableId,
-          name: '',
-          oshi: '',
-          time: '',
-          visit: '',
-          elapsed: '',
-          status: 'empty'
-        }
-      })
-      
-      // 取得したデータで更新
-      data.forEach(item => {
-        tableMap[item.table] = item
-      })
-      
-      setTables(tableMap)
-    } catch (error) {
-      console.error('Error loading data:', error)
-    }
+      tableMap[item.table] = {
+        ...item,
+        elapsed: elapsed
+      }
+    })
+    
+    setTables(tableMap)
+  } catch (error) {
+    console.error('Error loading data:', error)
   }
-
+}
   // キャストリスト取得
   const loadCastList = async () => {
     try {
