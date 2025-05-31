@@ -70,7 +70,7 @@ function getJapanTime(): Date {
   const isLongPress = useRef(false)
 
   // データ取得
-  // データ取得
+ // データ取得
 const loadData = async () => {
   try {
     const res = await fetch('/api/tables/status')
@@ -91,20 +91,20 @@ const loadData = async () => {
       }
     })
     
-    // 取得したデータで更新し、経過時間を計算
+    // 取得したデータで更新
     data.forEach(item => {
-      // 経過時間をフロントエンドで計算
-      let elapsed = ''
+      // サーバーから来たデータをそのまま使うが、経過時間だけ再計算
       if (item.time && item.status === 'occupied') {
-        const entryTime = new Date(item.time)
+        const entryTime = new Date(item.time + ':00') // 秒を追加
         const now = new Date()
         const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
-        elapsed = elapsedMin >= 0 ? elapsedMin + '分' : '0分'
-      }
-      
-      tableMap[item.table] = {
-        ...item,
-        elapsed: elapsed
+        
+        tableMap[item.table] = {
+          ...item,
+          elapsed: elapsedMin >= 0 ? elapsedMin + '分' : '0分'
+        }
+      } else {
+        tableMap[item.table] = item
       }
     })
     
@@ -113,6 +113,7 @@ const loadData = async () => {
     console.error('Error loading data:', error)
   }
 }
+
   // キャストリスト取得
   const loadCastList = async () => {
     try {
