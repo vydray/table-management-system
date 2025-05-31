@@ -48,14 +48,6 @@ export default function Home() {
   const [moveFromTable, setMoveFromTable] = useState('')
   const [showMoveHint, setShowMoveHint] = useState(false)
   const [currentTime, setCurrentTime] = useState('')
-  
-  // 日本時間を取得する関数
-function getJapanTime(): Date {
-  const now = new Date();
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const jstTime = new Date(utc + (9 * 60 * 60000));
-  return jstTime;
-}
 
   // フォームの状態
   const [formData, setFormData] = useState({
@@ -70,50 +62,65 @@ function getJapanTime(): Date {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const isLongPress = useRef(false)
 
-  // データ取得
- // データ取得
-const loadData = async () => {
-  try {
-    const res = await fetch('/api/tables/status')
-    const data: TableData[] = await res.json()
+  // 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
+  const getJapanTimeString = (date: Date): string => {
+    // 日本のタイムゾーンオフセットは+9時間
+    const japanTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }))
     
-    const tableMap: Record<string, TableData> = {}
+    const year = japanTime.getFullYear()
+    const month = String(japanTime.getMonth() + 1).padStart(2, '0')
+    const day = String(japanTime.getDate()).padStart(2, '0')
+    const hours = String(japanTime.getHours()).padStart(2, '0')
+    const minutes = String(japanTime.getMinutes()).padStart(2, '0')
+    const seconds = String(japanTime.getSeconds()).padStart(2, '0')
     
-    // 全テーブルの初期状態を作成
-    Object.keys(tablePositions).forEach(tableId => {
-      tableMap[tableId] = {
-        table: tableId,
-        name: '',
-        oshi: '',
-        time: '',
-        visit: '',
-        elapsed: '',
-        status: 'empty'
-      }
-    })
-    
-    // 取得したデータで更新
-    data.forEach(item => {
-      // サーバーから来たデータをそのまま使うが、経過時間だけ再計算
-      if (item.time && item.status === 'occupied') {
-        const entryTime = new Date(item.time + ':00') // 秒を追加
-        const now = new Date()
-        const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
-        
-        tableMap[item.table] = {
-          ...item,
-          elapsed: elapsedMin >= 0 ? elapsedMin + '分' : '0分'
-        }
-      } else {
-        tableMap[item.table] = item
-      }
-    })
-    
-    setTables(tableMap)
-  } catch (error) {
-    console.error('Error loading data:', error)
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
   }
-}
+
+  // データ取得
+  const loadData = async () => {
+    try {
+      const res = await fetch('/api/tables/status')
+      const data: TableData[] = await res.json()
+      
+      const tableMap: Record<string, TableData> = {}
+      
+      // 全テーブルの初期状態を作成
+      Object.keys(tablePositions).forEach(tableId => {
+        tableMap[tableId] = {
+          table: tableId,
+          name: '',
+          oshi: '',
+          time: '',
+          visit: '',
+          elapsed: '',
+          status: 'empty'
+        }
+      })
+      
+      // 取得したデータで更新
+      data.forEach(item => {
+        // サーバーから来たデータをそのまま使うが、経過時間だけ再計算
+        if (item.time && item.status === 'occupied') {
+          // "YYYY-MM-DD HH:mm:ss" 形式の時刻を Date オブジェクトに変換
+          const entryTime = new Date(item.time.replace(' ', 'T'))
+          const now = new Date()
+          const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
+          
+          tableMap[item.table] = {
+            ...item,
+            elapsed: elapsedMin >= 0 ? elapsedMin + '分' : '0分'
+          }
+        } else {
+          tableMap[item.table] = item
+        }
+      })
+      
+      setTables(tableMap)
+    } catch (error) {
+      console.error('Error loading data:', error)
+    }
+  }
 
   // キャストリスト取得
   const loadCastList = async () => {
@@ -127,127 +134,112 @@ const loadData = async () => {
   }
 
   // 初期化
-useEffect(() => {
-  loadData()
-  loadCastList()
-  
-  // 現在時刻を更新する関数
-  const updateTime = () => {
-    const now = new Date()
-    const hours = now.getHours().toString().padStart(2, '0')
-    const minutes = now.getMinutes().toString().padStart(2, '0')
-    const seconds = now.getSeconds().toString().padStart(2, '0')
-    setCurrentTime(`${hours}:${minutes}:${seconds}`)
-  }
-  
-  // 初回実行
-  updateTime()
-  
-  // 1秒ごとに時刻を更新
-  const timeInterval = setInterval(updateTime, 1000)
-  
-  // 1分ごとにデータを自動更新
-  const dataInterval = setInterval(loadData, 60000)
-  
-  return () => {
-    clearInterval(timeInterval)
-    clearInterval(dataInterval)
-  }
-}, [])
+  useEffect(() => {
+    loadData()
+    loadCastList()
+    
+    // 現在時刻を更新する関数
+    const updateTime = () => {
+      const now = new Date()
+      const hours = now.getHours().toString().padStart(2, '0')
+      const minutes = now.getMinutes().toString().padStart(2, '0')
+      const seconds = now.getSeconds().toString().padStart(2, '0')
+      setCurrentTime(`${hours}:${minutes}:${seconds}`)
+    }
+    
+    // 初回実行
+    updateTime()
+    
+    // 1秒ごとに時刻を更新
+    const timeInterval = setInterval(updateTime, 1000)
+    
+    // 1分ごとにデータを自動更新
+    const dataInterval = setInterval(loadData, 60000)
+    
+    return () => {
+      clearInterval(timeInterval)
+      clearInterval(dataInterval)
+    }
+  }, [])
 
   // テーブル情報更新
-// 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
-const getJapanTimeString = (date: Date): string => {
-  // 日本のタイムゾーンオフセットは+9時間
-  const japanTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }))
-  
-  const year = japanTime.getFullYear()
-  const month = String(japanTime.getMonth() + 1).padStart(2, '0')
-  const day = String(japanTime.getDate()).padStart(2, '0')
-  const hours = String(japanTime.getHours()).padStart(2, '0')
-  const minutes = String(japanTime.getMinutes()).padStart(2, '0')
-  const seconds = String(japanTime.getSeconds()).padStart(2, '0')
-  
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-}
-
-const updateTableInfo = async () => {
-  try {
-    let timeStr: string
-    
-    if (modalMode === 'new') {
-      // 新規登録時：現在の日本時間を5分単位に丸める
-      const now = new Date()
-      const minutes = now.getMinutes()
-      const roundedMinutes = Math.round(minutes / 5) * 5
+  const updateTableInfo = async () => {
+    try {
+      let timeStr: string
       
-      now.setMinutes(roundedMinutes)
-      now.setSeconds(0)
-      now.setMilliseconds(0)
-      
-      if (roundedMinutes === 60) {
-        now.setMinutes(0)
-        now.setHours(now.getHours() + 1)
+      if (modalMode === 'new') {
+        // 新規登録時：現在の日本時間を5分単位に丸める
+        const now = new Date()
+        const minutes = now.getMinutes()
+        const roundedMinutes = Math.round(minutes / 5) * 5
+        
+        now.setMinutes(roundedMinutes)
+        now.setSeconds(0)
+        now.setMilliseconds(0)
+        
+        if (roundedMinutes === 60) {
+          now.setMinutes(0)
+          now.setHours(now.getHours() + 1)
+        }
+        
+        // 日本時間の文字列として送信
+        timeStr = getJapanTimeString(now)
+      } else {
+        // 編集時：選択された時刻を日本時間として送信
+        const selectedTime = new Date(
+          new Date().getFullYear(),
+          new Date().getMonth(),
+          new Date().getDate(),
+          formData.editHour,
+          formData.editMinute
+        )
+        timeStr = getJapanTimeString(selectedTime)
       }
-      
-      // 日本時間の文字列として送信
-      timeStr = getJapanTimeString(now)
-    } else {
-      // 編集時：選択された時刻を日本時間として送信
-      const selectedTime = new Date(
-        new Date().getFullYear(),
-        new Date().getMonth(),
-        new Date().getDate(),
-        formData.editHour,
-        formData.editMinute
-      )
-      timeStr = getJapanTimeString(selectedTime)
-    }
 
-    await fetch('/api/tables/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tableId: currentTable,
-        guestName: formData.guestName,
-        castName: formData.castName,
-        timeStr,
-        visitType: formData.visitType
+      await fetch('/api/tables/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: currentTable,
+          guestName: formData.guestName,
+          castName: formData.castName,
+          timeStr,
+          visitType: formData.visitType
+        })
       })
-    })
-    
-    setShowModal(false)
-    loadData()
-  } catch (error) {
-    console.error('Error updating table:', error)
-    alert('更新に失敗しました')
+      
+      setShowModal(false)
+      loadData()
+    } catch (error) {
+      console.error('Error updating table:', error)
+      alert('更新に失敗しました')
+    }
   }
-}
 
   // 会計処理
-const checkout = async () => {
-  if (!confirm(`${currentTable} を会計完了にしますか？`)) return
-  
-  try {
-    // 現在の日本時間を取得
-    const checkoutTime = getJapanTimeString(new Date())
+  const checkout = async () => {
+    if (!confirm(`${currentTable} を会計完了にしますか？`)) return
     
-    await fetch('/api/tables/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        tableId: currentTable,
-        checkoutTime  // 日本時間を送信
+    try {
+      // 現在の日本時間を取得
+      const checkoutTime = getJapanTimeString(new Date())
+      
+      await fetch('/api/tables/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          tableId: currentTable,
+          checkoutTime  // 日本時間を送信
+        })
       })
-    })
-    
-    setShowModal(false)
-    loadData()
-  } catch (error) {
-    console.error('Error checkout:', error)
-    alert('会計処理に失敗しました')
+      
+      setShowModal(false)
+      loadData()
+    } catch (error) {
+      console.error('Error checkout:', error)
+      alert('会計処理に失敗しました')
+    }
   }
-}
 
   // テーブルクリア
   const clearTable = async () => {
@@ -305,33 +297,34 @@ const checkout = async () => {
   }
 
   // モーダルを開く
-const openModal = (table: TableData) => {
-  setCurrentTable(table.table)
-  
-  if (table.status === 'empty') {
-    setModalMode('new')
-    const japanNow = getJapanTime()  // ← ここを修正
-    setFormData({
-      guestName: '',
-      castName: '',
-      visitType: '',
-      editHour: japanNow.getHours(),  // ← ここを修正
-      editMinute: Math.floor(japanNow.getMinutes() / 5) * 5  // ← ここを修正
-    })
-  } else {
-    setModalMode('edit')
-    const time = table.time ? new Date(table.time) : new Date()
-    setFormData({
-      guestName: table.name,
-      castName: table.oshi,
-      visitType: table.visit,
-      editHour: time.getHours(),
-      editMinute: time.getMinutes()
-    })
+  const openModal = (table: TableData) => {
+    setCurrentTable(table.table)
+    
+    if (table.status === 'empty') {
+      setModalMode('new')
+      const now = new Date()
+      setFormData({
+        guestName: '',
+        castName: '',
+        visitType: '',
+        editHour: now.getHours(),
+        editMinute: Math.floor(now.getMinutes() / 5) * 5
+      })
+    } else {
+      setModalMode('edit')
+      // "YYYY-MM-DD HH:mm:ss" 形式を Date オブジェクトに変換
+      const time = table.time ? new Date(table.time.replace(' ', 'T')) : new Date()
+      setFormData({
+        guestName: table.name,
+        castName: table.oshi,
+        visitType: table.visit,
+        editHour: time.getHours(),
+        editMinute: time.getMinutes()
+      })
+    }
+    
+    setShowModal(true)
   }
-  
-  setShowModal(true)
-}
 
   // テーブルコンポーネント
   const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
@@ -456,16 +449,22 @@ const openModal = (table: TableData) => {
         }
       }}>
         <div className="header">
-  📋 テーブル管理システム
-  <span style={{ 
-    position: 'absolute', 
-    right: '20px', 
-    fontSize: '24px',
-    fontFamily: 'monospace'
-  }}>
-    {currentTime}
-  </span>
-</div>
+          📋 テーブル管理システム
+          <span style={{ 
+            position: 'absolute', 
+            right: '20px', 
+            fontSize: '24px',
+            fontFamily: 'monospace'
+          }}>
+            {currentTime}
+          </span>
+        </div>
+        
+        {showMoveHint && (
+          <div id="move-hint">
+            🔄 移動先の空席をタップしてください（キャンセル：画面外をタップ）
+          </div>
+        )}
         
         {Object.entries(tables).map(([tableId, data]) => (
           <Table key={tableId} tableId={tableId} data={data} />
