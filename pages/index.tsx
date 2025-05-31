@@ -47,6 +47,7 @@ export default function Home() {
   const [moveMode, setMoveMode] = useState(false)
   const [moveFromTable, setMoveFromTable] = useState('')
   const [showMoveHint, setShowMoveHint] = useState(false)
+  const [currentTime, setCurrentTime] = useState('')
   
   // 日本時間を取得する関数
 function getJapanTime(): Date {
@@ -126,14 +127,33 @@ const loadData = async () => {
   }
 
   // 初期化
-  useEffect(() => {
-    loadData()
-    loadCastList()
-    
-    // 1分ごとに自動更新
-    const interval = setInterval(loadData, 60000)
-    return () => clearInterval(interval)
-  }, [])
+useEffect(() => {
+  loadData()
+  loadCastList()
+  
+  // 現在時刻を更新する関数
+  const updateTime = () => {
+    const now = new Date()
+    const hours = now.getHours().toString().padStart(2, '0')
+    const minutes = now.getMinutes().toString().padStart(2, '0')
+    const seconds = now.getSeconds().toString().padStart(2, '0')
+    setCurrentTime(`${hours}:${minutes}:${seconds}`)
+  }
+  
+  // 初回実行
+  updateTime()
+  
+  // 1秒ごとに時刻を更新
+  const timeInterval = setInterval(updateTime, 1000)
+  
+  // 1分ごとにデータを自動更新
+  const dataInterval = setInterval(loadData, 60000)
+  
+  return () => {
+    clearInterval(timeInterval)
+    clearInterval(dataInterval)
+  }
+}, [])
 
   // テーブル情報更新
 // 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
@@ -435,13 +455,17 @@ const openModal = (table: TableData) => {
           endMoveMode()
         }
       }}>
-        <div className="header">📋 テーブル管理システム</div>
-        
-        {showMoveHint && (
-          <div id="move-hint">
-            🔄 移動先の空席をタップしてください（キャンセル：画面外をタップ）
-          </div>
-        )}
+        <div className="header">
+  📋 テーブル管理システム
+  <span style={{ 
+    position: 'absolute', 
+    right: '20px', 
+    fontSize: '24px',
+    fontFamily: 'monospace'
+  }}>
+    {currentTime}
+  </span>
+</div>
         
         {Object.entries(tables).map(([tableId, data]) => (
           <Table key={tableId} tableId={tableId} data={data} />
