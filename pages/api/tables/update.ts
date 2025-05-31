@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 import type { NextApiRequest, NextApiResponse } from 'next'
-const { utcToZonedTime, format } = require('date-fns-tz')
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,26 +15,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (timeStr) {
       // フロントエンドから送られた時刻を使用
       const date = new Date(timeStr)
-      // 日本時間としてフォーマット
-      entryTime = format(date, 'yyyy-MM-dd HH:mm:ss')
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      const seconds = String(date.getSeconds()).padStart(2, '0')
+      
+      entryTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
     } else {
-      // 新規登録時：サーバーの現在時刻を日本時間に変換
-      const utcDate = new Date()
-      const japanDate = utcToZonedTime(utcDate, 'Asia/Tokyo')
-      
-      // 5分単位に丸める
-      const minutes = japanDate.getMinutes()
-      const roundedMinutes = Math.round(minutes / 5) * 5
-      japanDate.setMinutes(roundedMinutes)
-      japanDate.setSeconds(0)
-      
-      if (roundedMinutes === 60) {
-        japanDate.setMinutes(0)
-        japanDate.setHours(japanDate.getHours() + 1)
-      }
-      
-      // PostgreSQL形式でフォーマット
-      entryTime = format(japanDate, 'yyyy-MM-dd HH:mm:ss')
+      // 新規登録時はフロントエンドから必ず送るようにする
+      entryTime = new Date().toISOString()
     }
 
     const { error } = await supabase
