@@ -14,25 +14,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
-    const { casts } = req.body
+    const { castsData } = req.body // 全データを受け取る
 
     try {
-      // 既存のキャストを全て削除
+      // 既存のデータを全て削除
       await supabase.from('casts').delete().neq('id', 0)
 
-      // 新しいキャストを挿入
+      // 新しいデータを挿入
       const { error } = await supabase
         .from('casts')
-        .insert(casts.map((name: string) => ({ name, active: true })))
+        .insert(castsData)
 
       if (error) throw error
 
       // ログ出力
-      console.log(`[${new Date().toISOString()}] キャスト同期成功: ${casts.length}名`)
+      console.log(`[${new Date().toISOString()}] キャスト同期成功: ${castsData.length}名（全データ）`)
 
       res.status(200).json({ 
         success: true, 
-        count: casts.length,
+        count: castsData.length,
         timestamp: new Date().toISOString()
       })
     } catch (error) {
