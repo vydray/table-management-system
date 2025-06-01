@@ -108,7 +108,7 @@ export default function Home() {
           // "YYYY-MM-DD HH:mm:ss" 形式の時刻を Date オブジェクトに変換
           const entryTime = new Date(item.time.replace(' ', 'T'))
           const now = new Date()
-          const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
+          const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 10000)
           
           tableMap[item.table] = {
             ...item,
@@ -136,34 +136,34 @@ export default function Home() {
     }
   }
 
-  // 初期化
-  useEffect(() => {
-    loadData()
-    loadCastList()
-    
-    // 現在時刻を更新する関数
-    const updateTime = () => {
-      const now = new Date()
-      const hours = now.getHours().toString().padStart(2, '0')
-      const minutes = now.getMinutes().toString().padStart(2, '0')
-      const seconds = now.getSeconds().toString().padStart(2, '0')
-      setCurrentTime(`${hours}:${minutes}:${seconds}`)
-    }
-    
-    // 初回実行
-    updateTime()
-    
-    // 1秒ごとに時刻を更新
-    const timeInterval = setInterval(updateTime, 1000)
-    
-    // 1分ごとにデータを自動更新
-    const dataInterval = setInterval(loadData, 60000)
-    
-    return () => {
-      clearInterval(timeInterval)
-      clearInterval(dataInterval)
-    }
-  }, [])
+ // 初期化
+useEffect(() => {
+  loadData()
+  loadCastList()
+  
+  // 現在時刻を更新する関数
+  const updateTime = () => {
+    const now = new Date()
+    const hours = now.getHours().toString().padStart(2, '0')
+    const minutes = now.getMinutes().toString().padStart(2, '0')
+    const seconds = now.getSeconds().toString().padStart(2, '0')
+    setCurrentTime(`${hours}:${minutes}:${seconds}`)
+  }
+  
+  // 初回実行
+  updateTime()
+  
+  // 1秒ごとに時刻を更新
+  const timeInterval = setInterval(updateTime, 1000)
+  
+  // 10秒ごとにデータを自動更新
+  const dataInterval = setInterval(loadData, 10000)
+  
+  return () => {
+    clearInterval(timeInterval)
+    clearInterval(dataInterval)
+  }
+}, [])
 
   // テーブル情報更新
   const updateTableInfo = async () => {
