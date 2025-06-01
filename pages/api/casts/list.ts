@@ -8,15 +8,30 @@ const supabase = createClient(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
-    const { data, error } = await supabase
-      .from('casts')
-      .select('name')
-      .eq('active', true)
-      .order('name')
+    try {
+      // 新しいテーブル構造から名前を取得
+      const { data, error } = await supabase
+        .from('casts')
+        .select('name')
+        .not('name', 'is', null)  // 名前がnullでない
+        .neq('name', '')          // 名前が空文字でない
+        .order('name')
 
-    if (error) return res.status(500).json({ error: error.message })
-    
-    const castNames = data.map(cast => cast.name)
-    res.status(200).json(castNames)
+      if (error) {
+        console.error('Supabase error:', error)
+        return res.status(500).json({ error: error.message })
+      }
+      
+      // 名前のリストを作成（重複を除去）
+      const castNames = [...new Set(data?.map(cast => cast.name) || [])]
+      
+      res.status(200).json(castNames)
+    } catch (error) {
+      console.error('API error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      res.status(500).json({ error: errorMessage })
+    }
+  } else {
+    res.status(405).json({ error: 'Method not allowed' })
   }
 }
