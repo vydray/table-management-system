@@ -21,19 +21,17 @@ const tablePositions = {
   'A5': { top: 223, left: 862 },
   'A6': { top: 223, left: 723 },
   'A7': { top: 223, left: 581 },
-  // A8を削除
   'B1': { top: 85, left: 858 },
   'B2': { top: 84, left: 705 },
   'B3': { top: 84, left: 552 },
   'B4': { top: 84, left: 399 },
   'B5': { top: 84, left: 246 },
-  'B6': { top: 84, left: 93 },    // B5の左側に配置（新規追加）
+  'B6': { top: 84, left: 93 },
   'C1': { top: 230, left: 201 },
   'C2': { top: 230, left: 58 },
   'C3': { top: 358, left: 58 },
   'C4': { top: 486, left: 58 },
   'C5': { top: 614, left: 58 },
-  // C6を削除（B6になったため）
   '臨時1': { top: 425, left: 363 },
   '臨時2': { top: 425, left: 505 }
 }
@@ -49,7 +47,8 @@ export default function Home() {
   const [moveFromTable, setMoveFromTable] = useState('')
   const [showMoveHint, setShowMoveHint] = useState(false)
   const [currentTime, setCurrentTime] = useState('')
-  const [isMoving, setIsMoving] = useState(false) // 移動処理中フラグを追加
+  const [isMoving, setIsMoving] = useState(false)
+  const [showMenu, setShowMenu] = useState(false) // メニューの表示状態
 
   // フォームの状態
   const [formData, setFormData] = useState({
@@ -66,7 +65,6 @@ export default function Home() {
 
   // 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
   const getJapanTimeString = (date: Date): string => {
-    // 日本のタイムゾーンオフセットは+9時間
     const japanTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }))
     
     const year = japanTime.getFullYear()
@@ -102,12 +100,10 @@ export default function Home() {
       
       // 取得したデータで更新
       data.forEach(item => {
-        // サーバーから来たデータをそのまま使うが、経過時間だけ再計算
         if (item.time && item.status === 'occupied') {
-          // "YYYY-MM-DD HH:mm:ss" 形式の時刻を Date オブジェクトに変換
           const entryTime = new Date(item.time.replace(' ', 'T'))
           const now = new Date()
-          const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000) // 60000に修正
+          const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
           
           tableMap[item.table] = {
             ...item,
@@ -140,7 +136,6 @@ export default function Home() {
     loadData()
     loadCastList()
     
-    // 現在時刻を更新する関数
     const updateTime = () => {
       const now = new Date()
       const hours = now.getHours().toString().padStart(2, '0')
@@ -149,13 +144,9 @@ export default function Home() {
       setCurrentTime(`${hours}:${minutes}:${seconds}`)
     }
     
-    // 初回実行
     updateTime()
     
-    // 1秒ごとに時刻を更新
     const timeInterval = setInterval(updateTime, 1000)
-    
-    // 10秒ごとにデータを自動更新
     const dataInterval = setInterval(loadData, 10000)
     
     return () => {
@@ -164,13 +155,38 @@ export default function Home() {
     }
   }, [])
 
+  // メニューアイテムのクリックハンドラー
+  const handleMenuClick = (action: string) => {
+    setShowMenu(false) // メニューを閉じる
+    
+    switch (action) {
+      case 'refresh':
+        loadData()
+        alert('データを更新しました')
+        break
+      case 'cast-sync':
+        alert('キャスト同期機能は準備中です')
+        break
+      case 'report':
+        alert('レポート機能は準備中です')
+        break
+      case 'settings':
+        alert('設定機能は準備中です')
+        break
+      case 'logout':
+        if (confirm('ログアウトしますか？')) {
+          alert('ログアウト機能は準備中です')
+        }
+        break
+    }
+  }
+
   // テーブル情報更新
   const updateTableInfo = async () => {
     try {
       let timeStr: string
       
       if (modalMode === 'new') {
-        // 新規登録時：現在の日本時間を5分単位に丸める
         const now = new Date()
         const minutes = now.getMinutes()
         const roundedMinutes = Math.round(minutes / 5) * 5
@@ -184,10 +200,8 @@ export default function Home() {
           now.setHours(now.getHours() + 1)
         }
         
-        // 日本時間の文字列として送信
         timeStr = getJapanTimeString(now)
       } else {
-        // 編集時：選択された時刻を日本時間として送信
         const selectedTime = new Date(
           new Date().getFullYear(),
           new Date().getMonth(),
@@ -223,7 +237,6 @@ export default function Home() {
     if (!confirm(`${currentTable} を会計完了にしますか？`)) return
     
     try {
-      // 現在の日本時間を取得
       const checkoutTime = getJapanTimeString(new Date())
       
       await fetch('/api/tables/checkout', {
@@ -231,7 +244,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           tableId: currentTable,
-          checkoutTime  // 日本時間を送信
+          checkoutTime
         })
       })
       
@@ -262,12 +275,10 @@ export default function Home() {
     }
   }
 
-  // 席移動（改善版）
+  // 席移動
   const executeMove = async (toTable: string) => {
-    // 既に移動処理中なら何もしない
     if (isMoving) return
     
-    // 移動処理開始
     setIsMoving(true)
     
     try {
@@ -284,12 +295,9 @@ export default function Home() {
         throw new Error('移動に失敗しました')
       }
       
-      // 成功したら即座にローカルで状態を更新
       setTables(prev => {
         const newTables = { ...prev }
-        // 移動元のデータを移動先にコピー
         newTables[toTable] = { ...prev[moveFromTable] }
-        // 移動元を空席に
         newTables[moveFromTable] = {
           table: moveFromTable,
           name: '',
@@ -302,10 +310,8 @@ export default function Home() {
         return newTables
       })
       
-      // 移動モード終了
       endMoveMode()
       
-      // バックグラウンドでデータを再取得（確認のため）
       setTimeout(() => {
         loadData()
       }, 500)
@@ -315,7 +321,6 @@ export default function Home() {
       alert('移動に失敗しました')
       endMoveMode()
     } finally {
-      // 移動処理終了
       setIsMoving(false)
     }
   }
@@ -333,7 +338,7 @@ export default function Home() {
     setMoveFromTable('')
     setShowMoveHint(false)
     isLongPress.current = false
-    setIsMoving(false)  // 移動処理中フラグもリセット
+    setIsMoving(false)
   }
 
   // モーダルを開く
@@ -352,7 +357,6 @@ export default function Home() {
       })
     } else {
       setModalMode('edit')
-      // "YYYY-MM-DD HH:mm:ss" 形式を Date オブジェクトに変換
       const time = table.time ? new Date(table.time.replace(' ', 'T')) : new Date()
       setFormData({
         guestName: table.name,
@@ -401,7 +405,7 @@ export default function Home() {
       if (elapsed < 500 && !isLongPress.current) {
         if (!moveMode) {
           openModal(data)
-        } else if (data.status === 'empty' && !isMoving) {  // isMovingチェックを追加
+        } else if (data.status === 'empty' && !isMoving) {
           executeMove(tableId)
         }
       }
@@ -489,6 +493,14 @@ export default function Home() {
         }
       }}>
         <div className="header">
+          {/* ハンバーガーメニューボタン */}
+          <button 
+            className="menu-button"
+            onClick={() => setShowMenu(!showMenu)}
+          >
+            <span className="menu-icon">☰</span>
+          </button>
+          
           📋 テーブル管理システム
           <span style={{ 
             position: 'absolute', 
@@ -499,6 +511,51 @@ export default function Home() {
             {currentTime}
           </span>
         </div>
+        
+        {/* サイドメニュー */}
+        <div className={`side-menu ${showMenu ? 'open' : ''}`}>
+          <div className="menu-header">
+            <h3>メニュー</h3>
+            <button 
+              className="menu-close"
+              onClick={() => setShowMenu(false)}
+            >
+              ×
+            </button>
+          </div>
+          <div className="menu-items">
+            <button className="menu-item" onClick={() => handleMenuClick('refresh')}>
+              <span className="menu-icon">🔄</span>
+              データ更新
+            </button>
+            <button className="menu-item" onClick={() => handleMenuClick('cast-sync')}>
+              <span className="menu-icon">👥</span>
+              キャスト同期
+            </button>
+            <div className="menu-divider"></div>
+            <button className="menu-item" onClick={() => handleMenuClick('report')}>
+              <span className="menu-icon">📊</span>
+              レポート
+            </button>
+            <button className="menu-item" onClick={() => handleMenuClick('settings')}>
+              <span className="menu-icon">⚙️</span>
+              設定
+            </button>
+            <div className="menu-divider"></div>
+            <button className="menu-item" onClick={() => handleMenuClick('logout')}>
+              <span className="menu-icon">🚪</span>
+              ログアウト
+            </button>
+          </div>
+        </div>
+        
+        {/* メニューが開いている時の背景オーバーレイ */}
+        {showMenu && (
+          <div 
+            className="menu-overlay"
+            onClick={() => setShowMenu(false)}
+          />
+        )}
         
         {showMoveHint && (
           <div id="move-hint">
@@ -847,6 +904,106 @@ export default function Home() {
           line-height: 72px;
           font-size: 32px;
           font-weight: bold;
+        }
+
+        /* メニューボタン */
+        .menu-button {
+          position: absolute;
+          left: 20px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 10px;
+          font-size: 28px;
+          color: #333;
+          transition: transform 0.3s ease;
+        }
+
+        .menu-button:hover {
+          transform: translateY(-50%) scale(1.1);
+        }
+
+        /* サイドメニュー */
+        .side-menu {
+          position: absolute;
+          left: -300px;
+          top: 72px;
+          width: 280px;
+          height: calc(100% - 72px);
+          background: white;
+          box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+          transition: left 0.3s ease;
+          z-index: 1000;
+          overflow-y: auto;
+        }
+
+        .side-menu.open {
+          left: 0;
+        }
+
+        .menu-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px;
+          border-bottom: 1px solid #eee;
+        }
+
+        .menu-header h3 {
+          margin: 0;
+          font-size: 20px;
+        }
+
+        .menu-close {
+          background: none;
+          border: none;
+          font-size: 24px;
+          cursor: pointer;
+          color: #666;
+        }
+
+        .menu-items {
+          padding: 10px 0;
+        }
+
+        .menu-item {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          padding: 15px 20px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 16px;
+          text-align: left;
+          transition: background-color 0.2s ease;
+        }
+
+        .menu-item:hover {
+          background-color: #f5f5f5;
+        }
+
+        .menu-item .menu-icon {
+          margin-right: 15px;
+          font-size: 20px;
+        }
+
+        .menu-divider {
+          height: 1px;
+          background-color: #eee;
+          margin: 10px 0;
+        }
+
+        .menu-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.3);
+          z-index: 999;
         }
 
         .table-name {
