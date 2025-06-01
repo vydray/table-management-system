@@ -828,6 +828,7 @@ export default function Home() {
           margin: auto;
           background: #f8f8f8;
           border: 1px solid #ccc;
+          overflow: hidden; /* 追加: はみ出す要素を隠す */
         }
 
         .table {
@@ -937,10 +938,16 @@ export default function Home() {
           transition: left 0.3s ease;
           z-index: 1000;
           overflow-y: auto;
+          max-height: calc(768px - 72px);
+          visibility: hidden; /* 追加: 非表示時は完全に見えなくする */
+          opacity: 0; /* 追加: 透明にする */
+          transition: left 0.3s ease, visibility 0.3s ease, opacity 0.3s ease;
         }
 
         .side-menu.open {
           left: 0;
+          visibility: visible; /* 追加: 表示時は見えるようにする */
+          opacity: 1; /* 追加: 不透明にする */
         }
 
         .menu-header {
