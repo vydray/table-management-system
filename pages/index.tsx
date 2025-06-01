@@ -613,9 +613,12 @@ export default function Home() {
               </div>
               
               <div className="button-group">
-  <button onClick={checkout} className="btn-warning">会計完了</button>
-  <button onClick={clearTable} className="btn-danger">削除</button>
-</div>
+                <button onClick={checkout} className="btn-warning">会計完了</button>
+                <button onClick={clearTable} className="btn-danger">削除</button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* 席移動モーダル */}
