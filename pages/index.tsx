@@ -12,8 +12,6 @@ interface TableData {
   status: 'empty' | 'occupied'
 }
 
-// pages/index.tsx の tablePositions を以下に置き換え
-
 // テーブルの位置情報
 const tablePositions = {
   'A1': { top: 607, left: 723 },
@@ -51,6 +49,7 @@ export default function Home() {
   const [moveFromTable, setMoveFromTable] = useState('')
   const [showMoveHint, setShowMoveHint] = useState(false)
   const [currentTime, setCurrentTime] = useState('')
+  const [isMoving, setIsMoving] = useState(false) // 移動処理中フラグを追加
 
   // フォームの状態
   const [formData, setFormData] = useState({
@@ -108,7 +107,7 @@ export default function Home() {
           // "YYYY-MM-DD HH:mm:ss" 形式の時刻を Date オブジェクトに変換
           const entryTime = new Date(item.time.replace(' ', 'T'))
           const now = new Date()
-          const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 10000)
+          const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000) // 60000に修正
           
           tableMap[item.table] = {
             ...item,
@@ -136,34 +135,34 @@ export default function Home() {
     }
   }
 
- // 初期化
-useEffect(() => {
-  loadData()
-  loadCastList()
-  
-  // 現在時刻を更新する関数
-  const updateTime = () => {
-    const now = new Date()
-    const hours = now.getHours().toString().padStart(2, '0')
-    const minutes = now.getMinutes().toString().padStart(2, '0')
-    const seconds = now.getSeconds().toString().padStart(2, '0')
-    setCurrentTime(`${hours}:${minutes}:${seconds}`)
-  }
-  
-  // 初回実行
-  updateTime()
-  
-  // 1秒ごとに時刻を更新
-  const timeInterval = setInterval(updateTime, 1000)
-  
-  // 10秒ごとにデータを自動更新
-  const dataInterval = setInterval(loadData, 10000)
-  
-  return () => {
-    clearInterval(timeInterval)
-    clearInterval(dataInterval)
-  }
-}, [])
+  // 初期化
+  useEffect(() => {
+    loadData()
+    loadCastList()
+    
+    // 現在時刻を更新する関数
+    const updateTime = () => {
+      const now = new Date()
+      const hours = now.getHours().toString().padStart(2, '0')
+      const minutes = now.getMinutes().toString().padStart(2, '0')
+      const seconds = now.getSeconds().toString().padStart(2, '0')
+      setCurrentTime(`${hours}:${minutes}:${seconds}`)
+    }
+    
+    // 初回実行
+    updateTime()
+    
+    // 1秒ごとに時刻を更新
+    const timeInterval = setInterval(updateTime, 1000)
+    
+    // 10秒ごとにデータを自動更新
+    const dataInterval = setInterval(loadData, 10000)
+    
+    return () => {
+      clearInterval(timeInterval)
+      clearInterval(dataInterval)
+    }
+  }, [])
 
   // テーブル情報更新
   const updateTableInfo = async () => {
@@ -263,10 +262,16 @@ useEffect(() => {
     }
   }
 
-  // 席移動
+  // 席移動（改善版）
   const executeMove = async (toTable: string) => {
+    // 既に移動処理中なら何もしない
+    if (isMoving) return
+    
+    // 移動処理開始
+    setIsMoving(true)
+    
     try {
-      await fetch('/api/tables/move', {
+      const response = await fetch('/api/tables/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -275,12 +280,43 @@ useEffect(() => {
         })
       })
       
+      if (!response.ok) {
+        throw new Error('移動に失敗しました')
+      }
+      
+      // 成功したら即座にローカルで状態を更新
+      setTables(prev => {
+        const newTables = { ...prev }
+        // 移動元のデータを移動先にコピー
+        newTables[toTable] = { ...prev[moveFromTable] }
+        // 移動元を空席に
+        newTables[moveFromTable] = {
+          table: moveFromTable,
+          name: '',
+          oshi: '',
+          time: '',
+          visit: '',
+          elapsed: '',
+          status: 'empty'
+        }
+        return newTables
+      })
+      
+      // 移動モード終了
       endMoveMode()
-      loadData()
+      
+      // バックグラウンドでデータを再取得（確認のため）
+      setTimeout(() => {
+        loadData()
+      }, 500)
+      
     } catch (error) {
       console.error('Error moving table:', error)
       alert('移動に失敗しました')
       endMoveMode()
+    } finally {
+      // 移動処理終了
+      setIsMoving(false)
     }
   }
 
@@ -297,6 +333,7 @@ useEffect(() => {
     setMoveFromTable('')
     setShowMoveHint(false)
     isLongPress.current = false
+    setIsMoving(false)  // 移動処理中フラグもリセット
   }
 
   // モーダルを開く
@@ -364,7 +401,7 @@ useEffect(() => {
       if (elapsed < 500 && !isLongPress.current) {
         if (!moveMode) {
           openModal(data)
-        } else if (data.status === 'empty') {
+        } else if (data.status === 'empty' && !isMoving) {  // isMovingチェックを追加
           executeMove(tableId)
         }
       }
