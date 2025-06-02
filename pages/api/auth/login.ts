@@ -39,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // パスワードを除外してレスポンス
-    const { password: _, ...userWithoutPassword } = user
+    // const { password: _, ...userWithoutPassword } = user // この行を削除
 
     // ログイン成功
     res.status(200).json({
