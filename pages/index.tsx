@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useRouter } from 'next/router'
 import Head from 'next/head'
 
 // テーブルの型定義
@@ -37,6 +38,7 @@ const tablePositions = {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [tables, setTables] = useState<Record<string, TableData>>({})
   const [castList, setCastList] = useState<string[]>([])
   const [currentTable, setCurrentTable] = useState('')
@@ -156,7 +158,7 @@ export default function Home() {
   }, [])
 
   // メニューアイテムのクリックハンドラー
-  const handleMenuClick = (action: string) => {
+  const handleMenuClick = async (action: string) => {
     setShowMenu(false) // メニューを閉じる
     
     switch (action) {
@@ -175,7 +177,23 @@ export default function Home() {
         break
       case 'logout':
         if (confirm('ログアウトしますか？')) {
-          alert('ログアウト機能は準備中です')
+          try {
+            // ログアウトAPIを呼び出し
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            })
+            
+            // ローカルストレージをクリア
+            localStorage.removeItem('isLoggedIn')
+            localStorage.removeItem('username')
+            
+            // ログインページにリダイレクト
+            router.push('/login')
+          } catch (error) {
+            console.error('Logout error:', error)
+            alert('ログアウトに失敗しました')
+          }
         }
         break
     }
