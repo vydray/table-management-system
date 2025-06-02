@@ -31,7 +31,8 @@ export default function Login() {
       } else {
         setError(data.error || 'ログインに失敗しました')
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Login error:', err)
       setError('ネットワークエラーが発生しました')
     } finally {
       setLoading(false)
