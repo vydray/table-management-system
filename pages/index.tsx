@@ -13,16 +13,6 @@ interface TableData {
   status: 'empty' | 'occupied'
 }
 
-// 商品データの型定義
-interface Product {
-  id: string
-  name: string
-  price: number
-  category: string
-  subcategory?: string
-  needsCast?: boolean
-}
-
 // 商品カテゴリーのデータ
 const productCategories = {
   '推し用': {
