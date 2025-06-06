@@ -431,13 +431,7 @@ export default function Home() {
   // 注文内容を保存
   const saveOrderItems = async (silent: boolean = false) => {
     try {
-      // TODO: 注文内容をデータベースに保存するAPIを呼び出す
-      // 現在は仮実装
-      console.log('注文内容を保存:', orderItems)
-      
-      // 将来的には以下のようなAPIを呼び出す
-      /*
-      await fetch('/api/orders/save', {
+      const response = await fetch('/api/orders/current', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -445,7 +439,10 @@ export default function Home() {
           orderItems: orderItems
         })
       })
-      */
+      
+      if (!response.ok) {
+        throw new Error('Failed to save order items')
+      }
       
       if (!silent) {
         alert('注文内容を保存しました')
@@ -567,6 +564,26 @@ export default function Home() {
     setIsMoving(false)
   }
 
+  // 注文データを取得
+  const loadOrderItems = async (tableId: string) => {
+    try {
+      const res = await fetch(`/api/orders/current?tableId=${tableId}`)
+      const data = await res.json()
+      
+      if (res.ok && data.length > 0) {
+        const items = data.map((item: any) => ({
+          name: item.product_name,
+          cast: item.cast_name,
+          quantity: item.quantity,
+          price: item.unit_price
+        }))
+        setOrderItems(items)
+      }
+    } catch (error) {
+      console.error('Error loading order items:', error)
+    }
+  }
+
   // モーダルを開く
   const openModal = (table: TableData) => {
     setCurrentTable(table.table)
@@ -599,10 +616,7 @@ export default function Home() {
         editMinute: time.getMinutes()
       })
       // TODO: 既存の注文データを読み込む
-      setOrderItems([
-        { name: '推し', cast: table.oshi, quantity: 1, price: 0 },
-        { name: '飲み放題', quantity: 1, price: 3300 }
-      ])
+      loadOrderItems(table.table)
     }
     
     setShowModal(true)
