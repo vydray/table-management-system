@@ -851,6 +851,18 @@ export default function Home() {
                               ))}
                             </div>
                           )}
+                          
+                          {selectedSubcategory && (
+                            <button 
+                              className="add-order-button"
+                              onClick={addOrderItem}
+                              disabled={
+                                productCategories[selectedCategory]?.[selectedSubcategory]?.needsCast === true && !selectedCast
+                              }
+                            >
+                              追加
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1515,6 +1527,28 @@ export default function Home() {
         .btn-delete {
           background: #f44336;
           color: white;
+        }
+
+        .add-order-button {
+          width: 100%;
+          margin-top: 20px;
+          padding: 10px;
+          background: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 16px;
+          font-weight: bold;
+        }
+
+        .add-order-button:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+        }
+
+        .add-order-button:hover:not(:disabled) {
+          background: #45a049;
         }
 
         #modal input, #modal select {
