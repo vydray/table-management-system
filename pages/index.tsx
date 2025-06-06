@@ -115,33 +115,21 @@ export default function Home() {
     editMinute: 0
   })
 
-  // 商品データをSupabaseから取得
+  // 商品データをAPIから取得
   const loadProducts = async () => {
     try {
       console.log('商品データ読み込み開始...')
       
-      // カテゴリー取得
-      const { data: categories, error: catError } = await supabase
-        .from('product_categories')
-        .select('*')
-        .order('display_order')
+      const res = await fetch('/api/products')
+      const data = await res.json()
       
-      console.log('カテゴリーデータ:', categories)
-      console.log('カテゴリーエラー:', catError)
+      console.log('APIレスポンス:', data)
       
-      if (catError) throw catError
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to fetch products')
+      }
       
-      // 商品取得（有効な商品のみ）
-      const { data: products, error: prodError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order')
-      
-      console.log('商品データ:', products)
-      console.log('商品エラー:', prodError)
-      
-      if (prodError) throw prodError
+      const { categories, products } = data
       
       // データ構造を変換
       const productData: ProductCategories = {}
