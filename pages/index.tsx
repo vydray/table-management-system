@@ -1557,6 +1557,8 @@ export default function Home() {
           border-radius: 10px;
           overflow: hidden;
           margin-bottom: 20px;
+          display: flex;
+          flex-direction: column;
         }
 
         .order-table-header {
@@ -1570,7 +1572,7 @@ export default function Home() {
         }
 
         .order-table-body {
-          max-height: 200px;
+          flex: 1;
           overflow-y: auto;
         }
 
@@ -1584,8 +1586,9 @@ export default function Home() {
         }
 
         .order-total {
-          border-top: 1px solid #ddd;
-          padding-top: 10px;
+          padding: 15px;
+          background: #f9f9f9;
+          border-radius: 8px;
           margin-bottom: 20px;
         }
 
