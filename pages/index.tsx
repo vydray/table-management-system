@@ -1,6 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
+import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
+
+// Supabaseクライアントの初期化
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // テーブルの型定義
 interface TableData {
@@ -15,8 +21,10 @@ interface TableData {
 
 // 商品の型定義
 interface ProductItem {
+  id: number
   price: number
   needsCast: boolean
+  discountRate: number
 }
 
 // 商品カテゴリーの型定義
@@ -26,32 +34,24 @@ interface ProductCategories {
   }
 }
 
-// 商品カテゴリーのデータ
-const productCategories: ProductCategories = {
-  '推し用': {
-    'キャストドリンク': { price: 1100, needsCast: true },
-    'キャストショット': { price: 1700, needsCast: true },
-    'キャストチェキ': { price: 2000, needsCast: true }
-  },
-  'お客様用': {
-    '飲み放題': { price: 3300, needsCast: false },
-    'ビール': { price: 800, needsCast: false },
-    'ウィスキー': { price: 1000, needsCast: false },
-    'カクテル': { price: 900, needsCast: false }
-  },
-  'ヘルプ用': {
-    'ヘルプドリンク': { price: 1100, needsCast: true },
-    'ヘルプショット': { price: 1700, needsCast: true }
-  },
-  'シャンパン': {
-    'モエ・エ・シャンドン': { price: 15000, needsCast: false },
-    'ドンペリニヨン': { price: 50000, needsCast: false },
-    'クリュッグ': { price: 40000, needsCast: false }
-  },
-  'ノンアルシャンパン': {
-    'スパークリングジュース': { price: 3000, needsCast: false },
-    'ノンアルコールシャンパン': { price: 5000, needsCast: false }
-  }
+// DBから取得する商品カテゴリーの型
+interface ProductCategory {
+  id: number
+  name: string
+  display_order: number
+}
+
+// DBから取得する商品の型
+interface Product {
+  id: number
+  category_id: number
+  name: string
+  price: number
+  tax_rate: number
+  discount_rate: number
+  needs_cast: boolean
+  is_active: boolean
+  display_order: number
 }
 
 // テーブルの位置情報
@@ -91,9 +91,10 @@ export default function Home() {
   const [showMoveHint, setShowMoveHint] = useState(false)
   const [currentTime, setCurrentTime] = useState('')
   const [isMoving, setIsMoving] = useState(false)
-  const [showMenu, setShowMenu] = useState(false) // メニューの表示状態
+  const [showMenu, setShowMenu] = useState(false)
   
   // POS機能用の状態
+  const [productCategories, setProductCategories] = useState<ProductCategories>({})
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedSubcategory, setSelectedSubcategory] = useState('')
   const [selectedCast, setSelectedCast] = useState('')
@@ -112,6 +113,50 @@ export default function Home() {
     editHour: 0,
     editMinute: 0
   })
+
+  // 商品データをSupabaseから取得
+  const loadProducts = async () => {
+    try {
+      // カテゴリー取得
+      const { data: categories, error: catError } = await supabase
+        .from('product_categories')
+        .select('*')
+        .order('display_order')
+      
+      if (catError) throw catError
+      
+      // 商品取得（有効な商品のみ）
+      const { data: products, error: prodError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order')
+      
+      if (prodError) throw prodError
+      
+      // データ構造を変換
+      const productData: ProductCategories = {}
+      
+      categories?.forEach((category: ProductCategory) => {
+        productData[category.name] = {}
+        
+        products?.filter((p: Product) => p.category_id === category.id)
+          .forEach((product: Product) => {
+            productData[category.name][product.name] = {
+              id: product.id,
+              price: product.price,
+              needsCast: product.needs_cast,
+              discountRate: product.discount_rate
+            }
+          })
+      })
+      
+      setProductCategories(productData)
+    } catch (error) {
+      console.error('Error loading products:', error)
+      alert('商品データの読み込みに失敗しました')
+    }
+  }
 
   // 商品を注文に追加
   const addOrderItem = () => {
@@ -218,6 +263,7 @@ export default function Home() {
   useEffect(() => {
     loadData()
     loadCastList()
+    loadProducts() // 商品データを読み込み
     
     const updateTime = () => {
       const now = new Date()
@@ -245,6 +291,7 @@ export default function Home() {
     switch (action) {
       case 'refresh':
         loadData()
+        loadProducts() // 商品データも更新
         alert('データを更新しました')
         break
       case 'cast-sync':
@@ -971,9 +1018,9 @@ export default function Home() {
           user-select: none;
           -webkit-user-select: none;
           -webkit-touch-callout: none;
-          overflow: hidden; /* スクロールを無効化 */
-          position: fixed; /* 画面を固定 */
-          touch-action: none; /* タッチ操作でのスクロールも無効化 */
+          overflow: hidden;
+          position: fixed;
+          touch-action: none;
         }
 
         #layout {
@@ -983,7 +1030,7 @@ export default function Home() {
           margin: auto;
           background: #f8f8f8;
           border: 1px solid #ccc;
-          overflow: hidden; /* 追加: はみ出す要素を隠す */
+          overflow: hidden;
         }
 
         .table {
@@ -1094,15 +1141,15 @@ export default function Home() {
           z-index: 1000;
           overflow-y: auto;
           max-height: calc(768px - 72px);
-          visibility: hidden; /* 追加: 非表示時は完全に見えなくする */
-          opacity: 0; /* 追加: 透明にする */
+          visibility: hidden;
+          opacity: 0;
           transition: left 0.3s ease, visibility 0.3s ease, opacity 0.3s ease;
         }
 
         .side-menu.open {
           left: 0;
-          visibility: visible; /* 追加: 表示時は見えるようにする */
-          opacity: 1; /* 追加: 不透明にする */
+          visibility: visible;
+          opacity: 1;
         }
 
         .menu-header {
@@ -1314,6 +1361,11 @@ export default function Home() {
           background: #e0e0e0;
         }
 
+        .category-item.selected {
+          background: #4CAF50;
+          color: white;
+        }
+
         .subcategory-list {
           margin-left: 20px;
           margin-top: 5px;
@@ -1326,6 +1378,11 @@ export default function Home() {
 
         .subcategory-item:hover {
           background: #f0f0f0;
+        }
+
+        .subcategory-item.selected {
+          background: #e8f5e9;
+          font-weight: bold;
         }
 
         .order-list {
@@ -1391,6 +1448,47 @@ export default function Home() {
         .total-amount {
           color: #f44336;
           font-size: 24px;
+        }
+
+        .cast-selection {
+          margin-top: 15px;
+          padding: 10px;
+          background: #f5f5f5;
+          border-radius: 4px;
+        }
+
+        .cast-selection h5 {
+          margin: 0 0 8px 0;
+          font-size: 14px;
+        }
+
+        .cast-selection select {
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+        }
+
+        .add-button {
+          width: 100%;
+          margin-top: 15px;
+          padding: 10px;
+          background: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 16px;
+          font-weight: bold;
+        }
+
+        .add-button:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+        }
+
+        .add-button:hover:not(:disabled) {
+          background: #45a049;
         }
 
         #modal input, #modal select {
@@ -1466,57 +1564,6 @@ export default function Home() {
           display: flex;
           gap: 10px;
           margin-top: 15px;
-        }
-
-        .category-item.selected {
-          background: #4CAF50;
-          color: white;
-        }
-
-        .subcategory-item.selected {
-          background: #e8f5e9;
-          font-weight: bold;
-        }
-
-        .cast-selection {
-          margin-top: 15px;
-          padding: 10px;
-          background: #f5f5f5;
-          border-radius: 4px;
-        }
-
-        .cast-selection h5 {
-          margin: 0 0 8px 0;
-          font-size: 14px;
-        }
-
-        .cast-selection select {
-          width: 100%;
-          padding: 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        }
-
-        .add-button {
-          width: 100%;
-          margin-top: 15px;
-          padding: 10px;
-          background: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 16px;
-          font-weight: bold;
-        }
-
-        .add-button:disabled {
-          background: #ccc;
-          cursor: not-allowed;
-        }
-
-        .add-button:hover:not(:disabled) {
-          background: #45a049;
         }
       `}</style>
     </>
