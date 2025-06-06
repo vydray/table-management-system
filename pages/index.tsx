@@ -161,26 +161,21 @@ export default function Home() {
     }
   }
 
-  // 商品を注文に追加
-  const addOrderItem = () => {
-    if (!selectedCategory || !selectedSubcategory) return
-    
-    const categoryData = productCategories[selectedCategory]
-    if (!categoryData) return
-    
-    const subcategoryData = categoryData[selectedSubcategory]
-    if (!subcategoryData) return
+  // 商品を直接注文に追加（タップで追加）
+  const addProductToOrder = (productName: string, price: number, needsCast: boolean, castName?: string) => {
+    if (needsCast && !castName) {
+      alert('キャストを選択してください')
+      return
+    }
     
     const newItem = {
-      name: selectedSubcategory,
-      cast: subcategoryData.needsCast ? selectedCast : undefined,
+      name: productName,
+      cast: needsCast ? castName : undefined,
       quantity: 1,
-      price: subcategoryData.price
+      price: price
     }
     
     setOrderItems([...orderItems, newItem])
-    setSelectedSubcategory('')
-    setSelectedCast('')
   }
 
   // 合計金額を計算
@@ -932,6 +927,30 @@ export default function Home() {
                           </div>
                         ))}
                       </div>
+                      
+                      {selectedCategory && (
+                        <div className="sub-categories">
+                          <div className="category-title">商品一覧</div>
+                          {Object.entries(productCategories[selectedCategory]).map(([productName, productData]) => (
+                            <div 
+                              key={productName}
+                              className="sub-category-item"
+                              onClick={() => {
+                                if (productData.needsCast) {
+                                  // キャストが必要な商品の場合は、後で実装
+                                  alert('キャスト選択機能は準備中です')
+                                } else {
+                                  // キャスト不要な商品は直接追加
+                                  addProductToOrder(productName, productData.price, false)
+                                }
+                              }}
+                            >
+                              {productName}
+                              <span className="price">¥{productData.price.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -1453,12 +1472,16 @@ export default function Home() {
         }
 
         .left-section {
-          width: 200px;
+          width: 300px;
           display: flex;
           flex-direction: column;
           border: 1px solid #ddd;
           border-radius: 10px;
           padding: 20px;
+        }
+
+        .sub-categories {
+          margin-top: 20px;
         }
 
         .search-section {
