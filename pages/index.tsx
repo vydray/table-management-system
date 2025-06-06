@@ -789,50 +789,69 @@ export default function Home() {
 
           {modalMode === 'new' ? (
             <div id="form-fields">
-              <label>
-                お客様名:
-                <input
-                  type="text"
-                  value={formData.guestName}
-                  onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
-                  placeholder="お客様名を入力"
-                />
-              </label>
-              
-              <label>
-                推し:
-                <select
-                  value={formData.castName}
-                  onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
-                >
-                  <option value="">-- 推しを選択 --</option>
-                  {castList.map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              </label>
-              
-              <label>
-                来店種別:
-                <select
-                  value={formData.visitType}
-                  onChange={(e) => setFormData({ ...formData, visitType: e.target.value })}
-                >
-                  <option value="">-- 来店種別を選択 --</option>
-                  <option value="初回">初回</option>
-                  <option value="再訪">再訪</option>
-                  <option value="常連">常連</option>
-                </select>
-              </label>
-              
-              <div className="center">
-                <button
-                  onClick={() => updateTableInfo(false)}
-                  className="btn-primary"
-                  style={{ width: '100%' }}
-                >
-                  決定
-                </button>
+              <div className="split-layout">
+                <div className="left-panel">
+                  <div className="category-list-new">
+                    <h4>カテゴリー選択</h4>
+                    {Object.keys(productCategories).map(category => (
+                      <div 
+                        key={category}
+                        className="category-item-new"
+                        onClick={() => setSelectedCategory(category)}
+                      >
+                        {category}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="right-panel">
+                  <label>
+                    お客様名:
+                    <input
+                      type="text"
+                      value={formData.guestName}
+                      onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
+                      placeholder="お客様名を入力"
+                    />
+                  </label>
+                  
+                  <label>
+                    推し:
+                    <select
+                      value={formData.castName}
+                      onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
+                    >
+                      <option value="">-- 推しを選択 --</option>
+                      {castList.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  
+                  <label>
+                    来店種別:
+                    <select
+                      value={formData.visitType}
+                      onChange={(e) => setFormData({ ...formData, visitType: e.target.value })}
+                    >
+                      <option value="">-- 来店種別を選択 --</option>
+                      <option value="初回">初回</option>
+                      <option value="再訪">再訪</option>
+                      <option value="常連">常連</option>
+                    </select>
+                  </label>
+                  
+                  <div className="center">
+                    <button
+                      onClick={() => updateTableInfo(false)}
+                      className="btn-primary"
+                      style={{ width: '100%' }}
+                    >
+                      決定
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -1403,12 +1422,50 @@ export default function Home() {
         }
 
         #modal.modal-new {
-          width: 400px;
+          width: 600px;
         }
 
         #modal.modal-edit {
           width: 90%;
           max-width: 900px;
+        }
+
+        .split-layout {
+          display: flex;
+          gap: 20px;
+          height: 100%;
+        }
+
+        .left-panel {
+          width: 200px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          padding: 10px;
+          overflow-y: auto;
+        }
+
+        .right-panel {
+          flex: 1;
+        }
+
+        .category-list-new h4 {
+          margin: 0 0 10px 0;
+          font-size: 14px;
+          color: #666;
+        }
+
+        .category-item-new {
+          padding: 8px 12px;
+          margin-bottom: 5px;
+          background: #f5f5f5;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: background-color 0.2s;
+        }
+
+        .category-item-new:hover {
+          background: #e0e0e0;
         }
 
         #move-modal {
