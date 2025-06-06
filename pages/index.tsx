@@ -190,6 +190,9 @@ export default function Home() {
     // キャスト選択は閉じない（カテゴリーや商品を選択した時に閉じる）
   }
 
+  // スワイプ削除用の状態
+  const [swipeStates, setSwipeStates] = useState<{[key: number]: {translateX: number, isSwiping: boolean, startX: number}}>({})
+
   // 注文アイテムを削除
   const deleteOrderItem = (index: number) => {
     const updatedItems = orderItems.filter((_, i) => i !== index)
@@ -1058,57 +1061,71 @@ export default function Home() {
                       </div>
                       <div className="order-table-body">
                         {orderItems.map((item, index) => {
-                          const [startX, setStartX] = useState(0)
-                          const [translateX, setTranslateX] = useState(0)
-                          const [isSwiping, setIsSwiping] = useState(false)
+                          const swipeState = swipeStates[index] || { translateX: 0, isSwiping: false, startX: 0 }
                           
                           const handleTouchStart = (e: React.TouchEvent) => {
-                            setStartX(e.touches[0].clientX)
-                            setIsSwiping(true)
+                            setSwipeStates(prev => ({
+                              ...prev,
+                              [index]: { ...swipeState, startX: e.touches[0].clientX, isSwiping: true }
+                            }))
                           }
                           
                           const handleTouchMove = (e: React.TouchEvent) => {
-                            if (!isSwiping) return
+                            if (!swipeState.isSwiping) return
                             const currentX = e.touches[0].clientX
-                            const diffX = currentX - startX
+                            const diffX = currentX - swipeState.startX
                             if (diffX < 0) { // 左にスワイプ
-                              setTranslateX(Math.max(diffX, -100))
+                              setSwipeStates(prev => ({
+                                ...prev,
+                                [index]: { ...swipeState, translateX: Math.max(diffX, -100) }
+                              }))
                             }
                           }
                           
                           const handleTouchEnd = () => {
-                            if (translateX < -50) { // 50px以上左にスワイプしたら削除
+                            if (swipeState.translateX < -50) { // 50px以上左にスワイプしたら削除
                               deleteOrderItem(index)
                             }
-                            setTranslateX(0)
-                            setIsSwiping(false)
+                            setSwipeStates(prev => ({
+                              ...prev,
+                              [index]: { translateX: 0, isSwiping: false, startX: 0 }
+                            }))
                           }
                           
                           const handleMouseDown = (e: React.MouseEvent) => {
-                            setStartX(e.clientX)
-                            setIsSwiping(true)
+                            setSwipeStates(prev => ({
+                              ...prev,
+                              [index]: { ...swipeState, startX: e.clientX, isSwiping: true }
+                            }))
                           }
                           
                           const handleMouseMove = (e: React.MouseEvent) => {
-                            if (!isSwiping) return
-                            const diffX = e.clientX - startX
+                            if (!swipeState.isSwiping) return
+                            const diffX = e.clientX - swipeState.startX
                             if (diffX < 0) { // 左にスワイプ
-                              setTranslateX(Math.max(diffX, -100))
+                              setSwipeStates(prev => ({
+                                ...prev,
+                                [index]: { ...swipeState, translateX: Math.max(diffX, -100) }
+                              }))
                             }
                           }
                           
                           const handleMouseUp = () => {
-                            if (translateX < -50) { // 50px以上左にスワイプしたら削除
+                            if (swipeState.translateX < -50) { // 50px以上左にスワイプしたら削除
                               deleteOrderItem(index)
                             }
-                            setTranslateX(0)
-                            setIsSwiping(false)
+                            setSwipeStates(prev => ({
+                              ...prev,
+                              [index]: { translateX: 0, isSwiping: false, startX: 0 }
+                            }))
                           }
                           
                           const handleMouseLeave = () => {
-                            if (isSwiping) {
-                              setTranslateX(0)
-                              setIsSwiping(false)
+                            if (swipeState.isSwiping) {
+                              setSwipeStates(prev => ({
+                                ...prev,
+                                [index]: { translateX: 0, isSwiping: false, startX: 0 }
+                              }))
                             }
                           }
                           
@@ -1121,8 +1138,8 @@ export default function Home() {
                               <div 
                                 className="order-table-row"
                                 style={{
-                                  transform: `translateX(${translateX}px)`,
-                                  transition: isSwiping ? 'none' : 'transform 0.3s ease'
+                                  transform: `translateX(${swipeState.translateX}px)`,
+                                  transition: swipeState.isSwiping ? 'none' : 'transform 0.3s ease'
                                 }}
                                 onTouchStart={handleTouchStart}
                                 onTouchMove={handleTouchMove}
@@ -1150,7 +1167,7 @@ export default function Home() {
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  opacity: Math.min(Math.abs(translateX) / 100, 1)
+                                  opacity: Math.min(Math.abs(swipeState.translateX) / 100, 1)
                                 }}
                               >
                                 削除
