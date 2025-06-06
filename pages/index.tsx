@@ -110,6 +110,9 @@ export default function Home() {
     guestName: '',
     castName: '',
     visitType: '',
+    editYear: new Date().getFullYear(),
+    editMonth: new Date().getMonth() + 1,
+    editDate: new Date().getDate(),
     editHour: 0,
     editMinute: 0
   })
@@ -231,11 +234,33 @@ export default function Home() {
         if (item.time && item.status === 'occupied') {
           const entryTime = new Date(item.time.replace(' ', 'T'))
           const now = new Date()
-          const elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
+          
+          // 日付をまたぐ場合の経過時間計算
+          let elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
+          
+          // 負の値になった場合（日付設定ミスなど）は0にする
+          if (elapsedMin < 0) {
+            elapsedMin = 0
+          }
+          
+          // 24時間以上の場合は時間表示も追加
+          let elapsedText = ''
+          if (elapsedMin >= 1440) { // 24時間以上
+            const days = Math.floor(elapsedMin / 1440)
+            const hours = Math.floor((elapsedMin % 1440) / 60)
+            const mins = elapsedMin % 60
+            elapsedText = `${days}日${hours}時間${mins}分`
+          } else if (elapsedMin >= 60) { // 1時間以上
+            const hours = Math.floor(elapsedMin / 60)
+            const mins = elapsedMin % 60
+            elapsedText = `${hours}時間${mins}分`
+          } else {
+            elapsedText = `${elapsedMin}分`
+          }
           
           tableMap[item.table] = {
             ...item,
-            elapsed: elapsedMin >= 0 ? elapsedMin + '分' : '0分'
+            elapsed: elapsedText
           }
         } else {
           tableMap[item.table] = item
@@ -265,17 +290,9 @@ export default function Home() {
     loadCastList()
     loadProducts() // 商品データを読み込み
     
-    const updateTime = () => {
-      const now = new Date()
-      const hours = now.getHours().toString().padStart(2, '0')
-      const minutes = now.getMinutes().toString().padStart(2, '0')
-      const seconds = now.getSeconds().toString().padStart(2, '0')
-      setCurrentTime(`${hours}:${minutes}:${seconds}`)
-    }
+    updateCurrentDateTime()
     
-    updateTime()
-    
-    const timeInterval = setInterval(updateTime, 1000)
+    const timeInterval = setInterval(updateCurrentDateTime, 1000)
     const dataInterval = setInterval(loadData, 10000)
     
     return () => {
@@ -294,7 +311,7 @@ export default function Home() {
       return () => clearTimeout(timeoutId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.guestName, formData.castName, formData.editHour, formData.editMinute])
+  }, [formData.guestName, formData.castName, formData.editYear, formData.editMonth, formData.editDate, formData.editHour, formData.editMinute])
 
   // メニューアイテムのクリックハンドラー
   const handleMenuClick = async (action: string) => {
@@ -361,9 +378,9 @@ export default function Home() {
         timeStr = getJapanTimeString(now)
       } else {
         const selectedTime = new Date(
-          new Date().getFullYear(),
-          new Date().getMonth(),
-          new Date().getDate(),
+          formData.editYear,
+          formData.editMonth - 1,
+          formData.editDate,
           formData.editHour,
           formData.editMinute
         )
@@ -514,6 +531,9 @@ export default function Home() {
         guestName: '',
         castName: '',
         visitType: '',
+        editYear: now.getFullYear(),
+        editMonth: now.getMonth() + 1,
+        editDate: now.getDate(),
         editHour: now.getHours(),
         editMinute: Math.floor(now.getMinutes() / 5) * 5
       })
@@ -525,6 +545,9 @@ export default function Home() {
         guestName: table.name,
         castName: table.oshi,
         visitType: table.visit,
+        editYear: time.getFullYear(),
+        editMonth: time.getMonth() + 1,
+        editDate: time.getDate(),
         editHour: time.getHours(),
         editMinute: time.getMinutes()
       })
@@ -806,8 +829,35 @@ export default function Home() {
               <div className="order-section">
                 <div className="table-header">
                   <div>テーブル番号：{currentTable}</div>
-                  <div className="time-edit">
-                    入店時間：
+                  <div className="datetime-edit">
+                    入店日時：
+                    <select 
+                      value={formData.editYear}
+                      onChange={(e) => setFormData({ ...formData, editYear: parseInt(e.target.value) })}
+                      className="date-select"
+                    >
+                      {[2024, 2025, 2026].map(year => (
+                        <option key={year} value={year}>{year}年</option>
+                      ))}
+                    </select>
+                    <select 
+                      value={formData.editMonth}
+                      onChange={(e) => setFormData({ ...formData, editMonth: parseInt(e.target.value) })}
+                      className="date-select"
+                    >
+                      {[...Array(12)].map((_, i) => (
+                        <option key={i + 1} value={i + 1}>{i + 1}月</option>
+                      ))}
+                    </select>
+                    <select 
+                      value={formData.editDate}
+                      onChange={(e) => setFormData({ ...formData, editDate: parseInt(e.target.value) })}
+                      className="date-select"
+                    >
+                      {[...Array(31)].map((_, i) => (
+                        <option key={i + 1} value={i + 1}>{i + 1}日</option>
+                      ))}
+                    </select>
                     <select 
                       value={formData.editHour}
                       onChange={(e) => setFormData({ ...formData, editHour: parseInt(e.target.value) })}
@@ -1392,6 +1442,19 @@ export default function Home() {
           margin-bottom: 20px;
           font-size: 16px;
           align-items: center;
+        }
+
+        .datetime-edit {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        .date-select {
+          padding: 4px 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
         }
 
         .time-edit, .oshi-edit, .guest-edit {
