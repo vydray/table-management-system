@@ -1450,6 +1450,7 @@ export default function Home() {
           display: flex;
           gap: 20px;
           height: calc(100% - 100px);
+          justify-content: space-between;  /* 追加：左右に分ける */
         }
 
         .left-section {
@@ -1536,7 +1537,7 @@ export default function Home() {
         }
 
         .right-section {
-          width: 200px;
+          width: 250px;
           display: flex;
           flex-direction: column;
           border: 1px solid #ddd;
