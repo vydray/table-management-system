@@ -1,4 +1,13 @@
-import { useEffect, useState, useRef } from 'react'
+// フォームデータが変更されたら自動保存
+  useEffect(() => {
+    if (modalMode === 'edit' && currentTable) {
+      const timeoutId = setTimeout(() => {
+        updateTableInfo()
+      }, 500) // 500ms後に保存（連続入力を考慮）
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [formData.guestName, formData.castName, formData.editHour, formData.editMinute])import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
@@ -327,8 +336,8 @@ export default function Home() {
     }
   }
 
-  // テーブル情報更新
-  const updateTableInfo = async () => {
+  // テーブル情報更新（silent: 自動保存時はメッセージを出さない）
+  const updateTableInfo = async (silent: boolean = false) => {
     try {
       let timeStr: string
       
@@ -370,11 +379,15 @@ export default function Home() {
         })
       })
       
-      setShowModal(false)
+      if (!silent) {
+        setShowModal(false)
+      }
       loadData()
     } catch (error) {
       console.error('Error updating table:', error)
-      alert('更新に失敗しました')
+      if (!silent) {
+        alert('更新に失敗しました')
+      }
     }
   }
 
@@ -383,9 +396,6 @@ export default function Home() {
     if (!confirm(`${currentTable} を会計完了にしますか？`)) return
     
     try {
-      // まず現在の変更を保存
-      await updateTableInfo()
-      
       const checkoutTime = getJapanTimeString(new Date())
       
       await fetch('/api/tables/checkout', {
