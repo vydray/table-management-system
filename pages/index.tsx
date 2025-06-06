@@ -96,8 +96,6 @@ export default function Home() {
   // POS機能用の状態
   const [productCategories, setProductCategories] = useState<ProductCategories>({})
   const [selectedCategory, setSelectedCategory] = useState('')
-  const [selectedSubcategory, setSelectedSubcategory] = useState('')
-  const [selectedCast, setSelectedCast] = useState('')
   const [orderItems, setOrderItems] = useState<Array<{
     name: string
     cast?: string
@@ -566,8 +564,6 @@ export default function Home() {
     
     setShowModal(true)
     setSelectedCategory('')
-    setSelectedSubcategory('')
-    setSelectedCast('')
   }
 
   // テーブルコンポーネント
@@ -919,8 +915,6 @@ export default function Home() {
                             className={`main-category-item ${selectedCategory === category ? 'selected' : ''}`}
                             onClick={() => {
                               setSelectedCategory(category)
-                              setSelectedSubcategory('')
-                              setSelectedCast('')
                             }}
                           >
                             {category}
