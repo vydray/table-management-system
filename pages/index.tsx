@@ -839,7 +839,7 @@ export default function Home() {
             <div id="details">
               <div className="order-section">
                 <div className="datetime-edit">
-                  入店日時：
+                  <span className="label-text">入店日時：</span>
                   <select 
                     value={formData.editYear}
                     onChange={(e) => setFormData({ ...formData, editYear: parseInt(e.target.value) })}
@@ -876,7 +876,7 @@ export default function Home() {
                       <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
                     ))}
                   </select>
-                  :
+                  <span>:</span>
                   <select 
                     value={formData.editMinute}
                     onChange={(e) => setFormData({ ...formData, editMinute: parseInt(e.target.value) })}
@@ -890,7 +890,7 @@ export default function Home() {
                 
                 <div className="customer-header">
                   <div className="oshi-edit">
-                    推し：
+                    <span className="label-text">推し：</span>
                     <select 
                       value={formData.castName}
                       onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
@@ -903,7 +903,7 @@ export default function Home() {
                     </select>
                   </div>
                   <div className="guest-edit">
-                    お客様名：
+                    <span className="label-text">お客様名：</span>
                     <input
                       type="text"
                       value={formData.guestName}
@@ -1441,6 +1441,11 @@ export default function Home() {
           margin-bottom: 20px;
           font-size: 16px;
           align-items: center;
+        }
+
+        .label-text {
+          white-space: nowrap;
+          margin-right: 5px;
         }
 
         .datetime-edit {
