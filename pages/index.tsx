@@ -1,13 +1,4 @@
-// フォームデータが変更されたら自動保存
-  useEffect(() => {
-    if (modalMode === 'edit' && currentTable) {
-      const timeoutId = setTimeout(() => {
-        updateTableInfo()
-      }, 500) // 500ms後に保存（連続入力を考慮）
-      
-      return () => clearTimeout(timeoutId)
-    }
-  }, [formData.guestName, formData.castName, formData.editHour, formData.editMinute])import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
@@ -292,6 +283,18 @@ export default function Home() {
       clearInterval(dataInterval)
     }
   }, [])
+
+  // フォームデータが変更されたら自動保存
+  useEffect(() => {
+    if (modalMode === 'edit' && currentTable && showModal) {
+      const timeoutId = setTimeout(() => {
+        updateTableInfo(true) // silentモードで保存
+      }, 500) // 500ms後に保存（連続入力を考慮）
+      
+      return () => clearTimeout(timeoutId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.guestName, formData.castName, formData.editHour, formData.editMinute])
 
   // メニューアイテムのクリックハンドラー
   const handleMenuClick = async (action: string) => {
