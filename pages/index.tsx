@@ -165,16 +165,35 @@ export default function Home() {
       return
     }
     
-    const newItem = {
-      name: productName,
-      cast: needsCast ? castName : undefined,
-      quantity: 1,
-      price: price
+    // 既存の商品をチェック（商品名とキャスト名が同じものを探す）
+    const existingItemIndex = orderItems.findIndex(item => 
+      item.name === productName && 
+      ((!needsCast && !item.cast) || (needsCast && item.cast === castName))
+    )
+    
+    if (existingItemIndex >= 0) {
+      // 既存の商品の個数を増やす
+      const updatedItems = [...orderItems]
+      updatedItems[existingItemIndex].quantity += 1
+      setOrderItems(updatedItems)
+    } else {
+      // 新しい商品を追加
+      const newItem = {
+        name: productName,
+        cast: needsCast ? castName : undefined,
+        quantity: 1,
+        price: price
+      }
+      setOrderItems([...orderItems, newItem])
     }
     
-    setOrderItems([...orderItems, newItem])
-    
     // キャスト選択は閉じない（カテゴリーや商品を選択した時に閉じる）
+  }
+
+  // 注文アイテムを削除
+  const deleteOrderItem = (index: number) => {
+    const updatedItems = orderItems.filter((_, i) => i !== index)
+    setOrderItems(updatedItems)
   }
 
   // 合計金額を計算
@@ -1038,14 +1057,107 @@ export default function Home() {
                         <span className="col-price">値段</span>
                       </div>
                       <div className="order-table-body">
-                        {orderItems.map((item, index) => (
-                          <div key={index} className="order-table-row">
-                            <span className="col-name">{item.name}</span>
-                            <span className="col-cast">{item.cast || ''}</span>
-                            <span className="col-qty">{item.quantity}</span>
-                            <span className="col-price">¥{item.price.toLocaleString()}</span>
-                          </div>
-                        ))}
+                        {orderItems.map((item, index) => {
+                          const [startX, setStartX] = useState(0)
+                          const [translateX, setTranslateX] = useState(0)
+                          const [isSwiping, setIsSwiping] = useState(false)
+                          
+                          const handleTouchStart = (e: React.TouchEvent) => {
+                            setStartX(e.touches[0].clientX)
+                            setIsSwiping(true)
+                          }
+                          
+                          const handleTouchMove = (e: React.TouchEvent) => {
+                            if (!isSwiping) return
+                            const currentX = e.touches[0].clientX
+                            const diffX = currentX - startX
+                            if (diffX < 0) { // 左にスワイプ
+                              setTranslateX(Math.max(diffX, -100))
+                            }
+                          }
+                          
+                          const handleTouchEnd = () => {
+                            if (translateX < -50) { // 50px以上左にスワイプしたら削除
+                              deleteOrderItem(index)
+                            }
+                            setTranslateX(0)
+                            setIsSwiping(false)
+                          }
+                          
+                          const handleMouseDown = (e: React.MouseEvent) => {
+                            setStartX(e.clientX)
+                            setIsSwiping(true)
+                          }
+                          
+                          const handleMouseMove = (e: React.MouseEvent) => {
+                            if (!isSwiping) return
+                            const diffX = e.clientX - startX
+                            if (diffX < 0) { // 左にスワイプ
+                              setTranslateX(Math.max(diffX, -100))
+                            }
+                          }
+                          
+                          const handleMouseUp = () => {
+                            if (translateX < -50) { // 50px以上左にスワイプしたら削除
+                              deleteOrderItem(index)
+                            }
+                            setTranslateX(0)
+                            setIsSwiping(false)
+                          }
+                          
+                          const handleMouseLeave = () => {
+                            if (isSwiping) {
+                              setTranslateX(0)
+                              setIsSwiping(false)
+                            }
+                          }
+                          
+                          return (
+                            <div 
+                              key={index} 
+                              className="order-table-row-wrapper"
+                              style={{ position: 'relative', overflow: 'hidden' }}
+                            >
+                              <div 
+                                className="order-table-row"
+                                style={{
+                                  transform: `translateX(${translateX}px)`,
+                                  transition: isSwiping ? 'none' : 'transform 0.3s ease'
+                                }}
+                                onTouchStart={handleTouchStart}
+                                onTouchMove={handleTouchMove}
+                                onTouchEnd={handleTouchEnd}
+                                onMouseDown={handleMouseDown}
+                                onMouseMove={handleMouseMove}
+                                onMouseUp={handleMouseUp}
+                                onMouseLeave={handleMouseLeave}
+                              >
+                                <span className="col-name">{item.name}</span>
+                                <span className="col-cast">{item.cast || ''}</span>
+                                <span className="col-qty">{item.quantity}</span>
+                                <span className="col-price">¥{(item.price * item.quantity).toLocaleString()}</span>
+                              </div>
+                              <div 
+                                className="delete-indicator"
+                                style={{
+                                  position: 'absolute',
+                                  right: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  width: '80px',
+                                  background: '#f44336',
+                                  color: 'white',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: Math.min(Math.abs(translateX) / 100, 1)
+                                }}
+                              >
+                                削除
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                     
@@ -1692,6 +1804,13 @@ export default function Home() {
           border-bottom: 1px solid #eee;
           font-size: 14px;
           text-align: center;
+          background: white;
+          cursor: grab;
+          user-select: none;
+        }
+
+        .order-table-row:active {
+          cursor: grabbing;
         }
 
         .order-total {
