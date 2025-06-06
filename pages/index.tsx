@@ -13,8 +13,21 @@ interface TableData {
   status: 'empty' | 'occupied'
 }
 
+// 商品の型定義
+interface ProductItem {
+  price: number
+  needsCast: boolean
+}
+
+// 商品カテゴリーの型定義
+interface ProductCategories {
+  [category: string]: {
+    [subcategory: string]: ProductItem
+  }
+}
+
 // 商品カテゴリーのデータ
-const productCategories = {
+const productCategories: ProductCategories = {
   '推し用': {
     'キャストドリンク': { price: 1100, needsCast: true },
     'キャストショット': { price: 1700, needsCast: true },
@@ -104,10 +117,10 @@ export default function Home() {
   const addOrderItem = () => {
     if (!selectedCategory || !selectedSubcategory) return
     
-    const categoryData = productCategories[selectedCategory as keyof typeof productCategories]
+    const categoryData = productCategories[selectedCategory]
     if (!categoryData) return
     
-    const subcategoryData = categoryData[selectedSubcategory as keyof typeof categoryData]
+    const subcategoryData = categoryData[selectedSubcategory]
     if (!subcategoryData) return
     
     const newItem = {
@@ -761,7 +774,7 @@ export default function Home() {
                           </div>
                           {selectedCategory === category && (
                             <div className="subcategory-list">
-                              {Object.keys(productCategories[category as keyof typeof productCategories]).map(subcat => (
+                              {Object.keys(productCategories[category]).map(subcat => (
                                 <div 
                                   key={subcat}
                                   className={`subcategory-item ${selectedSubcategory === subcat ? 'selected' : ''}`}
@@ -777,8 +790,8 @@ export default function Home() {
                     </div>
                     
                     {selectedSubcategory && selectedCategory && (() => {
-                      const category = productCategories[selectedCategory as keyof typeof productCategories]
-                      const subcat = category?.[selectedSubcategory as keyof typeof category]
+                      const category = productCategories[selectedCategory]
+                      const subcat = category?.[selectedSubcategory]
                       return subcat?.needsCast ? (
                         <div className="cast-selection">
                           <h5>キャスト選択</h5>
@@ -799,8 +812,8 @@ export default function Home() {
                       className="add-button"
                       onClick={addOrderItem}
                       disabled={!selectedSubcategory || (selectedCategory && (() => {
-                        const category = productCategories[selectedCategory as keyof typeof productCategories]
-                        const subcat = category?.[selectedSubcategory as keyof typeof category]
+                        const category = productCategories[selectedCategory]
+                        const subcat = category?.[selectedSubcategory]
                         return subcat?.needsCast && !selectedCast
                       })())}
                     >
