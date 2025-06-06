@@ -13,6 +13,44 @@ interface TableData {
   status: 'empty' | 'occupied'
 }
 
+// 商品データの型定義
+interface Product {
+  id: string
+  name: string
+  price: number
+  category: string
+  subcategory?: string
+  needsCast?: boolean
+}
+
+// 商品カテゴリーのデータ
+const productCategories = {
+  '推し用': {
+    'キャストドリンク': { price: 1100, needsCast: true },
+    'キャストショット': { price: 1700, needsCast: true },
+    'キャストチェキ': { price: 2000, needsCast: true }
+  },
+  'お客様用': {
+    '飲み放題': { price: 3300, needsCast: false },
+    'ビール': { price: 800, needsCast: false },
+    'ウィスキー': { price: 1000, needsCast: false },
+    'カクテル': { price: 900, needsCast: false }
+  },
+  'ヘルプ用': {
+    'ヘルプドリンク': { price: 1100, needsCast: true },
+    'ヘルプショット': { price: 1700, needsCast: true }
+  },
+  'シャンパン': {
+    'モエ・エ・シャンドン': { price: 15000, needsCast: false },
+    'ドンペリニヨン': { price: 50000, needsCast: false },
+    'クリュッグ': { price: 40000, needsCast: false }
+  },
+  'ノンアルシャンパン': {
+    'スパークリングジュース': { price: 3000, needsCast: false },
+    'ノンアルコールシャンパン': { price: 5000, needsCast: false }
+  }
+}
+
 // テーブルの位置情報
 const tablePositions = {
   'A1': { top: 607, left: 723 },
@@ -51,6 +89,17 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState('')
   const [isMoving, setIsMoving] = useState(false)
   const [showMenu, setShowMenu] = useState(false) // メニューの表示状態
+  
+  // POS機能用の状態
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedSubcategory, setSelectedSubcategory] = useState('')
+  const [selectedCast, setSelectedCast] = useState('')
+  const [orderItems, setOrderItems] = useState<Array<{
+    name: string
+    cast?: string
+    quantity: number
+    price: number
+  }>>([])
 
   // フォームの状態
   const [formData, setFormData] = useState({
@@ -60,6 +109,35 @@ export default function Home() {
     editHour: 0,
     editMinute: 0
   })
+
+  // 商品を注文に追加
+  const addOrderItem = () => {
+    if (!selectedSubcategory) return
+    
+    const categoryData = productCategories[selectedCategory as keyof typeof productCategories]
+    if (!categoryData) return
+    
+    const productData = categoryData[selectedSubcategory as keyof typeof categoryData]
+    if (!productData) return
+    
+    const newItem = {
+      name: selectedSubcategory,
+      cast: productData.needsCast ? selectedCast : undefined,
+      quantity: 1,
+      price: productData.price
+    }
+    
+    setOrderItems([...orderItems, newItem])
+    setSelectedSubcategory('')
+    setSelectedCast('')
+  }
+
+  // 合計金額を計算
+  const calculateTotal = () => {
+    const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    const tax = Math.floor(subtotal * 0.15)
+    return { subtotal, tax, total: subtotal + tax }
+  }
 
   // 長押し用のref
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
@@ -373,6 +451,7 @@ export default function Home() {
         editHour: now.getHours(),
         editMinute: Math.floor(now.getMinutes() / 5) * 5
       })
+      setOrderItems([])
     } else {
       setModalMode('edit')
       const time = table.time ? new Date(table.time.replace(' ', 'T')) : new Date()
@@ -383,9 +462,17 @@ export default function Home() {
         editHour: time.getHours(),
         editMinute: time.getMinutes()
       })
+      // TODO: 既存の注文データを読み込む
+      setOrderItems([
+        { name: '推し', cast: table.oshi, quantity: 1, price: 0 },
+        { name: '飲み放題', quantity: 1, price: 3300 }
+      ])
     }
     
     setShowModal(true)
+    setSelectedCategory('')
+    setSelectedSubcategory('')
+    setSelectedCast('')
   }
 
   // テーブルコンポーネント
@@ -650,78 +737,114 @@ export default function Home() {
             </div>
           ) : (
             <div id="details">
-              <label>
-                お客様名:
-                <input
-                  type="text"
-                  value={formData.guestName}
-                  onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
-                />
-              </label>
-              
-              <label>
-                推し:
-                <select
-                  value={formData.castName}
-                  onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
-                >
-                  <option value="">-- 推しを選択 --</option>
-                  {castList.map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              </label>
-              
-              <label>
-                来店種別:
-                <select
-                  value={formData.visitType}
-                  onChange={(e) => setFormData({ ...formData, visitType: e.target.value })}
-                >
-                  <option value="初回">初回</option>
-                  <option value="再訪">再訪</option>
-                  <option value="常連">常連</option>
-                </select>
-              </label>
-              
-              <label>
-                入店時刻:
-                <div className="time-row">
-                  <select
-                    value={formData.editHour}
-                    onChange={(e) => setFormData({ ...formData, editHour: Number(e.target.value) })}
-                  >
-                    {[...Array(24)].map((_, h) => (
-                      <option key={h} value={h}>{h.toString().padStart(2, '0')}</option>
-                    ))}
-                  </select>
-                  <span>:</span>
-                  <select
-                    value={formData.editMinute}
-                    onChange={(e) => setFormData({ ...formData, editMinute: Number(e.target.value) })}
-                  >
-                    {[...Array(12)].map((_, i) => {
-                      const m = i * 5
-                      return (
-                        <option key={m} value={m}>{m.toString().padStart(2, '0')}</option>
-                      )
-                    })}
-                  </select>
+              <div className="order-section">
+                <div className="table-info">
+                  <span>テーブル番号: {currentTable}</span>
+                  <span>入店時間: {tables[currentTable]?.time ? new Date(tables[currentTable].time.replace(' ', 'T')).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                 </div>
-              </label>
-              
-              <p className="center" style={{ fontSize: '18px', color: '#666', margin: '15px 0' }}>
-                <strong>経過時間: {tables[currentTable]?.elapsed}</strong>
-              </p>
-              
-              <div className="center">
-                <button
-                  onClick={updateTableInfo}
-                  className="btn-primary"
-                  style={{ width: '100%' }}
-                >
-                  保存
-                </button>
+                
+                <div className="customer-info">
+                  <span>推し名: {formData.castName}</span>
+                  <span>お客様名: {formData.guestName}</span>
+                </div>
+
+                <div className="search-bar">
+                  <input type="text" placeholder="検索" />
+                  <button>検索</button>
+                </div>
+
+                <div className="menu-selection">
+                  <div className="category-column">
+                    <h4>商品選択</h4>
+                    <div className="category-list">
+                      {Object.keys(productCategories).map(category => (
+                        <div key={category}>
+                          <div 
+                            className={`category-item ${selectedCategory === category ? 'selected' : ''}`}
+                            onClick={() => {
+                              setSelectedCategory(category)
+                              setSelectedSubcategory('')
+                              setSelectedCast('')
+                            }}
+                          >
+                            {category}
+                          </div>
+                          {selectedCategory === category && (
+                            <div className="subcategory-list">
+                              {Object.keys(productCategories[category as keyof typeof productCategories]).map(subcat => (
+                                <div 
+                                  key={subcat}
+                                  className={`subcategory-item ${selectedSubcategory === subcat ? 'selected' : ''}`}
+                                  onClick={() => setSelectedSubcategory(subcat)}
+                                >
+                                  {subcat}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {selectedSubcategory && productCategories[selectedCategory as keyof typeof productCategories]?.[selectedSubcategory as any]?.needsCast && (
+                      <div className="cast-selection">
+                        <h5>キャスト選択</h5>
+                        <select 
+                          value={selectedCast} 
+                          onChange={(e) => setSelectedCast(e.target.value)}
+                        >
+                          <option value="">-- キャストを選択 --</option>
+                          {castList.map(cast => (
+                            <option key={cast} value={cast}>{cast}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    
+                    <button 
+                      className="add-button"
+                      onClick={addOrderItem}
+                      disabled={!selectedSubcategory || (productCategories[selectedCategory as keyof typeof productCategories]?.[selectedSubcategory as any]?.needsCast && !selectedCast)}
+                    >
+                      追加
+                    </button>
+                  </div>
+                  
+                  <div className="order-list">
+                    <h4>お会計</h4>
+                    <div className="order-header">
+                      <span>商品名</span>
+                      <span>キャスト名</span>
+                      <span>個数</span>
+                      <span>値段</span>
+                    </div>
+                    <div className="order-items">
+                      {orderItems.map((item, index) => (
+                        <div key={index} className="order-item">
+                          <span>{item.name}</span>
+                          <span>{item.cast || ''}</span>
+                          <span>{item.quantity}</span>
+                          <span>¥{item.price.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="order-summary">
+                  <div className="subtotal">
+                    <span>小計</span>
+                    <span>¥{calculateTotal().subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="tax">
+                    <span>サービスtax 15%</span>
+                    <span>+ ¥{calculateTotal().tax.toLocaleString()}</span>
+                  </div>
+                  <div className="total">
+                    <span>合計金額</span>
+                    <span className="total-amount">¥{calculateTotal().total.toLocaleString()}</span>
+                  </div>
+                </div>
               </div>
               
               <div className="button-group">
@@ -1095,7 +1218,168 @@ export default function Home() {
           box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
           border-radius: 10px;
           z-index: 999;
-          width: 320px;
+          width: 90%;
+          max-width: 900px;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+
+        .order-section {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+        }
+
+        .table-info {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px;
+          background: #f5f5f5;
+          border-radius: 5px;
+        }
+
+        .customer-info {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px;
+        }
+
+        .search-bar {
+          display: flex;
+          gap: 10px;
+          margin: 10px 0;
+        }
+
+        .search-bar input {
+          flex: 1;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+        }
+
+        .search-bar button {
+          padding: 8px 16px;
+          background: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+
+        .menu-selection {
+          display: flex;
+          gap: 20px;
+          height: 300px;
+        }
+
+        .category-column {
+          flex: 1;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          padding: 15px;
+          overflow-y: auto;
+        }
+
+        .category-column h4 {
+          margin: 0 0 10px 0;
+          color: #666;
+        }
+
+        .category-list {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .category-item {
+          padding: 8px;
+          background: #f5f5f5;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: bold;
+        }
+
+        .category-item:hover {
+          background: #e0e0e0;
+        }
+
+        .subcategory-list {
+          margin-left: 20px;
+          margin-top: 5px;
+        }
+
+        .subcategory-item {
+          padding: 6px;
+          cursor: pointer;
+        }
+
+        .subcategory-item:hover {
+          background: #f0f0f0;
+        }
+
+        .order-list {
+          flex: 1;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          padding: 15px;
+        }
+
+        .order-list h4 {
+          margin: 0 0 10px 0;
+          text-align: center;
+        }
+
+        .order-header {
+          display: grid;
+          grid-template-columns: 2fr 2fr 1fr 1fr;
+          gap: 10px;
+          padding: 8px;
+          background: #f5f5f5;
+          font-weight: bold;
+          font-size: 14px;
+        }
+
+        .order-items {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          margin-top: 10px;
+        }
+
+        .order-item {
+          display: grid;
+          grid-template-columns: 2fr 2fr 1fr 1fr;
+          gap: 10px;
+          padding: 8px;
+          border-bottom: 1px solid #eee;
+        }
+
+        .order-summary {
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          padding: 15px;
+          background: #f9f9f9;
+        }
+
+        .subtotal, .tax {
+          display: flex;
+          justify-content: space-between;
+          padding: 5px 0;
+          font-size: 16px;
+        }
+
+        .total {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px 0;
+          border-top: 2px solid #333;
+          font-size: 20px;
+          font-weight: bold;
+        }
+
+        .total-amount {
+          color: #f44336;
+          font-size: 24px;
         }
 
         #modal input, #modal select {
@@ -1173,8 +1457,55 @@ export default function Home() {
           margin-top: 15px;
         }
 
-        .button-group button {
-          flex: 1;
+        .category-item.selected {
+          background: #4CAF50;
+          color: white;
+        }
+
+        .subcategory-item.selected {
+          background: #e8f5e9;
+          font-weight: bold;
+        }
+
+        .cast-selection {
+          margin-top: 15px;
+          padding: 10px;
+          background: #f5f5f5;
+          border-radius: 4px;
+        }
+
+        .cast-selection h5 {
+          margin: 0 0 8px 0;
+          font-size: 14px;
+        }
+
+        .cast-selection select {
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+        }
+
+        .add-button {
+          width: 100%;
+          margin-top: 15px;
+          padding: 10px;
+          background: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 16px;
+          font-weight: bold;
+        }
+
+        .add-button:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+        }
+
+        .add-button:hover:not(:disabled) {
+          background: #45a049;
         }
       `}</style>
     </>
