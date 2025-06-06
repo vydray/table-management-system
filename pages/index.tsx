@@ -838,62 +838,59 @@ export default function Home() {
           ) : (
             <div id="details">
               <div className="order-section">
-                <div className="table-header">
-                  <div>テーブル番号：{currentTable}</div>
-                  <div className="datetime-edit">
-                    入店日時：
-                    <select 
-                      value={formData.editYear}
-                      onChange={(e) => setFormData({ ...formData, editYear: parseInt(e.target.value) })}
-                      className="date-select"
-                    >
-                      {[2024, 2025, 2026].map(year => (
-                        <option key={year} value={year}>{year}年</option>
-                      ))}
-                    </select>
-                    <select 
-                      value={formData.editMonth}
-                      onChange={(e) => setFormData({ ...formData, editMonth: parseInt(e.target.value) })}
-                      className="date-select"
-                    >
-                      {[...Array(12)].map((_, i) => (
-                        <option key={i + 1} value={i + 1}>{i + 1}月</option>
-                      ))}
-                    </select>
-                    <select 
-                      value={formData.editDate}
-                      onChange={(e) => setFormData({ ...formData, editDate: parseInt(e.target.value) })}
-                      className="date-select"
-                    >
-                      {[...Array(31)].map((_, i) => (
-                        <option key={i + 1} value={i + 1}>{i + 1}日</option>
-                      ))}
-                    </select>
-                    <select 
-                      value={formData.editHour}
-                      onChange={(e) => setFormData({ ...formData, editHour: parseInt(e.target.value) })}
-                      className="time-select"
-                    >
-                      {[...Array(24)].map((_, i) => (
-                        <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
-                      ))}
-                    </select>
-                    :
-                    <select 
-                      value={formData.editMinute}
-                      onChange={(e) => setFormData({ ...formData, editMinute: parseInt(e.target.value) })}
-                      className="time-select"
-                    >
-                      {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(min => (
-                        <option key={min} value={min}>{min.toString().padStart(2, '0')}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="datetime-edit">
+                  入店日時：
+                  <select 
+                    value={formData.editYear}
+                    onChange={(e) => setFormData({ ...formData, editYear: parseInt(e.target.value) })}
+                    className="date-select"
+                  >
+                    {[2024, 2025, 2026].map(year => (
+                      <option key={year} value={year}>{year}年</option>
+                    ))}
+                  </select>
+                  <select 
+                    value={formData.editMonth}
+                    onChange={(e) => setFormData({ ...formData, editMonth: parseInt(e.target.value) })}
+                    className="date-select"
+                  >
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>{i + 1}月</option>
+                    ))}
+                  </select>
+                  <select 
+                    value={formData.editDate}
+                    onChange={(e) => setFormData({ ...formData, editDate: parseInt(e.target.value) })}
+                    className="date-select"
+                  >
+                    {[...Array(31)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>{i + 1}日</option>
+                    ))}
+                  </select>
+                  <select 
+                    value={formData.editHour}
+                    onChange={(e) => setFormData({ ...formData, editHour: parseInt(e.target.value) })}
+                    className="time-select"
+                  >
+                    {[...Array(24)].map((_, i) => (
+                      <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
+                    ))}
+                  </select>
+                  :
+                  <select 
+                    value={formData.editMinute}
+                    onChange={(e) => setFormData({ ...formData, editMinute: parseInt(e.target.value) })}
+                    className="time-select"
+                  >
+                    {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(min => (
+                      <option key={min} value={min}>{min.toString().padStart(2, '0')}</option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div className="customer-header">
                   <div className="oshi-edit">
-                    推し名：
+                    推し：
                     <select 
                       value={formData.castName}
                       onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
@@ -1437,15 +1434,6 @@ export default function Home() {
           height: 100%;
         }
 
-        .table-header {
-          display: flex;
-          justify-content: space-between;
-          padding: 10px 0;
-          border-bottom: 1px solid #ddd;
-          margin-bottom: 10px;
-          font-size: 16px;
-        }
-
         .customer-header {
           display: flex;
           justify-content: space-between;
@@ -1459,6 +1447,10 @@ export default function Home() {
           display: flex;
           align-items: center;
           gap: 5px;
+          padding: 10px 0;
+          border-bottom: 1px solid #ddd;
+          margin-bottom: 10px;
+          font-size: 16px;
         }
 
         .date-select {
