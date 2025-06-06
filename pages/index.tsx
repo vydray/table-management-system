@@ -858,11 +858,10 @@ export default function Home() {
                     <button 
                       className="add-button"
                       onClick={addOrderItem}
-                      disabled={!selectedSubcategory || (selectedCategory && (() => {
-                        const category = productCategories[selectedCategory]
-                        const subcat = category?.[selectedSubcategory]
-                        return subcat?.needsCast && !selectedCast
-                      })())}
+                      disabled={
+                        !selectedSubcategory || 
+                        (productCategories[selectedCategory]?.[selectedSubcategory]?.needsCast === true && !selectedCast)
+                      }
                     >
                       追加
                     </button>
