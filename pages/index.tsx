@@ -118,11 +118,16 @@ export default function Home() {
   // 商品データをSupabaseから取得
   const loadProducts = async () => {
     try {
+      console.log('商品データ読み込み開始...')
+      
       // カテゴリー取得
       const { data: categories, error: catError } = await supabase
         .from('product_categories')
         .select('*')
         .order('display_order')
+      
+      console.log('カテゴリーデータ:', categories)
+      console.log('カテゴリーエラー:', catError)
       
       if (catError) throw catError
       
@@ -132,6 +137,9 @@ export default function Home() {
         .select('*')
         .eq('is_active', true)
         .order('display_order')
+      
+      console.log('商品データ:', products)
+      console.log('商品エラー:', prodError)
       
       if (prodError) throw prodError
       
@@ -152,6 +160,7 @@ export default function Home() {
           })
       })
       
+      console.log('変換後のデータ:', productData)
       setProductCategories(productData)
     } catch (error) {
       console.error('Error loading products:', error)
