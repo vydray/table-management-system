@@ -793,7 +793,7 @@ export default function Home() {
               
               <div className="center">
                 <button
-                  onClick={updateTableInfo}
+                  onClick={() => updateTableInfo(false)}
                   className="btn-primary"
                   style={{ width: '100%' }}
                 >
