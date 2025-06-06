@@ -383,6 +383,9 @@ export default function Home() {
     if (!confirm(`${currentTable} を会計完了にしますか？`)) return
     
     try {
+      // まず現在の変更を保存
+      await updateTableInfo()
+      
       const checkoutTime = getJapanTimeString(new Date())
       
       await fetch('/api/tables/checkout', {
@@ -790,12 +793,53 @@ export default function Home() {
               <div className="order-section">
                 <div className="table-header">
                   <div>テーブル番号：{currentTable}</div>
-                  <div>入店時間：{tables[currentTable]?.time ? new Date(tables[currentTable].time.replace(' ', 'T')).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                  <div className="time-edit">
+                    入店時間：
+                    <select 
+                      value={formData.editHour}
+                      onChange={(e) => setFormData({ ...formData, editHour: parseInt(e.target.value) })}
+                      className="time-select"
+                    >
+                      {[...Array(24)].map((_, i) => (
+                        <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
+                      ))}
+                    </select>
+                    :
+                    <select 
+                      value={formData.editMinute}
+                      onChange={(e) => setFormData({ ...formData, editMinute: parseInt(e.target.value) })}
+                      className="time-select"
+                    >
+                      {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(min => (
+                        <option key={min} value={min}>{min.toString().padStart(2, '0')}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 
                 <div className="customer-header">
-                  <div>推し名：{formData.castName}</div>
-                  <div>お客様名：{formData.guestName}</div>
+                  <div className="oshi-edit">
+                    推し名：
+                    <select 
+                      value={formData.castName}
+                      onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
+                      className="cast-select"
+                    >
+                      <option value="">-- 推しを選択 --</option>
+                      {castList.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="guest-edit">
+                    お客様名：
+                    <input
+                      type="text"
+                      value={formData.guestName}
+                      onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
+                      className="guest-input"
+                    />
+                  </div>
                 </div>
 
                 <div className="pos-container">
@@ -1334,6 +1378,36 @@ export default function Home() {
           padding: 10px 0;
           margin-bottom: 20px;
           font-size: 16px;
+          align-items: center;
+        }
+
+        .time-edit, .oshi-edit, .guest-edit {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .time-select {
+          padding: 4px 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        }
+
+        .cast-select {
+          padding: 4px 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+          min-width: 150px;
+        }
+
+        .guest-input {
+          padding: 4px 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+          min-width: 150px;
         }
 
         .pos-container {
