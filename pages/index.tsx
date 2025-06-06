@@ -733,7 +733,7 @@ export default function Home() {
 
       {/* メインモーダル */}
       {showModal && (
-        <div id="modal">
+        <div id="modal" className={modalMode === 'new' ? 'modal-new' : 'modal-edit'}>
           <button id="modal-close" onClick={() => setShowModal(false)}>×</button>
           <h3>📌 {currentTable} の操作</h3>
 
@@ -788,29 +788,30 @@ export default function Home() {
           ) : (
             <div id="details">
               <div className="order-section">
-                <div className="table-info">
-                  <span>テーブル番号: {currentTable}</span>
-                  <span>入店時間: {tables[currentTable]?.time ? new Date(tables[currentTable].time.replace(' ', 'T')).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                <div className="table-header">
+                  <div>テーブル番号：{currentTable}</div>
+                  <div>入店時間：{tables[currentTable]?.time ? new Date(tables[currentTable].time.replace(' ', 'T')).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : ''}</div>
                 </div>
                 
-                <div className="customer-info">
-                  <span>推し名: {formData.castName}</span>
-                  <span>お客様名: {formData.guestName}</span>
+                <div className="customer-header">
+                  <div>推し名：{formData.castName}</div>
+                  <div>お客様名：{formData.guestName}</div>
                 </div>
 
-                <div className="search-bar">
-                  <input type="text" placeholder="検索" />
-                  <button>検索</button>
-                </div>
-
-                <div className="menu-selection">
-                  <div className="category-column">
-                    <h4>商品選択</h4>
-                    <div className="category-list">
-                      {Object.keys(productCategories).map(category => (
-                        <div key={category}>
+                <div className="pos-container">
+                  <div className="left-section">
+                    <div className="search-section">
+                      <input type="text" placeholder="検索" className="search-input" />
+                      <button className="search-button">検索</button>
+                    </div>
+                    
+                    <div className="category-section">
+                      <div className="main-categories">
+                        <div className="category-title">大カテゴリー</div>
+                        {Object.keys(productCategories).map(category => (
                           <div 
-                            className={`category-item ${selectedCategory === category ? 'selected' : ''}`}
+                            key={category}
+                            className={`main-category-item ${selectedCategory === category ? 'selected' : ''}`}
                             onClick={() => {
                               setSelectedCategory(category)
                               setSelectedSubcategory('')
@@ -819,94 +820,89 @@ export default function Home() {
                           >
                             {category}
                           </div>
-                          {selectedCategory === category && (
-                            <div className="subcategory-list">
-                              {Object.keys(productCategories[category]).map(subcat => (
+                        ))}
+                      </div>
+                      
+                      {selectedCategory && (
+                        <div className="sub-categories">
+                          <div className="category-title">小カテゴリー</div>
+                          {Object.keys(productCategories[selectedCategory]).map(subcat => (
+                            <div 
+                              key={subcat}
+                              className={`sub-category-item ${selectedSubcategory === subcat ? 'selected' : ''}`}
+                              onClick={() => setSelectedSubcategory(subcat)}
+                            >
+                              {subcat}
+                              <span className="price">¥{productCategories[selectedCategory][subcat].price.toLocaleString()}</span>
+                            </div>
+                          ))}
+                          
+                          {selectedSubcategory && productCategories[selectedCategory]?.[selectedSubcategory]?.needsCast && (
+                            <div className="cast-select-section">
+                              <div className="category-title">キャスト名</div>
+                              {castList.map(cast => (
                                 <div 
-                                  key={subcat}
-                                  className={`subcategory-item ${selectedSubcategory === subcat ? 'selected' : ''}`}
-                                  onClick={() => setSelectedSubcategory(subcat)}
+                                  key={cast}
+                                  className={`cast-item ${selectedCast === cast ? 'selected' : ''}`}
+                                  onClick={() => setSelectedCast(cast)}
                                 >
-                                  {subcat}
+                                  {cast}
                                 </div>
                               ))}
                             </div>
                           )}
                         </div>
-                      ))}
+                      )}
                     </div>
-                    
-                    {selectedSubcategory && selectedCategory && (() => {
-                      const category = productCategories[selectedCategory]
-                      const subcat = category?.[selectedSubcategory]
-                      return subcat?.needsCast ? (
-                        <div className="cast-selection">
-                          <h5>キャスト選択</h5>
-                          <select 
-                            value={selectedCast} 
-                            onChange={(e) => setSelectedCast(e.target.value)}
-                          >
-                            <option value="">-- キャストを選択 --</option>
-                            {castList.map(cast => (
-                              <option key={cast} value={cast}>{cast}</option>
-                            ))}
-                          </select>
-                        </div>
-                      ) : null
-                    })()}
-                    
-                    <button 
-                      className="add-button"
-                      onClick={addOrderItem}
-                      disabled={
-                        !selectedSubcategory || 
-                        (productCategories[selectedCategory]?.[selectedSubcategory]?.needsCast === true && !selectedCast)
-                      }
-                    >
-                      追加
-                    </button>
                   </div>
                   
-                  <div className="order-list">
-                    <h4>お会計</h4>
-                    <div className="order-header">
-                      <span>商品名</span>
-                      <span>キャスト名</span>
-                      <span>個数</span>
-                      <span>値段</span>
+                  <div className="right-section">
+                    <div className="order-title">お会計</div>
+                    <div className="added-item">
+                      <span>推し名</span>
+                      <span className="price">¥0</span>
                     </div>
-                    <div className="order-items">
-                      {orderItems.map((item, index) => (
-                        <div key={index} className="order-item">
-                          <span>{item.name}</span>
-                          <span>{item.cast || ''}</span>
-                          <span>{item.quantity}</span>
-                          <span>¥{item.price.toLocaleString()}</span>
-                        </div>
-                      ))}
+                    
+                    <div className="order-table">
+                      <div className="order-table-header">
+                        <span className="col-name">商品名</span>
+                        <span className="col-cast">キャスト名</span>
+                        <span className="col-qty">個数</span>
+                        <span className="col-price">値段</span>
+                      </div>
+                      <div className="order-table-body">
+                        {orderItems.map((item, index) => (
+                          <div key={index} className="order-table-row">
+                            <span className="col-name">{item.name}</span>
+                            <span className="col-cast">{item.cast || ''}</span>
+                            <span className="col-qty">{item.quantity}</span>
+                            <span className="col-price">¥{item.price.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="order-total">
+                      <div className="total-row">
+                        <span>小計</span>
+                        <span>¥{calculateTotal().subtotal.toLocaleString()}</span>
+                      </div>
+                      <div className="total-row">
+                        <span>サービスtax　15%　+</span>
+                        <span>¥{calculateTotal().tax.toLocaleString()}</span>
+                      </div>
+                      <div className="total-row final">
+                        <span>合計金額</span>
+                        <span className="final-amount">¥{calculateTotal().total.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="action-buttons">
+                      <button onClick={checkout} className="btn-checkout">会計完了</button>
+                      <button onClick={clearTable} className="btn-delete">削除</button>
                     </div>
                   </div>
                 </div>
-
-                <div className="order-summary">
-                  <div className="subtotal">
-                    <span>小計</span>
-                    <span>¥{calculateTotal().subtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="tax">
-                    <span>サービスtax 15%</span>
-                    <span>+ ¥{calculateTotal().tax.toLocaleString()}</span>
-                  </div>
-                  <div className="total">
-                    <span>合計金額</span>
-                    <span className="total-amount">¥{calculateTotal().total.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="button-group">
-                <button onClick={checkout} className="btn-warning">会計完了</button>
-                <button onClick={clearTable} className="btn-danger">削除</button>
               </div>
             </div>
           )}
@@ -1263,7 +1259,7 @@ export default function Home() {
           z-index: 998;
         }
 
-        #modal, #move-modal {
+        #modal {
           display: block;
           position: fixed;
           top: 50%;
@@ -1275,8 +1271,32 @@ export default function Home() {
           box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
           border-radius: 10px;
           z-index: 999;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+
+        #modal.modal-new {
+          width: 400px;
+        }
+
+        #modal.modal-edit {
           width: 90%;
           max-width: 900px;
+        }
+
+        #move-modal {
+          display: block;
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          border: 2px solid #ccc;
+          padding: 20px;
+          box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+          border-radius: 10px;
+          z-index: 999;
+          width: 400px;
           max-height: 90vh;
           overflow-y: auto;
         }
@@ -1284,210 +1304,217 @@ export default function Home() {
         .order-section {
           display: flex;
           flex-direction: column;
-          gap: 15px;
+          height: 100%;
         }
 
-        .table-info {
+        .table-header {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px 0;
+          border-bottom: 1px solid #ddd;
+          margin-bottom: 10px;
+          font-size: 16px;
+        }
+
+        .customer-header {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px 0;
+          margin-bottom: 20px;
+          font-size: 16px;
+        }
+
+        .pos-container {
+          display: flex;
+          gap: 20px;
+          height: calc(100% - 100px);
+        }
+
+        .left-section {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          border: 1px solid #ddd;
+          border-radius: 10px;
+          padding: 20px;
+        }
+
+        .search-section {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        .search-input {
+          flex: 1;
+          padding: 8px 12px;
+          border: 1px solid #ddd;
+          border-radius: 20px;
+          font-size: 14px;
+        }
+
+        .search-button {
+          padding: 8px 20px;
+          background: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+
+        .category-section {
+          display: flex;
+          gap: 20px;
+          flex: 1;
+        }
+
+        .main-categories, .sub-categories {
+          flex: 1;
+        }
+
+        .category-title {
+          font-size: 14px;
+          color: #666;
+          margin-bottom: 10px;
+          font-weight: bold;
+        }
+
+        .main-category-item, .sub-category-item, .cast-item {
+          padding: 10px 15px;
+          margin-bottom: 5px;
+          background: #f5f5f5;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .main-category-item:hover, .sub-category-item:hover, .cast-item:hover {
+          background: #e0e0e0;
+        }
+
+        .main-category-item.selected, .sub-category-item.selected, .cast-item.selected {
+          background: #4CAF50;
+          color: white;
+        }
+
+        .sub-category-item .price {
+          font-size: 13px;
+        }
+
+        .cast-select-section {
+          margin-top: 20px;
+        }
+
+        .right-section {
+          width: 400px;
+          display: flex;
+          flex-direction: column;
+          border: 1px solid #ddd;
+          border-radius: 10px;
+          padding: 20px;
+        }
+
+        .order-title {
+          text-align: center;
+          font-size: 18px;
+          font-weight: bold;
+          margin-bottom: 20px;
+        }
+
+        .added-item {
           display: flex;
           justify-content: space-between;
           padding: 10px;
           background: #f5f5f5;
           border-radius: 5px;
+          margin-bottom: 20px;
         }
 
-        .customer-info {
-          display: flex;
-          justify-content: space-between;
-          padding: 10px;
-        }
-
-        .search-bar {
-          display: flex;
-          gap: 10px;
-          margin: 10px 0;
-        }
-
-        .search-bar input {
-          flex: 1;
-          padding: 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        }
-
-        .search-bar button {
-          padding: 8px 16px;
-          background: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-
-        .menu-selection {
-          display: flex;
-          gap: 20px;
-          height: 300px;
-        }
-
-        .category-column {
+        .order-table {
           flex: 1;
           border: 1px solid #ddd;
-          border-radius: 8px;
-          padding: 15px;
-          overflow-y: auto;
+          border-radius: 10px;
+          overflow: hidden;
+          margin-bottom: 20px;
         }
 
-        .category-column h4 {
-          margin: 0 0 10px 0;
-          color: #666;
-        }
-
-        .category-list {
-          display: flex;
-          flex-direction: column;
-          gap: 5px;
-        }
-
-        .category-item {
-          padding: 8px;
-          background: #f5f5f5;
-          border-radius: 4px;
-          cursor: pointer;
-          font-weight: bold;
-        }
-
-        .category-item:hover {
-          background: #e0e0e0;
-        }
-
-        .category-item.selected {
-          background: #4CAF50;
-          color: white;
-        }
-
-        .subcategory-list {
-          margin-left: 20px;
-          margin-top: 5px;
-        }
-
-        .subcategory-item {
-          padding: 6px;
-          cursor: pointer;
-        }
-
-        .subcategory-item:hover {
-          background: #f0f0f0;
-        }
-
-        .subcategory-item.selected {
-          background: #e8f5e9;
-          font-weight: bold;
-        }
-
-        .order-list {
-          flex: 1;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          padding: 15px;
-        }
-
-        .order-list h4 {
-          margin: 0 0 10px 0;
-          text-align: center;
-        }
-
-        .order-header {
+        .order-table-header {
           display: grid;
-          grid-template-columns: 2fr 2fr 1fr 1fr;
-          gap: 10px;
-          padding: 8px;
+          grid-template-columns: 2fr 2fr 1fr 1.5fr;
+          padding: 10px;
           background: #f5f5f5;
           font-weight: bold;
           font-size: 14px;
+          text-align: center;
         }
 
-        .order-items {
-          display: flex;
-          flex-direction: column;
-          gap: 5px;
-          margin-top: 10px;
+        .order-table-body {
+          max-height: 200px;
+          overflow-y: auto;
         }
 
-        .order-item {
+        .order-table-row {
           display: grid;
-          grid-template-columns: 2fr 2fr 1fr 1fr;
-          gap: 10px;
-          padding: 8px;
+          grid-template-columns: 2fr 2fr 1fr 1.5fr;
+          padding: 8px 10px;
           border-bottom: 1px solid #eee;
+          font-size: 14px;
+          text-align: center;
         }
 
-        .order-summary {
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          padding: 15px;
-          background: #f9f9f9;
+        .order-total {
+          border-top: 1px solid #ddd;
+          padding-top: 10px;
+          margin-bottom: 20px;
         }
 
-        .subtotal, .tax {
+        .total-row {
           display: flex;
           justify-content: space-between;
           padding: 5px 0;
           font-size: 16px;
         }
 
-        .total {
-          display: flex;
-          justify-content: space-between;
-          padding: 10px 0;
+        .total-row.final {
           border-top: 2px solid #333;
+          padding-top: 10px;
+          margin-top: 10px;
           font-size: 20px;
           font-weight: bold;
         }
 
-        .total-amount {
-          color: #f44336;
+        .final-amount {
+          color: #333;
           font-size: 24px;
         }
 
-        .cast-selection {
-          margin-top: 15px;
-          padding: 10px;
-          background: #f5f5f5;
-          border-radius: 4px;
+        .action-buttons {
+          display: flex;
+          gap: 10px;
         }
 
-        .cast-selection h5 {
-          margin: 0 0 8px 0;
-          font-size: 14px;
-        }
-
-        .cast-selection select {
-          width: 100%;
-          padding: 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        }
-
-        .add-button {
-          width: 100%;
-          margin-top: 15px;
-          padding: 10px;
-          background: #4CAF50;
-          color: white;
+        .btn-checkout, .btn-delete {
+          flex: 1;
+          padding: 12px;
           border: none;
-          border-radius: 4px;
-          cursor: pointer;
+          border-radius: 5px;
           font-size: 16px;
           font-weight: bold;
+          cursor: pointer;
         }
 
-        .add-button:disabled {
-          background: #ccc;
-          cursor: not-allowed;
+        .btn-checkout {
+          background: #ff9800;
+          color: white;
         }
 
-        .add-button:hover:not(:disabled) {
-          background: #45a049;
+        .btn-delete {
+          background: #f44336;
+          color: white;
         }
 
         #modal input, #modal select {
@@ -1514,16 +1541,6 @@ export default function Home() {
 
         .btn-primary {
           background-color: #4CAF50;
-          color: white;
-        }
-
-        .btn-warning {
-          background-color: #ff9800;
-          color: white;
-        }
-
-        .btn-danger {
-          background-color: #f44336;
           color: white;
         }
 
@@ -1557,12 +1574,6 @@ export default function Home() {
           margin-bottom: 5px;
           font-weight: bold;
           font-size: 14px;
-        }
-
-        .button-group {
-          display: flex;
-          gap: 10px;
-          margin-top: 15px;
         }
       `}</style>
     </>
