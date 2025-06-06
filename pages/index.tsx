@@ -102,19 +102,19 @@ export default function Home() {
 
   // 商品を注文に追加
   const addOrderItem = () => {
-    if (!selectedSubcategory) return
+    if (!selectedCategory || !selectedSubcategory) return
     
     const categoryData = productCategories[selectedCategory as keyof typeof productCategories]
     if (!categoryData) return
     
-    const productData = categoryData[selectedSubcategory as keyof typeof categoryData]
-    if (!productData) return
+    const subcategoryData = categoryData[selectedSubcategory as keyof typeof categoryData]
+    if (!subcategoryData) return
     
     const newItem = {
       name: selectedSubcategory,
-      cast: productData.needsCast ? selectedCast : undefined,
+      cast: subcategoryData.needsCast ? selectedCast : undefined,
       quantity: 1,
-      price: productData.price
+      price: subcategoryData.price
     }
     
     setOrderItems([...orderItems, newItem])
@@ -776,25 +776,33 @@ export default function Home() {
                       ))}
                     </div>
                     
-                    {selectedSubcategory && productCategories[selectedCategory as keyof typeof productCategories]?.[selectedSubcategory as any]?.needsCast && (
-                      <div className="cast-selection">
-                        <h5>キャスト選択</h5>
-                        <select 
-                          value={selectedCast} 
-                          onChange={(e) => setSelectedCast(e.target.value)}
-                        >
-                          <option value="">-- キャストを選択 --</option>
-                          {castList.map(cast => (
-                            <option key={cast} value={cast}>{cast}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+                    {selectedSubcategory && selectedCategory && (() => {
+                      const category = productCategories[selectedCategory as keyof typeof productCategories]
+                      const subcat = category?.[selectedSubcategory as keyof typeof category]
+                      return subcat?.needsCast ? (
+                        <div className="cast-selection">
+                          <h5>キャスト選択</h5>
+                          <select 
+                            value={selectedCast} 
+                            onChange={(e) => setSelectedCast(e.target.value)}
+                          >
+                            <option value="">-- キャストを選択 --</option>
+                            {castList.map(cast => (
+                              <option key={cast} value={cast}>{cast}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : null
+                    })()}
                     
                     <button 
                       className="add-button"
                       onClick={addOrderItem}
-                      disabled={!selectedSubcategory || (productCategories[selectedCategory as keyof typeof productCategories]?.[selectedSubcategory as any]?.needsCast && !selectedCast)}
+                      disabled={!selectedSubcategory || (selectedCategory && (() => {
+                        const category = productCategories[selectedCategory as keyof typeof productCategories]
+                        const subcat = category?.[selectedSubcategory as keyof typeof category]
+                        return subcat?.needsCast && !selectedCast
+                      })())}
                     >
                       追加
                     </button>
