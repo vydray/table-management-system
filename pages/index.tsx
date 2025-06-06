@@ -144,6 +144,12 @@ export default function Home() {
       })
       
       console.log('変換後のデータ:', productData)
+      
+      // デバッグ：シャンパンカテゴリーの商品を確認
+      if (productData['シャンパン']) {
+        console.log('シャンパンカテゴリーの商品:', productData['シャンパン'])
+      }
+      
       setProductCategories(productData)
     } catch (error) {
       console.error('Error loading products:', error)
@@ -168,8 +174,7 @@ export default function Home() {
     
     setOrderItems([...orderItems, newItem])
     
-    // 選択をリセット
-    setSelectedProduct(null)
+    // キャスト選択は閉じない（カテゴリーや商品を選択した時に閉じる）
   }
 
   // 合計金額を計算
