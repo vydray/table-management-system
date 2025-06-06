@@ -571,9 +571,16 @@ export default function Home() {
       const data = await res.json()
       
       if (res.ok && data.length > 0) {
-        const items = data.map((item: any) => ({
+        interface OrderItemDB {
+          product_name: string
+          cast_name: string | null
+          quantity: number
+          unit_price: number
+        }
+        
+        const items = data.map((item: OrderItemDB) => ({
           name: item.product_name,
-          cast: item.cast_name,
+          cast: item.cast_name || undefined,
           quantity: item.quantity,
           price: item.unit_price
         }))

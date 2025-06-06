@@ -6,6 +6,21 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 )
 
+interface OrderItem {
+  name: string
+  cast?: string
+  quantity: number
+  price: number
+}
+
+interface CurrentOrderItem {
+  table_id: string
+  product_name: string
+  cast_name: string | null
+  quantity: number
+  unit_price: number
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     // 特定テーブルの現在の注文を取得
@@ -14,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data, error } = await supabase
       .from('current_order_items')
       .select('*')
-      .eq('table_id', tableId)
+      .eq('table_id', tableId as string)
       .order('created_at', { ascending: true })
     
     if (error) {
@@ -26,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   
   if (req.method === 'POST') {
     // 注文を保存/更新
-    const { tableId, orderItems } = req.body
+    const { tableId, orderItems } = req.body as { tableId: string; orderItems: OrderItem[] }
     
     try {
       // 既存の注文を削除
@@ -37,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       // 新しい注文を挿入
       if (orderItems && orderItems.length > 0) {
-        const itemsToInsert = orderItems.map((item: any) => ({
+        const itemsToInsert: CurrentOrderItem[] = orderItems.map((item) => ({
           table_id: tableId,
           product_name: item.name,
           cast_name: item.cast || null,
@@ -53,14 +68,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
       return res.status(200).json({ success: true })
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      return res.status(500).json({ error: errorMessage })
     }
   }
   
   if (req.method === 'DELETE') {
     // 特定テーブルの注文をクリア
-    const { tableId } = req.body
+    const { tableId } = req.body as { tableId: string }
     
     const { error } = await supabase
       .from('current_order_items')
