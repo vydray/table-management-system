@@ -318,6 +318,18 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.guestName, formData.castName, formData.editYear, formData.editMonth, formData.editDate, formData.editHour, formData.editMinute])
 
+  // 注文内容が変更されたら自動保存
+  useEffect(() => {
+    if (modalMode === 'edit' && currentTable && showModal && orderItems.length > 0) {
+      const timeoutId = setTimeout(() => {
+        saveOrderItems(true) // silentモードで保存
+      }, 500) // 500ms後に保存
+      
+      return () => clearTimeout(timeoutId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderItems])
+
   // メニューアイテムのクリックハンドラー
   const handleMenuClick = async (action: string) => {
     setShowMenu(false) // メニューを閉じる
@@ -412,6 +424,36 @@ export default function Home() {
       console.error('Error updating table:', error)
       if (!silent) {
         alert('更新に失敗しました')
+      }
+    }
+  }
+
+  // 注文内容を保存
+  const saveOrderItems = async (silent: boolean = false) => {
+    try {
+      // TODO: 注文内容をデータベースに保存するAPIを呼び出す
+      // 現在は仮実装
+      console.log('注文内容を保存:', orderItems)
+      
+      // 将来的には以下のようなAPIを呼び出す
+      /*
+      await fetch('/api/orders/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: currentTable,
+          orderItems: orderItems
+        })
+      })
+      */
+      
+      if (!silent) {
+        alert('注文内容を保存しました')
+      }
+    } catch (error) {
+      console.error('Error saving order items:', error)
+      if (!silent) {
+        alert('注文内容の保存に失敗しました')
       }
     }
   }
