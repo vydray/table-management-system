@@ -941,10 +941,6 @@ export default function Home() {
                   
                   <div className="right-section">
                     <div className="order-title">お会計</div>
-                    <div className="added-item">
-                      <span>推し名</span>
-                      <span className="price">¥0</span>
-                    </div>
                     
                     <div className="order-table">
                       <div className="order-table-header">
@@ -1552,15 +1548,6 @@ export default function Home() {
           text-align: center;
           font-size: 18px;
           font-weight: bold;
-          margin-bottom: 20px;
-        }
-
-        .added-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 10px;
-          background: #f5f5f5;
-          border-radius: 5px;
           margin-bottom: 20px;
         }
 
