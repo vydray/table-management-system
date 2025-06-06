@@ -1536,7 +1536,7 @@ export default function Home() {
         }
 
         .right-section {
-          width: 400px;
+          width: 200px;
           display: flex;
           flex-direction: column;
           border: 1px solid #ddd;
