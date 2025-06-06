@@ -90,6 +90,7 @@ export default function Home() {
   // POS機能用の状態
   const [productCategories, setProductCategories] = useState<ProductCategories>({})
   const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedProduct, setSelectedProduct] = useState<{name: string, price: number, needsCast: boolean} | null>(null)
   const [orderItems, setOrderItems] = useState<Array<{
     name: string
     cast?: string
@@ -153,7 +154,8 @@ export default function Home() {
   // 商品を直接注文に追加（タップで追加）
   const addProductToOrder = (productName: string, price: number, needsCast: boolean, castName?: string) => {
     if (needsCast && !castName) {
-      alert('キャストを選択してください')
+      // キャストが必要な商品を選択
+      setSelectedProduct({ name: productName, price: price, needsCast: true })
       return
     }
     
@@ -165,6 +167,9 @@ export default function Home() {
     }
     
     setOrderItems([...orderItems, newItem])
+    
+    // 選択をリセット
+    setSelectedProduct(null)
   }
 
   // 合計金額を計算
@@ -555,6 +560,7 @@ export default function Home() {
     
     setShowModal(true)
     setSelectedCategory('')
+    setSelectedProduct(null)
   }
 
   // テーブルコンポーネント
@@ -906,6 +912,7 @@ export default function Home() {
                             className={`main-category-item ${selectedCategory === category ? 'selected' : ''}`}
                             onClick={() => {
                               setSelectedCategory(category)
+                              setSelectedProduct(null) // カテゴリー変更時にリセット
                             }}
                           >
                             {category}
@@ -919,21 +926,34 @@ export default function Home() {
                           {Object.entries(productCategories[selectedCategory]).map(([productName, productData]) => (
                             <div 
                               key={productName}
-                              className="sub-category-item"
+                              className={`sub-category-item ${selectedProduct?.name === productName ? 'selected' : ''}`}
                               onClick={() => {
-                                if (productData.needsCast) {
-                                  // キャストが必要な商品の場合は、後で実装
-                                  alert('キャスト選択機能は準備中です')
-                                } else {
-                                  // キャスト不要な商品は直接追加
-                                  addProductToOrder(productName, productData.price, false)
-                                }
+                                addProductToOrder(productName, productData.price, productData.needsCast)
                               }}
                             >
                               {productName}
                               <span className="price">¥{productData.price.toLocaleString()}</span>
                             </div>
                           ))}
+                        </div>
+                      )}
+                      
+                      {selectedProduct && selectedProduct.needsCast && (
+                        <div className="cast-select-area">
+                          <div className="category-title">キャストを選択</div>
+                          <div className="cast-list">
+                            {castList.map(castName => (
+                              <div 
+                                key={castName}
+                                className="cast-item"
+                                onClick={() => {
+                                  addProductToOrder(selectedProduct.name, selectedProduct.price, true, castName)
+                                }}
+                              >
+                                {castName}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1454,7 +1474,7 @@ export default function Home() {
         }
 
         .left-section {
-          width: 300px;
+          width: 530px;
           display: flex;
           flex-direction: column;
           border: 1px solid #ddd;
@@ -1492,12 +1512,13 @@ export default function Home() {
 
         .category-section {
           display: flex;
-          gap: 20px;
+          gap: 15px;
           flex: 1;
         }
 
-        .main-categories, .sub-categories {
+        .main-categories, .sub-categories, .cast-select-area {
           flex: 1;
+          overflow-y: auto;
         }
 
         .category-title {
@@ -1532,12 +1553,31 @@ export default function Home() {
           font-size: 13px;
         }
 
-        .cast-select-section {
-          margin-top: 20px;
+        .cast-select-area {
+          margin-left: 5px;
+        }
+
+        .cast-list {
+          max-height: 400px;
+          overflow-y: auto;
+        }
+
+        .cast-item {
+          padding: 10px 15px;
+          margin-bottom: 5px;
+          background: #f5f5f5;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: background-color 0.2s;
+        }
+
+        .cast-item:hover {
+          background: #e0e0e0;
         }
 
         .right-section {
-          width: 250px;
+          width: 380px;
           display: flex;
           flex-direction: column;
           border: 1px solid #ddd;
