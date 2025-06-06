@@ -502,7 +502,7 @@ export default function Home() {
     <>
       <Head>
         <title>📋 テーブル管理システム</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
       <div id="layout" onClick={(e) => {
@@ -837,6 +837,9 @@ export default function Home() {
           user-select: none;
           -webkit-user-select: none;
           -webkit-touch-callout: none;
+          overflow: hidden; /* スクロールを無効化 */
+          position: fixed; /* 画面を固定 */
+          touch-action: none; /* タッチ操作でのスクロールも無効化 */
         }
 
         #layout {
