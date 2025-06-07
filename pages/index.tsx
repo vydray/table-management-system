@@ -586,7 +586,7 @@ export default function Home() {
           paymentCard: paymentData.card,
           paymentOther: paymentData.other,
           paymentOtherMethod: paymentData.otherMethod,
-          totalAmount: roundedTotal  // 端数処理後の金額を送信
+          totalAmount: getRoundedTotal(getTotal())  
         })
       })
       

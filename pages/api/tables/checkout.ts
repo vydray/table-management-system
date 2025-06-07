@@ -26,7 +26,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       visitType,
       paymentCash,
       paymentCard,
-      paymentOther
+      paymentOther,
+      totalAmount  // フロントエンドから端数処理後の金額を受け取る
     } = req.body
 
     try {
@@ -47,17 +48,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
       }
 
-      // システム設定を取得
+      // システム設定を取得（税率のみ必要）
       const { data: settings } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['consumption_tax_rate', 'service_charge_rate', 'rounding_unit', 'rounding_method'])
+        .in('setting_key', ['consumption_tax_rate', 'service_charge_rate'])
 
       // 設定値を取得
       const consumptionTaxRate = settings?.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10
       const serviceChargeRate = settings?.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15
-      const roundingUnit = settings?.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100
-      const roundingMethod = settings?.find(s => s.setting_key === 'rounding_method')?.setting_value || 0
 
       // 商品合計（税込）
       const subtotalIncTax = orderItems.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0)
@@ -74,24 +73,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // サービス料（税込価格に対して）
       const serviceTax = Math.floor(subtotalIncTax * serviceChargeRate)
 
-      // 総合計を計算
-      let totalWithService = subtotalIncTax + serviceTax
-
-      // 端数処理を適用
-      if (roundingUnit > 0) {
-        switch (roundingMethod) {
-          case 0: // 切り捨て
-            totalWithService = Math.floor(totalWithService / roundingUnit) * roundingUnit
-            break
-          case 1: // 切り上げ
-            totalWithService = Math.ceil(totalWithService / roundingUnit) * roundingUnit
-            break
-          case 2: // 四捨五入
-            totalWithService = Math.round(totalWithService / roundingUnit) * roundingUnit
-            break
-        }
-      }
-
       // 1. ordersテーブルに注文を保存（全ての情報を含む）
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
@@ -103,10 +84,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           staff_name: castName || currentData.cast_name,
           guest_name: guestName || currentData.guest_name,
           visit_type: visitType || currentData.visit_type,
-          subtotal_excl_tax: subtotal,      // 税抜金額
-          tax_amount: consumptionTax,        // 消費税
-          service_charge: serviceTax,        // サービス料
-          total_incl_tax: totalWithService   // 端数処理後の総合計
+          subtotal_excl_tax: subtotal,
+          tax_amount: consumptionTax,
+          service_charge: serviceTax,
+          total_incl_tax: totalAmount  // フロントエンドから送られた端数処理後の金額を使用
         })
         .select()
         .single()
@@ -156,7 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           cash_amount: paymentCash || 0,
           credit_card_amount: paymentCard || 0,
           other_payment_amount: paymentOther || 0,
-          change_amount: Math.max(0, (paymentCash + paymentCard + paymentOther) - totalWithService),
+          change_amount: Math.max(0, (paymentCash + paymentCard + paymentOther) - totalAmount),  // totalAmountを使用
           payment_method: paymentCash > 0 ? 'cash' : paymentCard > 0 ? 'card' : 'other'
         })
 
@@ -184,7 +165,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (updateError) throw updateError
 
       console.log('会計処理完了')
-      res.status(200).json({ success: true, totalAmount: totalWithService })
+      res.status(200).json({ success: true, totalAmount })
     } catch (error) {
       console.error('Checkout error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
