@@ -14,6 +14,13 @@ interface OrderItem {
   price: number
 }
 
+interface SupabaseError {
+  message: string
+  code?: string
+  details?: string
+  hint?: string
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     console.log('受信データ:', req.body)
@@ -45,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // 1. 各商品をpaymentsテーブルに保存
       if (orderItems && orderItems.length > 0) {
-        for (const item of orderItems as OrderItem[]) {  // 型を明示
+        for (const item of orderItems as OrderItem[]) {
           const paymentData = {
             テーブル番号: tableId,
             名前: guestName || currentData.guest_name,
@@ -124,12 +131,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (error) {
       console.error('Checkout error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      const errorCode = (error as any)?.code || 'UNKNOWN'
+      const supabaseError = error as SupabaseError
       
       res.status(500).json({ 
         error: 'Checkout failed', 
         details: errorMessage,
-        code: errorCode
+        code: supabaseError?.code || 'UNKNOWN'
       })
     }
   } else {
