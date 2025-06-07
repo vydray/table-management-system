@@ -7,7 +7,7 @@ interface ItemDetailModalProps {
   onClose: () => void
   onUpdateQuantity: (index: number, quantity: number) => void
   onDelete: (index: number) => void
-  onUpdatePrice?: (index: number, price: number) => void  // 追加
+  onUpdatePrice?: (index: number, price: number) => void
 }
 
 export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
@@ -16,16 +16,26 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   onClose,
   onUpdateQuantity,
   onDelete,
-  onUpdatePrice  // 追加
+  onUpdatePrice
 }) => {
   const [isEditingPrice, setIsEditingPrice] = useState(false)
   const [tempPrice, setTempPrice] = useState(item.price.toString())
+  const [isEditingQuantity, setIsEditingQuantity] = useState(false)
+  const [tempQuantity, setTempQuantity] = useState(item.quantity.toString())
 
   const handlePriceSubmit = () => {
     const newPrice = parseInt(tempPrice)
     if (!isNaN(newPrice) && newPrice > 0 && onUpdatePrice) {
       onUpdatePrice(index, newPrice)
       setIsEditingPrice(false)
+    }
+  }
+
+  const handleQuantitySubmit = () => {
+    const newQuantity = parseInt(tempQuantity)
+    if (!isNaN(newQuantity) && newQuantity > 0) {
+      onUpdateQuantity(index, newQuantity)
+      setIsEditingQuantity(false)
     }
   }
 
@@ -107,15 +117,68 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         
         <div className="detail-row">
           <label>個数:</label>
-          <select 
-            className="quantity-select"
-            value={item.quantity}
-            onChange={(e) => onUpdateQuantity(index, parseInt(e.target.value))}
-          >
-            {[1,2,3,4,5,6,7,8,9,10,15,20,30,50].map(n => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
+          {isEditingQuantity ? (
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="number"
+                value={tempQuantity}
+                onChange={(e) => setTempQuantity(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') handleQuantitySubmit()
+                }}
+                style={{
+                  width: '80px',
+                  padding: '5px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}
+                min="1"
+                autoFocus
+              />
+              <button 
+                onClick={handleQuantitySubmit}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                OK
+              </button>
+              <button 
+                onClick={() => {
+                  setIsEditingQuantity(false)
+                  setTempQuantity(item.quantity.toString())
+                }}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: '#ccc',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                キャンセル
+              </button>
+            </div>
+          ) : (
+            <span 
+              onClick={() => setIsEditingQuantity(true)}
+              style={{ 
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                color: '#0066cc',
+                padding: '5px 10px',
+                display: 'inline-block'
+              }}
+            >
+              {item.quantity}
+            </span>
+          )}
         </div>
         
         <div className="detail-row total">

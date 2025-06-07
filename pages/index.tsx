@@ -121,36 +121,37 @@ export default function Home() {
     }
   }
 
-  // 商品を直接注文に追加（タップで追加）
-  const addProductToOrder = (productName: string, price: number, needsCast: boolean, castName?: string) => {
-    if (needsCast && !castName) {
-      // キャストが必要な商品を選択
-      setSelectedProduct({ name: productName, price: price, needsCast: true })
-      return
-    }
-    
-    // 既存の商品をチェック（商品名とキャスト名が同じものを探す）
-    const existingItemIndex = orderItems.findIndex(item => 
-      item.name === productName && 
-      ((!needsCast && !item.cast) || (needsCast && item.cast === castName))
-    )
-    
-    if (existingItemIndex >= 0) {
-      // 既存の商品の個数を増やす
-      const updatedItems = [...orderItems]
-      updatedItems[existingItemIndex].quantity += 1
-      setOrderItems(updatedItems)
-    } else {
-      // 新しい商品を追加
-      const newItem: OrderItem = {
-        name: productName,
-        cast: needsCast ? castName : undefined,
-        quantity: 1,
-        price: price
-      }
-      setOrderItems([...orderItems, newItem])
-    }
+ // 商品を直接注文に追加（タップで追加）
+const addProductToOrder = (productName: string, price: number, needsCast: boolean, castName?: string) => {
+  if (needsCast && !castName) {
+    // キャストが必要な商品を選択
+    setSelectedProduct({ name: productName, price: price, needsCast: true })
+    return
   }
+  
+  // 既存の商品をチェック（商品名、キャスト名、価格が全て同じものを探す）
+  const existingItemIndex = orderItems.findIndex(item => 
+    item.name === productName && 
+    item.price === price &&  // 価格も一致条件に追加
+    ((!needsCast && !item.cast) || (needsCast && item.cast === castName))
+  )
+  
+  if (existingItemIndex >= 0) {
+    // 既存の商品の個数を増やす
+    const updatedItems = [...orderItems]
+    updatedItems[existingItemIndex].quantity += 1
+    setOrderItems(updatedItems)
+  } else {
+    // 新しい商品を追加（価格が異なる場合は別商品として扱う）
+    const newItem: OrderItem = {
+      name: productName,
+      cast: needsCast ? castName : undefined,
+      quantity: 1,
+      price: price
+    }
+    setOrderItems([...orderItems, newItem])
+  }
+}
 
   // 注文アイテムを削除
   const deleteOrderItem = (index: number) => {
