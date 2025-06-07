@@ -1,52 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-
-// テーブルの型定義
-interface TableData {
-  table: string
-  name: string
-  oshi: string
-  time: string
-  visit: string
-  elapsed: string
-  status: 'empty' | 'occupied'
-}
-
-// 商品の型定義
-interface ProductItem {
-  id: number
-  price: number
-  needsCast: boolean
-  discountRate: number
-}
-
-// 商品カテゴリーの型定義
-interface ProductCategories {
-  [category: string]: {
-    [subcategory: string]: ProductItem
-  }
-}
-
-// DBから取得する商品カテゴリーの型
-interface ProductCategory {
-  id: number
-  name: string
-  display_order: number
-}
-
-// DBから取得する商品の型
-interface Product {
-  id: number
-  category_id: number
-  name: string
-  price: number
-  tax_rate: number
-  discount_rate: number
-  needs_cast: boolean
-  is_active: boolean
-  display_order: number
-}
+import { ProductSection } from '../components/ProductSection'
+import { OrderSection } from '../components/OrderSection'
+import { TableData, OrderItem, ProductCategories, ProductCategory, Product } from '../types'
 
 // テーブルの位置情報
 const tablePositions = {
@@ -91,12 +48,7 @@ export default function Home() {
   const [productCategories, setProductCategories] = useState<ProductCategories>({})
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<{name: string, price: number, needsCast: boolean} | null>(null)
-  const [orderItems, setOrderItems] = useState<Array<{
-    name: string
-    cast?: string
-    quantity: number
-    price: number
-  }>>([])
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([])
 
   // フォームの状態
   const [formData, setFormData] = useState({
@@ -109,6 +61,24 @@ export default function Home() {
     editHour: 0,
     editMinute: 0
   })
+
+  // 長押し用のref
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
+  const isLongPress = useRef(false)
+
+  // 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
+  const getJapanTimeString = (date: Date): string => {
+    const japanTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }))
+    
+    const year = japanTime.getFullYear()
+    const month = String(japanTime.getMonth() + 1).padStart(2, '0')
+    const day = String(japanTime.getDate()).padStart(2, '0')
+    const hours = String(japanTime.getHours()).padStart(2, '0')
+    const minutes = String(japanTime.getMinutes()).padStart(2, '0')
+    const seconds = String(japanTime.getSeconds()).padStart(2, '0')
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  }
 
   // 商品データをAPIから取得
   const loadProducts = async () => {
@@ -144,12 +114,6 @@ export default function Home() {
       })
       
       console.log('変換後のデータ:', productData)
-      
-      // デバッグ：シャンパンカテゴリーの商品を確認
-      if (productData['シャンパン']) {
-        console.log('シャンパンカテゴリーの商品:', productData['シャンパン'])
-      }
-      
       setProductCategories(productData)
     } catch (error) {
       console.error('Error loading products:', error)
@@ -178,7 +142,7 @@ export default function Home() {
       setOrderItems(updatedItems)
     } else {
       // 新しい商品を追加
-      const newItem = {
+      const newItem: OrderItem = {
         name: productName,
         cast: needsCast ? castName : undefined,
         quantity: 1,
@@ -186,12 +150,7 @@ export default function Home() {
       }
       setOrderItems([...orderItems, newItem])
     }
-    
-    // キャスト選択は閉じない（カテゴリーや商品を選択した時に閉じる）
   }
-
-  // スワイプ削除用の状態
-  const [swipeStates, setSwipeStates] = useState<{[key: number]: {translateX: number, isSwiping: boolean, startX: number}}>({})
 
   // 注文アイテムを削除
   const deleteOrderItem = (index: number) => {
@@ -199,29 +158,15 @@ export default function Home() {
     setOrderItems(updatedItems)
   }
 
-  // 合計金額を計算
-  const calculateTotal = () => {
-    const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const tax = Math.floor(subtotal * 0.15)
-    return { subtotal, tax, total: subtotal + tax }
-  }
-
-  // 長押し用のref
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
-  const isLongPress = useRef(false)
-
-  // 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
-  const getJapanTimeString = (date: Date): string => {
-    const japanTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }))
-    
-    const year = japanTime.getFullYear()
-    const month = String(japanTime.getMonth() + 1).padStart(2, '0')
-    const day = String(japanTime.getDate()).padStart(2, '0')
-    const hours = String(japanTime.getHours()).padStart(2, '0')
-    const minutes = String(japanTime.getMinutes()).padStart(2, '0')
-    const seconds = String(japanTime.getSeconds()).padStart(2, '0')
-    
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  // 注文アイテムの個数を更新
+  const updateOrderItemQuantity = (index: number, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      deleteOrderItem(index)
+      return
+    }
+    const updatedItems = [...orderItems]
+    updatedItems[index].quantity = newQuantity
+    setOrderItems(updatedItems)
   }
 
   // データ取得
@@ -300,11 +245,65 @@ export default function Home() {
     }
   }
 
+  // 注文データを取得
+  const loadOrderItems = async (tableId: string) => {
+    try {
+      const res = await fetch(`/api/orders/current?tableId=${tableId}`)
+      const data = await res.json()
+      
+      if (res.ok && data.length > 0) {
+        interface OrderItemDB {
+          product_name: string
+          cast_name: string | null
+          quantity: number
+          unit_price: number
+        }
+        
+        const items = data.map((item: OrderItemDB) => ({
+          name: item.product_name,
+          cast: item.cast_name || undefined,
+          quantity: item.quantity,
+          price: item.unit_price
+        }))
+        setOrderItems(items)
+      }
+    } catch (error) {
+      console.error('Error loading order items:', error)
+    }
+  }
+
+  // 注文内容を保存
+  const saveOrderItems = async (silent: boolean = false) => {
+    try {
+      const response = await fetch('/api/orders/current', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: currentTable,
+          orderItems: orderItems
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to save order items')
+      }
+      
+      if (!silent) {
+        alert('注文内容を保存しました')
+      }
+    } catch (error) {
+      console.error('Error saving order items:', error)
+      if (!silent) {
+        alert('注文内容の保存に失敗しました')
+      }
+    }
+  }
+
   // 初期化
   useEffect(() => {
     loadData()
     loadCastList()
-    loadProducts() // 商品データを読み込み
+    loadProducts()
     
     const updateTime = () => {
       const now = new Date()
@@ -342,7 +341,7 @@ export default function Home() {
 
   // 注文内容が変更されたら自動保存
   useEffect(() => {
-    if (modalMode === 'edit' && currentTable && showModal && orderItems.length > 0) {
+    if (modalMode === 'edit' && currentTable && showModal && orderItems.length >= 0) {
       const timeoutId = setTimeout(() => {
         saveOrderItems(true) // silentモードで保存
       }, 500) // 500ms後に保存
@@ -351,7 +350,6 @@ export default function Home() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderItems])
-
   // メニューアイテムのクリックハンドラー
   const handleMenuClick = async (action: string) => {
     setShowMenu(false) // メニューを閉じる
@@ -446,33 +444,6 @@ export default function Home() {
       console.error('Error updating table:', error)
       if (!silent) {
         alert('更新に失敗しました')
-      }
-    }
-  }
-
-  // 注文内容を保存
-  const saveOrderItems = async (silent: boolean = false) => {
-    try {
-      const response = await fetch('/api/orders/current', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tableId: currentTable,
-          orderItems: orderItems
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to save order items')
-      }
-      
-      if (!silent) {
-        alert('注文内容を保存しました')
-      }
-    } catch (error) {
-      console.error('Error saving order items:', error)
-      if (!silent) {
-        alert('注文内容の保存に失敗しました')
       }
     }
   }
@@ -586,33 +557,6 @@ export default function Home() {
     setIsMoving(false)
   }
 
-  // 注文データを取得
-  const loadOrderItems = async (tableId: string) => {
-    try {
-      const res = await fetch(`/api/orders/current?tableId=${tableId}`)
-      const data = await res.json()
-      
-      if (res.ok && data.length > 0) {
-        interface OrderItemDB {
-          product_name: string
-          cast_name: string | null
-          quantity: number
-          unit_price: number
-        }
-        
-        const items = data.map((item: OrderItemDB) => ({
-          name: item.product_name,
-          cast: item.cast_name || undefined,
-          quantity: item.quantity,
-          price: item.unit_price
-        }))
-        setOrderItems(items)
-      }
-    } catch (error) {
-      console.error('Error loading order items:', error)
-    }
-  }
-
   // モーダルを開く
   const openModal = (table: TableData) => {
     setCurrentTable(table.table)
@@ -644,7 +588,7 @@ export default function Home() {
         editHour: time.getHours(),
         editMinute: time.getMinutes()
       })
-      // TODO: 既存の注文データを読み込む
+      // 既存の注文データを読み込む
       loadOrderItems(table.table)
     }
     
@@ -762,7 +706,6 @@ export default function Home() {
       </div>
     )
   }
-
   return (
     <>
       <Head>
@@ -992,212 +935,22 @@ export default function Home() {
                 </div>
 
                 <div className="pos-container">
-                  <div className="left-section">
-                    <div className="category-section">
-                      <div className="main-categories">
-                        <div className="category-title">商品カテゴリー</div>
-                        {Object.keys(productCategories).map(category => (
-                          <div 
-                            key={category}
-                            className={`main-category-item ${selectedCategory === category ? 'selected' : ''}`}
-                            onClick={() => {
-                              setSelectedCategory(category)
-                              setSelectedProduct(null) // カテゴリー変更時にリセット
-                            }}
-                          >
-                            {category}
-                          </div>
-                        ))}
-                      </div>
-                      
-                      {selectedCategory && (
-                        <div className="sub-categories">
-                          <div className="category-title">商品一覧</div>
-                          {Object.entries(productCategories[selectedCategory]).map(([productName, productData]) => (
-                            <div 
-                              key={productName}
-                              className={`sub-category-item ${selectedProduct?.name === productName ? 'selected' : ''}`}
-                              onClick={() => {
-                                addProductToOrder(productName, productData.price, productData.needsCast)
-                              }}
-                            >
-                              {productName}
-                              <span className="price">¥{productData.price.toLocaleString()}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {selectedProduct && selectedProduct.needsCast && (
-                        <div className="cast-select-area">
-                          <div className="category-title">キャストを選択</div>
-                          <div className="cast-list">
-                            {castList.map(castName => (
-                              <div 
-                                key={castName}
-                                className="cast-item"
-                                onClick={() => {
-                                  addProductToOrder(selectedProduct.name, selectedProduct.price, true, castName)
-                                }}
-                              >
-                                {castName}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <ProductSection
+                    productCategories={productCategories}
+                    selectedCategory={selectedCategory}
+                    selectedProduct={selectedProduct}
+                    castList={castList}
+                    onSelectCategory={setSelectedCategory}
+                    onAddProduct={addProductToOrder}
+                  />
                   
-                  <div className="right-section">
-                    <div className="order-title">お会計</div>
-                    
-                    <div className="order-table">
-                      <div className="order-table-header">
-                        <span className="col-name">商品名</span>
-                        <span className="col-cast">キャスト名</span>
-                        <span className="col-qty">個数</span>
-                        <span className="col-price">値段</span>
-                      </div>
-                      <div className="order-table-body">
-                        {orderItems.map((item, index) => {
-                          const swipeState = swipeStates[index] || { translateX: 0, isSwiping: false, startX: 0 }
-                          
-                          const handleTouchStart = (e: React.TouchEvent) => {
-                            setSwipeStates(prev => ({
-                              ...prev,
-                              [index]: { ...swipeState, startX: e.touches[0].clientX, isSwiping: true }
-                            }))
-                          }
-                          
-                          const handleTouchMove = (e: React.TouchEvent) => {
-                            if (!swipeState.isSwiping) return
-                            const currentX = e.touches[0].clientX
-                            const diffX = currentX - swipeState.startX
-                            if (diffX < 0) { // 左にスワイプ
-                              setSwipeStates(prev => ({
-                                ...prev,
-                                [index]: { ...swipeState, translateX: Math.max(diffX, -100) }
-                              }))
-                            }
-                          }
-                          
-                          const handleTouchEnd = () => {
-                            if (swipeState.translateX < -50) { // 50px以上左にスワイプしたら削除
-                              deleteOrderItem(index)
-                            }
-                            setSwipeStates(prev => ({
-                              ...prev,
-                              [index]: { translateX: 0, isSwiping: false, startX: 0 }
-                            }))
-                          }
-                          
-                          const handleMouseDown = (e: React.MouseEvent) => {
-                            setSwipeStates(prev => ({
-                              ...prev,
-                              [index]: { ...swipeState, startX: e.clientX, isSwiping: true }
-                            }))
-                          }
-                          
-                          const handleMouseMove = (e: React.MouseEvent) => {
-                            if (!swipeState.isSwiping) return
-                            const diffX = e.clientX - swipeState.startX
-                            if (diffX < 0) { // 左にスワイプ
-                              setSwipeStates(prev => ({
-                                ...prev,
-                                [index]: { ...swipeState, translateX: Math.max(diffX, -100) }
-                              }))
-                            }
-                          }
-                          
-                          const handleMouseUp = () => {
-                            if (swipeState.translateX < -50) { // 50px以上左にスワイプしたら削除
-                              deleteOrderItem(index)
-                            }
-                            setSwipeStates(prev => ({
-                              ...prev,
-                              [index]: { translateX: 0, isSwiping: false, startX: 0 }
-                            }))
-                          }
-                          
-                          const handleMouseLeave = () => {
-                            if (swipeState.isSwiping) {
-                              setSwipeStates(prev => ({
-                                ...prev,
-                                [index]: { translateX: 0, isSwiping: false, startX: 0 }
-                              }))
-                            }
-                          }
-                          
-                          return (
-                            <div 
-                              key={index} 
-                              className="order-table-row-wrapper"
-                              style={{ position: 'relative', overflow: 'hidden' }}
-                            >
-                              <div 
-                                className="order-table-row"
-                                style={{
-                                  transform: `translateX(${swipeState.translateX}px)`,
-                                  transition: swipeState.isSwiping ? 'none' : 'transform 0.3s ease'
-                                }}
-                                onTouchStart={handleTouchStart}
-                                onTouchMove={handleTouchMove}
-                                onTouchEnd={handleTouchEnd}
-                                onMouseDown={handleMouseDown}
-                                onMouseMove={handleMouseMove}
-                                onMouseUp={handleMouseUp}
-                                onMouseLeave={handleMouseLeave}
-                              >
-                                <span className="col-name">{item.name}</span>
-                                <span className="col-cast">{item.cast || ''}</span>
-                                <span className="col-qty">{item.quantity}</span>
-                                <span className="col-price">¥{(item.price * item.quantity).toLocaleString()}</span>
-                              </div>
-                              <div 
-                                className="delete-indicator"
-                                style={{
-                                  position: 'absolute',
-                                  right: 0,
-                                  top: 0,
-                                  bottom: 0,
-                                  width: '80px',
-                                  background: '#f44336',
-                                  color: 'white',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  opacity: Math.min(Math.abs(swipeState.translateX) / 100, 1)
-                                }}
-                              >
-                                削除
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                    
-                    <div className="order-total">
-                      <div className="total-row">
-                        <span>小計</span>
-                        <span>¥{calculateTotal().subtotal.toLocaleString()}</span>
-                      </div>
-                      <div className="total-row">
-                        <span>サービスtax　15%　+</span>
-                        <span>¥{calculateTotal().tax.toLocaleString()}</span>
-                      </div>
-                      <div className="total-row final">
-                        <span>合計金額</span>
-                        <span className="final-amount">¥{calculateTotal().total.toLocaleString()}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="action-buttons">
-                      <button onClick={checkout} className="btn-checkout">会計完了</button>
-                      <button onClick={clearTable} className="btn-delete">削除</button>
-                    </div>
-                  </div>
+                  <OrderSection
+                    orderItems={orderItems}
+                    onCheckout={checkout}
+                    onClearTable={clearTable}
+                    onUpdateOrderItem={updateOrderItemQuantity}
+                    onDeleteOrderItem={deleteOrderItem}
+                  />
                 </div>
               </div>
             </div>
@@ -1294,675 +1047,9 @@ export default function Home() {
             >
               キャンセル
             </button>
-          </div>
+         </div>
         </div>
       )}
-
-      <style jsx>{`
-        :global(html, body) {
-          margin: 0;
-          padding: 0;
-          width: 100%;
-          height: 100%;
-          background: #fff;
-          font-family: sans-serif;
-          user-select: none;
-          -webkit-user-select: none;
-          -webkit-touch-callout: none;
-          overflow: hidden;
-          position: fixed;
-          touch-action: none;
-        }
-
-        #layout {
-          position: relative;
-          width: 1024px;
-          height: 768px;
-          margin: auto;
-          background: #f8f8f8;
-          border: 1px solid #ccc;
-          overflow: hidden;
-        }
-
-        .table {
-          width: 130px;
-          height: 123px;
-          background: #fff;
-          border: 2px solid #707070;
-          border-radius: 16px;
-          position: absolute;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          font-size: 14px;
-          cursor: pointer;
-          padding: 5px;
-          box-sizing: border-box;
-          transition: all 0.3s ease;
-        }
-
-        .table:hover {
-          transform: scale(1.05);
-          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .table.lifting {
-          transform: scale(1.1) translateY(-10px);
-          box-shadow: 0 15px 30px rgba(0,0,0,0.3);
-          z-index: 100;
-          border: 3px solid #4CAF50;
-          animation: pulse 1s infinite;
-        }
-
-        .table.empty.move-target {
-          border: 3px dashed #4CAF50;
-          animation: blink 1s infinite;
-        }
-
-        .table.occupied.move-mode {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        @keyframes pulse {
-          0% { transform: scale(1.1) translateY(-10px); }
-          50% { transform: scale(1.15) translateY(-15px); }
-          100% { transform: scale(1.1) translateY(-10px); }
-        }
-
-        @keyframes blink {
-          0% { opacity: 1; }
-          50% { opacity: 0.6; }
-          100% { opacity: 1; }
-        }
-
-        .empty {
-          background-color: #eeeeee;
-        }
-
-        .occupied {
-          background-color: #ffe0f0;
-        }
-
-        .header {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 1024px;
-          height: 72px;
-          background-color: #b9f6b7;
-          border: 1px solid #707070;
-          text-align: center;
-          line-height: 72px;
-          font-size: 32px;
-          font-weight: bold;
-        }
-
-        /* メニューボタン */
-        .menu-button {
-          position: absolute;
-          left: 20px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 10px;
-          font-size: 28px;
-          color: #333;
-          transition: transform 0.3s ease;
-        }
-
-        .menu-button:hover {
-          transform: translateY(-50%) scale(1.1);
-        }
-
-        /* サイドメニュー */
-        .side-menu {
-          position: absolute;
-          left: -300px;
-          top: 72px;
-          width: 280px;
-          height: calc(100% - 72px);
-          background: white;
-          box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-          transition: left 0.3s ease;
-          z-index: 1000;
-          overflow-y: auto;
-          max-height: calc(768px - 72px);
-          visibility: hidden;
-          opacity: 0;
-          transition: left 0.3s ease, visibility 0.3s ease, opacity 0.3s ease;
-        }
-
-        .side-menu.open {
-          left: 0;
-          visibility: visible;
-          opacity: 1;
-        }
-
-        .menu-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 20px;
-          border-bottom: 1px solid #eee;
-        }
-
-        .menu-header h3 {
-          margin: 0;
-          font-size: 20px;
-        }
-
-        .menu-close {
-          background: none;
-          border: none;
-          font-size: 24px;
-          cursor: pointer;
-          color: #666;
-        }
-
-        .menu-items {
-          padding: 10px 0;
-        }
-
-        .menu-item {
-          display: flex;
-          align-items: center;
-          width: 100%;
-          padding: 15px 20px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-size: 16px;
-          text-align: left;
-          transition: background-color 0.2s ease;
-        }
-
-        .menu-item:hover {
-          background-color: #f5f5f5;
-        }
-
-        .menu-item .menu-icon {
-          margin-right: 15px;
-          font-size: 20px;
-        }
-
-        .menu-divider {
-          height: 1px;
-          background-color: #eee;
-          margin: 10px 0;
-        }
-
-        .menu-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.3);
-          z-index: 999;
-        }
-
-        .table-name {
-          font-size: 16px;
-          font-weight: bold;
-          margin-bottom: 5px;
-        }
-
-        .table-info {
-          font-size: 12px;
-          text-align: center;
-          line-height: 1.4;
-        }
-
-        .table-info strong {
-          display: block;
-          margin: 2px 0;
-        }
-
-        .table-elapsed {
-          font-size: 11px;
-          color: #666;
-          margin-top: 5px;
-        }
-
-        #move-hint {
-          display: block;
-          position: absolute;
-          top: 80px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #4CAF50;
-          color: white;
-          padding: 10px 20px;
-          border-radius: 20px;
-          font-weight: bold;
-          z-index: 200;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-
-        #modal-overlay {
-          display: block;
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.3);
-          z-index: 998;
-        }
-
-        #modal {
-          display: block;
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: white;
-          border: 2px solid #ccc;
-          padding: 20px;
-          box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
-          border-radius: 10px;
-          z-index: 999;
-          max-height: 90vh;
-          overflow-y: auto;
-        }
-
-        #modal.modal-new {
-          width: 400px;
-        }
-
-        #modal.modal-edit {
-          width: 90%;
-          max-width: 900px;
-        }
-
-        #move-modal {
-          display: block;
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: white;
-          border: 2px solid #ccc;
-          padding: 20px;
-          box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
-          border-radius: 10px;
-          z-index: 999;
-          width: 400px;
-          max-height: 90vh;
-          overflow-y: auto;
-        }
-
-        .order-section {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-        }
-
-        .customer-header {
-          display: flex;
-          justify-content: space-between;
-          padding: 10px 0;
-          margin-bottom: 20px;
-          font-size: 16px;
-          align-items: center;
-        }
-
-        .label-text {
-          white-space: nowrap;
-          margin-right: 5px;
-        }
-
-        .datetime-edit {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          padding: 10px 0;
-          border-bottom: 1px solid #ddd;
-          margin-bottom: 10px;
-          font-size: 16px;
-        }
-
-        .date-select {
-          padding: 4px 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 14px;
-        }
-
-        .time-edit, .oshi-edit, .guest-edit {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .time-select {
-          padding: 4px 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 14px;
-        }
-
-        .cast-select {
-          padding: 4px 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 14px;
-          min-width: 150px;
-        }
-
-        .guest-input {
-          padding: 4px 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 14px;
-          min-width: 150px;
-        }
-
-        .pos-container {
-          display: flex;
-          gap: 20px;
-          height: calc(100% - 100px);
-          justify-content: space-between;  /* 追加：左右に分ける */
-        }
-
-        .left-section {
-          width: 530px;
-          display: flex;
-          flex-direction: column;
-          border: 1px solid #ddd;
-          border-radius: 10px;
-          padding: 20px;
-        }
-
-        .sub-categories {
-          margin-top: 20px;
-        }
-
-        .search-section {
-          display: flex;
-          gap: 10px;
-          margin-bottom: 20px;
-        }
-
-        .search-input {
-          flex: 1;
-          padding: 8px 12px;
-          border: 1px solid #ddd;
-          border-radius: 20px;
-          font-size: 14px;
-        }
-
-        .search-button {
-          padding: 8px 20px;
-          background: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 20px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-
-        .category-section {
-          display: flex;
-          gap: 15px;
-          flex: 1;
-        }
-
-        .main-categories, .sub-categories, .cast-select-area {
-          flex: 1;
-          overflow-y: auto;
-        }
-
-        .category-title {
-          font-size: 14px;
-          color: #666;
-          margin-bottom: 10px;
-          font-weight: bold;
-        }
-
-        .main-category-item, .sub-category-item, .cast-item {
-          padding: 10px 15px;
-          margin-bottom: 5px;
-          background: #f5f5f5;
-          border-radius: 5px;
-          cursor: pointer;
-          font-size: 14px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .main-category-item:hover, .sub-category-item:hover, .cast-item:hover {
-          background: #e0e0e0;
-        }
-
-        .main-category-item.selected, .sub-category-item.selected, .cast-item.selected {
-          background: #4CAF50;
-          color: white;
-        }
-
-        .sub-category-item .price {
-          font-size: 13px;
-        }
-
-        .cast-select-area {
-          margin-left: 5px;
-        }
-
-        .cast-list {
-          max-height: 400px;
-          overflow-y: auto;
-        }
-
-        .cast-item {
-          padding: 10px 15px;
-          margin-bottom: 5px;
-          background: #f5f5f5;
-          border-radius: 5px;
-          cursor: pointer;
-          font-size: 14px;
-          transition: background-color 0.2s;
-        }
-
-        .cast-item:hover {
-          background: #e0e0e0;
-        }
-
-        .right-section {
-          width: 380px;
-          display: flex;
-          flex-direction: column;
-          border: 1px solid #ddd;
-          border-radius: 10px;
-          padding: 20px;
-        }
-
-        .order-title {
-          text-align: center;
-          font-size: 18px;
-          font-weight: bold;
-          margin-bottom: 20px;
-        }
-
-        .order-table {
-          flex: 1;
-          border: 1px solid #ddd;
-          border-radius: 10px;
-          overflow: hidden;
-          margin-bottom: 20px;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .order-table-header {
-          display: grid;
-          grid-template-columns: 2fr 2fr 1fr 1.5fr;
-          padding: 10px;
-          background: #f5f5f5;
-          font-weight: bold;
-          font-size: 14px;
-          text-align: center;
-        }
-
-        .order-table-body {
-          flex: 1;
-          overflow-y: auto;
-        }
-
-        .order-table-row {
-          display: grid;
-          grid-template-columns: 2fr 2fr 1fr 1.5fr;
-          padding: 8px 10px;
-          border-bottom: 1px solid #eee;
-          font-size: 14px;
-          text-align: center;
-          background: white;
-          cursor: grab;
-          user-select: none;
-        }
-
-        .order-table-row:active {
-          cursor: grabbing;
-        }
-
-        .order-total {
-          padding: 15px;
-          background: #f9f9f9;
-          border-radius: 8px;
-          margin-bottom: 20px;
-        }
-
-        .total-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 5px 0;
-          font-size: 16px;
-        }
-
-        .total-row.final {
-          border-top: 2px solid #333;
-          padding-top: 10px;
-          margin-top: 10px;
-          font-size: 20px;
-          font-weight: bold;
-        }
-
-        .final-amount {
-          color: #333;
-          font-size: 24px;
-        }
-
-        .action-buttons {
-          display: flex;
-          gap: 10px;
-        }
-
-        .btn-checkout, .btn-delete {
-          flex: 1;
-          padding: 12px;
-          border: none;
-          border-radius: 5px;
-          font-size: 16px;
-          font-weight: bold;
-          cursor: pointer;
-        }
-
-        .btn-checkout {
-          background: #ff9800;
-          color: white;
-        }
-
-        .btn-delete {
-          background: #f44336;
-          color: white;
-        }
-
-        .add-order-button {
-          width: 100%;
-          margin-top: 20px;
-          padding: 10px;
-          background: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          font-size: 16px;
-          font-weight: bold;
-        }
-
-        .add-order-button:disabled {
-          background: #ccc;
-          cursor: not-allowed;
-        }
-
-        .add-order-button:hover:not(:disabled) {
-          background: #45a049;
-        }
-
-        #modal input, #modal select {
-          margin-bottom: 10px;
-          width: 100%;
-          padding: 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 14px;
-        }
-
-        #modal button {
-          padding: 8px 16px;
-          margin-top: 5px;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-
-        #modal button:hover {
-          opacity: 0.8;
-        }
-
-        .btn-primary {
-          background-color: #4CAF50;
-          color: white;
-        }
-
-        .time-row {
-          display: flex;
-          gap: 5px;
-          align-items: center;
-        }
-
-        .center {
-          text-align: center;
-        }
-
-        #modal-close {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background: transparent;
-          border: none;
-          font-size: 24px;
-          cursor: pointer;
-          color: #666;
-        }
-
-        #modal-close:hover {
-          color: #000;
-        }
-
-        label {
-          display: block;
-          margin-bottom: 5px;
-          font-weight: bold;
-          font-size: 14px;
-        }
-      `}</style>
     </>
   )
 }
