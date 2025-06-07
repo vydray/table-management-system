@@ -1,3 +1,4 @@
+// pages/api/tables/checkout.ts
 import { createClient } from '@supabase/supabase-js'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -8,7 +9,7 @@ const supabase = createClient(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { tableId, checkoutTime, orderItems, guestName, castName, visitType } = req.body
+    const { tableId, checkoutTime } = req.body  // orderItems等を削除
 
     try {
       // 現在のテーブル情報を取得
@@ -25,16 +26,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('visit_history')
         .insert({
           table_name: tableId,
-          guest_name: currentData.guest_name || guestName,
-          cast_name: currentData.cast_name || castName,
+          guest_name: currentData.guest_name,
+          cast_name: currentData.cast_name,
           entry_time: currentData.entry_time,
-          visit_type: currentData.visit_type || visitType,
+          visit_type: currentData.visit_type,
           checkout_time: checkoutTime
         })
 
       if (visitError) throw visitError
 
-      // 2. 現在の注文をクリア（売上保存は一旦スキップ）
+      // 2. 現在の注文をクリア
       const { error: deleteOrderError } = await supabase
         .from('current_order_items')
         .delete()
