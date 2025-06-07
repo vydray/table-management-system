@@ -63,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       // 商品ごとに税抜き価格を計算して正確な合計を出す
       const subtotal = orderItems.reduce((sum: number, item: OrderItem) => {
-        const itemPriceExclTax = Math.floor(item.price / (1 + consumptionTaxRate))
+        const itemPriceExclTax = Math.round(item.price / (1 + consumptionTaxRate))
         return sum + (itemPriceExclTax * item.quantity)
       }, 0)
       
@@ -99,36 +99,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       console.log('作成された注文:', orderData)
 
-// 2. order_itemsに明細を保存
-if (orderItems && orderItems.length > 0 && orderData) {
-  const itemsToInsert = orderItems.map((item: OrderItem) => {
-    const unitPriceExclTax = Math.floor(item.price / (1 + consumptionTaxRate))
-    const taxAmount = item.price - unitPriceExclTax
-    
-    return {
-      order_id: orderData.id,
-      category: '',
-      product_name: item.name,
-      cast_name: item.cast || null,
-      unit_price: item.price,
-      unit_price_excl_tax: unitPriceExclTax,
-      tax_amount: taxAmount,
-      quantity: item.quantity,
-      subtotal: item.price * item.quantity,
-      pack_number: 0
-    }
-  })
+      // 2. order_itemsに明細を保存
+      if (orderItems && orderItems.length > 0 && orderData) {
+        const itemsToInsert = orderItems.map((item: OrderItem) => {
+          const unitPriceExclTax = Math.round(item.price / (1 + consumptionTaxRate))
+          const taxAmount = item.price - unitPriceExclTax
+          
+          return {
+            order_id: orderData.id,
+            category: '',
+            product_name: item.name,
+            cast_name: item.cast || null,
+            unit_price: item.price,
+            unit_price_excl_tax: unitPriceExclTax,
+            tax_amount: taxAmount,
+            quantity: item.quantity,
+            subtotal: item.price * item.quantity,
+            pack_number: 0
+          }
+        })
 
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(itemsToInsert)
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(itemsToInsert)
 
-  // itemsErrorを使用する
-  if (itemsError) {
-    console.error('注文明細保存エラー:', itemsError)
-    throw itemsError
-  }
-}
+        if (itemsError) {
+          console.error('注文明細保存エラー:', itemsError)
+          throw itemsError
+        }
+      }
 
       // 3. paymentsテーブルに支払い情報を保存
       const { error: paymentError } = await supabase
