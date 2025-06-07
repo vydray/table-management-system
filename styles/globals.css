@@ -410,11 +410,19 @@ html, body {
   display: flex;
   gap: 15px;
   flex: 1;
+  position: relative;
+  z-index: 1;
 }
 
 .main-categories, .sub-categories, .cast-select-area {
   flex: 1;
   overflow-y: auto;
+}
+
+.cast-select-area {
+  margin-left: 5px;
+  position: relative;
+  z-index: 1;
 }
 
 .category-title {
@@ -447,10 +455,6 @@ html, body {
 
 .sub-category-item .price {
   font-size: 13px;
-}
-
-.cast-select-area {
-  margin-left: 5px;
 }
 
 .cast-list {
@@ -539,7 +543,7 @@ html, body {
   font-weight: bold;
 }
 
-/* 商品詳細モーダル */
+/* 商品詳細モーダル - iPad対応 */
 .item-detail-modal {
   position: fixed;
   top: 0;
@@ -550,7 +554,9 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 2000;
+  z-index: 9999;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 .item-detail-content {
@@ -560,7 +566,10 @@ html, body {
   width: 400px;
   max-width: 90%;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 2001;
+  position: relative;
+  z-index: 10000;
+  -webkit-transform: translateZ(1px);
+  transform: translateZ(1px);
 }
 
 .item-detail-content h3 {
