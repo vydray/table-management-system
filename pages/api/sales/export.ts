@@ -1,4 +1,3 @@
-// pages/api/sales/export.ts
 import { createClient } from '@supabase/supabase-js'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -12,17 +11,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { startDate, endDate } = req.query
 
     try {
-      // paymentsテーブルからデータを取得
+      // ordersとorder_itemsを結合して取得
       let query = supabase
-        .from('payments')
-        .select('*')
-        .order('会計時間', { ascending: false })
+        .from('orders')
+        .select(`
+          *,
+          order_items!inner(
+            product_name,
+            cast_name,
+            quantity,
+            unit_price,
+            subtotal
+          ),
+          payments!inner(
+            cash_amount,
+            credit_card_amount,
+            other_payment_amount
+          )
+        `)
+        .order('checkout_datetime', { ascending: false })
 
       if (startDate) {
-        query = query.gte('会計時間', startDate)
+        query = query.gte('checkout_datetime', startDate)
       }
       if (endDate) {
-        query = query.lte('会計時間', endDate)
+        query = query.lte('checkout_datetime', endDate)
       }
 
       const { data, error } = await query
@@ -30,30 +43,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (error) throw error
 
       // CSV形式に変換
-      const csvRows = ['会計時間,テーブル番号,名前,商品名,カテゴリー,個数,税別,合計金額,現金,カード,その他']
+      const csvRows = ['会計時間,テーブル番号,お客様名,メインキャスト,商品名,担当キャスト,数量,単価,小計,現金,カード,その他,税抜合計,税額,税込合計']
       
-      data?.forEach(row => {
-        const csvRow = [
-          row.会計時間,
-          row.テーブル番号,
-          row.名前 || '',
-          row.商品名 || '',
-          row.カテゴリー || '',
-          row.個数 || 0,
-          row.税別 || 0,
-          row.合計金額 || 0,
-          row.現金 || 0,
-          row.カード || 0,
-          row.その他 || 0
-        ].join(',')
-        csvRows.push(csvRow)
+      data?.forEach(order => {
+        if (order.order_items && order.order_items.length > 0) {
+          order.order_items.forEach((item: any, index: number) => {
+            const payment = order.payments?.[0] || {}
+            const row = [
+              order.checkout_datetime,
+              order.table_number,
+              '', // お客様名（ordersテーブルには無いので空欄）
+              order.staff_name || '',
+              item.product_name,
+              item.cast_name || '',
+              item.quantity,
+              item.unit_price,
+              item.subtotal,
+              index === 0 ? payment.cash_amount || 0 : '',
+              index === 0 ? payment.credit_card_amount || 0 : '',
+              index === 0 ? payment.other_payment_amount || 0 : '',
+              index === 0 ? order.subtotal_excl_tax : '',
+              index === 0 ? order.tax_amount : '',
+              index === 0 ? order.total_incl_tax : ''
+            ].join(',')
+            csvRows.push(row)
+          })
+        }
       })
 
       const csv = csvRows.join('\n')
       
+      // BOM付きでUTF-8として出力（Excelでの文字化け防止）
+      const bom = '\uFEFF'
+      
       res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-      res.setHeader('Content-Disposition', 'attachment; filename=sales_report.csv')
-      res.status(200).send('\uFEFF' + csv) // BOM付きで日本語対応
+      res.setHeader('Content-Disposition', `attachment; filename=sales_report_${new Date().toISOString().split('T')[0]}.csv`)
+      res.status(200).send(bom + csv)
     } catch (error) {
       console.error('Export error:', error)
       res.status(500).json({ error: 'Export failed' })
