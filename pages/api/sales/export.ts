@@ -6,6 +6,33 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 )
 
+// 型定義を追加
+interface OrderItem {
+  product_name: string
+  cast_name: string | null
+  quantity: number
+  unit_price: number
+  subtotal: number
+}
+
+interface Payment {
+  cash_amount: number
+  credit_card_amount: number
+  other_payment_amount: number
+}
+
+interface Order {
+  id: string
+  checkout_datetime: string
+  table_number: string
+  staff_name: string | null
+  subtotal_excl_tax: number
+  tax_amount: number
+  total_incl_tax: number
+  order_items: OrderItem[]
+  payments: Payment[]
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     const { startDate, endDate } = req.query
@@ -32,10 +59,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .order('checkout_datetime', { ascending: false })
 
       if (startDate) {
-        query = query.gte('checkout_datetime', startDate)
+        query = query.gte('checkout_datetime', startDate as string)
       }
       if (endDate) {
-        query = query.lte('checkout_datetime', endDate)
+        query = query.lte('checkout_datetime', endDate as string)
       }
 
       const { data, error } = await query
@@ -45,10 +72,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // CSV形式に変換
       const csvRows = ['会計時間,テーブル番号,お客様名,メインキャスト,商品名,担当キャスト,数量,単価,小計,現金,カード,その他,税抜合計,税額,税込合計']
       
-      data?.forEach(order => {
+      const orders = data as Order[]
+      
+      orders?.forEach(order => {
         if (order.order_items && order.order_items.length > 0) {
-          order.order_items.forEach((item: any, index: number) => {
-            const payment = order.payments?.[0] || {}
+          order.order_items.forEach((item: OrderItem, index: number) => {
+            const payment = order.payments?.[0] || {} as Payment
             const row = [
               order.checkout_datetime,
               order.table_number,
