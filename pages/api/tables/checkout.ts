@@ -1,4 +1,3 @@
-// pages/api/tables/checkout.ts
 import { createClient } from '@supabase/supabase-js'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -9,7 +8,17 @@ const supabase = createClient(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { tableId, checkoutTime } = req.body  // orderItems等を削除
+    const { 
+      tableId, 
+      checkoutTime, 
+      orderItems,
+      guestName,
+      paymentCash,
+      paymentCard,
+      paymentOther,
+      paymentOtherMethod,
+      totalAmount
+    } = req.body
 
     try {
       // 現在のテーブル情報を取得
@@ -21,7 +30,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (fetchError) throw fetchError
 
-      // 1. 訪問履歴に保存
+      // 1. 各商品をpaymentsテーブルに保存
+      if (orderItems && orderItems.length > 0) {
+        for (const item of orderItems) {
+          const { error: paymentError } = await supabase
+            .from('payments')
+            .insert({
+              テーブル番号: tableId,
+              名前: guestName || currentData.guest_name,
+              商品名: item.name,
+              カテゴリー: '', // カテゴリー情報が必要な場合は追加
+              個数: item.quantity,
+              税別: item.price,
+              合計金額: item.price * item.quantity,
+              現金: paymentCash || 0,
+              カード: paymentCard || 0,
+              その他: paymentOther || 0,
+              クレジットカード: 0, // 必要に応じて
+              会計時間: new Date(checkoutTime),
+              来店日時: currentData.entry_time
+            })
+
+          if (paymentError) throw paymentError
+        }
+      }
+
+      // 2. 訪問履歴に保存
       const { error: visitError } = await supabase
         .from('visit_history')
         .insert({
@@ -35,18 +69,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (visitError) throw visitError
 
-      // 2. 現在の注文をクリア
-      const { error: deleteOrderError } = await supabase
+      // 3. 現在の注文をクリア
+      await supabase
         .from('current_order_items')
         .delete()
         .eq('table_id', tableId)
-      
-      if (deleteOrderError) {
-        console.error('Failed to delete order items:', deleteOrderError)
-        throw deleteOrderError
-      }
 
-      // 3. テーブル状態をクリア
+      // 4. テーブル状態をクリア
       const { error: updateError } = await supabase
         .from('table_status')
         .update({
