@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'  // useEffectをインポートに追加
+import React, { useState } from 'react'  // useEffectを削除
 import { OrderItem } from '../../types'
 
 interface ItemDetailModalProps {
@@ -43,18 +43,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     <div 
       className="item-detail-modal" 
       onClick={onClose}
-      style={{ 
-        WebkitTransform: 'translateZ(0)',
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}
+      style={{ WebkitTransform: 'translateZ(0)' }}
     >
       <div className="item-detail-content" onClick={(e) => e.stopPropagation()}>
         <h3>{item.name}</h3>
