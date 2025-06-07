@@ -99,28 +99,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       console.log('作成された注文:', orderData)
 
-      // 2. order_itemsに明細を保存
-      if (orderItems && orderItems.length > 0 && orderData) {
-        const itemsToInsert = orderItems.map((item: OrderItem) => ({
-          order_id: orderData.id,
-          category: '', // TODO: カテゴリー情報
-          product_name: item.name,
-          cast_name: item.cast || null,
-          unit_price: item.price,
-          quantity: item.quantity,
-          subtotal: item.price * item.quantity,
-          pack_number: 0
-        }))
+// 2. order_itemsに明細を保存（修正版）
+if (orderItems && orderItems.length > 0 && orderData) {
+  const itemsToInsert = orderItems.map((item: OrderItem) => {
+    const unitPriceExclTax = Math.floor(item.price / (1 + consumptionTaxRate))
+    const taxAmount = item.price - unitPriceExclTax
+    
+    return {
+      order_id: orderData.id,
+      category: '',
+      product_name: item.name,
+      cast_name: item.cast || null,
+      unit_price: item.price,              // 税込単価
+      unit_price_excl_tax: unitPriceExclTax, // 税抜単価
+      tax_amount: taxAmount,                // 税額
+      quantity: item.quantity,
+      subtotal: item.price * item.quantity, // 税込小計
+      pack_number: 0
+    }
+  })
 
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(itemsToInsert)
-
-        if (itemsError) {
-          console.error('注文明細保存エラー:', itemsError)
-          throw itemsError
-        }
-      }
+  const { error: itemsError } = await supabase
+    .from('order_items')
+    .insert(itemsToInsert)
+}
 
       // 3. paymentsテーブルに支払い情報を保存
       const { error: paymentError } = await supabase
