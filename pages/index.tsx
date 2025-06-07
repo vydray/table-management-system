@@ -814,7 +814,19 @@ export default function Home() {
       {showModal && (
         <div id="modal" className={modalMode === 'new' ? 'modal-new' : 'modal-edit'}>
           <button id="modal-close" onClick={() => setShowModal(false)}>×</button>
-          <h3>📌 {currentTable} の操作</h3>
+          <h3>
+            📌 {currentTable} の操作
+            {modalMode === 'edit' && (
+              <span style={{
+                marginLeft: '20px',
+                fontSize: '16px',
+                fontWeight: 'normal',
+                color: '#666'
+              }}>
+                滞在時間: {tables[currentTable]?.elapsed || '0分'}
+              </span>
+            )}
+          </h3>
 
           {modalMode === 'new' ? (
             <div id="form-fields">
@@ -867,17 +879,6 @@ export default function Home() {
           ) : (
             <div id="details">
               <div className="order-section">
-                {/* 滞在時間を追加 */}
-                <div style={{
-                  textAlign: 'center',
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  padding: '10px 0',
-                  color: '#333'
-                }}>
-                  滞在時間: {tables[currentTable]?.elapsed || '0分'}
-                </div>
-
                 <div className="datetime-edit">
                   <span className="label-text">入店日時：</span>
                   <select 

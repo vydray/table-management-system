@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'  // useEffectを追加
+import React, { useState, useEffect } from 'react'
 import { OrderItem } from '../../types'
 
 interface ItemDetailModalProps {
@@ -23,24 +23,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   const [isEditingQuantity, setIsEditingQuantity] = useState(false)
   const [tempQuantity, setTempQuantity] = useState(item.quantity.toString())
 
-  // ここに追加：モーダルが開いたときにスクロール位置を固定
-  useEffect(() => {
-    // 現在のスクロール位置を保存
-    const scrollY = window.scrollY;
-    
-    // bodyのスクロールを無効化
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-    
-    // クリーンアップ関数
-    return () => {
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, scrollY);
-    };
-  }, []);
+  // モーダルが開いたときの処理を削除（スクロール固定を削除）
+  // useEffectは削除
 
   const handlePriceSubmit = () => {
     const newPrice = parseInt(tempPrice)
@@ -62,9 +46,21 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     <div 
       className="item-detail-modal" 
       onClick={onClose}
-      style={{ WebkitTransform: 'translateZ(0)' }}
+      style={{ 
+        WebkitTransform: 'translateZ(0)',
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
     >
       <div className="item-detail-content" onClick={(e) => e.stopPropagation()}>
+        {/* 以下、既存のコンテンツ */}
         <h3>{item.name}</h3>
         {item.cast && (
           <p className="cast-info">キャスト: {item.cast}</p>
