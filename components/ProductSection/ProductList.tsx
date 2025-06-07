@@ -2,7 +2,7 @@ import React from 'react'
 import { ProductItem } from '../../types'
 
 interface ProductListProps {
-  products: { [productName: string]: ProductItem }
+  products: { [subcategory: string]: ProductItem }  // 型を修正
   selectedProduct: { name: string; price: number; needsCast: boolean } | null
   onSelectProduct: (productName: string, productData: ProductItem) => void
 }
@@ -14,14 +14,14 @@ export const ProductList: React.FC<ProductListProps> = ({
 }) => {
   return (
     <div className="sub-categories">
-      <div className="category-title">商品一覧</div>
+      <div className="category-title">商品を選択</div>
       {Object.entries(products).map(([productName, productData]) => (
-        <div 
+        <div
           key={productName}
           className={`sub-category-item ${selectedProduct?.name === productName ? 'selected' : ''}`}
           onClick={() => onSelectProduct(productName, productData)}
         >
-          {productName}
+          <span>{productName}</span>
           <span className="price">¥{productData.price.toLocaleString()}</span>
         </div>
       ))}

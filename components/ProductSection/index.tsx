@@ -2,7 +2,7 @@ import React from 'react'
 import { CategoryList } from './CategoryList'
 import { ProductList } from './ProductList'
 import { CastSelector } from './CastSelector'
-import { ProductCategories } from '../../types'
+import { ProductCategories, ProductItem } from '../../types'  // ProductItemをインポート
 
 interface ProductSectionProps {
   productCategories: ProductCategories
@@ -21,7 +21,8 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   onSelectCategory,
   onAddProduct
 }) => {
-  const handleProductSelect = (productName: string, productData: any) => {
+  // ProductItem型を使用
+  const handleProductSelect = (productName: string, productData: ProductItem) => {
     onAddProduct(productName, productData.price, productData.needsCast)
   }
 
