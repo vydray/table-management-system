@@ -50,22 +50,16 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
         <button onClick={onClearTable} className="btn-delete">削除</button>
       </div>
 
-      <ItemDetailModal
-        item={selectedOrderItem !== null ? orderItems[selectedOrderItem] : null}
-        isOpen={selectedOrderItem !== null}
-        onClose={() => setSelectedOrderItem(null)}
-        onUpdateQuantity={(newQuantity) => {
-          if (selectedOrderItem !== null) {
-            onUpdateOrderItem(selectedOrderItem, newQuantity)
-          }
-        }}
-        onDelete={() => {
-          if (selectedOrderItem !== null) {
-            onDeleteOrderItem(selectedOrderItem)
-            setSelectedOrderItem(null)
-          }
-        }}
-      />
+      {/* 商品詳細モーダル - 修正版 */}
+      {selectedOrderItem !== null && orderItems[selectedOrderItem] && (
+        <ItemDetailModal
+          item={orderItems[selectedOrderItem]}
+          index={selectedOrderItem}
+          onClose={() => setSelectedOrderItem(null)}
+          onUpdateQuantity={onUpdateOrderItem}
+          onDelete={onDeleteOrderItem}
+        />
+      )}
     </div>
   )
 }
