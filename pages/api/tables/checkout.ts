@@ -26,8 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       visitType,
       paymentCash,
       paymentCard,
-      paymentOther,
-      totalAmount
+      paymentOther
     } = req.body
 
     try {
