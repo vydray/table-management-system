@@ -72,6 +72,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       // サービス料（税込価格に対して）
       const serviceTax = Math.floor(subtotalIncTax * serviceChargeRate)
+      
+      // 端数調整額を計算
+      const roundingAdjustment = totalAmount - (subtotalIncTax + serviceTax)
 
       // 1. ordersテーブルに注文を保存（全ての情報を含む）
       const { data: orderData, error: orderError } = await supabase
@@ -87,6 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           subtotal_excl_tax: subtotal,
           tax_amount: consumptionTax,
           service_charge: serviceTax,
+          rounding_adjustment: roundingAdjustment,  // 端数調整額を追加
           total_incl_tax: totalAmount  // フロントエンドから送られた端数処理後の金額を使用
         })
         .select()
