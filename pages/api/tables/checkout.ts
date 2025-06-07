@@ -1,4 +1,3 @@
-// pages/api/tables/checkout.ts
 import { createClient } from '@supabase/supabase-js'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
@@ -6,8 +5,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!
 )
-
-// OrderItem型の定義を削除して、req.bodyから直接使用
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
@@ -37,15 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (visitError) throw visitError
 
-      // 2. 売上データを保存（必要に応じて）
-      if (orderItems && orderItems.length > 0) {
-        const totalAmount = orderItems.reduce((sum: number, item: { price: number; quantity: number }) => 
-          sum + (item.price * item.quantity), 0
-        )
-        // 売上処理...
-      }
-
-      // 3. 現在の注文をクリア
+      // 2. 現在の注文をクリア（売上保存は一旦スキップ）
       const { error: deleteOrderError } = await supabase
         .from('current_order_items')
         .delete()
@@ -56,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         throw deleteOrderError
       }
 
-      // 4. テーブル状態をクリア
+      // 3. テーブル状態をクリア
       const { error: updateError } = await supabase
         .from('table_status')
         .update({
