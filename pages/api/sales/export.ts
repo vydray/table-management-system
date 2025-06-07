@@ -26,9 +26,10 @@ interface Order {
   checkout_datetime: string
   table_number: string
   staff_name: string | null
-  guest_name?: string | null  // ← guest_nameを追加
+  guest_name?: string | null
   subtotal_excl_tax: number
   tax_amount: number
+  service_charge?: number  // 追加
   total_incl_tax: number
   order_items: OrderItem[]
   payments: Payment[]
@@ -71,9 +72,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (error) throw error
 
       // CSV形式に変換
-      const csvRows = ['会計時間,テーブル番号,お客様名,推し,商品名,担当キャスト,数量,単価,小計,現金,カード,その他,税抜合計,税額,税込合計']
+      const csvRows = ['会計時間,テーブル番号,お客様名,推し,商品名,担当キャスト,数量,単価,小計,現金,カード,その他,税抜合計,消費税,サービス料,総合計']
       
-      const orders = data as Order[]  // ← これが抜けていた！
+      const orders = data as Order[]
       
       orders?.forEach(order => {
         if (order.order_items && order.order_items.length > 0) {
@@ -82,10 +83,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const row = [
               order.checkout_datetime,
               order.table_number,
-              order.guest_name || '',  // ← お客様名を表示
-              order.staff_name || '',  // ← 推し（メインキャスト）
+              order.guest_name || '',
+              order.staff_name || '',
               item.product_name,
-              item.cast_name || '',    // ← この商品の担当キャスト
+              item.cast_name || '',
               item.quantity,
               item.unit_price,
               item.subtotal,
@@ -94,6 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               index === 0 ? payment.other_payment_amount || 0 : '',
               index === 0 ? order.subtotal_excl_tax : '',
               index === 0 ? order.tax_amount : '',
+              index === 0 ? order.service_charge || 0 : '',  // サービス料を追加
               index === 0 ? order.total_incl_tax : ''
             ].join(',')
             csvRows.push(row)

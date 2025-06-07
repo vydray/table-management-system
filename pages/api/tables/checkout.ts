@@ -48,9 +48,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
       }
 
-      // 税抜き合計と税額を計算
-      const subtotal = orderItems.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0)
-      const tax = Math.floor(subtotal * 0.15)
+      // システム設定を取得
+      const { data: settings } = await supabase
+        .from('system_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', ['consumption_tax_rate', 'service_charge_rate'])
+
+      // 設定値を取得
+      const consumptionTaxRate = settings?.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10
+      const serviceChargeRate = settings?.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15
+
+      // 商品合計（税込）
+      const subtotalIncTax = orderItems.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0)
+      // 税抜価格を逆算
+      const subtotal = Math.floor(subtotalIncTax / (1 + consumptionTaxRate))
+      // 消費税額
+      const consumptionTax = subtotalIncTax - subtotal
+      // サービス料（税込価格に対して）
+      const serviceTax = Math.floor(subtotalIncTax * serviceChargeRate)
 
       // 1. ordersテーブルに注文を保存（全ての情報を含む）
       const { data: orderData, error: orderError } = await supabase
@@ -63,9 +78,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           staff_name: castName || currentData.cast_name,
           guest_name: guestName || currentData.guest_name,
           visit_type: visitType || currentData.visit_type,
-          subtotal_excl_tax: subtotal,
-          tax_amount: tax,
-          total_incl_tax: totalAmount || (subtotal + tax)
+          subtotal_excl_tax: subtotal,      // 税抜金額
+          tax_amount: consumptionTax,        // 消費税
+          service_charge: serviceTax,        // サービス料
+          total_incl_tax: totalAmount || (subtotalIncTax + serviceTax)  // 総合計
         })
         .select()
         .single()
