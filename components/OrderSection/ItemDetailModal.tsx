@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'  // useEffectを追加
 import { OrderItem } from '../../types'
 
 interface ItemDetailModalProps {
@@ -22,6 +22,25 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   const [tempPrice, setTempPrice] = useState(item.price.toString())
   const [isEditingQuantity, setIsEditingQuantity] = useState(false)
   const [tempQuantity, setTempQuantity] = useState(item.quantity.toString())
+
+  // ここに追加：モーダルが開いたときにスクロール位置を固定
+  useEffect(() => {
+    // 現在のスクロール位置を保存
+    const scrollY = window.scrollY;
+    
+    // bodyのスクロールを無効化
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    
+    // クリーンアップ関数
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
 
   const handlePriceSubmit = () => {
     const newPrice = parseInt(tempPrice)

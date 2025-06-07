@@ -558,6 +558,7 @@ html, body {
   z-index: 9999;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
+  overflow: auto;  /* 追加：スクロール可能に */
 }
 
 .item-detail-content {
@@ -566,11 +567,22 @@ html, body {
   border-radius: 10px;
   width: 400px;
   max-width: 90%;
+  max-height: 80vh;  /* 追加：最大高さを設定 */
+  overflow-y: auto;  /* 追加：コンテンツが多い場合はスクロール */
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 10000;
   -webkit-transform: translateZ(1px);
   transform: translateZ(1px);
+  margin: 20px;  /* 追加：画面端からの余白 */
+}
+
+/* モバイルやタブレット向けの調整 */
+@media (max-height: 600px) {
+  .item-detail-content {
+    max-height: 90vh;
+    margin: 10px;
+  }
 }
 
 .item-detail-content h3 {
