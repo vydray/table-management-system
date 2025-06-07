@@ -6,6 +6,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 )
 
+// 型定義を追加
+interface OrderItem {
+  name: string
+  cast?: string
+  quantity: number
+  price: number
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     console.log('受信データ:', req.body)
@@ -37,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // 1. 各商品をpaymentsテーブルに保存
       if (orderItems && orderItems.length > 0) {
-        for (const item of orderItems) {
+        for (const item of orderItems as OrderItem[]) {  // 型を明示
           const paymentData = {
             テーブル番号: tableId,
             名前: guestName || currentData.guest_name,
@@ -113,12 +121,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       console.log('会計処理完了')
       res.status(200).json({ success: true })
-    } catch (error: any) {
+    } catch (error) {
       console.error('Checkout error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorCode = (error as any)?.code || 'UNKNOWN'
+      
       res.status(500).json({ 
         error: 'Checkout failed', 
-        details: error.message || error,
-        code: error.code 
+        details: errorMessage,
+        code: errorCode
       })
     }
   } else {
