@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'  // useEffectをインポートに追加
 import { OrderItem } from '../../types'
 
 interface ItemDetailModalProps {
@@ -22,9 +22,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   const [tempPrice, setTempPrice] = useState(item.price.toString())
   const [isEditingQuantity, setIsEditingQuantity] = useState(false)
   const [tempQuantity, setTempQuantity] = useState(item.quantity.toString())
-
-  // モーダルが開いたときの処理を削除（スクロール固定を削除）
-  // useEffectは削除
 
   const handlePriceSubmit = () => {
     const newPrice = parseInt(tempPrice)
@@ -60,7 +57,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
       }}
     >
       <div className="item-detail-content" onClick={(e) => e.stopPropagation()}>
-        {/* 以下、既存のコンテンツ */}
         <h3>{item.name}</h3>
         {item.cast && (
           <p className="cast-info">キャスト: {item.cast}</p>
