@@ -60,10 +60,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // 商品合計（税込）
       const subtotalIncTax = orderItems.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0)
-      // 税抜価格を逆算
-      const subtotal = Math.floor(subtotalIncTax / (1 + consumptionTaxRate))
-      // 消費税額
+      
+      // 商品ごとに税抜き価格を計算して正確な合計を出す
+      const subtotal = orderItems.reduce((sum: number, item: OrderItem) => {
+        const itemPriceExclTax = Math.floor(item.price / (1 + consumptionTaxRate))
+        return sum + (itemPriceExclTax * item.quantity)
+      }, 0)
+      
+      // 消費税額（実際に含まれている税額）
       const consumptionTax = subtotalIncTax - subtotal
+      
       // サービス料（税込価格に対して）
       const serviceTax = Math.floor(subtotalIncTax * serviceChargeRate)
 
