@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { OrderItem } from '../../types'
 
 interface ItemDetailModalProps {
@@ -7,6 +7,7 @@ interface ItemDetailModalProps {
   onClose: () => void
   onUpdateQuantity: (index: number, quantity: number) => void
   onDelete: (index: number) => void
+  onUpdatePrice?: (index: number, price: number) => void  // 追加
 }
 
 export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
@@ -14,8 +15,20 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   index,
   onClose,
   onUpdateQuantity,
-  onDelete
+  onDelete,
+  onUpdatePrice  // 追加
 }) => {
+  const [isEditingPrice, setIsEditingPrice] = useState(false)
+  const [tempPrice, setTempPrice] = useState(item.price.toString())
+
+  const handlePriceSubmit = () => {
+    const newPrice = parseInt(tempPrice)
+    if (!isNaN(newPrice) && newPrice > 0 && onUpdatePrice) {
+      onUpdatePrice(index, newPrice)
+      setIsEditingPrice(false)
+    }
+  }
+
   return (
     <div 
       className="item-detail-modal" 
@@ -30,7 +43,66 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         
         <div className="detail-row">
           <label>単価:</label>
-          <span>¥{item.price.toLocaleString()}</span>
+          {isEditingPrice ? (
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <span>¥</span>
+              <input
+                type="number"
+                value={tempPrice}
+                onChange={(e) => setTempPrice(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') handlePriceSubmit()
+                }}
+                style={{
+                  width: '100px',
+                  padding: '5px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}
+                autoFocus
+              />
+              <button 
+                onClick={handlePriceSubmit}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                OK
+              </button>
+              <button 
+                onClick={() => {
+                  setIsEditingPrice(false)
+                  setTempPrice(item.price.toString())
+                }}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: '#ccc',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                キャンセル
+              </button>
+            </div>
+          ) : (
+            <span 
+              onClick={() => setIsEditingPrice(true)}
+              style={{ 
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                color: '#0066cc'
+              }}
+            >
+              ¥{item.price.toLocaleString()}
+            </span>
+          )}
         </div>
         
         <div className="detail-row">

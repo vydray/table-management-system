@@ -169,6 +169,13 @@ export default function Home() {
     setOrderItems(updatedItems)
   }
 
+  // 注文アイテムの価格を更新（新規追加）
+  const updateOrderItemPrice = (index: number, newPrice: number) => {
+    const updatedItems = [...orderItems]
+    updatedItems[index].price = newPrice
+    setOrderItems(updatedItems)
+  }
+
   // データ取得
   const loadData = async () => {
     try {
@@ -950,6 +957,7 @@ export default function Home() {
                     onClearTable={clearTable}
                     onUpdateOrderItem={updateOrderItemQuantity}
                     onDeleteOrderItem={deleteOrderItem}
+                    onUpdateOrderItemPrice={updateOrderItemPrice}
                   />
                 </div>
               </div>

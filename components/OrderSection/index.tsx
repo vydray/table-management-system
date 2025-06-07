@@ -10,6 +10,7 @@ interface OrderSectionProps {
   onClearTable: () => void
   onUpdateOrderItem: (index: number, newQuantity: number) => void
   onDeleteOrderItem: (index: number) => void
+  onUpdateOrderItemPrice?: (index: number, newPrice: number) => void  // 追加
 }
 
 export const OrderSection: React.FC<OrderSectionProps> = ({
@@ -17,7 +18,8 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
   onCheckout,
   onClearTable,
   onUpdateOrderItem,
-  onDeleteOrderItem
+  onDeleteOrderItem,
+  onUpdateOrderItemPrice  // 追加
 }) => {
   const [selectedOrderItem, setSelectedOrderItem] = useState<number | null>(null)
 
@@ -50,7 +52,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
         <button onClick={onClearTable} className="btn-delete">削除</button>
       </div>
 
-      {/* 商品詳細モーダル - 修正版 */}
+      {/* 商品詳細モーダル */}
       {selectedOrderItem !== null && orderItems[selectedOrderItem] && (
         <ItemDetailModal
           item={orderItems[selectedOrderItem]}
@@ -58,6 +60,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
           onClose={() => setSelectedOrderItem(null)}
           onUpdateQuantity={onUpdateOrderItem}
           onDelete={onDeleteOrderItem}
+          onUpdatePrice={onUpdateOrderItemPrice}  // 追加
         />
       )}
     </div>
