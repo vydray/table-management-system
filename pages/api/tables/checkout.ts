@@ -52,22 +52,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const subtotal = orderItems.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0)
       const tax = Math.floor(subtotal * 0.15)
 
-      // 1. ordersテーブルに注文を保存
+      // 1. ordersテーブルに注文を保存（全ての情報を含む）
       const { data: orderData, error: orderError } = await supabase
-  .from('orders')
-  .insert({
-    receipt_number: `${tableId}-${Date.now()}`,
-    visit_datetime: currentData.entry_time,
-    checkout_datetime: checkoutTime,
-    table_number: tableId,
-    staff_name: castName || currentData.cast_name,
-    guest_name: guestName || currentData.guest_name,  // ← これを追加
-    subtotal_excl_tax: subtotal,
-    tax_amount: tax,
-    total_incl_tax: totalAmount || (subtotal + tax)
-  })
-  .select()
-  .single()
+        .from('orders')
+        .insert({
+          receipt_number: `${tableId}-${Date.now()}`,
+          visit_datetime: currentData.entry_time,
+          checkout_datetime: checkoutTime,
+          table_number: tableId,
+          staff_name: castName || currentData.cast_name,
+          guest_name: guestName || currentData.guest_name,
+          visit_type: visitType || currentData.visit_type,
+          subtotal_excl_tax: subtotal,
+          tax_amount: tax,
+          total_incl_tax: totalAmount || (subtotal + tax)
+        })
+        .select()
+        .single()
 
       if (orderError) {
         console.error('注文保存エラー:', orderError)
@@ -115,31 +116,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error('支払い情報保存エラー:', paymentError)
       }
 
-      // 4. 訪問履歴に保存
-      if (currentData.entry_time) {
-        const { error: visitError } = await supabase
-          .from('visit_history')
-          .insert({
-            table_name: tableId,
-            guest_name: guestName || currentData.guest_name,
-            cast_name: castName || currentData.cast_name,
-            entry_time: currentData.entry_time,
-            visit_type: visitType || currentData.visit_type,
-            checkout_time: checkoutTime
-          })
-
-        if (visitError) {
-          console.error('訪問履歴保存エラー:', visitError)
-        }
-      }
-
-      // 5. current_order_itemsをクリア
+      // 4. current_order_itemsをクリア
       await supabase
         .from('current_order_items')
         .delete()
         .eq('table_id', tableId)
 
-      // 6. table_statusをクリア
+      // 5. table_statusをクリア
       const { error: updateError } = await supabase
         .from('table_status')
         .update({
