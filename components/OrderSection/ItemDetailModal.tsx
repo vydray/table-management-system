@@ -1,4 +1,4 @@
-import React, { useState } from 'react'  // useEffectを削除
+import React, { useState, useEffect, useRef } from 'react'
 import { OrderItem } from '../../types'
 
 interface ItemDetailModalProps {
@@ -22,6 +22,51 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   const [tempPrice, setTempPrice] = useState(item.price.toString())
   const [isEditingQuantity, setIsEditingQuantity] = useState(false)
   const [tempQuantity, setTempQuantity] = useState(item.quantity.toString())
+  const [overlayHeight, setOverlayHeight] = useState('100vh')
+  const modalContentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // 親モーダルの高さを取得
+    const parentModal = document.getElementById('modal')
+    if (parentModal) {
+      const scrollHeight = parentModal.scrollHeight
+      const windowHeight = window.innerHeight
+      
+      // 親モーダルの高さと画面の高さの大きい方を使用
+      const height = Math.max(scrollHeight, windowHeight)
+      setOverlayHeight(`${height}px`)
+    }
+
+    // 初期位置を設定
+    updateModalPosition()
+
+    // スクロールイベントを監視
+    const handleScroll = () => {
+      updateModalPosition()
+    }
+
+    // 親モーダルのスクロールを監視
+    if (parentModal) {
+      parentModal.addEventListener('scroll', handleScroll)
+      return () => {
+        parentModal.removeEventListener('scroll', handleScroll)
+      }
+    }
+  }, [])
+
+  const updateModalPosition = () => {
+    const parentModal = document.getElementById('modal')
+    if (parentModal && modalContentRef.current) {
+      const parentRect = parentModal.getBoundingClientRect()
+      const scrollTop = parentModal.scrollTop
+      
+      // ビューポートの中央を計算
+      const viewportCenterY = window.innerHeight / 2
+      const modalTop = scrollTop + viewportCenterY
+      
+      modalContentRef.current.style.top = `${modalTop}px`
+    }
+  }
 
   const handlePriceSubmit = () => {
     const newPrice = parseInt(tempPrice)
@@ -40,12 +85,41 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   }
 
   return (
-    <div 
-      className="item-detail-modal" 
-      onClick={onClose}
-      style={{ WebkitTransform: 'translateZ(0)' }}
-    >
-      <div className="item-detail-content" onClick={(e) => e.stopPropagation()}>
+    <>
+      {/* 背景オーバーレイ（親モーダルの高さに合わせる） */}
+      <div 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: overlayHeight,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 9998
+        }}
+        onClick={onClose}
+      />
+      
+      {/* モーダルコンテンツ（スクロールに追従） */}
+      <div 
+        ref={modalContentRef}
+        style={{
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%) translateY(-50%)',
+          backgroundColor: 'white',
+          padding: '30px',
+          borderRadius: '10px',
+          width: '400px',
+          maxWidth: '90vw',
+          maxHeight: '80vh',
+          overflowY: 'auto',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          zIndex: 9999,
+          transition: 'top 0.3s ease-out'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3>{item.name}</h3>
         {item.cast && (
           <p className="cast-info">キャスト: {item.cast}</p>
@@ -201,6 +275,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </>
   )
 }

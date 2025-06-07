@@ -558,7 +558,7 @@ html, body {
   z-index: 9999;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
-  overflow: auto;  /* 追加：スクロール可能に */
+  overflow: hidden;  /* autoからhiddenに変更 */
 }
 
 .item-detail-content {
@@ -569,6 +569,7 @@ html, body {
   max-width: 90%;
   max-height: 80vh;  /* 追加：最大高さを設定 */
   overflow-y: auto;  /* 追加：コンテンツが多い場合はスクロール */
+  overflow-x: hidden; 
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 10000;
