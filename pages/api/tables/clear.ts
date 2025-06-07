@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .from('current_orders')
           .delete()
           .eq('table_id', tableId)
-      } catch (error) {
+      } catch {
         // current_ordersテーブルが存在しない場合はスキップ
         console.log('Current orders table might not exist, skipping...')
       }
@@ -36,9 +36,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (error) throw error
 
       res.status(200).json({ success: true })
-    } catch (error: any) {
+    } catch (error) {
       console.error('Clear table error:', error)
-      res.status(500).json({ error: error.message })
+      res.status(500).json({ error: 'Clear table failed' })
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' })

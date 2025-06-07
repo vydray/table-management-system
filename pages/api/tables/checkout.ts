@@ -6,6 +6,13 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 )
 
+interface OrderItem {
+  name: string
+  cast?: string
+  quantity: number
+  price: number
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     const { tableId, checkoutTime, orderItems, guestName, castName, visitType } = req.body
@@ -36,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // 2. 売上データを保存（sales_historyテーブルが存在する場合）
       if (orderItems && orderItems.length > 0) {
-        const totalAmount = orderItems.reduce((sum: number, item: any) => 
+        const totalAmount = orderItems.reduce((sum: number, item: OrderItem) => 
           sum + (item.price * item.quantity), 0
         )
 
@@ -56,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           if (!salesError && salesData) {
             // 売上明細を保存
-            const salesDetails = orderItems.map((item: any) => ({
+            const salesDetails = orderItems.map((item: OrderItem) => ({
               sales_id: salesData.id,
               product_name: item.name,
               cast_name: item.cast || null,
@@ -69,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               .from('sales_details')
               .insert(salesDetails)
           }
-        } catch (error) {
+        } catch {
           // sales_historyテーブルが存在しない場合はスキップ
           console.log('Sales history table might not exist, skipping...')
         }
@@ -81,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .from('current_orders')
           .delete()
           .eq('table_id', tableId)
-      } catch (error) {
+      } catch {
         // current_ordersテーブルが存在しない場合はスキップ
         console.log('Current orders table might not exist, skipping...')
       }
@@ -100,9 +107,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (updateError) throw updateError
 
       res.status(200).json({ success: true })
-    } catch (error: any) {
+    } catch (error) {
       console.error('Checkout error:', error)
-      res.status(500).json({ error: error.message })
+      res.status(500).json({ error: 'Checkout failed' })
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' })
