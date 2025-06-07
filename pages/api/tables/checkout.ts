@@ -15,9 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       guestName,
       paymentCash,
       paymentCard,
-      paymentOther,
-      paymentOtherMethod,
-      totalAmount
+      paymentOther
+      // paymentOtherMethod と totalAmount を削除（使用していないため）
     } = req.body
 
     try {
