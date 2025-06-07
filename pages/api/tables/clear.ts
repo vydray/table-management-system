@@ -11,15 +11,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { tableId } = req.body
 
     try {
-      // 1. 現在の注文をクリア
-      try {
-        await supabase
-          .from('current_orders')
-          .delete()
-          .eq('table_id', tableId)
-      } catch {
-        // current_ordersテーブルが存在しない場合はスキップ
-        console.log('Current orders table might not exist, skipping...')
+      // 1. 現在の注文をクリア（重要：正しいテーブル名を使用）
+      const { error: deleteOrderError } = await supabase
+        .from('current_order_items')
+        .delete()
+        .eq('table_id', tableId)
+      
+      if (deleteOrderError) {
+        console.error('Failed to delete order items:', deleteOrderError)
+        throw deleteOrderError
       }
 
       // 2. テーブル状態をクリア

@@ -41,56 +41,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (visitError) throw visitError
 
-      // 2. 売上データを保存（sales_historyテーブルが存在する場合）
-      if (orderItems && orderItems.length > 0) {
-        const totalAmount = orderItems.reduce((sum: number, item: OrderItem) => 
-          sum + (item.price * item.quantity), 0
-        )
+      // 2. 売上データを保存（必要に応じて）
+      // ... 省略 ...
 
-        try {
-          const { data: salesData, error: salesError } = await supabase
-            .from('sales_history')
-            .insert({
-              table_id: tableId,
-              guest_name: currentData.guest_name || guestName,
-              cast_name: currentData.cast_name || castName,
-              checkout_time: checkoutTime,
-              total_amount: totalAmount,
-              entry_time: currentData.entry_time
-            })
-            .select()
-            .single()
-
-          if (!salesError && salesData) {
-            // 売上明細を保存
-            const salesDetails = orderItems.map((item: OrderItem) => ({
-              sales_id: salesData.id,
-              product_name: item.name,
-              cast_name: item.cast || null,
-              quantity: item.quantity,
-              unit_price: item.price,
-              subtotal: item.price * item.quantity
-            }))
-
-            await supabase
-              .from('sales_details')
-              .insert(salesDetails)
-          }
-        } catch {
-          // sales_historyテーブルが存在しない場合はスキップ
-          console.log('Sales history table might not exist, skipping...')
-        }
-      }
-
-      // 3. 現在の注文をクリア
-      try {
-        await supabase
-          .from('current_orders')
-          .delete()
-          .eq('table_id', tableId)
-      } catch {
-        // current_ordersテーブルが存在しない場合はスキップ
-        console.log('Current orders table might not exist, skipping...')
+      // 3. 現在の注文をクリア（重要：正しいテーブル名を使用）
+      const { error: deleteOrderError } = await supabase
+        .from('current_order_items')
+        .delete()
+        .eq('table_id', tableId)
+      
+      if (deleteOrderError) {
+        console.error('Failed to delete order items:', deleteOrderError)
+        throw deleteOrderError
       }
 
       // 4. テーブル状態をクリア

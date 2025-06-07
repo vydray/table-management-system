@@ -13,82 +13,68 @@ interface OrderItem {
   price: number
 }
 
-interface CurrentOrderItem {
-  table_id: string
-  product_name: string
-  cast_name: string | null
-  quantity: number
-  unit_price: number
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'GET') {
-    // 特定テーブルの現在の注文を取得
-    const { tableId } = req.query
-    
-    const { data, error } = await supabase
-      .from('current_order_items')
-      .select('*')
-      .eq('table_id', tableId as string)
-      .order('created_at', { ascending: true })
-    
-    if (error) {
-      return res.status(500).json({ error: error.message })
-    }
-    
-    return res.status(200).json(data || [])
-  }
-  
-  if (req.method === 'POST') {
-    // 注文を保存/更新
-    const { tableId, orderItems } = req.body as { tableId: string; orderItems: OrderItem[] }
-    
-    try {
-      // 既存の注文を削除
-      await supabase
-        .from('current_order_items')
-        .delete()
-        .eq('table_id', tableId)
+  const { method } = req
+
+  switch (method) {
+    case 'GET': {
+      const { tableId } = req.query
       
-      // 新しい注文を挿入
-      if (orderItems && orderItems.length > 0) {
-        const itemsToInsert: CurrentOrderItem[] = orderItems.map((item) => ({
-          table_id: tableId,
-          product_name: item.name,
-          cast_name: item.cast || null,
-          quantity: item.quantity,
-          unit_price: item.price
-        }))
-        
-        const { error } = await supabase
+      try {
+        const { data, error } = await supabase
           .from('current_order_items')
-          .insert(itemsToInsert)
+          .select('*')
+          .eq('table_id', tableId)
         
         if (error) throw error
+        
+        res.status(200).json(data || [])
+      } catch (error) {
+        console.error('Error fetching orders:', error)
+        res.status(500).json({ error: 'Failed to fetch orders' })
       }
+      break
+    }
+
+    case 'POST': {
+      const { tableId, orderItems } = req.body
       
-      return res.status(200).json({ success: true })
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      return res.status(500).json({ error: errorMessage })
+      try {
+        // 既存のアイテムを削除
+        const { error: deleteError } = await supabase
+          .from('current_order_items')
+          .delete()
+          .eq('table_id', tableId)
+        
+        if (deleteError) throw deleteError
+        
+        // 新しいアイテムを挿入
+        if (orderItems && orderItems.length > 0) {
+          const itemsToInsert = orderItems.map((item: OrderItem) => ({
+            table_id: tableId,
+            product_name: item.name,
+            cast_name: item.cast || null,
+            quantity: item.quantity,
+            unit_price: item.price
+          }))
+          
+          const { error: insertError } = await supabase
+            .from('current_order_items')
+            .insert(itemsToInsert)
+          
+          if (insertError) throw insertError
+        }
+        
+        res.status(200).json({ success: true })
+      } catch (error) {
+        console.error('Error saving orders:', error)
+        res.status(500).json({ error: 'Failed to save orders' })
+      }
+      break
     }
+
+    default:
+      res.setHeader('Allow', ['GET', 'POST'])
+      res.status(405).end(`Method ${method} Not Allowed`)
   }
-  
-  if (req.method === 'DELETE') {
-    // 特定テーブルの注文をクリア
-    const { tableId } = req.body as { tableId: string }
-    
-    const { error } = await supabase
-      .from('current_order_items')
-      .delete()
-      .eq('table_id', tableId)
-    
-    if (error) {
-      return res.status(500).json({ error: error.message })
-    }
-    
-    return res.status(200).json({ success: true })
-  }
-  
-  return res.status(405).json({ error: 'Method not allowed' })
 }
