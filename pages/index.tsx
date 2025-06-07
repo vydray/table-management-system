@@ -121,37 +121,37 @@ export default function Home() {
     }
   }
 
- // 商品を直接注文に追加（タップで追加）
-const addProductToOrder = (productName: string, price: number, needsCast: boolean, castName?: string) => {
-  if (needsCast && !castName) {
-    // キャストが必要な商品を選択
-    setSelectedProduct({ name: productName, price: price, needsCast: true })
-    return
-  }
-  
-  // 既存の商品をチェック（商品名、キャスト名、価格が全て同じものを探す）
-  const existingItemIndex = orderItems.findIndex(item => 
-    item.name === productName && 
-    item.price === price &&  // 価格も一致条件に追加
-    ((!needsCast && !item.cast) || (needsCast && item.cast === castName))
-  )
-  
-  if (existingItemIndex >= 0) {
-    // 既存の商品の個数を増やす
-    const updatedItems = [...orderItems]
-    updatedItems[existingItemIndex].quantity += 1
-    setOrderItems(updatedItems)
-  } else {
-    // 新しい商品を追加（価格が異なる場合は別商品として扱う）
-    const newItem: OrderItem = {
-      name: productName,
-      cast: needsCast ? castName : undefined,
-      quantity: 1,
-      price: price
+  // 商品を直接注文に追加（タップで追加）
+  const addProductToOrder = (productName: string, price: number, needsCast: boolean, castName?: string) => {
+    if (needsCast && !castName) {
+      // キャストが必要な商品を選択
+      setSelectedProduct({ name: productName, price: price, needsCast: true })
+      return
     }
-    setOrderItems([...orderItems, newItem])
+    
+    // 既存の商品をチェック（商品名、キャスト名、価格が全て同じものを探す）
+    const existingItemIndex = orderItems.findIndex(item => 
+      item.name === productName && 
+      item.price === price &&  // 価格も一致条件に追加
+      ((!needsCast && !item.cast) || (needsCast && item.cast === castName))
+    )
+    
+    if (existingItemIndex >= 0) {
+      // 既存の商品の個数を増やす
+      const updatedItems = [...orderItems]
+      updatedItems[existingItemIndex].quantity += 1
+      setOrderItems(updatedItems)
+    } else {
+      // 新しい商品を追加（価格が異なる場合は別商品として扱う）
+      const newItem: OrderItem = {
+        name: productName,
+        cast: needsCast ? castName : undefined,
+        quantity: 1,
+        price: price
+      }
+      setOrderItems([...orderItems, newItem])
+    }
   }
-}
 
   // 注文アイテムを削除
   const deleteOrderItem = (index: number) => {
@@ -867,6 +867,17 @@ const addProductToOrder = (productName: string, price: number, needsCast: boolea
           ) : (
             <div id="details">
               <div className="order-section">
+                {/* 滞在時間を追加 */}
+                <div style={{
+                  textAlign: 'center',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  padding: '10px 0',
+                  color: '#333'
+                }}>
+                  滞在時間: {tables[currentTable]?.elapsed || '0分'}
+                </div>
+
                 <div className="datetime-edit">
                   <span className="label-text">入店日時：</span>
                   <select 
@@ -916,31 +927,6 @@ const addProductToOrder = (productName: string, price: number, needsCast: boolea
                     ))}
                   </select>
                 </div>
-                
-                <div className="customer-header">
-                  <div className="oshi-edit">
-                    <span className="label-text">推し：</span>
-                    <select 
-                      value={formData.castName}
-                      onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
-                      className="cast-select"
-                    >
-                      <option value="">-- 推しを選択 --</option>
-                      {castList.map(name => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="guest-edit">
-                    <span className="label-text">お客様名：</span>
-                    <input
-                      type="text"
-                      value={formData.guestName}
-                      onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
-                      className="guest-input"
-                    />
-                  </div>
-                </div>
 
                 <div className="pos-container">
                   <ProductSection
@@ -959,6 +945,11 @@ const addProductToOrder = (productName: string, price: number, needsCast: boolea
                     onUpdateOrderItem={updateOrderItemQuantity}
                     onDeleteOrderItem={deleteOrderItem}
                     onUpdateOrderItemPrice={updateOrderItemPrice}
+                    castName={formData.castName}
+                    guestName={formData.guestName}
+                    onUpdateCast={(value) => setFormData({ ...formData, castName: value })}
+                    onUpdateGuest={(value) => setFormData({ ...formData, guestName: value })}
+                    castList={castList}
                   />
                 </div>
               </div>

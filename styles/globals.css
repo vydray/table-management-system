@@ -365,7 +365,7 @@ html, body {
 .pos-container {
   display: flex;
   gap: 20px;
-  height: calc(100% - 100px);
+  height: calc(100% - 60px);
   justify-content: space-between;
 }
 
@@ -500,6 +500,7 @@ html, body {
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
+  height: calc(100% - 240px);
 }
 
 .order-table-header {

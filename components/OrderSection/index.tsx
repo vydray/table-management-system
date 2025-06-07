@@ -10,7 +10,12 @@ interface OrderSectionProps {
   onClearTable: () => void
   onUpdateOrderItem: (index: number, newQuantity: number) => void
   onDeleteOrderItem: (index: number) => void
-  onUpdateOrderItemPrice?: (index: number, newPrice: number) => void  // 追加
+  onUpdateOrderItemPrice?: (index: number, newPrice: number) => void
+  castName?: string  // 追加
+  guestName?: string  // 追加
+  onUpdateCast?: (value: string) => void  // 追加
+  onUpdateGuest?: (value: string) => void  // 追加
+  castList?: string[]  // 追加
 }
 
 export const OrderSection: React.FC<OrderSectionProps> = ({
@@ -19,7 +24,12 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
   onClearTable,
   onUpdateOrderItem,
   onDeleteOrderItem,
-  onUpdateOrderItemPrice  // 追加
+  onUpdateOrderItemPrice,
+  castName = '',  // 追加
+  guestName = '',  // 追加
+  onUpdateCast,  // 追加
+  onUpdateGuest,  // 追加
+  castList = []  // 追加
 }) => {
   const [selectedOrderItem, setSelectedOrderItem] = useState<number | null>(null)
 
@@ -34,6 +44,51 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
   return (
     <div className="right-section">
       <div className="order-title">お会計</div>
+      
+      {/* 推しとお客様名をここに移動 */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        padding: '10px 15px',
+        gap: '20px',
+        borderBottom: '1px solid #ddd',
+        marginBottom: '10px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+          <span style={{ whiteSpace: 'nowrap', marginRight: '10px' }}>推し：</span>
+          <select 
+            value={castName}
+            onChange={(e) => onUpdateCast && onUpdateCast(e.target.value)}
+            style={{
+              flex: 1,
+              padding: '4px 8px',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}
+          >
+            <option value="">-- 選択 --</option>
+            {castList.map(name => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+          <span style={{ whiteSpace: 'nowrap', marginRight: '10px' }}>お客様名：</span>
+          <input
+            type="text"
+            value={guestName}
+            onChange={(e) => onUpdateGuest && onUpdateGuest(e.target.value)}
+            style={{
+              flex: 1,
+              padding: '4px 8px',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+      </div>
       
       <OrderTable
         orderItems={orderItems}
@@ -60,7 +115,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
           onClose={() => setSelectedOrderItem(null)}
           onUpdateQuantity={onUpdateOrderItem}
           onDelete={onDeleteOrderItem}
-          onUpdatePrice={onUpdateOrderItemPrice}  // 追加
+          onUpdatePrice={onUpdateOrderItemPrice}
         />
       )}
     </div>
