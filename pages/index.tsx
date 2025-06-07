@@ -1085,7 +1085,12 @@ export default function Home() {
                     onUpdateCast={(value) => setFormData({ ...formData, castName: value })}
                     onUpdateGuest={(value) => setFormData({ ...formData, guestName: value })}
                     castList={castList}
-                  />
+                    subtotal={orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+  serviceTax={Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * systemSettings.serviceChargeRate)}
+  roundedTotal={getRoundedTotal(getTotal())}
+  roundingAdjustment={getRoundingAdjustment()}
+/>
+                  
                 </div>
               </div>
             </div>

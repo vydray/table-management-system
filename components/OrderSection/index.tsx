@@ -16,6 +16,11 @@ interface OrderSectionProps {
   onUpdateCast?: (value: string) => void
   onUpdateGuest?: (value: string) => void
   castList?: string[]
+  // 追加
+  subtotal: number
+  serviceTax: number
+  roundedTotal: number
+  roundingAdjustment: number
 }
 
 export const OrderSection: React.FC<OrderSectionProps> = ({
@@ -29,17 +34,16 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
   guestName = '',
   onUpdateCast,
   onUpdateGuest,
-  castList = []
+  castList = [],
+  // 追加したpropsを受け取る
+  subtotal,
+  serviceTax,
+  roundedTotal,
+  roundingAdjustment
 }) => {
   const [selectedOrderItem, setSelectedOrderItem] = useState<number | null>(null)
 
-  const calculateTotal = () => {
-    const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const tax = Math.floor(subtotal * 0.15)
-    return { subtotal, tax, total: subtotal + tax }
-  }
-
-  const { subtotal, tax, total } = calculateTotal()
+  // calculateTotal関数を削除
 
   return (
     <div className="right-section">
@@ -49,7 +53,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',  // 垂直方向の中央揃えを追加
+        alignItems: 'center',
         padding: '10px 15px',
         gap: '20px',
         borderBottom: '1px solid #ddd',
@@ -59,12 +63,12 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
           display: 'flex', 
           alignItems: 'center', 
           flex: 1,
-          height: '32px'  // 高さを統一
+          height: '32px'
         }}>
           <span style={{ 
             whiteSpace: 'nowrap', 
             marginRight: '10px',
-            minWidth: '60px'  // 最小幅を設定
+            minWidth: '60px'
           }}>推し：</span>
           <select 
             value={castName}
@@ -75,7 +79,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
               border: '1px solid #ddd',
               borderRadius: '4px',
               fontSize: '14px',
-              height: '28px'  // 高さを統一
+              height: '28px'
             }}
           >
             <option value="">-- 選択 --</option>
@@ -88,13 +92,13 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
           display: 'flex', 
           alignItems: 'center', 
           flex: 1,
-          height: '32px'  // 高さを統一
+          height: '32px'
         }}>
           <span style={{ 
             whiteSpace: 'nowrap', 
             marginRight: '10px',
-            minWidth: '60px'  // 最小幅を設定
-          }}>お客様：</span>  {/* 修正：名を削除 */}
+            minWidth: '60px'
+          }}>お客様：</span>
           <input
             type="text"
             value={guestName}
@@ -105,7 +109,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
               border: '1px solid #ddd',
               borderRadius: '4px',
               fontSize: '14px',
-              height: '28px'  // 高さを統一
+              height: '28px'
             }}
           />
         </div>
@@ -119,8 +123,9 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
       
       <OrderTotal
         subtotal={subtotal}
-        tax={tax}
-        total={total}
+        tax={serviceTax}
+        total={roundedTotal}
+        roundingAdjustment={roundingAdjustment}
       />
       
       <div className="action-buttons">
