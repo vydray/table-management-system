@@ -450,7 +450,7 @@ export default function Home() {
         alert('レポート機能は準備中です')
         break
       case 'settings':
-        alert('設定機能は準備中です')
+        router.push('/settings')
         break
       case 'logout':
         if (confirm('ログアウトしますか？')) {
