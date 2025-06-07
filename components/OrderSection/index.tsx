@@ -11,11 +11,11 @@ interface OrderSectionProps {
   onUpdateOrderItem: (index: number, newQuantity: number) => void
   onDeleteOrderItem: (index: number) => void
   onUpdateOrderItemPrice?: (index: number, newPrice: number) => void
-  castName?: string  // 追加
-  guestName?: string  // 追加
-  onUpdateCast?: (value: string) => void  // 追加
-  onUpdateGuest?: (value: string) => void  // 追加
-  castList?: string[]  // 追加
+  castName?: string
+  guestName?: string
+  onUpdateCast?: (value: string) => void
+  onUpdateGuest?: (value: string) => void
+  castList?: string[]
 }
 
 export const OrderSection: React.FC<OrderSectionProps> = ({
@@ -25,11 +25,11 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
   onUpdateOrderItem,
   onDeleteOrderItem,
   onUpdateOrderItemPrice,
-  castName = '',  // 追加
-  guestName = '',  // 追加
-  onUpdateCast,  // 追加
-  onUpdateGuest,  // 追加
-  castList = []  // 追加
+  castName = '',
+  guestName = '',
+  onUpdateCast,
+  onUpdateGuest,
+  castList = []
 }) => {
   const [selectedOrderItem, setSelectedOrderItem] = useState<number | null>(null)
 
@@ -45,17 +45,27 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
     <div className="right-section">
       <div className="order-title">お会計</div>
       
-      {/* 推しとお客様名をここに移動 */}
+      {/* 推しとお客様名をここに移動 - 修正版 */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
+        alignItems: 'center',  // 垂直方向の中央揃えを追加
         padding: '10px 15px',
         gap: '20px',
         borderBottom: '1px solid #ddd',
         marginBottom: '10px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-          <span style={{ whiteSpace: 'nowrap', marginRight: '10px' }}>推し：</span>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          flex: 1,
+          height: '32px'  // 高さを統一
+        }}>
+          <span style={{ 
+            whiteSpace: 'nowrap', 
+            marginRight: '10px',
+            minWidth: '60px'  // 最小幅を設定
+          }}>推し：</span>
           <select 
             value={castName}
             onChange={(e) => onUpdateCast && onUpdateCast(e.target.value)}
@@ -64,7 +74,8 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
               padding: '4px 8px',
               border: '1px solid #ddd',
               borderRadius: '4px',
-              fontSize: '14px'
+              fontSize: '14px',
+              height: '28px'  // 高さを統一
             }}
           >
             <option value="">-- 選択 --</option>
@@ -73,8 +84,17 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
             ))}
           </select>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-          <span style={{ whiteSpace: 'nowrap', marginRight: '10px' }}>お客様名：</span>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          flex: 1,
+          height: '32px'  // 高さを統一
+        }}>
+          <span style={{ 
+            whiteSpace: 'nowrap', 
+            marginRight: '10px',
+            minWidth: '60px'  // 最小幅を設定
+          }}>お客様：</span>  {/* 修正：名を削除 */}
           <input
             type="text"
             value={guestName}
@@ -84,7 +104,8 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
               padding: '4px 8px',
               border: '1px solid #ddd',
               borderRadius: '4px',
-              fontSize: '14px'
+              fontSize: '14px',
+              height: '28px'  // 高さを統一
             }}
           />
         </div>
