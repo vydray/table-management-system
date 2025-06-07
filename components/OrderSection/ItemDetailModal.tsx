@@ -57,7 +57,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   const updateModalPosition = () => {
     const parentModal = document.getElementById('modal')
     if (parentModal && modalContentRef.current) {
-      const parentRect = parentModal.getBoundingClientRect()
       const scrollTop = parentModal.scrollTop
       
       // ビューポートの中央を計算
