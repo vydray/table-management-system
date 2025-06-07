@@ -274,9 +274,12 @@ export default function Home() {
           price: item.unit_price
         }))
         setOrderItems(items)
+      } else {
+        setOrderItems([])  // データがない場合は空配列をセット
       }
     } catch (error) {
       console.error('Error loading order items:', error)
+      setOrderItems([])  // エラーの場合も空配列をセット
     }
   }
 
@@ -358,6 +361,7 @@ export default function Home() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderItems])
+  
   // メニューアイテムのクリックハンドラー
   const handleMenuClick = async (action: string) => {
     setShowMenu(false) // メニューを閉じる
@@ -456,22 +460,29 @@ export default function Home() {
     }
   }
 
-  // 会計処理
+  // 会計処理（修正版）
   const checkout = async () => {
     if (!confirm(`${currentTable} を会計完了にしますか？`)) return
     
     try {
       const checkoutTime = getJapanTimeString(new Date())
       
+      // 会計データをSupabaseに送信（注文データも含める）
       await fetch('/api/tables/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           tableId: currentTable,
-          checkoutTime
+          checkoutTime,
+          orderItems: orderItems,  // 注文データを送信
+          guestName: formData.guestName,
+          castName: formData.castName,
+          visitType: formData.visitType
         })
       })
       
+      // 注文データをクリア
+      setOrderItems([])
       setShowModal(false)
       loadData()
     } catch (error) {
@@ -480,7 +491,7 @@ export default function Home() {
     }
   }
 
-  // テーブルクリア
+  // テーブルクリア（修正版）
   const clearTable = async () => {
     if (!confirm(`${currentTable} の情報を削除しますか？`)) return
     
@@ -491,6 +502,8 @@ export default function Home() {
         body: JSON.stringify({ tableId: currentTable })
       })
       
+      // 注文データをクリア
+      setOrderItems([])
       setShowModal(false)
       loadData()
     } catch (error) {
@@ -565,7 +578,7 @@ export default function Home() {
     setIsMoving(false)
   }
 
-  // モーダルを開く
+  // モーダルを開く（修正版）
   const openModal = (table: TableData) => {
     setCurrentTable(table.table)
     
@@ -582,7 +595,7 @@ export default function Home() {
         editHour: now.getHours(),
         editMinute: Math.floor(now.getMinutes() / 5) * 5
       })
-      setOrderItems([])
+      setOrderItems([])  // 空席の場合は必ずクリア
     } else {
       setModalMode('edit')
       const time = table.time ? new Date(table.time.replace(' ', 'T')) : new Date()
@@ -597,7 +610,8 @@ export default function Home() {
         editMinute: time.getMinutes()
       })
       // 既存の注文データを読み込む
-      loadOrderItems(table.table)
+      setOrderItems([])  // 一旦クリアしてから
+      loadOrderItems(table.table)  // 改めて読み込む
     }
     
     setShowModal(true)
@@ -714,6 +728,7 @@ export default function Home() {
       </div>
     )
   }
+  
   return (
     <>
       <Head>

@@ -8,43 +8,103 @@ const supabase = createClient(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { tableId, checkoutTime } = req.body  // フロントエンドから日本時間を受け取る
+    const { tableId, checkoutTime, orderItems, guestName, castName, visitType } = req.body
 
-    // 現在のデータを取得
-    const { data: currentData, error: fetchError } = await supabase
-      .from('table_status')
-      .select('*')
-      .eq('table_name', tableId)
-      .single()
+    try {
+      // 現在のテーブル情報を取得
+      const { data: currentData, error: fetchError } = await supabase
+        .from('table_status')
+        .select('*')
+        .eq('table_name', tableId)
+        .single()
 
-    if (fetchError) return res.status(500).json({ error: fetchError.message })
+      if (fetchError) throw fetchError
 
-    // 履歴に追加（checkout_timeも日本時間で保存）
-    const { error: insertError } = await supabase
-      .from('visit_history')
-      .insert({
-        table_name: currentData.table_name,
-        guest_name: currentData.guest_name,
-        cast_name: currentData.cast_name,
-        entry_time: currentData.entry_time,
-        visit_type: currentData.visit_type,
-        checkout_time: checkoutTime  // 日本時間で保存
-      })
+      // 1. 訪問履歴に保存
+      const { error: visitError } = await supabase
+        .from('visit_history')
+        .insert({
+          table_name: tableId,
+          guest_name: currentData.guest_name || guestName,
+          cast_name: currentData.cast_name || castName,
+          entry_time: currentData.entry_time,
+          visit_type: currentData.visit_type || visitType,
+          checkout_time: checkoutTime
+        })
 
-    if (insertError) return res.status(500).json({ error: insertError.message })
+      if (visitError) throw visitError
 
-    // 現在のテーブルをクリア
-    const { error: updateError } = await supabase
-      .from('table_status')
-      .update({
-        guest_name: null,
-        cast_name: null,
-        entry_time: null,
-        visit_type: null
-      })
-      .eq('table_name', tableId)
+      // 2. 売上データを保存（sales_historyテーブルが存在する場合）
+      if (orderItems && orderItems.length > 0) {
+        const totalAmount = orderItems.reduce((sum: number, item: any) => 
+          sum + (item.price * item.quantity), 0
+        )
 
-    if (updateError) return res.status(500).json({ error: updateError.message })
-    res.status(200).json({ success: true })
+        try {
+          const { data: salesData, error: salesError } = await supabase
+            .from('sales_history')
+            .insert({
+              table_id: tableId,
+              guest_name: currentData.guest_name || guestName,
+              cast_name: currentData.cast_name || castName,
+              checkout_time: checkoutTime,
+              total_amount: totalAmount,
+              entry_time: currentData.entry_time
+            })
+            .select()
+            .single()
+
+          if (!salesError && salesData) {
+            // 売上明細を保存
+            const salesDetails = orderItems.map((item: any) => ({
+              sales_id: salesData.id,
+              product_name: item.name,
+              cast_name: item.cast || null,
+              quantity: item.quantity,
+              unit_price: item.price,
+              subtotal: item.price * item.quantity
+            }))
+
+            await supabase
+              .from('sales_details')
+              .insert(salesDetails)
+          }
+        } catch (error) {
+          // sales_historyテーブルが存在しない場合はスキップ
+          console.log('Sales history table might not exist, skipping...')
+        }
+      }
+
+      // 3. 現在の注文をクリア
+      try {
+        await supabase
+          .from('current_orders')
+          .delete()
+          .eq('table_id', tableId)
+      } catch (error) {
+        // current_ordersテーブルが存在しない場合はスキップ
+        console.log('Current orders table might not exist, skipping...')
+      }
+
+      // 4. テーブル状態をクリア
+      const { error: updateError } = await supabase
+        .from('table_status')
+        .update({
+          guest_name: null,
+          cast_name: null,
+          entry_time: null,
+          visit_type: null
+        })
+        .eq('table_name', tableId)
+
+      if (updateError) throw updateError
+
+      res.status(200).json({ success: true })
+    } catch (error: any) {
+      console.error('Checkout error:', error)
+      res.status(500).json({ error: error.message })
+    }
+  } else {
+    res.status(405).json({ error: 'Method not allowed' })
   }
 }
