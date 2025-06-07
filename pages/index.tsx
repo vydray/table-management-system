@@ -4,6 +4,12 @@ import Head from 'next/head'
 import { ProductSection } from '../components/ProductSection'
 import { OrderSection } from '../components/OrderSection'
 import { TableData, OrderItem, ProductCategories, ProductCategory, Product } from '../types'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 // テーブルの位置情報
 const tablePositions = {
@@ -59,6 +65,14 @@ export default function Home() {
     otherMethod: ''
   })
 
+  // システム設定の状態
+  const [systemSettings, setSystemSettings] = useState({
+    consumptionTaxRate: 0.10,
+    serviceChargeRate: 0.15,
+    roundingUnit: 100,
+    roundingMethod: 0
+  })
+
   // フォームの状態
   const [formData, setFormData] = useState({
     guestName: '',
@@ -92,8 +106,48 @@ export default function Home() {
   // 合計金額を計算する関数
   const getTotal = () => {
     const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const tax = Math.floor(subtotal * 0.15)
-    return subtotal + tax
+    const serviceTax = Math.floor(subtotal * systemSettings.serviceChargeRate)
+    return subtotal + serviceTax
+  }
+
+  // 端数処理を計算する関数
+  const getRoundedTotal = (amount: number) => {
+    if (systemSettings.roundingUnit <= 0) return amount
+    
+    switch (systemSettings.roundingMethod) {
+      case 0: // 切り捨て
+        return Math.floor(amount / systemSettings.roundingUnit) * systemSettings.roundingUnit
+      case 1: // 切り上げ
+        return Math.ceil(amount / systemSettings.roundingUnit) * systemSettings.roundingUnit
+      case 2: // 四捨五入
+        return Math.round(amount / systemSettings.roundingUnit) * systemSettings.roundingUnit
+      default:
+        return amount
+    }
+  }
+
+  // 端数調整額を取得
+  const getRoundingAdjustment = () => {
+    const originalTotal = getTotal()
+    const roundedTotal = getRoundedTotal(originalTotal)
+    return roundedTotal - originalTotal
+  }
+
+  // システム設定を取得
+  const loadSystemSettings = async () => {
+    const { data: settings } = await supabase
+      .from('system_settings')
+      .select('setting_key, setting_value')
+    
+    if (settings) {
+      const settingsObj = {
+        consumptionTaxRate: settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10,
+        serviceChargeRate: settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15,
+        roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
+        roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0
+      }
+      setSystemSettings(settingsObj)
+    }
   }
 
   // 商品データをAPIから取得
@@ -328,6 +382,7 @@ export default function Home() {
 
   // 初期化
   useEffect(() => {
+    loadSystemSettings()
     loadData()
     loadCastList()
     loadProducts()
@@ -477,49 +532,33 @@ export default function Home() {
   }
 
   // 会計処理（修正版）
-   const checkout = async () => {
-  // 会計モーダルを表示
-  setPaymentData({
-    cash: 0,
-    card: 0,
-    other: 0,
-    otherMethod: ''
-  })
-  setShowPaymentModal(true)
-}
-
-// 会計完了処理（修正版）
-const completeCheckout = async () => {
-  const totalPaid = paymentData.cash + paymentData.card + paymentData.other
-  
-  if (totalPaid < getTotal()) {
-    alert('支払金額が不足しています')
-    return
-  }
-  
-  if (!confirm(`${currentTable} を会計完了にしますか？`)) return
-  
-  try {
-    const checkoutTime = getJapanTimeString(new Date())
-    
-    console.log('送信データ:', { 
-      tableId: currentTable,
-      checkoutTime,
-      orderItems: orderItems,
-      guestName: formData.guestName,
-      castName: formData.castName,
-      visitType: formData.visitType,
-      paymentCash: paymentData.cash,
-      paymentCard: paymentData.card,
-      paymentOther: paymentData.other,
-      paymentOtherMethod: paymentData.otherMethod,
-      totalAmount: getTotal()
+  const checkout = async () => {
+    // 会計モーダルを表示
+    setPaymentData({
+      cash: 0,
+      card: 0,
+      other: 0,
+      otherMethod: ''
     })
+    setShowPaymentModal(true)
+  }
+
+  // 会計完了処理（修正版）
+  const completeCheckout = async () => {
+    const totalPaid = paymentData.cash + paymentData.card + paymentData.other
+    const roundedTotal = getRoundedTotal(getTotal())
     
-    const response = await fetch('/api/tables/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+    if (totalPaid < roundedTotal) {
+      alert('支払金額が不足しています')
+      return
+    }
+    
+    if (!confirm(`${currentTable} を会計完了にしますか？`)) return
+    
+    try {
+      const checkoutTime = getJapanTimeString(new Date())
+      
+      console.log('送信データ:', { 
         tableId: currentTable,
         checkoutTime,
         orderItems: orderItems,
@@ -530,29 +569,46 @@ const completeCheckout = async () => {
         paymentCard: paymentData.card,
         paymentOther: paymentData.other,
         paymentOtherMethod: paymentData.otherMethod,
-        totalAmount: getTotal()
+        totalAmount: roundedTotal  // 端数処理後の金額を送信
       })
-    })
-    
-    const result = await response.json()
-    console.log('API応答:', result)
-    
-    if (!response.ok) {
-      throw new Error(result.error || 'Checkout failed')
+      
+      const response = await fetch('/api/tables/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          tableId: currentTable,
+          checkoutTime,
+          orderItems: orderItems,
+          guestName: formData.guestName,
+          castName: formData.castName,
+          visitType: formData.visitType,
+          paymentCash: paymentData.cash,
+          paymentCard: paymentData.card,
+          paymentOther: paymentData.other,
+          paymentOtherMethod: paymentData.otherMethod,
+          totalAmount: roundedTotal  // 端数処理後の金額を送信
+        })
+      })
+      
+      const result = await response.json()
+      console.log('API応答:', result)
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Checkout failed')
+      }
+      
+      // モーダルを閉じる
+      setShowPaymentModal(false)
+      setOrderItems([])
+      setShowModal(false)
+      
+      // データを再読み込み（これで卓が空席になるはず）
+      await loadData()
+    } catch (error) {
+      console.error('Error checkout:', error)
+      alert('会計処理に失敗しました')
     }
-    
-    // モーダルを閉じる
-    setShowPaymentModal(false)
-    setOrderItems([])
-    setShowModal(false)
-    
-    // データを再読み込み（これで卓が空席になるはず）
-    await loadData()
-  } catch (error) {
-    console.error('Error checkout:', error)
-    alert('会計処理に失敗しました')
   }
-}
 
   // テーブルクリア（修正版）
   const clearTable = async () => {
@@ -1130,192 +1186,211 @@ const completeCheckout = async () => {
         </div>
       )}
 
-     {/* 会計モーダル */}
-{showPaymentModal && (
-  <>
-    <div 
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 10000
-      }}
-      onClick={() => setShowPaymentModal(false)}
-    />
-    <div 
-      style={{
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        backgroundColor: 'white',
-        padding: '30px',
-        borderRadius: '10px',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        zIndex: 10001,
-        width: '450px',
-        maxWidth: '90%'
-      }}
-    >
-      <h3 style={{ marginTop: 0 }}>会計処理 - {currentTable}</h3>
-      
-      <div style={{ 
-        marginBottom: '25px', 
-        fontSize: '20px', 
-        padding: '15px',
-        backgroundColor: '#f5f5f5',
-        borderRadius: '5px',
-        textAlign: 'center'
-      }}>
-        <strong>合計金額: ¥{getTotal().toLocaleString()}</strong>
-      </div>
-      
-      <div style={{ marginBottom: '20px' }}>
-        <h4 style={{ marginBottom: '15px' }}>支払い方法:</h4>
-        
-        <div style={{ marginBottom: '15px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <label style={{ width: '80px' }}>現金</label>
-            <span>¥</span>
-            <input
-              type="number"
-              value={paymentData.cash || ''}
-              onChange={(e) => setPaymentData({...paymentData, cash: parseInt(e.target.value) || 0})}
-              placeholder="0"
-              style={{
-                flex: 1,
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '16px'
-              }}
-            />
+      {/* 会計モーダル（端数処理対応版） */}
+      {showPaymentModal && (
+        <>
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 10000
+            }}
+            onClick={() => setShowPaymentModal(false)}
+          />
+          <div 
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: 'white',
+              padding: '30px',
+              borderRadius: '10px',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              zIndex: 10001,
+              width: '450px',
+              maxWidth: '90%'
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>会計処理 - {currentTable}</h3>
+            
+            <div style={{ 
+              marginBottom: '25px', 
+              padding: '15px',
+              backgroundColor: '#f5f5f5',
+              borderRadius: '5px'
+            }}>
+              <div style={{ marginBottom: '10px' }}>
+                <strong>小計: ¥{getTotal().toLocaleString()}</strong>
+              </div>
+              
+              {getRoundingAdjustment() !== 0 && (
+                <div style={{ 
+                  marginBottom: '10px', 
+                  color: getRoundingAdjustment() < 0 ? '#d32f2f' : '#388e3c' 
+                }}>
+                  端数調整: {getRoundingAdjustment() < 0 ? '' : '+'}¥{getRoundingAdjustment().toLocaleString()}
+                </div>
+              )}
+              
+              <div style={{ 
+                fontSize: '24px', 
+                fontWeight: 'bold',
+                borderTop: '1px solid #ccc',
+                paddingTop: '10px',
+                textAlign: 'center'
+              }}>
+                合計金額: ¥{getRoundedTotal(getTotal()).toLocaleString()}
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ marginBottom: '15px' }}>支払い方法:</h4>
+              
+              <div style={{ marginBottom: '15px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label style={{ width: '80px' }}>現金</label>
+                  <span>¥</span>
+                  <input
+                    type="number"
+                    value={paymentData.cash || ''}
+                    onChange={(e) => setPaymentData({...paymentData, cash: parseInt(e.target.value) || 0})}
+                    placeholder="0"
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '16px'
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: '15px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label style={{ width: '80px' }}>カード</label>
+                  <span>¥</span>
+                  <input
+                    type="number"
+                    value={paymentData.card || ''}
+                    onChange={(e) => setPaymentData({...paymentData, card: parseInt(e.target.value) || 0})}
+                    placeholder="0"
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '16px'
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label style={{ width: '80px' }}>その他</label>
+                  <span>¥</span>
+                  <input
+                    type="number"
+                    value={paymentData.other || ''}
+                    onChange={(e) => setPaymentData({...paymentData, other: parseInt(e.target.value) || 0})}
+                    placeholder="0"
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '16px'
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {paymentData.other > 0 && (
+                <div style={{ marginLeft: '100px', marginBottom: '15px' }}>
+                  <input
+                    type="text"
+                    value={paymentData.otherMethod}
+                    onChange={(e) => setPaymentData({...paymentData, otherMethod: e.target.value})}
+                    placeholder="PayPay、LINE Pay等"
+                    style={{
+                      width: '100%',
+                      padding: '6px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div style={{ 
+              marginBottom: '20px',
+              padding: '15px',
+              backgroundColor: '#f0f8ff',
+              borderRadius: '5px',
+              textAlign: 'center'
+            }}>
+              <div style={{ marginBottom: '10px' }}>
+                支払合計: ¥{(paymentData.cash + paymentData.card + paymentData.other).toLocaleString()}
+              </div>
+              {(paymentData.cash + paymentData.card + paymentData.other) >= getRoundedTotal(getTotal()) && (
+                <div style={{ fontSize: '20px', color: '#4CAF50', fontWeight: 'bold' }}>
+                  おつり: ¥{((paymentData.cash + paymentData.card + paymentData.other) - getRoundedTotal(getTotal())).toLocaleString()}
+                </div>
+              )}
+              {(paymentData.cash + paymentData.card + paymentData.other) > 0 && 
+               (paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal()) && (
+                <div style={{ color: '#f44336' }}>
+                  不足: ¥{(getRoundedTotal(getTotal()) - (paymentData.cash + paymentData.card + paymentData.other)).toLocaleString()}
+                </div>
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={completeCheckout}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: '#ff9800',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  opacity: (paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal()) ? 0.6 : 1
+                }}
+                disabled={(paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal())}
+              >
+                会計完了
+              </button>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: '#ccc',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '16px',
+                  cursor: 'pointer'
+                }}
+              >
+                キャンセル
+              </button>
+            </div>
           </div>
-        </div>
-        
-        <div style={{ marginBottom: '15px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <label style={{ width: '80px' }}>カード</label>
-            <span>¥</span>
-            <input
-              type="number"
-              value={paymentData.card || ''}
-              onChange={(e) => setPaymentData({...paymentData, card: parseInt(e.target.value) || 0})}
-              placeholder="0"
-              style={{
-                flex: 1,
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '16px'
-              }}
-            />
-          </div>
-        </div>
-        
-        <div style={{ marginBottom: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <label style={{ width: '80px' }}>その他</label>
-            <span>¥</span>
-            <input
-              type="number"
-              value={paymentData.other || ''}
-              onChange={(e) => setPaymentData({...paymentData, other: parseInt(e.target.value) || 0})}
-              placeholder="0"
-              style={{
-                flex: 1,
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '16px'
-              }}
-            />
-          </div>
-        </div>
-        
-        {paymentData.other > 0 && (
-          <div style={{ marginLeft: '100px', marginBottom: '15px' }}>
-            <input
-              type="text"
-              value={paymentData.otherMethod}
-              onChange={(e) => setPaymentData({...paymentData, otherMethod: e.target.value})}
-              placeholder="PayPay、LINE Pay等"
-              style={{
-                width: '100%',
-                padding: '6px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px'
-              }}
-            />
-          </div>
-        )}
-      </div>
-      
-      <div style={{ 
-        marginBottom: '20px',
-        padding: '15px',
-        backgroundColor: '#f0f8ff',
-        borderRadius: '5px',
-        textAlign: 'center'
-      }}>
-        <div style={{ marginBottom: '10px' }}>
-          支払合計: ¥{(paymentData.cash + paymentData.card + paymentData.other).toLocaleString()}
-        </div>
-        {(paymentData.cash + paymentData.card + paymentData.other) >= getTotal() && (
-          <div style={{ fontSize: '20px', color: '#4CAF50', fontWeight: 'bold' }}>
-            おつり: ¥{((paymentData.cash + paymentData.card + paymentData.other) - getTotal()).toLocaleString()}
-          </div>
-        )}
-        {(paymentData.cash + paymentData.card + paymentData.other) > 0 && 
-         (paymentData.cash + paymentData.card + paymentData.other) < getTotal() && (
-          <div style={{ color: '#f44336' }}>
-            不足: ¥{(getTotal() - (paymentData.cash + paymentData.card + paymentData.other)).toLocaleString()}
-          </div>
-        )}
-      </div>
-      
-      <div style={{ display: 'flex', gap: '10px' }}>
-        <button
-          onClick={completeCheckout}
-          style={{
-            flex: 1,
-            padding: '12px',
-            backgroundColor: '#ff9800',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            fontSize: '16px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            opacity: (paymentData.cash + paymentData.card + paymentData.other) < getTotal() ? 0.6 : 1
-          }}
-          disabled={(paymentData.cash + paymentData.card + paymentData.other) < getTotal()}
-        >
-          会計完了
-        </button>
-        <button
-          onClick={() => setShowPaymentModal(false)}
-          style={{
-            flex: 1,
-            padding: '12px',
-            backgroundColor: '#ccc',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            fontSize: '16px',
-            cursor: 'pointer'
-          }}
-        >
-          キャンセル
-        </button>
-      </div>
-    </div>
-  </>
-)}
+        </>
+      )}
     </>
   )
 }
