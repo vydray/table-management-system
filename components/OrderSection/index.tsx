@@ -124,7 +124,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
       />
       
       <div className="action-buttons">
-        <button onClick={onCheckout} className="btn-checkout">会計完了</button>
+        <button onClick={onCheckout} className="btn-checkout">会計</button>
         <button onClick={onClearTable} className="btn-delete">削除</button>
       </div>
 
