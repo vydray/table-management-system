@@ -54,19 +54,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // 1. ordersテーブルに注文を保存
       const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          receipt_number: `${tableId}-${Date.now()}`,
-          visit_datetime: currentData.entry_time,
-          checkout_datetime: checkoutTime,
-          table_number: tableId,
-          staff_name: castName || currentData.cast_name,
-          subtotal_excl_tax: subtotal,
-          tax_amount: tax,
-          total_incl_tax: totalAmount || (subtotal + tax)
-        })
-        .select()
-        .single()
+  .from('orders')
+  .insert({
+    receipt_number: `${tableId}-${Date.now()}`,
+    visit_datetime: currentData.entry_time,
+    checkout_datetime: checkoutTime,
+    table_number: tableId,
+    staff_name: castName || currentData.cast_name,
+    guest_name: guestName || currentData.guest_name,  // ← これを追加
+    subtotal_excl_tax: subtotal,
+    tax_amount: tax,
+    total_incl_tax: totalAmount || (subtotal + tax)
+  })
+  .select()
+  .single()
 
       if (orderError) {
         console.error('注文保存エラー:', orderError)
