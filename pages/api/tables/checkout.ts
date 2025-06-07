@@ -53,21 +53,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // 1. 各商品をpaymentsテーブルに保存
       if (orderItems && orderItems.length > 0) {
         for (const item of orderItems as OrderItem[]) {
-          const paymentData = {
-            テーブル番号: tableId,
-            名前: guestName || currentData.guest_name,
-            商品名: item.name,
-            カテゴリー: '',
-            個数: item.quantity,
-            税別: item.price,
-            合計金額: item.price * item.quantity,
-            現金: paymentCash || 0,
-            カード: paymentCard || 0,
-            その他: paymentOther || 0,
-            クレジットカード: 0,
-            会計時間: new Date(checkoutTime),
-            来店日時: currentData.entry_time
-          }
+  const paymentData = {
+  'テーブル番号': tableId,
+  '名前': guestName || currentData.guest_name,
+  '商品名': item.name,
+  'カテゴリー': '',
+  '個数': item.quantity,
+  '税別': item.price,
+  '合計金額': item.price * item.quantity,
+  '現金': paymentCash || 0,
+  'カード': paymentCard || 0,
+  'その他': paymentOther || 0,
+  'クレジットカード': 0,
+  '会計時間': checkoutTime,  // new Date()を削除
+  '来店日時': currentData.entry_time
+}
           
           console.log('保存する支払いデータ:', paymentData)
           
