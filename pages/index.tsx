@@ -502,7 +502,21 @@ const completeCheckout = async () => {
   try {
     const checkoutTime = getJapanTimeString(new Date())
     
-    await fetch('/api/tables/checkout', {
+    console.log('送信データ:', { 
+      tableId: currentTable,
+      checkoutTime,
+      orderItems: orderItems,
+      guestName: formData.guestName,
+      castName: formData.castName,
+      visitType: formData.visitType,
+      paymentCash: paymentData.cash,
+      paymentCard: paymentData.card,
+      paymentOther: paymentData.other,
+      paymentOtherMethod: paymentData.otherMethod,
+      totalAmount: getTotal()
+    })
+    
+    const response = await fetch('/api/tables/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -520,11 +534,20 @@ const completeCheckout = async () => {
       })
     })
     
+    const result = await response.json()
+    console.log('API応答:', result)
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Checkout failed')
+    }
+    
     // モーダルを閉じる
     setShowPaymentModal(false)
     setOrderItems([])
     setShowModal(false)
-    loadData()
+    
+    // データを再読み込み（これで卓が空席になるはず）
+    await loadData()
   } catch (error) {
     console.error('Error checkout:', error)
     alert('会計処理に失敗しました')

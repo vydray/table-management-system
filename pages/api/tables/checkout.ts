@@ -8,6 +8,8 @@ const supabase = createClient(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
+    console.log('受信データ:', req.body)
+    
     const { 
       tableId, 
       checkoutTime, 
@@ -16,7 +18,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       paymentCash,
       paymentCard,
       paymentOther
-      // paymentOtherMethod と totalAmount を削除（使用していないため）
     } = req.body
 
     try {
@@ -27,30 +28,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .eq('table_name', tableId)
         .single()
 
-      if (fetchError) throw fetchError
+      if (fetchError) {
+        console.error('テーブル情報取得エラー:', fetchError)
+        throw fetchError
+      }
+
+      console.log('現在のテーブル情報:', currentData)
 
       // 1. 各商品をpaymentsテーブルに保存
       if (orderItems && orderItems.length > 0) {
         for (const item of orderItems) {
+          const paymentData = {
+            テーブル番号: tableId,
+            名前: guestName || currentData.guest_name,
+            商品名: item.name,
+            カテゴリー: '',
+            個数: item.quantity,
+            税別: item.price,
+            合計金額: item.price * item.quantity,
+            現金: paymentCash || 0,
+            カード: paymentCard || 0,
+            その他: paymentOther || 0,
+            クレジットカード: 0,
+            会計時間: new Date(checkoutTime),
+            来店日時: currentData.entry_time
+          }
+          
+          console.log('保存する支払いデータ:', paymentData)
+          
           const { error: paymentError } = await supabase
             .from('payments')
-            .insert({
-              テーブル番号: tableId,
-              名前: guestName || currentData.guest_name,
-              商品名: item.name,
-              カテゴリー: '', // カテゴリー情報が必要な場合は追加
-              個数: item.quantity,
-              税別: item.price,
-              合計金額: item.price * item.quantity,
-              現金: paymentCash || 0,
-              カード: paymentCard || 0,
-              その他: paymentOther || 0,
-              クレジットカード: 0, // 必要に応じて
-              会計時間: new Date(checkoutTime),
-              来店日時: currentData.entry_time
-            })
+            .insert(paymentData)
 
-          if (paymentError) throw paymentError
+          if (paymentError) {
+            console.error('支払いデータ保存エラー:', paymentError)
+            throw paymentError
+          }
         }
       }
 
@@ -66,13 +79,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           checkout_time: checkoutTime
         })
 
-      if (visitError) throw visitError
+      if (visitError) {
+        console.error('訪問履歴保存エラー:', visitError)
+        throw visitError
+      }
 
       // 3. 現在の注文をクリア
-      await supabase
+      const { error: deleteOrderError } = await supabase
         .from('current_order_items')
         .delete()
         .eq('table_id', tableId)
+      
+      if (deleteOrderError) {
+        console.error('注文クリアエラー:', deleteOrderError)
+        // エラーでも処理を続ける（テーブルが存在しない可能性があるため）
+      }
 
       // 4. テーブル状態をクリア
       const { error: updateError } = await supabase
@@ -85,12 +106,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
         .eq('table_name', tableId)
 
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('テーブル状態更新エラー:', updateError)
+        throw updateError
+      }
 
+      console.log('会計処理完了')
       res.status(200).json({ success: true })
-    } catch (error) {
+    } catch (error: any) {
       console.error('Checkout error:', error)
-      res.status(500).json({ error: 'Checkout failed' })
+      res.status(500).json({ 
+        error: 'Checkout failed', 
+        details: error.message || error,
+        code: error.code 
+      })
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' })
