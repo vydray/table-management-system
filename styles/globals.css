@@ -254,7 +254,7 @@ html, body {
   z-index: 998;
 }
 
-/* モーダルの高さを固定 */
+/* モーダル全体をスクロール可能に */
 #modal {
   display: block;
   position: fixed;
@@ -267,14 +267,14 @@ html, body {
   box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
   border-radius: 10px;
   z-index: 999;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
 
 #modal.modal-new {
   width: 400px;
-  height: auto;
   max-height: 90vh;
   padding: 20px;
 }
@@ -282,17 +282,38 @@ html, body {
 #modal.modal-edit {
   width: 90%;
   max-width: 900px;
-  height: 90vh; /* 高さを固定 */
   max-height: 90vh;
+  height: auto;
+}
+
+/* モーダルのスクロールバー */
+#modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+#modal::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+#modal::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+#modal::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 #modal h3 {
-  margin: 0 0 20px 0;
+  margin: 0;
   padding: 20px;
   background: #ff9800;
   color: white;
   font-size: 20px;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 #move-modal {
@@ -312,21 +333,19 @@ html, body {
   overflow-y: auto;
 }
 
-/* 詳細部分の高さ調整 */
+/* 詳細部分 */
 #details {
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
-  height: calc(100% - 60px);
 }
 
 .order-section {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  height: 100%;
+  overflow: visible;
 }
 
 .customer-header {
@@ -390,16 +409,16 @@ html, body {
   min-width: 150px;
 }
 
-/* POSコンテナの高さ調整 */
+/* POSコンテナ */
 .pos-container {
-  flex: 1;
   display: flex;
   gap: 20px;
   padding: 20px;
-  overflow: hidden;
-  height: 100%;
+  overflow: visible;
+  min-height: 500px;
 }
 
+/* 左側セクション（商品選択）は固定高さ */
 .left-section {
   width: 530px;
   display: flex;
@@ -407,7 +426,7 @@ html, body {
   border: 1px solid #ddd;
   border-radius: 10px;
   padding: 20px;
-  height: 100%;
+  height: 500px;
   overflow: hidden;
 }
 
@@ -511,7 +530,7 @@ html, body {
   background: #e0e0e0;
 }
 
-/* 右側セクションの高さ調整 */
+/* 右側セクション（注文リスト）は高さ自動調整 */
 .right-section {
   width: 380px;
   display: flex;
@@ -519,8 +538,9 @@ html, body {
   border: 1px solid #ddd;
   border-radius: 10px;
   padding: 20px;
-  height: 100%;
-  overflow: hidden;
+  height: auto;
+  min-height: 500px;
+  overflow: visible;
 }
 
 .order-title {
@@ -531,12 +551,12 @@ html, body {
   flex-shrink: 0;
 }
 
-/* 注文テーブルの高さ調整 */
+/* 注文テーブルは内容に応じて伸びる */
 .order-table {
-  flex: 1;
+  flex: 0 1 auto;
   border: 1px solid #ddd;
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
@@ -556,27 +576,8 @@ html, body {
 
 .order-table-body {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* スクロールバーのスタイリング */
-.order-table-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.order-table-body::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.order-table-body::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-.order-table-body::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  overflow: visible;
+  min-height: 150px;
 }
 
 .order-table-row {
@@ -729,7 +730,7 @@ label {
   font-size: 14px;
 }
 
-/* 合計部分は下部に固定 */
+/* 合計部分 */
 .order-total {
   padding: 0;
   background: transparent;
