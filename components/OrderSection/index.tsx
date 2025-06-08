@@ -43,8 +43,6 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
 }) => {
   const [selectedOrderItem, setSelectedOrderItem] = useState<number | null>(null)
 
-  // calculateTotal関数を削除
-
   return (
     <div className="right-section">
       <div className="order-title">お会計</div>
@@ -57,7 +55,8 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
         padding: '10px 15px',
         gap: '20px',
         borderBottom: '1px solid #ddd',
-        marginBottom: '10px'
+        marginBottom: '10px',
+        flexShrink: 0
       }}>
         <div style={{ 
           display: 'flex', 
