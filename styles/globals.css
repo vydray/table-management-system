@@ -915,3 +915,49 @@ label {
   margin-bottom: 20px;
   font-weight: bold;
 }
+
+/* iPadでの注文モーダルスクロール対応 */
+@media screen and (max-width: 1024px) {
+  #modal.modal-edit {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    transform: none;
+    max-height: calc(100vh - 20px);
+    height: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* iPadでのタッチスクロール最適化 */
+@supports (-webkit-touch-callout: none) {
+  #modal.modal-edit {
+    /* スクロールの慣性を有効化 */
+    -webkit-overflow-scrolling: touch;
+    
+    /* 3D変換でGPUアクセラレーション */
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+    
+    /* モーダルのposition固定を解除 */
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+  }
+  
+  /* モーダル内のスクロール要素 */
+  .pos-container,
+  .order-table-body,
+  .left-section {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* モーダルオーバーレイのタッチ対応 */
+  #modal-overlay {
+    touch-action: none;
+  }
+}
