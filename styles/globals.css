@@ -916,30 +916,29 @@ label {
   font-weight: bold;
 }
 
-/* iPad注文モーダルのスクロール修正 - 強制適用 */
-@media screen and (max-width: 1024px) and (-webkit-min-device-pixel-ratio: 1) {
-  /* モーダルオーバーレイ */
-  #modal-overlay {
-    position: fixed !important;
-    overflow: hidden !important;
-  }
-  
+/* iPad注文モーダルのスクロール修正 - 完全版 */
+@media screen and (max-width: 1024px) {
   /* モーダル本体 */
   #modal.modal-edit {
     position: fixed !important;
-    top: 20px !important;
-    left: 20px !important;
-    right: 20px !important;
-    bottom: 20px !important;
-    width: auto !important;
-    height: auto !important;
+    top: 5% !important;
+    left: 5% !important;
+    width: 90% !important;
+    height: 90% !important;
     max-width: none !important;
     max-height: none !important;
     transform: none !important;
-    overflow-y: scroll !important;
+    overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     z-index: 9999 !important;
+    display: block !important;
+  }
+  
+  /* ヘッダーの固定を解除 */
+  #modal.modal-edit h3 {
+    position: relative !important;
+    top: auto !important;
   }
   
   /* モーダル内のコンテンツ */
@@ -951,22 +950,47 @@ label {
   #modal.modal-edit .pos-container {
     overflow: visible !important;
     height: auto !important;
+    flex-direction: column !important;
+  }
+  
+  /* 左右のセクションを縦並びに */
+  #modal.modal-edit .left-section,
+  #modal.modal-edit .right-section {
+    width: 100% !important;
+    margin-bottom: 20px !important;
   }
   
   /* bodyのスクロールを無効化 */
   body.modal-open {
     position: fixed !important;
     width: 100% !important;
-    height: 100% !important;
     overflow: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* iPadタッチデバイス専用の追加対応 */
+@media (pointer: coarse) and (max-width: 1024px) {
+  #modal.modal-edit {
+    /* タッチデバイス用の最適化 */
+    touch-action: pan-y !important;
+    -webkit-transform: translateZ(0) !important;
+    transform: translateZ(0) !important;
   }
 }
 
 /* iOS Safari特有の対応 */
 @supports (-webkit-touch-callout: none) {
-  /* iOS Safariでのみ適用 */
   #modal.modal-edit {
+    /* iOSでのスクロール問題対策 */
     position: fixed !important;
+    -webkit-overflow-scrolling: touch !important;
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
+  
+  /* モーダル内部も最適化 */
+  #modal.modal-edit > * {
     -webkit-transform: translate3d(0, 0, 0) !important;
     transform: translate3d(0, 0, 0) !important;
   }
