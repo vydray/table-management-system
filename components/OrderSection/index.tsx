@@ -46,39 +46,36 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
   return (
     <div className="right-section">
       <div className="order-title">お会計</div>
-      
-      {/* 推しとお客様名をここに移動 - 修正版 */}
+
+      {/* 推しとお客様を縦並びに変更 */}
       <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         padding: '10px 15px',
-        gap: '20px',
         borderBottom: '1px solid #ddd',
         marginBottom: '10px',
-        flexShrink: 0
+        flexShrink: 0,
+        backgroundColor: '#f9f9f9'
       }}>
+        {/* 推し */}
         <div style={{ 
           display: 'flex', 
-          alignItems: 'center', 
-          flex: 1,
-          height: '32px'
+          alignItems: 'center',
+          marginBottom: '10px'
         }}>
           <span style={{ 
-            whiteSpace: 'nowrap', 
-            marginRight: '10px',
-            minWidth: '60px'
+            minWidth: '80px',
+            fontWeight: 'bold',
+            fontSize: '14px'
           }}>推し：</span>
           <select 
             value={castName}
             onChange={(e) => onUpdateCast && onUpdateCast(e.target.value)}
             style={{
               flex: 1,
-              padding: '4px 8px',
+              padding: '6px 10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
               fontSize: '14px',
-              height: '28px'
+              backgroundColor: 'white'
             }}
           >
             <option value="">-- 選択 --</option>
@@ -87,46 +84,47 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
             ))}
           </select>
         </div>
+        
+        {/* お客様 */}
         <div style={{ 
           display: 'flex', 
-          alignItems: 'center', 
-          flex: 1,
-          height: '32px'
+          alignItems: 'center'
         }}>
           <span style={{ 
-            whiteSpace: 'nowrap', 
-            marginRight: '10px',
-            minWidth: '60px'
+            minWidth: '80px',
+            fontWeight: 'bold',
+            fontSize: '14px'
           }}>お客様：</span>
           <input
             type="text"
             value={guestName}
             onChange={(e) => onUpdateGuest && onUpdateGuest(e.target.value)}
+            placeholder="お客様名を入力"
             style={{
               flex: 1,
-              padding: '4px 8px',
+              padding: '6px 10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
               fontSize: '14px',
-              height: '28px'
+              backgroundColor: 'white'
             }}
           />
         </div>
       </div>
-      
+
       <OrderTable
         orderItems={orderItems}
         onItemClick={setSelectedOrderItem}
         onItemDelete={onDeleteOrderItem}
       />
-      
+
       <OrderTotal
         subtotal={subtotal}
         tax={serviceTax}
         total={roundedTotal}
         roundingAdjustment={roundingAdjustment}
       />
-      
+
       <div className="action-buttons">
         <button onClick={onCheckout} className="btn-checkout">会計</button>
         <button onClick={onClearTable} className="btn-delete">削除</button>
