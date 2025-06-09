@@ -10,7 +10,17 @@ html, body {
   -webkit-touch-callout: none;
   overflow: hidden;
   position: fixed;
+  /* touch-action: none; ← 削除 */
+}
+
+/* モーダルが開いていない時のみタッチを無効化 */
+body:not(.modal-open) {
   touch-action: none;
+}
+
+/* モーダルが開いている時はタッチを許可 */
+body.modal-open {
+  touch-action: auto !important;
 }
 
 #layout {
@@ -918,21 +928,38 @@ label {
 
 /* iPad注文モーダルのスクロール修正 - 完全版 */
 @media screen and (max-width: 1024px) {
-  /* モーダル本体 */
+  /* モーダルが開いている時の特別な設定 */
+  body.modal-open #layout {
+    pointer-events: none;
+  }
+  
+  /* モーダル本体 - 中央配置修正 */
   #modal.modal-edit {
     position: fixed !important;
-    top: 5% !important;
-    left: 5% !important;
+    top: 50% !important;
+    left: 50% !important;
     width: 90% !important;
     height: 90% !important;
-    max-width: none !important;
-    max-height: none !important;
-    transform: none !important;
+    max-width: 90vw !important;
+    max-height: 90vh !important;
+    transform: translate(-50%, -50%) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     z-index: 9999 !important;
     display: block !important;
+    touch-action: pan-y !important;
+    pointer-events: auto !important;
+    margin: 0 !important;
+  }
+  
+  /* transformが効かない場合の代替案 */
+  @supports not (transform: translate(-50%, -50%)) {
+    #modal.modal-edit {
+      top: 5% !important;
+      left: 5% !important;
+      transform: none !important;
+    }
   }
   
   /* ヘッダーの固定を解除 */
@@ -974,8 +1001,8 @@ label {
   #modal.modal-edit {
     /* タッチデバイス用の最適化 */
     touch-action: pan-y !important;
-    -webkit-transform: translateZ(0) !important;
-    transform: translateZ(0) !important;
+    -webkit-transform: translate(-50%, -50%) translateZ(0) !important;
+    transform: translate(-50%, -50%) translateZ(0) !important;
   }
 }
 
@@ -985,8 +1012,8 @@ label {
     /* iOSでのスクロール問題対策 */
     position: fixed !important;
     -webkit-overflow-scrolling: touch !important;
-    -webkit-transform: translate3d(0, 0, 0) !important;
-    transform: translate3d(0, 0, 0) !important;
+    -webkit-transform: translate(-50%, -50%) translate3d(0, 0, 0) !important;
+    transform: translate(-50%, -50%) translate3d(0, 0, 0) !important;
   }
   
   /* モーダル内部も最適化 */
