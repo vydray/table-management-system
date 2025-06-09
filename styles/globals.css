@@ -133,11 +133,11 @@ body.modal-open {
 
 /* サイドメニュー */
 .side-menu {
-  position: absolute;  /* fixed から absolute に戻す */
-  left: -320px;
-  top: 72px;           /* ヘッダーの下から開始 */
-  width: 300px;        /* 少し狭くして枠内に収める */
-  height: calc(100% - 72px);  /* ヘッダー分を引く */
+  position: absolute;
+  left: -340px;          /* 幅に合わせて調整 */
+  top: 72px;
+  width: 340px;          /* 300px → 340px に拡大 */
+  height: calc(100% - 72px);
   background: white;
   box-shadow: 4px 0 20px rgba(0,0,0,0.15);
   transition: left 0.3s ease;
@@ -158,28 +158,30 @@ body.modal-open {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 25px;     /* パディングを増加 */
-  border-bottom: 2px solid #eee;  /* ボーダーを太く */
-  background: #f8f8f8;  /* 背景色を追加 */
-  position: sticky;     /* スクロール時も固定 */
+  padding: 30px 25px;     /* パディングをさらに増加 */
+  border-bottom: 2px solid #eee;
+  background: #f8f8f8;
+  position: sticky;
   top: 0;
   z-index: 10;
 }
 
 .menu-header h3 {
   margin: 0;
-  font-size: 24px;    /* フォントサイズを大きく */
+  font-size: 28px;    /* 24px → 28px に拡大 */
   color: #333;
 }
 
 .menu-close {
   background: none;
   border: none;
-  font-size: 28px;    /* 閉じるボタンを大きく */
+  font-size: 36px;    /* 28px → 36px に拡大 */
   cursor: pointer;
   color: #666;
-  padding: 5px;
+  padding: 10px;      /* タッチエリアを拡大 */
   transition: transform 0.2s;
+  min-width: 44px;    /* Apple推奨の最小タッチサイズ */
+  min-height: 44px;
 }
 
 .menu-close:hover {
@@ -196,35 +198,37 @@ body.modal-open {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 18px 25px;    /* パディングを増加 */
+  padding: 24px 30px;    /* 18px → 24px に拡大 */
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 18px;       /* フォントサイズを大きく */
+  font-size: 20px;       /* 18px → 20px に拡大 */
   text-align: left;
   transition: all 0.2s ease;
   position: relative;
+  min-height: 60px;      /* 最小高さを設定 */
 }
 
 .menu-item:hover {
   background-color: #f5f5f5;
-  padding-left: 30px;    /* ホバー時に少しずらす */
+  padding-left: 35px;
 }
+
 
 .menu-item:active {
   background-color: #e8e8e8;
 }
 
 .menu-item .menu-icon {
-  margin-right: 20px;    /* アイコンとテキストの間隔を広げる */
-  font-size: 24px;       /* アイコンを大きく */
-  min-width: 30px;       /* アイコンの幅を固定 */
+  margin-right: 25px;    /* 間隔も広げる */
+  font-size: 28px;       /* 24px → 28px に拡大 */
+  min-width: 35px;
 }
 
 .menu-divider {
-  height: 1px;
-  background-color: #e0e0e0;
-  margin: 15px 25px;     /* 左右にマージン追加 */
+  height: 2px;           /* 1px → 2px に太く */
+  background-color: #d0d0d0;
+  margin: 20px 30px;     /* マージンも調整 */
 }
 
 .menu-overlay {
