@@ -46,7 +46,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         if (parentModal) {
           // 親モーダルのスクロール位置とサイズを取得
           const parentScrollTop = parentModal.scrollTop
-          const parentRect = parentModal.getBoundingClientRect()
           
           // ビューポートのサイズを取得
           const viewportHeight = window.innerHeight
