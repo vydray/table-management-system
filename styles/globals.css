@@ -369,38 +369,56 @@ body.modal-open {
 
 .label-text {
   white-space: nowrap;
-  margin-right: 5px;
+  margin-right: 10px;
+  font-weight: bold;
 }
 
+/* 入店日時の編集エリア - 改善版 */
 .datetime-edit {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 10px 20px;
+  padding: 15px 20px;
   border-bottom: 1px solid #ddd;
   margin-bottom: 0;
   font-size: 16px;
   background: #f5f5f5;
+  justify-content: center; /* 中央揃え */
 }
 
-.date-select {
-  padding: 4px 8px;
+/* セレクトボックスのスタイル改善 */
+.date-select, .time-select {
+  padding: 6px 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  text-align: center; /* テキスト中央揃え */
+  background: white;
+  cursor: pointer;
+  text-align-last: center; /* Firefoxサポート */
+}
+
+/* 各セレクトボックスの幅を調整 */
+.date-select:nth-of-type(1) { /* 年 */
+  width: 80px;
+}
+
+.date-select:nth-of-type(2) { /* 月 */
+  width: 60px;
+}
+
+.date-select:nth-of-type(3) { /* 日 */
+  width: 60px;
+}
+
+.time-select { /* 時・分 */
+  width: 55px;
 }
 
 .time-edit, .oshi-edit, .guest-edit {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.time-select {
-  padding: 4px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
 }
 
 .cast-select {

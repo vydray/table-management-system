@@ -972,9 +972,9 @@ export default function Home() {
             {modalMode === 'edit' && (
               <span style={{
                 marginLeft: '20px',
-                fontSize: '16px',
-                fontWeight: 'normal',
-                color: '#666'
+                fontSize: '18px',     // 16pxから18pxに変更
+                fontWeight: 'bold',   // normalからboldに変更
+                color: '#000'         // #666から#000（黒）に変更
               }}>
                 滞在時間: {tables[currentTable]?.elapsed || '0分'}
               </span>
