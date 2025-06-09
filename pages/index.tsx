@@ -598,6 +598,7 @@ export default function Home() {
       }
       
       // モーダルを閉じる
+      document.body.classList.remove('modal-open')
       setShowPaymentModal(false)
       setOrderItems([])
       setShowModal(false)
@@ -622,6 +623,7 @@ export default function Home() {
       })
       
       // 注文データをクリア
+      document.body.classList.remove('modal-open')  // iPad対応
       setOrderItems([])
       setShowModal(false)
       loadData()
@@ -732,6 +734,9 @@ export default function Home() {
       setOrderItems([])  // 一旦クリアしてから
       loadOrderItems(table.table)  // 改めて読み込む
     }
+    
+    // bodyにクラスを追加（iPad対応）
+    document.body.classList.add('modal-open')
     
     setShowModal(true)
     setSelectedCategory('')
@@ -944,6 +949,7 @@ export default function Home() {
       {/* モーダルオーバーレイ */}
       {(showModal || showMoveModal) && (
         <div id="modal-overlay" onClick={() => {
+          document.body.classList.remove('modal-open')  // iPad対応
           setShowModal(false)
           setShowMoveModal(false)
         }} />
@@ -952,7 +958,10 @@ export default function Home() {
       {/* メインモーダル */}
       {showModal && (
         <div id="modal" className={modalMode === 'new' ? 'modal-new' : 'modal-edit'}>
-          <button id="modal-close" onClick={() => setShowModal(false)}>×</button>
+          <button id="modal-close" onClick={() => {
+            document.body.classList.remove('modal-open')  // iPad対応
+            setShowModal(false)
+          }}>×</button>
           <h3>
             📌 {currentTable} の操作
             {modalMode === 'edit' && (
