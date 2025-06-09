@@ -115,32 +115,34 @@ body.modal-open {
   left: 20px;
   top: 50%;
   transform: translateY(-50%);
-  background: none;
+  background: rgba(255, 255, 255, 0.8);  /* 背景を追加 */
   border: none;
   cursor: pointer;
-  padding: 10px;
-  font-size: 28px;
+  padding: 12px;
+  font-size: 32px;       /* アイコンを大きく */
   color: #333;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
+  border-radius: 8px;
 }
 
 .menu-button:hover {
   transform: translateY(-50%) scale(1.1);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 /* サイドメニュー */
 .side-menu {
-  position: absolute;
-  left: -300px;
-  top: 72px;
-  width: 280px;
-  height: calc(100% - 72px);
+  position: absolute;  /* fixed から absolute に戻す */
+  left: -320px;
+  top: 72px;           /* ヘッダーの下から開始 */
+  width: 300px;        /* 少し狭くして枠内に収める */
+  height: calc(100% - 72px);  /* ヘッダー分を引く */
   background: white;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
   transition: left 0.3s ease;
-  z-index: 1000;
+  z-index: 1001;
   overflow-y: auto;
-  max-height: calc(768px - 72px);
   visibility: hidden;
   opacity: 0;
   transition: left 0.3s ease, visibility 0.3s ease, opacity 0.3s ease;
@@ -156,63 +158,84 @@ body.modal-open {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #eee;
+  padding: 25px;     /* パディングを増加 */
+  border-bottom: 2px solid #eee;  /* ボーダーを太く */
+  background: #f8f8f8;  /* 背景色を追加 */
+  position: sticky;     /* スクロール時も固定 */
+  top: 0;
+  z-index: 10;
 }
 
 .menu-header h3 {
   margin: 0;
-  font-size: 20px;
+  font-size: 24px;    /* フォントサイズを大きく */
+  color: #333;
 }
 
 .menu-close {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 28px;    /* 閉じるボタンを大きく */
   cursor: pointer;
   color: #666;
+  padding: 5px;
+  transition: transform 0.2s;
 }
 
+.menu-close:hover {
+  transform: scale(1.1);
+  color: #333;
+}
+
+
 .menu-items {
-  padding: 10px 0;
+  padding: 15px 0;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 15px 20px;
+  padding: 18px 25px;    /* パディングを増加 */
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;       /* フォントサイズを大きく */
   text-align: left;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .menu-item:hover {
   background-color: #f5f5f5;
+  padding-left: 30px;    /* ホバー時に少しずらす */
+}
+
+.menu-item:active {
+  background-color: #e8e8e8;
 }
 
 .menu-item .menu-icon {
-  margin-right: 15px;
-  font-size: 20px;
+  margin-right: 20px;    /* アイコンとテキストの間隔を広げる */
+  font-size: 24px;       /* アイコンを大きく */
+  min-width: 30px;       /* アイコンの幅を固定 */
 }
 
 .menu-divider {
   height: 1px;
-  background-color: #eee;
-  margin: 10px 0;
+  background-color: #e0e0e0;
+  margin: 15px 25px;     /* 左右にマージン追加 */
 }
 
 .menu-overlay {
-  position: absolute;
+  position: absolute;  /* fixed から absolute に変更 */
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 999;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  cursor: pointer;
 }
 
 .table-name {
