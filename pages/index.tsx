@@ -64,6 +64,7 @@ export default function Home() {
     other: 0,
     otherMethod: ''
   })
+  const [activePaymentInput, setActivePaymentInput] = useState<'cash' | 'card' | 'other'>('cash')
 
   // システム設定の状態
   const [systemSettings, setSystemSettings] = useState({
@@ -131,6 +132,49 @@ export default function Home() {
     const originalTotal = getTotal()
     const roundedTotal = getRoundedTotal(originalTotal)
     return roundedTotal - originalTotal
+  }
+
+  // 数字パッド用の関数
+  const handleNumberClick = (num: string) => {
+    setPaymentData(prev => {
+      const currentValue = prev[activePaymentInput]
+      const newValue = currentValue === 0 ? parseInt(num) : parseInt(currentValue.toString() + num)
+      return {
+        ...prev,
+        [activePaymentInput]: newValue
+      }
+    })
+  }
+
+  const handleQuickAmount = (amount: number) => {
+    setPaymentData(prev => ({
+      ...prev,
+      [activePaymentInput]: amount
+    }))
+  }
+
+  const handleDeleteNumber = () => {
+    setPaymentData(prev => {
+      const currentValue = prev[activePaymentInput].toString()
+      if (currentValue.length > 1) {
+        return {
+          ...prev,
+          [activePaymentInput]: parseInt(currentValue.slice(0, -1))
+        }
+      } else {
+        return {
+          ...prev,
+          [activePaymentInput]: 0
+        }
+      }
+    })
+  }
+
+  const handleClearNumber = () => {
+    setPaymentData(prev => ({
+      ...prev,
+      [activePaymentInput]: 0
+    }))
   }
 
   // システム設定を取得
@@ -540,6 +584,7 @@ export default function Home() {
       other: 0,
       otherMethod: ''
     })
+    setActivePaymentInput('cash')
     setShowPaymentModal(true)
   }
 
@@ -1210,7 +1255,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 会計モーダル（端数処理対応版） */}
+      {/* 会計モーダル（数字パッド付き） */}
       {showPaymentModal && (
         <>
           <div 
@@ -1232,184 +1277,367 @@ export default function Home() {
               left: '50%',
               transform: 'translate(-50%, -50%)',
               backgroundColor: 'white',
-              padding: '30px',
               borderRadius: '10px',
               boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
               zIndex: 10001,
-              width: '450px',
-              maxWidth: '90%'
+              width: '900px',
+              maxWidth: '95%',
+              maxHeight: '90vh',
+              display: 'flex',
+              overflow: 'hidden'
             }}
           >
-            <h3 style={{ marginTop: 0 }}>会計処理 - {currentTable}</h3>
-            
-            <div style={{ 
-              marginBottom: '25px', 
-              padding: '15px',
-              backgroundColor: '#f5f5f5',
-              borderRadius: '5px'
+            {/* 左側：支払い方法入力部分 */}
+            <div style={{
+              flex: 1,
+              padding: '30px',
+              overflowY: 'auto'
             }}>
-              <div style={{ marginBottom: '10px' }}>
-                <strong>小計: ¥{getTotal().toLocaleString()}</strong>
-              </div>
-              
-              {getRoundingAdjustment() !== 0 && (
-                <div style={{ 
-                  marginBottom: '10px', 
-                  color: getRoundingAdjustment() < 0 ? '#d32f2f' : '#388e3c' 
-                }}>
-                  端数調整: {getRoundingAdjustment() < 0 ? '' : '+'}¥{getRoundingAdjustment().toLocaleString()}
-                </div>
-              )}
+              <h3 style={{ marginTop: 0 }}>会計処理 - {currentTable}</h3>
               
               <div style={{ 
-                fontSize: '24px', 
-                fontWeight: 'bold',
-                borderTop: '1px solid #ccc',
-                paddingTop: '10px',
+                marginBottom: '25px', 
+                padding: '15px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '5px'
+              }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <strong>小計: ¥{getTotal().toLocaleString()}</strong>
+                </div>
+                
+                {getRoundingAdjustment() !== 0 && (
+                  <div style={{ 
+                    marginBottom: '10px', 
+                    color: getRoundingAdjustment() < 0 ? '#d32f2f' : '#388e3c' 
+                  }}>
+                    端数調整: {getRoundingAdjustment() < 0 ? '' : '+'}¥{getRoundingAdjustment().toLocaleString()}
+                  </div>
+                )}
+                
+                <div style={{ 
+                  fontSize: '24px', 
+                  fontWeight: 'bold',
+                  borderTop: '1px solid #ccc',
+                  paddingTop: '10px',
+                  textAlign: 'center'
+                }}>
+                  合計金額: ¥{getRoundedTotal(getTotal()).toLocaleString()}
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ marginBottom: '15px' }}>支払い方法:</h4>
+                
+                <div style={{ marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <label style={{ width: '80px' }}>現金</label>
+                    <span>¥</span>
+                    <input
+                      type="text"
+                      value={paymentData.cash || ''}
+                      onClick={() => setActivePaymentInput('cash')}
+                      readOnly
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        border: activePaymentInput === 'cash' ? '2px solid #ff9800' : '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '16px',
+                        cursor: 'pointer',
+                        backgroundColor: activePaymentInput === 'cash' ? '#fff8e1' : 'white'
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                <div style={{ marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <label style={{ width: '80px' }}>カード</label>
+                    <span>¥</span>
+                    <input
+                      type="text"
+                      value={paymentData.card || ''}
+                      onClick={() => setActivePaymentInput('card')}
+                      readOnly
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        border: activePaymentInput === 'card' ? '2px solid #ff9800' : '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '16px',
+                        cursor: 'pointer',
+                        backgroundColor: activePaymentInput === 'card' ? '#fff8e1' : 'white'
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <label style={{ width: '80px' }}>その他</label>
+                    <span>¥</span>
+                    <input
+                      type="text"
+                      value={paymentData.other || ''}
+                      onClick={() => setActivePaymentInput('other')}
+                      readOnly
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        border: activePaymentInput === 'other' ? '2px solid #ff9800' : '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '16px',
+                        cursor: 'pointer',
+                        backgroundColor: activePaymentInput === 'other' ? '#fff8e1' : 'white'
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                {paymentData.other > 0 && (
+                  <div style={{ marginLeft: '100px', marginBottom: '15px' }}>
+                    <input
+                      type="text"
+                      value={paymentData.otherMethod}
+                      onChange={(e) => setPaymentData({...paymentData, otherMethod: e.target.value})}
+                      placeholder="PayPay、LINE Pay等"
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div style={{ 
+                marginBottom: '20px',
+                padding: '15px',
+                backgroundColor: '#f0f8ff',
+                borderRadius: '5px',
                 textAlign: 'center'
               }}>
-                合計金額: ¥{getRoundedTotal(getTotal()).toLocaleString()}
+                <div style={{ marginBottom: '10px' }}>
+                  支払合計: ¥{(paymentData.cash + paymentData.card + paymentData.other).toLocaleString()}
+                </div>
+                {(paymentData.cash + paymentData.card + paymentData.other) >= getRoundedTotal(getTotal()) && (
+                  <div style={{ fontSize: '20px', color: '#4CAF50', fontWeight: 'bold' }}>
+                    おつり: ¥{((paymentData.cash + paymentData.card + paymentData.other) - getRoundedTotal(getTotal())).toLocaleString()}
+                  </div>
+                )}
+                {(paymentData.cash + paymentData.card + paymentData.other) > 0 && 
+                 (paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal()) && (
+                  <div style={{ color: '#f44336' }}>
+                    不足: ¥{(getRoundedTotal(getTotal()) - (paymentData.cash + paymentData.card + paymentData.other)).toLocaleString()}
+                  </div>
+                )}
+              </div>
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={completeCheckout}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#ff9800',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    fontSize: '16px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    opacity: (paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal()) ? 0.6 : 1
+                  }}
+                  disabled={(paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal())}
+                >
+                  会計完了
+                </button>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#ccc',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    fontSize: '16px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  キャンセル
+                </button>
               </div>
             </div>
-            
-            <div style={{ marginBottom: '20px' }}>
-              <h4 style={{ marginBottom: '15px' }}>支払い方法:</h4>
-              
-              <div style={{ marginBottom: '15px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <label style={{ width: '80px' }}>現金</label>
-                  <span>¥</span>
-                  <input
-                    type="number"
-                    value={paymentData.cash || ''}
-                    onChange={(e) => setPaymentData({...paymentData, cash: parseInt(e.target.value) || 0})}
-                    placeholder="0"
-                    style={{
-                      flex: 1,
-                      padding: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '16px'
-                    }}
-                  />
-                </div>
-              </div>
-              
-              <div style={{ marginBottom: '15px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <label style={{ width: '80px' }}>カード</label>
-                  <span>¥</span>
-                  <input
-                    type="number"
-                    value={paymentData.card || ''}
-                    onChange={(e) => setPaymentData({...paymentData, card: parseInt(e.target.value) || 0})}
-                    placeholder="0"
-                    style={{
-                      flex: 1,
-                      padding: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '16px'
-                    }}
-                  />
-                </div>
-              </div>
-              
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <label style={{ width: '80px' }}>その他</label>
-                  <span>¥</span>
-                  <input
-                    type="number"
-                    value={paymentData.other || ''}
-                    onChange={(e) => setPaymentData({...paymentData, other: parseInt(e.target.value) || 0})}
-                    placeholder="0"
-                    style={{
-                      flex: 1,
-                      padding: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '16px'
-                    }}
-                  />
-                </div>
-              </div>
-              
-              {paymentData.other > 0 && (
-                <div style={{ marginLeft: '100px', marginBottom: '15px' }}>
-                  <input
-                    type="text"
-                    value={paymentData.otherMethod}
-                    onChange={(e) => setPaymentData({...paymentData, otherMethod: e.target.value})}
-                    placeholder="PayPay、LINE Pay等"
-                    style={{
-                      width: '100%',
-                      padding: '6px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-            
-            <div style={{ 
-              marginBottom: '20px',
-              padding: '15px',
-              backgroundColor: '#f0f8ff',
-              borderRadius: '5px',
-              textAlign: 'center'
+
+            {/* 右側：数字パッド */}
+            <div style={{
+              width: '350px',
+              backgroundColor: '#f5f5f5',
+              padding: '30px',
+              borderLeft: '1px solid #ddd',
+              display: 'flex',
+              flexDirection: 'column'
             }}>
-              <div style={{ marginBottom: '10px' }}>
-                支払合計: ¥{(paymentData.cash + paymentData.card + paymentData.other).toLocaleString()}
+              {/* 現在の入力値表示 */}
+              <div style={{
+                backgroundColor: 'white',
+                padding: '20px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                textAlign: 'right',
+                fontSize: '32px',
+                fontWeight: 'bold',
+                minHeight: '60px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end'
+              }}>
+                ¥{(() => {
+                  const value = activePaymentInput === 'cash' ? paymentData.cash :
+                               activePaymentInput === 'card' ? paymentData.card :
+                               paymentData.other;
+                  return value.toLocaleString();
+                })()}
               </div>
-              {(paymentData.cash + paymentData.card + paymentData.other) >= getRoundedTotal(getTotal()) && (
-                <div style={{ fontSize: '20px', color: '#4CAF50', fontWeight: 'bold' }}>
-                  おつり: ¥{((paymentData.cash + paymentData.card + paymentData.other) - getRoundedTotal(getTotal())).toLocaleString()}
-                </div>
-              )}
-              {(paymentData.cash + paymentData.card + paymentData.other) > 0 && 
-               (paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal()) && (
-                <div style={{ color: '#f44336' }}>
-                  不足: ¥{(getRoundedTotal(getTotal()) - (paymentData.cash + paymentData.card + paymentData.other)).toLocaleString()}
-                </div>
-              )}
-            </div>
-            
-            <div style={{ display: 'flex', gap: '10px' }}>
+
+              {/* クイック金額ボタン */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '10px',
+                marginBottom: '20px'
+              }}>
+                <button
+                  onClick={() => handleQuickAmount(1000)}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ¥1,000
+                </button>
+                <button
+                  onClick={() => handleQuickAmount(5000)}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ¥5,000
+                </button>
+                <button
+                  onClick={() => handleQuickAmount(10000)}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ¥10,000
+                </button>
+              </div>
+
+              {/* 数字パッド */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '10px',
+                flex: 1
+              }}>
+                {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => handleNumberClick(num.toString())}
+                    style={{
+                      padding: '20px',
+                      backgroundColor: 'white',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      fontSize: '24px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {num}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => handleNumberClick('0')}
+                  style={{
+                    padding: '20px',
+                    backgroundColor: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    fontSize: '24px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  0
+                </button>
+                
+                <button
+                  onClick={() => handleNumberClick('00')}
+                  style={{
+                    padding: '20px',
+                    backgroundColor: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    fontSize: '24px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  00
+                </button>
+                
+                <button
+                  onClick={handleDeleteNumber}
+                  style={{
+                    padding: '20px',
+                    backgroundColor: '#ffebee',
+                    border: '1px solid #ffcdd2',
+                    borderRadius: '8px',
+                    fontSize: '20px',
+                    cursor: 'pointer',
+                    color: '#d32f2f'
+                  }}
+                >
+                  ←
+                </button>
+              </div>
+
+              {/* クリアボタン */}
               <button
-                onClick={completeCheckout}
+                onClick={handleClearNumber}
                 style={{
-                  flex: 1,
-                  padding: '12px',
-                  backgroundColor: '#ff9800',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  fontSize: '16px',
+                  marginTop: '20px',
+                  padding: '15px',
+                  backgroundColor: '#e0e0e0',
+                  border: '1px solid #bdbdbd',
+                  borderRadius: '8px',
+                  fontSize: '18px',
                   cursor: 'pointer',
-                  fontWeight: 'bold',
-                  opacity: (paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal()) ? 0.6 : 1
-                }}
-                disabled={(paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal())}
-              >
-                会計完了
-              </button>
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  backgroundColor: '#ccc',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  fontSize: '16px',
-                  cursor: 'pointer'
+                  fontWeight: 'bold'
                 }}
               >
-                キャンセル
+                クリア
               </button>
             </div>
           </div>
