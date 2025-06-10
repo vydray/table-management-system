@@ -491,7 +491,7 @@ export default function Home() {
         alert('キャスト同期機能は準備中です')
         break
       case 'report':
-        alert('レポート機能は準備中です')
+        router.push('/report')
         break
       case 'settings':
         router.push('/settings')
