@@ -8,21 +8,25 @@ const supabase = createClient(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { tableId } = req.body
+    const { tableId, storeId } = req.body
+
+    // storeIdが指定されていない場合はデフォルト値を使用
+    const targetStoreId = storeId || 1
 
     try {
-      // 1. 現在の注文をクリア（重要：正しいテーブル名を使用）
+      // 1. 現在の注文をクリア（店舗IDでフィルタ）
       const { error: deleteOrderError } = await supabase
         .from('current_order_items')
         .delete()
         .eq('table_id', tableId)
+        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
       
       if (deleteOrderError) {
         console.error('Failed to delete order items:', deleteOrderError)
         throw deleteOrderError
       }
 
-      // 2. テーブル状態をクリア
+      // 2. テーブル状態をクリア（店舗IDでフィルタ）
       const { error } = await supabase
         .from('table_status')
         .update({
@@ -32,6 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           visit_type: null
         })
         .eq('table_name', tableId)
+        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
 
       if (error) throw error
 

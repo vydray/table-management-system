@@ -8,9 +8,14 @@ const supabase = createClient(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
+    // クエリパラメータから店舗IDを取得（デフォルトは1）
+    const { storeId } = req.query
+    const targetStoreId = storeId || '1'
+    
     const { data, error } = await supabase
       .from('table_status')
       .select('*')
+      .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
       .order('table_name')
 
     if (error) return res.status(500).json({ error: error.message })

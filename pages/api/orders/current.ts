@@ -18,13 +18,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   switch (method) {
     case 'GET': {
-      const { tableId } = req.query
+      const { tableId, storeId } = req.query
+      
+      // storeIdが指定されていない場合はデフォルト値を使用
+      const targetStoreId = storeId || '1'
       
       try {
         const { data, error } = await supabase
           .from('current_order_items')
           .select('*')
           .eq('table_id', tableId)
+          .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
         
         if (error) throw error
         
@@ -37,14 +41,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     case 'POST': {
-      const { tableId, orderItems } = req.body
+      const { tableId, orderItems, storeId } = req.body
+      
+      // storeIdが指定されていない場合はデフォルト値を使用
+      const targetStoreId = storeId || 1
       
       try {
-        // 既存のアイテムを削除
+        // 既存のアイテムを削除（同じ店舗のもののみ）
         const { error: deleteError } = await supabase
           .from('current_order_items')
           .delete()
           .eq('table_id', tableId)
+          .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
         
         if (deleteError) throw deleteError
         
@@ -55,7 +63,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             product_name: item.name,
             cast_name: item.cast || null,
             quantity: item.quantity,
-            unit_price: item.price
+            unit_price: item.price,
+            store_id: targetStoreId  // 店舗IDを追加
           }))
           
           const { error: insertError } = await supabase

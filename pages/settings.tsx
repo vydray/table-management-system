@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { createClient } from '@supabase/supabase-js'
+import { getCurrentStoreId } from '../utils/storeContext'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,6 +14,7 @@ interface Category {
   id: number
   name: string
   display_order: number
+  store_id?: number
   created_at?: string
 }
 
@@ -24,6 +26,7 @@ interface Product {
   needs_cast: boolean
   display_order: number
   is_active: boolean
+  store_id?: number
   created_at?: string
 }
 
@@ -34,12 +37,12 @@ export default function Settings() {
   
   // システム設定の状態
   const [systemSettings, setSystemSettings] = useState({
-  consumptionTaxRate: 10,
-  serviceChargeRate: 15,
-  roundingUnit: 100,
-  roundingMethod: 0,
-  businessDayStartHour: 5  // ← これを追加
-})
+    consumptionTaxRate: 10,
+    serviceChargeRate: 15,
+    roundingUnit: 100,
+    roundingMethod: 0,
+    businessDayStartHour: 5
+  })
 
   // カテゴリー管理の状態
   const [categories, setCategories] = useState<Category[]>([])
@@ -64,64 +67,90 @@ export default function Settings() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   // システム設定を読み込む関数
-const loadSystemSettings = async () => {
-  try {
-    const { data: settings } = await supabase
-      .from('system_settings')
-      .select('setting_key, setting_value')
-    
-    if (settings) {
-      setSystemSettings({
-        consumptionTaxRate: settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value * 100 || 10,
-        serviceChargeRate: settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value * 100 || 15,
-        roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
-        roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
-        businessDayStartHour: settings.find(s => s.setting_key === 'business_day_start_hour')?.setting_value || 5  // ← これを追加
-      })
+  const loadSystemSettings = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+      const { data: settings } = await supabase
+        .from('system_settings')
+        .select('setting_key, setting_value')
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
+      
+      if (settings) {
+        setSystemSettings({
+          consumptionTaxRate: settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value * 100 || 10,
+          serviceChargeRate: settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value * 100 || 15,
+          roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
+          roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
+          businessDayStartHour: settings.find(s => s.setting_key === 'business_day_start_hour')?.setting_value || 5
+        })
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error)
     }
-  } catch (error) {
-    console.error('Error loading settings:', error)
   }
-}
-
 
   // システム設定を保存する関数
   const saveSystemSettings = async () => {
-  setLoading(true)
-  try {
-    const updates = [
-      { setting_key: 'consumption_tax_rate', setting_value: systemSettings.consumptionTaxRate / 100 },
-      { setting_key: 'service_charge_rate', setting_value: systemSettings.serviceChargeRate / 100 },
-      { setting_key: 'rounding_unit', setting_value: systemSettings.roundingUnit },
-      { setting_key: 'rounding_method', setting_value: systemSettings.roundingMethod },
-      { setting_key: 'business_day_start_hour', setting_value: systemSettings.businessDayStartHour }  // ← これを追加
-    ]
-    
-    for (const update of updates) {
-      const { error } = await supabase
-        .from('system_settings')
-        .update({ setting_value: update.setting_value })
-        .eq('setting_key', update.setting_key)
+    setLoading(true)
+    try {
+      const storeId = getCurrentStoreId()
+      const updates = [
+        { setting_key: 'consumption_tax_rate', setting_value: systemSettings.consumptionTaxRate / 100 },
+        { setting_key: 'service_charge_rate', setting_value: systemSettings.serviceChargeRate / 100 },
+        { setting_key: 'rounding_unit', setting_value: systemSettings.roundingUnit },
+        { setting_key: 'rounding_method', setting_value: systemSettings.roundingMethod },
+        { setting_key: 'business_day_start_hour', setting_value: systemSettings.businessDayStartHour }
+      ]
       
-      if (error) throw error
+      for (const update of updates) {
+        // まず既存のレコードがあるか確認
+        const { data: existing } = await supabase
+          .from('system_settings')
+          .select('id')
+          .eq('setting_key', update.setting_key)
+          .eq('store_id', storeId)
+          .single()
+        
+        if (existing) {
+          // 更新
+          const { error } = await supabase
+            .from('system_settings')
+            .update({ setting_value: update.setting_value })
+            .eq('setting_key', update.setting_key)
+            .eq('store_id', storeId)
+          
+          if (error) throw error
+        } else {
+          // 新規作成
+          const { error } = await supabase
+            .from('system_settings')
+            .insert({
+              setting_key: update.setting_key,
+              setting_value: update.setting_value,
+              store_id: storeId
+            })
+          
+          if (error) throw error
+        }
+      }
+      
+      alert('設定を保存しました')
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      alert('保存に失敗しました')
+    } finally {
+      setLoading(false)
     }
-    
-    alert('設定を保存しました')
-  } catch (error) {
-    console.error('Error saving settings:', error)
-    alert('保存に失敗しました')
-  } finally {
-    setLoading(false)
   }
-}
-
 
   // カテゴリーを読み込む関数
   const loadCategories = async () => {
     try {
+      const storeId = getCurrentStoreId()
       const { data, error } = await supabase
         .from('product_categories')
         .select('*')
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
         .order('display_order')
       
       if (error) throw error
@@ -139,13 +168,15 @@ const loadSystemSettings = async () => {
     }
 
     try {
+      const storeId = getCurrentStoreId()
       const maxOrder = Math.max(...categories.map(c => c.display_order), 0)
       
       const { error } = await supabase
         .from('product_categories')
         .insert({
           name: newCategoryName,
-          display_order: maxOrder + 1
+          display_order: maxOrder + 1,
+          store_id: storeId  // 店舗IDを追加
         })
       
       if (error) throw error
@@ -162,10 +193,12 @@ const loadSystemSettings = async () => {
   // カテゴリー名を更新する関数
   const updateCategoryName = async (id: number) => {
     try {
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('product_categories')
         .update({ name: editingCategoryName })
         .eq('id', id)
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
       
       if (error) throw error
       
@@ -207,11 +240,13 @@ const loadSystemSettings = async () => {
 
     // データベースを更新
     try {
+      const storeId = getCurrentStoreId()
       for (const [index, category] of updates.entries()) {
         await supabase
           .from('product_categories')
           .update({ display_order: index + 1 })
           .eq('id', category.id)
+          .eq('store_id', storeId)  // 店舗IDでフィルタ
       }
     } catch (error) {
       console.error('Error updating category order:', error)
@@ -225,7 +260,8 @@ const loadSystemSettings = async () => {
   // 商品を読み込む関数
   const loadProducts = async (categoryId?: number) => {
     try {
-      let query = supabase.from('products').select('*')
+      const storeId = getCurrentStoreId()
+      let query = supabase.from('products').select('*').eq('store_id', storeId)  // 店舗IDでフィルタ
       
       if (categoryId) {
         query = query.eq('category_id', categoryId)
@@ -258,6 +294,7 @@ const loadSystemSettings = async () => {
     }
 
     try {
+      const storeId = getCurrentStoreId()
       const maxOrder = Math.max(...products.map(p => p.display_order), 0)
       
       const { error } = await supabase
@@ -268,7 +305,8 @@ const loadSystemSettings = async () => {
           price: newProduct.price,
           needs_cast: newProduct.needsCast,
           display_order: maxOrder + 1,
-          is_active: true
+          is_active: true,
+          store_id: storeId  // 店舗IDを追加
         })
       
       if (error) throw error
@@ -292,6 +330,7 @@ const loadSystemSettings = async () => {
     if (!editingProduct) return
 
     try {
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('products')
         .update({
@@ -302,6 +341,7 @@ const loadSystemSettings = async () => {
           is_active: editingProduct.is_active
         })
         .eq('id', editingProduct.id)
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
       
       if (error) throw error
       
@@ -345,11 +385,13 @@ const loadSystemSettings = async () => {
 
     // データベースを更新
     try {
+      const storeId = getCurrentStoreId()
       for (const [index, product] of updates.entries()) {
         await supabase
           .from('products')
           .update({ display_order: index + 1 })
           .eq('id', product.id)
+          .eq('store_id', storeId)  // 店舗IDでフィルタ
       }
     } catch (error) {
       console.error('Error updating order:', error)
@@ -363,10 +405,12 @@ const loadSystemSettings = async () => {
   // 商品の有効/無効を切り替える関数
   const toggleProductActive = async (product: Product) => {
     try {
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('products')
         .update({ is_active: !product.is_active })
         .eq('id', product.id)
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
       
       if (error) throw error
       
@@ -380,10 +424,12 @@ const loadSystemSettings = async () => {
   // キャスト必要フラグを切り替える関数
   const toggleProductNeedsCast = async (product: Product) => {
     try {
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('products')
         .update({ needs_cast: !product.needs_cast })
         .eq('id', product.id)
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
       
       if (error) throw error
       

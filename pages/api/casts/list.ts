@@ -9,10 +9,15 @@ const supabase = createClient(
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
-      // 新しいテーブル構造から名前を取得
+      // クエリパラメータから店舗IDを取得（デフォルトは1）
+      const { storeId } = req.query
+      const targetStoreId = storeId || '1'
+      
+      // 新しいテーブル構造から名前を取得（店舗でフィルタ）
       const { data, error } = await supabase
         .from('casts')
         .select('name')
+        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
         .not('name', 'is', null)  // 名前がnullでない
         .neq('name', '')          // 名前が空文字でない
         .order('name')

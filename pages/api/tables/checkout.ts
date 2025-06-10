@@ -27,15 +27,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       paymentCash,
       paymentCard,
       paymentOther,
-      totalAmount  // フロントエンドから端数処理後の金額を受け取る
+      totalAmount,
+      storeId  // 店舗IDを追加
     } = req.body
 
+    // storeIdが指定されていない場合はデフォルト値を使用
+    const targetStoreId = storeId || 1
+
     try {
-      // 現在のテーブル情報を取得
+      // 現在のテーブル情報を取得（店舗IDでフィルタ）
       const { data: tableData, error: fetchError } = await supabase
         .from('table_status')
         .select('*')
         .eq('table_name', tableId)
+        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
       
       if (fetchError) throw fetchError
 
@@ -44,15 +49,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!currentData) {
         return res.status(404).json({ 
           error: 'Table not found', 
-          details: `Table ${tableId} not found in table_status` 
+          details: `Table ${tableId} not found in table_status for store ${targetStoreId}` 
         })
       }
 
-      // システム設定を取得（税率のみ必要）
+      // システム設定を取得（店舗IDでフィルタ）
       const { data: settings } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
         .in('setting_key', ['consumption_tax_rate', 'service_charge_rate'])
+        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
 
       // 設定値を取得
       const consumptionTaxRate = settings?.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10
@@ -76,7 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // 端数調整額を計算
       const roundingAdjustment = totalAmount - (subtotalIncTax + serviceTax)
 
-      // 1. ordersテーブルに注文を保存（全ての情報を含む）
+      // 1. ordersテーブルに注文を保存（店舗IDを含む）
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -90,8 +96,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           subtotal_excl_tax: subtotal,
           tax_amount: consumptionTax,
           service_charge: serviceTax,
-          rounding_adjustment: roundingAdjustment,  // 端数調整額を追加
-          total_incl_tax: totalAmount  // フロントエンドから送られた端数処理後の金額を使用
+          rounding_adjustment: roundingAdjustment,
+          total_incl_tax: totalAmount,
+          store_id: targetStoreId  // 店舗IDを追加
         })
         .select()
         .single()
@@ -103,7 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       console.log('作成された注文:', orderData)
 
-      // 2. order_itemsに明細を保存
+      // 2. order_itemsに明細を保存（店舗IDを含む）
       if (orderItems && orderItems.length > 0 && orderData) {
         const itemsToInsert = orderItems.map((item: OrderItem) => {
           const unitPriceExclTax = Math.round(item.price / (1 + consumptionTaxRate))
@@ -119,7 +126,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             tax_amount: taxAmount,
             quantity: item.quantity,
             subtotal: item.price * item.quantity,
-            pack_number: 0
+            pack_number: 0,
+            store_id: targetStoreId  // 店舗IDを追加
           }
         })
 
@@ -133,7 +141,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       }
 
-      // 3. paymentsテーブルに支払い情報を保存
+      // 3. paymentsテーブルに支払い情報を保存（店舗IDを含む）
       const { error: paymentError } = await supabase
         .from('payments')
         .insert({
@@ -141,21 +149,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           cash_amount: paymentCash || 0,
           credit_card_amount: paymentCard || 0,
           other_payment_amount: paymentOther || 0,
-          change_amount: Math.max(0, (paymentCash + paymentCard + paymentOther) - totalAmount),  // totalAmountを使用
-          payment_method: paymentCash > 0 ? 'cash' : paymentCard > 0 ? 'card' : 'other'
+          change_amount: Math.max(0, (paymentCash + paymentCard + paymentOther) - totalAmount),
+          payment_method: paymentCash > 0 ? 'cash' : paymentCard > 0 ? 'card' : 'other',
+          store_id: targetStoreId  // 店舗IDを追加
         })
 
       if (paymentError) {
         console.error('支払い情報保存エラー:', paymentError)
       }
 
-      // 4. current_order_itemsをクリア
+      // 4. current_order_itemsをクリア（店舗IDでフィルタ）
       await supabase
         .from('current_order_items')
         .delete()
         .eq('table_id', tableId)
+        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
 
-      // 5. table_statusをクリア
+      // 5. table_statusをクリア（店舗IDでフィルタ）
       const { error: updateError } = await supabase
         .from('table_status')
         .update({
@@ -165,6 +175,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           visit_type: null
         })
         .eq('table_name', tableId)
+        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
 
       if (updateError) throw updateError
 

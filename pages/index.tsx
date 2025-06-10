@@ -5,6 +5,7 @@ import { ProductSection } from '../components/ProductSection'
 import { OrderSection } from '../components/OrderSection'
 import { TableData, OrderItem, ProductCategories, ProductCategory, Product } from '../types'
 import { createClient } from '@supabase/supabase-js'
+import { getCurrentStoreId } from '../utils/storeContext'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -179,9 +180,11 @@ export default function Home() {
 
   // システム設定を取得
   const loadSystemSettings = async () => {
+    const storeId = getCurrentStoreId()
     const { data: settings } = await supabase
       .from('system_settings')
       .select('setting_key, setting_value')
+      .eq('store_id', storeId)
     
     if (settings) {
       const settingsObj = {
@@ -199,7 +202,11 @@ export default function Home() {
     try {
       console.log('商品データ読み込み開始...')
       
-      const res = await fetch('/api/products')
+      // 店舗IDを取得
+      const storeId = getCurrentStoreId()
+      
+      // APIに店舗IDを渡す
+      const res = await fetch(`/api/products?storeId=${storeId}`)
       const data = await res.json()
       
       console.log('APIレスポンス:', data)
@@ -294,7 +301,8 @@ export default function Home() {
   // データ取得
   const loadData = async () => {
     try {
-      const res = await fetch('/api/tables/status')
+      const storeId = getCurrentStoreId()
+      const res = await fetch(`/api/tables/status?storeId=${storeId}`)
       const data: TableData[] = await res.json()
       
       const tableMap: Record<string, TableData> = {}
@@ -359,7 +367,8 @@ export default function Home() {
   // キャストリスト取得
   const loadCastList = async () => {
     try {
-      const res = await fetch('/api/casts/list')
+      const storeId = getCurrentStoreId()
+      const res = await fetch(`/api/casts/list?storeId=${storeId}`)
       const data = await res.json()
       setCastList(data)
     } catch (error) {
@@ -370,7 +379,8 @@ export default function Home() {
   // 注文データを取得
   const loadOrderItems = async (tableId: string) => {
     try {
-      const res = await fetch(`/api/orders/current?tableId=${tableId}`)
+      const storeId = getCurrentStoreId()
+      const res = await fetch(`/api/orders/current?tableId=${tableId}&storeId=${storeId}`)
       const data = await res.json()
       
       if (res.ok && data.length > 0) {
@@ -400,12 +410,14 @@ export default function Home() {
   // 注文内容を保存
   const saveOrderItems = async (silent: boolean = false) => {
     try {
+      const storeId = getCurrentStoreId()
       const response = await fetch('/api/orders/current', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tableId: currentTable,
-          orderItems: orderItems
+          orderItems: orderItems,
+          storeId: storeId  // 店舗IDを追加
         })
       })
       
@@ -508,6 +520,7 @@ export default function Home() {
             // ローカルストレージをクリア
             localStorage.removeItem('isLoggedIn')
             localStorage.removeItem('username')
+            localStorage.removeItem('currentStoreId')
             
             // ログインページにリダイレクト
             router.push('/login')
@@ -551,6 +564,7 @@ export default function Home() {
         timeStr = getJapanTimeString(selectedTime)
       }
 
+      const storeId = getCurrentStoreId()
       await fetch('/api/tables/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -559,7 +573,8 @@ export default function Home() {
           guestName: formData.guestName,
           castName: formData.castName,
           timeStr,
-          visitType: formData.visitType
+          visitType: formData.visitType,
+          storeId: storeId  // 店舗IDを追加
         })
       })
       
@@ -602,6 +617,7 @@ export default function Home() {
     
     try {
       const checkoutTime = getJapanTimeString(new Date())
+      const storeId = getCurrentStoreId()
       
       console.log('送信データ:', { 
         tableId: currentTable,
@@ -614,7 +630,8 @@ export default function Home() {
         paymentCard: paymentData.card,
         paymentOther: paymentData.other,
         paymentOtherMethod: paymentData.otherMethod,
-        totalAmount: roundedTotal  // 端数処理後の金額を送信
+        totalAmount: roundedTotal,
+        storeId: storeId
       })
       
       const response = await fetch('/api/tables/checkout', {
@@ -631,7 +648,8 @@ export default function Home() {
           paymentCard: paymentData.card,
           paymentOther: paymentData.other,
           paymentOtherMethod: paymentData.otherMethod,
-          totalAmount: getRoundedTotal(getTotal())  
+          totalAmount: getRoundedTotal(getTotal()),
+          storeId: storeId  // 店舗IDを追加
         })
       })
       
@@ -661,10 +679,14 @@ export default function Home() {
     if (!confirm(`${currentTable} の情報を削除しますか？`)) return
     
     try {
+      const storeId = getCurrentStoreId()
       await fetch('/api/tables/clear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableId: currentTable })
+        body: JSON.stringify({ 
+          tableId: currentTable,
+          storeId: storeId
+        })
       })
       
       // 注文データをクリア
@@ -685,12 +707,14 @@ export default function Home() {
     setIsMoving(true)
     
     try {
+      const storeId = getCurrentStoreId()
       const response = await fetch('/api/tables/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fromTableId: moveFromTable,
-          toTableId: toTable
+          toTableId: toTable,
+          storeId: storeId
         })
       })
       
@@ -1216,12 +1240,14 @@ export default function Home() {
                   return
                 }
                 if (confirm(`${currentTable} から ${toTable} へ移動しますか？`)) {
+                  const storeId = getCurrentStoreId()
                   fetch('/api/tables/move', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       fromTableId: currentTable,
-                      toTableId: toTable
+                      toTableId: toTable,
+                      storeId: storeId
                     })
                   })
                     .then(() => {

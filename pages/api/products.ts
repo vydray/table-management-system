@@ -14,19 +14,25 @@ export default async function handler(
   }
 
   try {
-    // カテゴリー取得
+    // クエリパラメータから店舗IDを取得（デフォルトは1）
+    const { storeId } = req.query
+    const targetStoreId = storeId || '1'
+    
+    // カテゴリー取得（店舗でフィルタ）
     const { data: categories, error: catError } = await supabase
       .from('product_categories')
       .select('*')
+      .eq('store_id', targetStoreId)
       .order('display_order')
     
     if (catError) throw catError
     
-    // 商品取得
+    // 商品取得（店舗でフィルタ）
     const { data: products, error: prodError } = await supabase
       .from('products')
       .select('*')
       .eq('is_active', true)
+      .eq('store_id', targetStoreId)
       .order('display_order')
     
     if (prodError) throw prodError

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { createClient } from '@supabase/supabase-js'
+import { getCurrentStoreId } from '../utils/storeContext'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -86,11 +87,13 @@ export default function Report() {
   // 月次目標を読み込む
   const loadMonthlyTargets = async () => {
     try {
+      const storeId = getCurrentStoreId()
       const { data } = await supabase
         .from('monthly_targets')
         .select('*')
         .eq('year', selectedYear)
         .eq('month', selectedMonth)
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
         .single()
       
       if (data) {
@@ -111,15 +114,17 @@ export default function Report() {
   // 月次目標を保存
   const saveMonthlyTargets = async () => {
     try {
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('monthly_targets')
         .upsert({
           year: selectedYear,
           month: selectedMonth,
           sales_target: tempTargets.salesTarget,
-          customer_target: tempTargets.customerTarget
+          customer_target: tempTargets.customerTarget,
+          store_id: storeId  // 店舗IDを追加
         }, {
-          onConflict: 'year,month'
+          onConflict: 'year,month,store_id'  // 店舗IDも含める
         })
       
       if (!error) {
@@ -136,10 +141,12 @@ export default function Report() {
   // 営業日切り替え時間を取得
   const loadBusinessDayStartHour = async () => {
     try {
+      const storeId = getCurrentStoreId()
       const { data } = await supabase
         .from('system_settings')
         .select('setting_value')
         .eq('setting_key', 'business_day_start_hour')
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
         .single()
       
       if (data) {
@@ -166,6 +173,7 @@ export default function Report() {
   const loadMonthlyData = async () => {
     setLoading(true)
     try {
+      const storeId = getCurrentStoreId()
       // その月の日数を取得
       const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate()
       const monthlyData: DailyData[] = []
@@ -174,13 +182,17 @@ export default function Report() {
         const targetDate = new Date(selectedYear, selectedMonth - 1, day)
         const { start, end } = getBusinessDayRange(targetDate)
 
-        // 売上データを取得
+        // 売上データを取得（ordersテーブルから）
         const { data: salesData } = await supabase
-          .from('table_logs')
-          .select('*')
-          .gte('checkout_time', start.toISOString())
-          .lt('checkout_time', end.toISOString())
-          .not('checkout_time', 'is', null)
+          .from('orders')
+          .select(`
+            *,
+            payments(cash_amount, credit_card_amount, other_payment_amount)
+          `)
+          .gte('checkout_datetime', start.toISOString())
+          .lt('checkout_datetime', end.toISOString())
+          .eq('store_id', storeId)  // 店舗IDでフィルタ
+          .not('checkout_datetime', 'is', null)
 
         if (salesData && salesData.length > 0) {
           const dailyStats: DailyData = {
@@ -197,12 +209,15 @@ export default function Report() {
 
           salesData.forEach(sale => {
             // 合計売上
-            dailyStats.totalSales += sale.total_amount || 0
+            dailyStats.totalSales += sale.total_incl_tax || 0
             
-            // 支払い方法別
-            dailyStats.cashSales += sale.payment_cash || 0
-            dailyStats.cardSales += sale.payment_card || 0
-            dailyStats.otherSales += sale.payment_other || 0
+            // 支払い方法別（paymentsテーブルから）
+            if (sale.payments && sale.payments.length > 0) {
+              const payment = sale.payments[0]
+              dailyStats.cashSales += payment.cash_amount || 0
+              dailyStats.cardSales += payment.credit_card_amount || 0
+              dailyStats.otherSales += payment.other_payment_amount || 0
+            }
             
             // 来店種別
             switch (sale.visit_type) {
@@ -878,7 +893,7 @@ export default function Report() {
                         <div style={{ fontSize: '14px', textAlign: 'center' }}>達成率</div>
                       </div>
                       <div style={{ backgroundColor: '#fff', padding: '10px', border: '1px solid #999', textAlign: 'center' }}>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{((monthlyTotal.totalSales / 12000000) * 100).toFixed(2)}%</div>
+                        <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{((monthlyTotal.totalSales / monthlyTargets.salesTarget) * 100).toFixed(2)}%</div>
                       </div>
                     </div>
                   </div>
