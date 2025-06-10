@@ -1293,7 +1293,22 @@ export default function Home() {
               padding: '30px',
               overflowY: 'auto'
             }}>
-              <h3 style={{ marginTop: 0 }}>会計処理 - {currentTable}</h3>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'flex-start',
+                marginBottom: '20px'
+              }}>
+                <h3 style={{ margin: 0 }}>会計処理 - {currentTable}</h3>
+                <div style={{
+                  textAlign: 'right',
+                  fontSize: '14px',
+                  lineHeight: '1.6'
+                }}>
+                  <div><strong>推し：</strong>{formData.castName || '未選択'}</div>
+                  <div><strong>お客様：</strong>{formData.guestName || '未入力'}</div>
+                </div>
+              </div>
               
               <div style={{ 
                 marginBottom: '25px', 
