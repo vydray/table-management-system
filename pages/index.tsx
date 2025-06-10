@@ -1293,22 +1293,7 @@ export default function Home() {
               padding: '30px',
               overflowY: 'auto'
             }}>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'flex-start',
-                marginBottom: '20px'
-              }}>
-                <h3 style={{ margin: 0 }}>会計処理 - {currentTable}</h3>
-                <div style={{
-                  textAlign: 'right',
-                  fontSize: '14px',
-                  lineHeight: '1.6'
-                }}>
-                  <div><strong>推し：</strong>{formData.castName || '未選択'}</div>
-                  <div><strong>お客様：</strong>{formData.guestName || '未入力'}</div>
-                </div>
-              </div>
+              <h3 style={{ marginTop: 0 }}>会計処理 - {currentTable}</h3>
               
               <div style={{ 
                 marginBottom: '25px', 
@@ -1316,8 +1301,25 @@ export default function Home() {
                 backgroundColor: '#f5f5f5',
                 borderRadius: '5px'
               }}>
-                <div style={{ marginBottom: '10px' }}>
-                  <strong>小計: ¥{getTotal().toLocaleString()}</strong>
+                <div style={{ 
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '15px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #ccc'
+                }}>
+                  <div>
+                    <strong>小計：¥{getTotal().toLocaleString()}</strong>
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    gap: '30px',
+                    fontSize: '16px'
+                  }}>
+                    <div><strong>推し：</strong>{formData.castName || ''}</div>
+                    <div><strong>お客様：</strong>{formData.guestName || ''}</div>
+                  </div>
                 </div>
                 
                 {getRoundingAdjustment() !== 0 && (
@@ -1332,8 +1334,6 @@ export default function Home() {
                 <div style={{ 
                   fontSize: '24px', 
                   fontWeight: 'bold',
-                  borderTop: '1px solid #ccc',
-                  paddingTop: '10px',
                   textAlign: 'center'
                 }}>
                   合計金額: ¥{getRoundedTotal(getTotal()).toLocaleString()}
