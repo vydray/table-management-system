@@ -9,27 +9,29 @@ const supabase = createClient(
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
-      // クエリパラメータから店舗IDを取得（デフォルトは1）
       const { storeId } = req.query
-      const targetStoreId = storeId || '1'
       
-      // 新しいテーブル構造から名前を取得（店舗でフィルタ）
+      // storeIdが指定されていない場合はデフォルト値を使用
+      const targetStoreId = storeId || 1
+      
+      // statusが「在籍」のキャストのみ取得
       const { data, error } = await supabase
         .from('casts')
         .select('name')
         .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
-        .not('name', 'is', null)  // 名前がnullでない
-        .neq('name', '')          // 名前が空文字でない
+        .eq('status', '在籍')            // 在籍のみフィルタ
+        .not('name', 'is', null)         // 名前がnullでない
+        .neq('name', '')                 // 名前が空文字でない
         .order('name')
 
       if (error) {
         console.error('Supabase error:', error)
         return res.status(500).json({ error: error.message })
       }
-      
+
       // 名前のリストを作成（重複を除去）
       const castNames = [...new Set(data?.map(cast => cast.name) || [])]
-      
+
       res.status(200).json(castNames)
     } catch (error) {
       console.error('API error:', error)
