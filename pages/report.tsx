@@ -322,6 +322,11 @@ export default function Report() {
             height: auto !important;
             overflow: auto !important;
             position: static !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+          #__next {
+            height: auto !important;
+            overflow: auto !important;
           }
         `}</style>
       </Head>
@@ -334,7 +339,9 @@ export default function Report() {
         padding: '20px',
         paddingBottom: '100px',
         position: 'relative',
-        height: 'auto'
+        height: 'auto',
+        minHeight: '100vh',
+        overflow: 'visible'
       }}>
         {/* ヘッダー */}
         <div style={{
