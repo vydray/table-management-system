@@ -57,7 +57,6 @@ export default function Settings() {
     needsCast: false,
     categoryId: null as number | null
   })
-  const [editingProductId, setEditingProductId] = useState<number | null>(null)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [isSortMode, setIsSortMode] = useState(false)
   const [draggedItem, setDraggedItem] = useState<Product | null>(null)
@@ -301,7 +300,6 @@ export default function Settings() {
       
       if (error) throw error
       
-      setEditingProductId(null)
       setEditingProduct(null)
       setIsEditModalOpen(false)
       loadProducts(selectedCategoryId || undefined)
@@ -924,7 +922,6 @@ export default function Settings() {
                             {!isSortMode && (
                               <button
                                 onClick={() => {
-                                  setEditingProductId(product.id)
                                   setEditingProduct(product)
                                   setIsEditModalOpen(true)
                                 }}
@@ -1147,7 +1144,6 @@ export default function Settings() {
             }}
             onClick={() => {
               setIsEditModalOpen(false)
-              setEditingProductId(null)
               setEditingProduct(null)
             }}
           >
@@ -1168,7 +1164,6 @@ export default function Settings() {
               <button
                 onClick={() => {
                   setIsEditModalOpen(false)
-                  setEditingProductId(null)
                   setEditingProduct(null)
                 }}
                 style={{
@@ -1327,7 +1322,6 @@ export default function Settings() {
                   <button
                     onClick={() => {
                       setIsEditModalOpen(false)
-                      setEditingProductId(null)
                       setEditingProduct(null)
                     }}
                     style={{
