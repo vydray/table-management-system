@@ -15,6 +15,7 @@ interface Category {
   name: string
   display_order: number
   store_id?: number
+  show_oshi_first?: boolean
   created_at?: string
 }
 
@@ -439,6 +440,30 @@ export default function Settings() {
       loadProducts(selectedCategoryId || undefined)
     } catch (error) {
       console.error('Error toggling needs_cast:', error)
+      alert('更新に失敗しました')
+    }
+  }
+
+  // カテゴリーの推し優先表示を切り替える関数
+  const toggleCategoryOshiFirst = async (category: Category) => {
+    try {
+      const storeId = getCurrentStoreId()
+      const newValue = !category.show_oshi_first
+      
+      const { error } = await supabase
+        .from('product_categories')
+        .update({ show_oshi_first: newValue })
+        .eq('id', category.id)
+        .eq('store_id', storeId)
+      
+      if (error) throw error
+      
+      // ローカルの状態を更新
+      setCategories(prev => prev.map(cat => 
+        cat.id === category.id ? { ...cat, show_oshi_first: newValue } : cat
+      ))
+    } catch (error) {
+      console.error('Error toggling show_oshi_first:', error)
       alert('更新に失敗しました')
     }
   }
@@ -1139,6 +1164,7 @@ export default function Settings() {
                     <thead>
                       <tr style={{ borderBottom: '2px solid #ddd' }}>
                         <th style={{ padding: '10px', textAlign: 'left' }}>カテゴリー名</th>
+                        <th style={{ padding: '10px', width: '120px', textAlign: 'center' }}>推し優先表示</th>
                         <th style={{ padding: '10px', width: '100px' }}>操作</th>
                       </tr>
                     </thead>
@@ -1192,6 +1218,45 @@ export default function Settings() {
                                 {category.name}
                               </span>
                             )}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            <label style={{
+                              position: 'relative',
+                              display: 'inline-block',
+                              width: '50px',
+                              height: '24px',
+                              cursor: 'pointer'
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={category.show_oshi_first || false}
+                                onChange={() => toggleCategoryOshiFirst(category)}
+                                style={{ display: 'none' }}
+                                disabled={isCategorySortMode}
+                              />
+                              <span style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: category.show_oshi_first ? '#4CAF50' : '#ccc',
+                                borderRadius: '24px',
+                                transition: 'all 0.3s',
+                                opacity: isCategorySortMode ? 0.6 : 1
+                              }}>
+                                <span style={{
+                                  position: 'absolute',
+                                  top: '2px',
+                                  left: category.show_oshi_first ? '26px' : '2px',
+                                  width: '20px',
+                                  height: '20px',
+                                  backgroundColor: 'white',
+                                  borderRadius: '50%',
+                                  transition: 'all 0.3s'
+                                }}></span>
+                              </span>
+                            </label>
                           </td>
                           <td style={{ padding: '10px', textAlign: 'center' }}>
                             {!isCategorySortMode && (

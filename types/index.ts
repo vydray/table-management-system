@@ -23,6 +23,7 @@ export interface ProductItem {
   price: number
   needsCast: boolean
   discountRate: number
+  showOshiFirst?: boolean
 }
 
 // 商品カテゴリーの型定義
@@ -37,6 +38,7 @@ export interface ProductCategory {
   id: number
   name: string
   display_order: number
+  show_oshi_first?: boolean
 }
 
 // DBから取得する商品の型

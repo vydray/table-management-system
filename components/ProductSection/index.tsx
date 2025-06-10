@@ -58,15 +58,17 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
     }
   }
 
-  // キャストリストをソート（推し優先表示が有効な場合）
+  // キャストリストをソート（カテゴリーの設定に基づいて推し優先表示）
   const getSortedCastList = () => {
-    if (!showOshiFirst || !currentOshi || !castList.includes(currentOshi)) {
+    if (!currentOshi || !castList.includes(currentOshi)) {
       return castList
     }
 
-    // 推しを優先表示するカテゴリーかチェック
-    const oshiFirstCategories = ['推し用', 'シャンパン', 'ノンアルシャンパン']
-    const shouldShowOshiFirst = oshiFirstCategories.includes(selectedCategory)
+    // 現在のカテゴリーの設定を確認
+    const currentCategoryData = selectedCategory && productCategories[selectedCategory]
+    const shouldShowOshiFirst = currentCategoryData && Object.values(currentCategoryData).some(
+      product => product.showOshiFirst
+    )
 
     if (shouldShowOshiFirst) {
       // 推しを先頭に、残りはそのまま
@@ -106,6 +108,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           castList={getSortedCastList()}
           selectedProduct={localSelectedProduct}
           onSelectCast={handleCastSelect}
+          currentOshi={currentOshi}
         />
       </div>
     </div>
