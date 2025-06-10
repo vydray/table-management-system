@@ -41,7 +41,8 @@ export default function Settings() {
     serviceChargeRate: 15,
     roundingUnit: 100,
     roundingMethod: 0,
-    businessDayStartHour: 5
+    businessDayStartHour: 5,
+    showOshiFirst: false
   })
 
   // カテゴリー管理の状態
@@ -81,7 +82,8 @@ export default function Settings() {
           serviceChargeRate: settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value * 100 || 15,
           roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
           roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
-          businessDayStartHour: settings.find(s => s.setting_key === 'business_day_start_hour')?.setting_value || 5
+          businessDayStartHour: settings.find(s => s.setting_key === 'business_day_start_hour')?.setting_value || 5,
+          showOshiFirst: settings.find(s => s.setting_key === 'show_oshi_first')?.setting_value === 1
         })
       }
     } catch (error) {
@@ -99,7 +101,8 @@ export default function Settings() {
         { setting_key: 'service_charge_rate', setting_value: systemSettings.serviceChargeRate / 100 },
         { setting_key: 'rounding_unit', setting_value: systemSettings.roundingUnit },
         { setting_key: 'rounding_method', setting_value: systemSettings.roundingMethod },
-        { setting_key: 'business_day_start_hour', setting_value: systemSettings.businessDayStartHour }
+        { setting_key: 'business_day_start_hour', setting_value: systemSettings.businessDayStartHour },
+        { setting_key: 'show_oshi_first', setting_value: systemSettings.showOshiFirst ? 1 : 0 }
       ]
       
       for (const update of updates) {
@@ -720,6 +723,28 @@ export default function Settings() {
                 </div>
                 <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
                   例：5時設定の場合、朝4:59までは前日、5:00以降は当日として集計されます
+                </small>
+              </div>
+
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={systemSettings.showOshiFirst}
+                    onChange={(e) => setSystemSettings({
+                      ...systemSettings,
+                      showOshiFirst: e.target.checked
+                    })}
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  推しを優先表示
+                </label>
+                <small style={{ display: 'block', marginTop: '8px', marginLeft: '30px', color: '#666' }}>
+                  テーブル設定時の推しが、推し用・シャンパン・ノンアルシャンパンの選択時に一番上に表示されます
                 </small>
               </div>
 

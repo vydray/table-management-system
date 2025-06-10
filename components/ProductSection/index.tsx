@@ -9,6 +9,8 @@ interface ProductSectionProps {
   selectedCategory: string
   selectedProduct: { name: string; price: number; needsCast: boolean } | null
   castList: string[]
+  currentOshi?: string
+  showOshiFirst?: boolean
   onSelectCategory: (category: string) => void
   onAddProduct: (productName: string, price: number, needsCast: boolean, castName?: string) => void
 }
@@ -18,6 +20,8 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   selectedCategory,
   selectedProduct,
   castList,
+  currentOshi,
+  showOshiFirst = false,
   onSelectCategory,
   onAddProduct
 }) => {
@@ -54,6 +58,24 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
     }
   }
 
+  // キャストリストをソート（推し優先表示が有効な場合）
+  const getSortedCastList = () => {
+    if (!showOshiFirst || !currentOshi || !castList.includes(currentOshi)) {
+      return castList
+    }
+
+    // 推しを優先表示するカテゴリーかチェック
+    const oshiFirstCategories = ['推し用', 'シャンパン', 'ノンアルシャンパン']
+    const shouldShowOshiFirst = oshiFirstCategories.includes(selectedCategory)
+
+    if (shouldShowOshiFirst) {
+      // 推しを先頭に、残りはそのまま
+      return [currentOshi, ...castList.filter(name => name !== currentOshi)]
+    }
+
+    return castList
+  }
+
   return (
     <div className="left-section">
       <div className="search-section">
@@ -81,7 +103,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
         )}
         
         <CastSelector
-          castList={castList}
+          castList={getSortedCastList()}
           selectedProduct={localSelectedProduct}
           onSelectCast={handleCastSelect}
         />
