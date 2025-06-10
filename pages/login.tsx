@@ -27,6 +27,11 @@ export default function Login() {
         // ログイン成功
         localStorage.setItem('isLoggedIn', 'true')
         localStorage.setItem('username', data.username)
+        localStorage.setItem('currentStoreId', data.storeId.toString())  // 店舗IDを保存
+        localStorage.setItem('userRole', data.role)  // ロールも保存
+        
+        console.log(`ログイン成功: ${data.username} (店舗ID: ${data.storeId})`)
+        
         router.push('/')
       } else {
         setError(data.error || 'ログインに失敗しました')
@@ -64,6 +69,7 @@ export default function Login() {
                 placeholder="ユーザー名を入力"
                 required
                 disabled={loading}
+                autoComplete="username"
               />
             </div>
 
@@ -77,6 +83,7 @@ export default function Login() {
                 placeholder="パスワードを入力"
                 required
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
 
@@ -94,6 +101,10 @@ export default function Login() {
               {loading ? 'ログイン中...' : 'ログイン'}
             </button>
           </form>
+
+          <div className="login-footer">
+            <p>パスワードを忘れた場合は管理者にお問い合わせください</p>
+          </div>
         </div>
       </div>
 
@@ -103,14 +114,14 @@ export default function Login() {
           justify-content: center;
           align-items: center;
           min-height: 100vh;
-          background: linear-gradient(135deg, #b9f6b7 0%, #a8e6a1 100%);
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         .login-box {
           background: white;
           border-radius: 16px;
           padding: 40px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
           width: 100%;
           max-width: 400px;
         }
@@ -142,23 +153,26 @@ export default function Login() {
 
         .form-group label {
           display: block;
-          margin-bottom: 5px;
-          font-weight: bold;
+          margin-bottom: 8px;
+          font-weight: 600;
           color: #333;
+          font-size: 14px;
         }
 
         .form-group input {
           width: 100%;
           padding: 12px 16px;
-          border: 2px solid #ddd;
+          border: 2px solid #e1e8ed;
           border-radius: 8px;
           font-size: 16px;
-          transition: border-color 0.3s ease;
+          transition: all 0.3s ease;
+          background-color: #f7f9fc;
         }
 
         .form-group input:focus {
           outline: none;
-          border-color: #4CAF50;
+          border-color: #667eea;
+          background-color: white;
         }
 
         .form-group input:disabled {
@@ -169,15 +183,16 @@ export default function Login() {
         .error-message {
           background: #fee;
           color: #c33;
-          padding: 10px;
+          padding: 12px;
           border-radius: 8px;
           margin-bottom: 20px;
           text-align: center;
           font-size: 14px;
+          border: 1px solid #fcc;
         }
 
         .login-button {
-          background: #4CAF50;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
           border: none;
           padding: 14px;
@@ -185,16 +200,29 @@ export default function Login() {
           font-size: 16px;
           font-weight: bold;
           cursor: pointer;
-          transition: background-color 0.3s ease;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
         .login-button:hover:not(:disabled) {
-          background: #45a049;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
         }
 
         .login-button:disabled {
           background: #ccc;
           cursor: not-allowed;
+          box-shadow: none;
+        }
+
+        .login-footer {
+          margin-top: 20px;
+          text-align: center;
+        }
+
+        .login-footer p {
+          color: #999;
+          font-size: 12px;
         }
       `}</style>
     </>

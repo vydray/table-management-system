@@ -20,10 +20,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // ユーザーをデータベースから検索（パスワードハッシュも取得）
+    // ユーザーをデータベースから検索（パスワードハッシュと店舗IDも取得）
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, username, password, role')
+      .select('id, username, password, role, store_id')
       .eq('username', username)
       .single()
 
@@ -38,8 +38,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'ユーザー名またはパスワードが間違っています' })
     }
 
-    // パスワードを除外してレスポンス
-    // const { password: _, ...userWithoutPassword } = user // この行を削除
+    // store_idが設定されていない場合はエラー
+    if (!user.store_id) {
+      return res.status(403).json({ error: '店舗が設定されていません。管理者に連絡してください。' })
+    }
 
     // ログイン成功
     res.status(200).json({
@@ -47,6 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       username: user.username,
       role: user.role,
       userId: user.id,
+      storeId: user.store_id,  // 店舗IDを追加
       message: 'ログインに成功しました'
     })
 
