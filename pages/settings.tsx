@@ -34,11 +34,12 @@ export default function Settings() {
   
   // システム設定の状態
   const [systemSettings, setSystemSettings] = useState({
-    consumptionTaxRate: 10,
-    serviceChargeRate: 15,
-    roundingUnit: 100,
-    roundingMethod: 0
-  })
+  consumptionTaxRate: 10,
+  serviceChargeRate: 15,
+  roundingUnit: 100,
+  roundingMethod: 0,
+  businessDayStartHour: 5  // ← これを追加
+})
 
   // カテゴリー管理の状態
   const [categories, setCategories] = useState<Category[]>([])
@@ -63,53 +64,57 @@ export default function Settings() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   // システム設定を読み込む関数
-  const loadSystemSettings = async () => {
-    try {
-      const { data: settings } = await supabase
-        .from('system_settings')
-        .select('setting_key, setting_value')
-      
-      if (settings) {
-        setSystemSettings({
-          consumptionTaxRate: settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value * 100 || 10,
-          serviceChargeRate: settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value * 100 || 15,
-          roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
-          roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0
-        })
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error)
+const loadSystemSettings = async () => {
+  try {
+    const { data: settings } = await supabase
+      .from('system_settings')
+      .select('setting_key, setting_value')
+    
+    if (settings) {
+      setSystemSettings({
+        consumptionTaxRate: settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value * 100 || 10,
+        serviceChargeRate: settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value * 100 || 15,
+        roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
+        roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
+        businessDayStartHour: settings.find(s => s.setting_key === 'business_day_start_hour')?.setting_value || 5  // ← これを追加
+      })
     }
+  } catch (error) {
+    console.error('Error loading settings:', error)
   }
+}
+
 
   // システム設定を保存する関数
   const saveSystemSettings = async () => {
-    setLoading(true)
-    try {
-      const updates = [
-        { setting_key: 'consumption_tax_rate', setting_value: systemSettings.consumptionTaxRate / 100 },
-        { setting_key: 'service_charge_rate', setting_value: systemSettings.serviceChargeRate / 100 },
-        { setting_key: 'rounding_unit', setting_value: systemSettings.roundingUnit },
-        { setting_key: 'rounding_method', setting_value: systemSettings.roundingMethod }
-      ]
+  setLoading(true)
+  try {
+    const updates = [
+      { setting_key: 'consumption_tax_rate', setting_value: systemSettings.consumptionTaxRate / 100 },
+      { setting_key: 'service_charge_rate', setting_value: systemSettings.serviceChargeRate / 100 },
+      { setting_key: 'rounding_unit', setting_value: systemSettings.roundingUnit },
+      { setting_key: 'rounding_method', setting_value: systemSettings.roundingMethod },
+      { setting_key: 'business_day_start_hour', setting_value: systemSettings.businessDayStartHour }  // ← これを追加
+    ]
+    
+    for (const update of updates) {
+      const { error } = await supabase
+        .from('system_settings')
+        .update({ setting_value: update.setting_value })
+        .eq('setting_key', update.setting_key)
       
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('system_settings')
-          .update({ setting_value: update.setting_value })
-          .eq('setting_key', update.setting_key)
-        
-        if (error) throw error
-      }
-      
-      alert('設定を保存しました')
-    } catch (error) {
-      console.error('Error saving settings:', error)
-      alert('保存に失敗しました')
-    } finally {
-      setLoading(false)
+      if (error) throw error
     }
+    
+    alert('設定を保存しました')
+  } catch (error) {
+    console.error('Error saving settings:', error)
+    alert('保存に失敗しました')
+  } finally {
+    setLoading(false)
   }
+}
+
 
   // カテゴリーを読み込む関数
   const loadCategories = async () => {
@@ -533,7 +538,7 @@ export default function Settings() {
           overflowY: 'auto',
           overflowX: 'hidden'
         }}>
-          {activeMenu === 'system' && (
+         {activeMenu === 'system' && (
             <div style={{
               backgroundColor: '#fff',
               borderRadius: '8px',
@@ -638,6 +643,41 @@ export default function Settings() {
                 </div>
               </div>
 
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                  営業日切り替え時間
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <select
+                    value={systemSettings.businessDayStartHour}
+                    onChange={(e) => setSystemSettings({
+                      ...systemSettings,
+                      businessDayStartHour: Number(e.target.value)
+                    })}
+                    style={{
+                      width: '100px',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '16px'
+                    }}
+                  >
+                    {[...Array(24)].map((_, hour) => (
+                      <option key={hour} value={hour}>
+                        {hour}時
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: '14px', color: '#666' }}>
+                    （この時間を基準に前日/当日を判定）
+                  </span>
+                </div>
+                <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                  例：5時設定の場合、朝4:59までは前日、5:00以降は当日として集計されます
+                </small>
+              </div>
+
+              {/* 保存ボタンは1つだけ */}
               <button
                 onClick={saveSystemSettings}
                 disabled={loading}
@@ -656,7 +696,7 @@ export default function Settings() {
               </button>
             </div>
           )}
-
+           
           {activeMenu === 'products' && (
             <div style={{
               backgroundColor: '#fff',
