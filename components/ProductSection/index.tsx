@@ -10,7 +10,7 @@ interface ProductSectionProps {
   selectedProduct: { name: string; price: number; needsCast: boolean } | null
   castList: string[]
   currentOshi?: string
-  showOshiFirst?: boolean
+  showOshiFirst?: boolean  // 追加：現在のカテゴリーの推し優先表示設定
   onSelectCategory: (category: string) => void
   onAddProduct: (productName: string, price: number, needsCast: boolean, castName?: string) => void
 }
@@ -21,7 +21,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   selectedProduct,
   castList,
   currentOshi,
-  showOshiFirst = false,
+  showOshiFirst = false,  // デフォルト値を設定
   onSelectCategory,
   onAddProduct
 }) => {
@@ -58,20 +58,14 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
     }
   }
 
-  // キャストリストをソート（カテゴリーの設定に基づいて推し優先表示）
+  // キャストリストをソート（推し優先表示設定に基づく）
   const getSortedCastList = () => {
     if (!currentOshi || !castList.includes(currentOshi)) {
       return castList
     }
 
-    // 現在のカテゴリーの設定を確認
-    const currentCategoryData = selectedCategory && productCategories[selectedCategory]
-    const shouldShowOshiFirst = currentCategoryData && Object.values(currentCategoryData).some(
-      product => product.showOshiFirst
-    )
-
-    if (shouldShowOshiFirst) {
-      // 推しを先頭に、残りはそのまま
+    // showOshiFirstがtrueの場合、推しを先頭に
+    if (showOshiFirst) {
       return [currentOshi, ...castList.filter(name => name !== currentOshi)]
     }
 

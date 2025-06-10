@@ -53,6 +53,7 @@ export default function Home() {
   
   // POS機能用の状態
   const [productCategories, setProductCategories] = useState<ProductCategories>({})
+  const [productCategoriesData, setProductCategoriesData] = useState<ProductCategory[]>([])
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<{name: string, price: number, needsCast: boolean} | null>(null)
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
@@ -216,6 +217,9 @@ export default function Home() {
       }
       
       const { categories, products } = data
+      
+      // カテゴリーデータを保存
+      setProductCategoriesData(categories || [])
       
       // データ構造を変換
       const productData: ProductCategories = {}
@@ -931,6 +935,12 @@ export default function Home() {
       </div>
     )
   }
+
+  // 現在のカテゴリーの推し優先表示設定を取得
+  const getCurrentCategoryShowOshiFirst = () => {
+    const categoryData = productCategoriesData.find(cat => cat.name === selectedCategory)
+    return categoryData?.show_oshi_first || false
+  }
   
   return (
     <>
@@ -1157,6 +1167,8 @@ export default function Home() {
                     selectedCategory={selectedCategory}
                     selectedProduct={selectedProduct}
                     castList={castList}
+                    currentOshi={formData.castName}
+                    showOshiFirst={getCurrentCategoryShowOshiFirst()}
                     onSelectCategory={setSelectedCategory}
                     onAddProduct={addProductToOrder}
                   />

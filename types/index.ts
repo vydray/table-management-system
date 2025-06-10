@@ -23,7 +23,6 @@ export interface ProductItem {
   price: number
   needsCast: boolean
   discountRate: number
-  showOshiFirst?: boolean
 }
 
 // 商品カテゴリーの型定義
