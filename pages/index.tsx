@@ -1334,7 +1334,7 @@ export default function Home() {
                     <span>¥</span>
                     <input
                       type="text"
-                      value={paymentData.cash || ''}
+                      value={paymentData.cash ? paymentData.cash.toLocaleString() : '0'}
                       onClick={() => setActivePaymentInput('cash')}
                       readOnly
                       style={{
@@ -1356,7 +1356,7 @@ export default function Home() {
                     <span>¥</span>
                     <input
                       type="text"
-                      value={paymentData.card || ''}
+                      value={paymentData.card ? paymentData.card.toLocaleString() : '0'}
                       onClick={() => setActivePaymentInput('card')}
                       readOnly
                       style={{
@@ -1378,7 +1378,7 @@ export default function Home() {
                     <span>¥</span>
                     <input
                       type="text"
-                      value={paymentData.other || ''}
+                      value={paymentData.other ? paymentData.other.toLocaleString() : '0'}
                       onClick={() => setActivePaymentInput('other')}
                       readOnly
                       style={{
@@ -1500,7 +1500,7 @@ export default function Home() {
                   const value = activePaymentInput === 'cash' ? paymentData.cash :
                                activePaymentInput === 'card' ? paymentData.card :
                                paymentData.other;
-                  return value.toLocaleString();
+                  return (value || 0).toLocaleString();
                 })()}
               </div>
 
