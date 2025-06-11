@@ -2,9 +2,17 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../../utils/storeContext'
 
+// Supabaseクライアントの初期化を確認
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Supabase環境変数が設定されていません')
+}
+
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  supabaseUrl || '',
+  supabaseAnonKey || ''
 )
 
 // 型定義を追加
@@ -61,22 +69,34 @@ export default function CastManagement() {
   const toggleCastShowInPos = async (cast: Cast) => {
     try {
       const storeId = getCurrentStoreId()
+      console.log('Toggle POS for cast:', cast.id, 'Store ID:', storeId)
+      
       const newValue = !cast.show_in_pos
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('casts')
-        .update({ show_in_pos: newValue })
+        .update({ 
+          show_in_pos: newValue,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', cast.id)
         .eq('store_id', storeId)
+        .select()
+        .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Supabase update error:', error)
+        throw error
+      }
+      
+      console.log('Update successful:', data)
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, show_in_pos: newValue } : c
       ))
     } catch (error) {
       console.error('Error toggling show_in_pos:', error)
-      alert('更新に失敗しました')
+      alert('更新に失敗しました。エラー: ' + (error as Error).message)
     }
   }
 
