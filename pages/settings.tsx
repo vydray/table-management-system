@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../utils/storeContext'
+import { CastManagement } from '../components/settings/CastManagement'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -75,7 +76,7 @@ export default function Settings() {
       const { data: settings } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .eq('store_id', storeId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)
       
       if (settings) {
         setSystemSettings({
@@ -107,7 +108,6 @@ export default function Settings() {
       ]
       
       for (const update of updates) {
-        // まず既存のレコードがあるか確認
         const { data: existing } = await supabase
           .from('system_settings')
           .select('id')
@@ -116,7 +116,6 @@ export default function Settings() {
           .single()
         
         if (existing) {
-          // 更新
           const { error } = await supabase
             .from('system_settings')
             .update({ setting_value: update.setting_value })
@@ -125,7 +124,6 @@ export default function Settings() {
           
           if (error) throw error
         } else {
-          // 新規作成
           const { error } = await supabase
             .from('system_settings')
             .insert({
@@ -154,7 +152,7 @@ export default function Settings() {
       const { data, error } = await supabase
         .from('product_categories')
         .select('*')
-        .eq('store_id', storeId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)
         .order('display_order')
       
       if (error) throw error
@@ -180,7 +178,7 @@ export default function Settings() {
         .insert({
           name: newCategoryName,
           display_order: maxOrder + 1,
-          store_id: storeId  // 店舗IDを追加
+          store_id: storeId
         })
       
       if (error) throw error
@@ -202,7 +200,7 @@ export default function Settings() {
         .from('product_categories')
         .update({ name: editingCategoryName })
         .eq('id', id)
-        .eq('store_id', storeId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)
       
       if (error) throw error
       
@@ -234,7 +232,6 @@ export default function Settings() {
     newCategories.splice(draggedIndex, 1)
     newCategories.splice(targetIndex, 0, draggedCategory)
 
-    // 表示順序を更新
     const updates = newCategories.map((category, index) => ({
       ...category,
       display_order: index + 1
@@ -242,7 +239,6 @@ export default function Settings() {
 
     setCategories(updates)
 
-    // データベースを更新
     try {
       const storeId = getCurrentStoreId()
       for (const [index, category] of updates.entries()) {
@@ -250,7 +246,7 @@ export default function Settings() {
           .from('product_categories')
           .update({ display_order: index + 1 })
           .eq('id', category.id)
-          .eq('store_id', storeId)  // 店舗IDでフィルタ
+          .eq('store_id', storeId)
       }
     } catch (error) {
       console.error('Error updating category order:', error)
@@ -265,7 +261,7 @@ export default function Settings() {
   const loadProducts = async (categoryId?: number) => {
     try {
       const storeId = getCurrentStoreId()
-      let query = supabase.from('products').select('*').eq('store_id', storeId)  // 店舗IDでフィルタ
+      let query = supabase.from('products').select('*').eq('store_id', storeId)
       
       if (categoryId) {
         query = query.eq('category_id', categoryId)
@@ -310,7 +306,7 @@ export default function Settings() {
           needs_cast: newProduct.needsCast,
           display_order: maxOrder + 1,
           is_active: true,
-          store_id: storeId  // 店舗IDを追加
+          store_id: storeId
         })
       
       if (error) throw error
@@ -345,7 +341,7 @@ export default function Settings() {
           is_active: editingProduct.is_active
         })
         .eq('id', editingProduct.id)
-        .eq('store_id', storeId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)
       
       if (error) throw error
       
@@ -379,7 +375,6 @@ export default function Settings() {
     newProducts.splice(draggedIndex, 1)
     newProducts.splice(targetIndex, 0, draggedItem)
 
-    // 表示順序を更新
     const updates = newProducts.map((product, index) => ({
       ...product,
       display_order: index + 1
@@ -387,7 +382,6 @@ export default function Settings() {
 
     setProducts(updates)
 
-    // データベースを更新
     try {
       const storeId = getCurrentStoreId()
       for (const [index, product] of updates.entries()) {
@@ -395,7 +389,7 @@ export default function Settings() {
           .from('products')
           .update({ display_order: index + 1 })
           .eq('id', product.id)
-          .eq('store_id', storeId)  // 店舗IDでフィルタ
+          .eq('store_id', storeId)
       }
     } catch (error) {
       console.error('Error updating order:', error)
@@ -414,7 +408,7 @@ export default function Settings() {
         .from('products')
         .update({ is_active: !product.is_active })
         .eq('id', product.id)
-        .eq('store_id', storeId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)
       
       if (error) throw error
       
@@ -433,7 +427,7 @@ export default function Settings() {
         .from('products')
         .update({ needs_cast: !product.needs_cast })
         .eq('id', product.id)
-        .eq('store_id', storeId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)
       
       if (error) throw error
       
@@ -458,7 +452,6 @@ export default function Settings() {
       
       if (error) throw error
       
-      // ローカルの状態を更新
       setCategories(prev => prev.map(cat => 
         cat.id === category.id ? { ...cat, show_oshi_first: newValue } : cat
       ))
@@ -773,7 +766,6 @@ export default function Settings() {
                 </small>
               </div>
 
-              {/* 保存ボタンは1つだけ */}
               <button
                 onClick={saveSystemSettings}
                 disabled={loading}
@@ -802,7 +794,6 @@ export default function Settings() {
             }}>
               <h2 style={{ marginTop: 0 }}>商品管理</h2>
               
-              {/* カテゴリー選択 */}
               <div style={{ marginBottom: '30px' }}>
                 <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
                   カテゴリーで絞り込み
@@ -825,7 +816,6 @@ export default function Settings() {
                 </select>
               </div>
 
-              {/* 新規商品追加フォーム */}
               <div style={{
                 padding: '20px',
                 backgroundColor: '#f5f5f5',
@@ -917,7 +907,6 @@ export default function Settings() {
                 </div>
               </div>
 
-              {/* 商品一覧 */}
               <div>
                 <div style={{ 
                   display: 'flex', 
@@ -1092,7 +1081,6 @@ export default function Settings() {
             }}>
               <h2 style={{ marginTop: 0 }}>カテゴリー管理</h2>
               
-              {/* 新規追加フォーム */}
               <div style={{ 
                 marginBottom: '30px',
                 padding: '20px',
@@ -1130,7 +1118,6 @@ export default function Settings() {
                 </div>
               </div>
 
-              {/* カテゴリー一覧 */}
               <div>
                 <div style={{ 
                   display: 'flex', 
@@ -1287,24 +1274,13 @@ export default function Settings() {
             </div>
           )}
 
-          {activeMenu === 'casts' && (
-            <div style={{
-              backgroundColor: '#fff',
-              borderRadius: '8px',
-              padding: '30px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              <h2 style={{ marginTop: 0 }}>キャスト管理</h2>
-              <p>キャスト管理機能は準備中です...</p>
-            </div>
-          )}
+          {activeMenu === 'casts' && <CastManagement />}
         </div>
       </div>
 
       {/* 編集モーダル */}
       {isEditModalOpen && editingProduct && (
         <>
-          {/* モーダル背景 */}
           <div 
             style={{
               position: 'fixed',
@@ -1323,7 +1299,6 @@ export default function Settings() {
               setEditingProduct(null)
             }}
           >
-            {/* モーダル本体 */}
             <div 
               style={{
                 backgroundColor: 'white',
@@ -1336,7 +1311,6 @@ export default function Settings() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* 閉じるボタン */}
               <button
                 onClick={() => {
                   setIsEditModalOpen(false)
@@ -1365,7 +1339,6 @@ export default function Settings() {
 
               <h2 style={{ marginTop: 0, marginBottom: '25px' }}>商品編集</h2>
 
-              {/* 編集フォーム */}
               <div style={{ display: 'grid', gap: '20px' }}>
                 <div>
                   <label style={{ 
@@ -1488,7 +1461,6 @@ export default function Settings() {
                   </label>
                 </div>
 
-                {/* ボタン */}
                 <div style={{ 
                   display: 'flex', 
                   gap: '10px', 
