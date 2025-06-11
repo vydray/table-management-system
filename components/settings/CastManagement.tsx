@@ -7,48 +7,44 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase環境変数が設定されていません')
+  console.error('Missing Supabase environment variables')
 }
 
-const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
-)
+const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
 
-// 型定義を追加
+// キャストの型定義
 interface Cast {
   id: number
-  line_number?: string | null
-  name?: string | null
-  twitter?: string | null
-  instagram?: string | null
-  attributes?: string | null
-  status?: string | null
-  show_in_pos?: boolean | null
-  hire_date?: string | null
-  birthday?: string | null
-  password?: string | null
-  password2?: string | null
-  attendance_certificate?: boolean | null
-  residence_record?: boolean | null
-  contract_documents?: boolean | null
-  submission_contract?: string | null
-  employee_name?: string | null
-  sales_previous_day?: number | null
-  experience_date?: string | null
-  resignation_date?: string | null
-  created_at?: string | null
-  updated_at?: string | null
-  store_id?: number | null
+  store_id: number
+  name: string | null
+  line_user_id: string | null
+  password: string | null
+  twitter: string | null
+  instagram: string | null
+  photo: string | null
+  attributes: string | null
+  is_writer: boolean | null
+  submission_date: string | null
+  back_number: string | null
+  status: string | null
+  sales_previous_day: boolean | null
+  cast_point: number | null
+  show_in_pos: boolean | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 export default function CastManagement() {
   const [casts, setCasts] = useState<Cast[]>([])
-  const [castSearchQuery, setCastSearchQuery] = useState('')
-  const [editingCast, setEditingCast] = useState<Cast | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filteredCasts, setFilteredCasts] = useState<Cast[]>([])
   const [showCastModal, setShowCastModal] = useState(false)
+  const [editingCast, setEditingCast] = useState<Cast | null>(null)
 
-  // キャストデータを取得する関数
+  // Google Apps ScriptのURL
+  const gasUrl = 'https://script.google.com/macros/s/AKfycbwp10byL5IEGbEJAKOxVAQ1dSdjQ3UNJTGJnJOZ6jp6JOCWiiFURaQiqfqyfo390NvgZg/exec'
+
+  // キャスト一覧を読み込む
   const loadCasts = async () => {
     try {
       const storeId = getCurrentStoreId()
@@ -56,23 +52,22 @@ export default function CastManagement() {
         .from('casts')
         .select('*')
         .eq('store_id', storeId)
-        .order('name')
+        .order('id')
 
       if (error) throw error
       setCasts(data || [])
     } catch (error) {
-      console.error('Failed to fetch casts:', error)
+      console.error('Failed to load casts:', error)
     }
   }
 
-  // キャストのPOS表示を切り替える関数
+  // キャストのPOS表示を切り替える関数（修正版）
   const toggleCastShowInPos = async (cast: Cast) => {
     try {
       const storeId = getCurrentStoreId()
-      console.log('Toggle POS for cast:', cast.id, 'Store ID:', storeId)
-      
       const newValue = !cast.show_in_pos
       
+      // Supabaseを更新
       const { data, error } = await supabase
         .from('casts')
         .update({ 
@@ -85,28 +80,57 @@ export default function CastManagement() {
         .single()
       
       if (error) {
-        console.error('Supabase update error:', error)
+        console.error('Supabase error:', error)
         throw error
       }
       
-      console.log('Update successful:', data)
+      // 成功したらGoogle Apps Scriptに直接送信
+      try {
+        const gasResponse = await fetch(gasUrl, {
+          method: 'POST',
+          mode: 'no-cors', // CORSエラーを回避
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'UPDATE',
+            table: 'casts',
+            record: {
+              ...data,
+              show_in_pos: newValue
+            },
+            old_record: {
+              ...data,
+              show_in_pos: cast.show_in_pos
+            }
+          })
+        })
+        
+        console.log('Google Apps Script called successfully')
+      } catch (gasError) {
+        console.error('GAS sync error:', gasError)
+        // GASのエラーは無視（Supabaseの更新は成功しているので）
+      }
       
+      // UIを更新
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, show_in_pos: newValue } : c
       ))
     } catch (error) {
       console.error('Error toggling show_in_pos:', error)
-      alert('更新に失敗しました。エラー: ' + (error as Error).message)
+      alert('更新に失敗しました')
     }
   }
 
-  // キャスト情報を更新する関数
+  // キャスト情報を更新する関数（修正版）
   const updateCast = async () => {
     if (!editingCast) return
 
     try {
       const storeId = getCurrentStoreId()
-      const { error } = await supabase
+      const oldCast = casts.find(c => c.id === editingCast.id)
+      
+      const { data, error } = await supabase
         .from('casts')
         .update({
           name: editingCast.name || '',
@@ -119,8 +143,31 @@ export default function CastManagement() {
         })
         .eq('id', editingCast.id)
         .eq('store_id', storeId)
+        .select()
+        .single()
 
       if (error) throw error
+      
+      // 成功したらGoogle Apps Scriptに直接送信
+      try {
+        await fetch(gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'UPDATE',
+            table: 'casts',
+            record: data,
+            old_record: oldCast
+          })
+        })
+        
+        console.log('Google Apps Script called successfully')
+      } catch (gasError) {
+        console.error('GAS sync error:', gasError)
+      }
       
       alert('キャスト情報を更新しました')
       await loadCasts()
@@ -132,461 +179,178 @@ export default function CastManagement() {
     }
   }
 
+  // 初回読み込み
   useEffect(() => {
     loadCasts()
   }, [])
 
-  // 検索フィルター
-  const filteredCasts = casts.filter(cast => {
-    const query = castSearchQuery.toLowerCase()
-    const name = cast.name || ''
-    const twitter = cast.twitter || ''
-    const instagram = cast.instagram || ''
-    const attributes = cast.attributes || ''
-    
-    return (
-      name.toLowerCase().includes(query) ||
-      twitter.toLowerCase().includes(query) ||
-      instagram.toLowerCase().includes(query) ||
-      attributes.toLowerCase().includes(query)
-    )
-  })
+  // 検索処理
+  useEffect(() => {
+    const filtered = casts.filter(cast => {
+      const name = cast.name || ''
+      const attributes = cast.attributes || ''
+      const status = cast.status || ''
+      const searchLower = searchTerm.toLowerCase()
+      
+      return name.toLowerCase().includes(searchLower) ||
+             attributes.toLowerCase().includes(searchLower) ||
+             status.toLowerCase().includes(searchLower)
+    })
+    setFilteredCasts(filtered)
+  }, [casts, searchTerm])
 
   return (
-    <>
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '8px',
-        padding: '30px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <h2 style={{ marginTop: 0 }}>キャスト管理</h2>
-        
-        {/* 検索バー */}
-        <div style={{ marginBottom: '20px' }}>
-          <input
-            type="text"
-            placeholder="キャストを検索（名前、Twitter、Instagram、属性）"
-            value={castSearchQuery}
-            onChange={(e) => setCastSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              fontSize: '16px'
-            }}
-          />
-        </div>
+    <div className="bg-white p-6 rounded shadow">
+      <h2 className="text-xl font-bold mb-4">キャスト管理</h2>
 
-        {/* キャスト一覧（テーブル形式） */}
-        <div style={{ marginBottom: '20px' }}>
-          {filteredCasts.length === 0 ? (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '40px',
-              color: '#999'
-            }}>
-              {castSearchQuery ? 'キャストが見つかりません' : 'キャストデータがありません'}
-            </div>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #ddd' }}>
-                  <th style={{ padding: '10px', textAlign: 'left', width: '35%' }}>源氏名</th>
-                  <th style={{ padding: '10px', textAlign: 'left', width: '25%' }}>属性</th>
-                  <th style={{ padding: '10px', textAlign: 'center', width: '20%' }}>ステータス</th>
-                  <th style={{ padding: '10px', textAlign: 'center', width: '20%' }}>POS表示</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCasts.map((cast) => (
-                  <tr 
-                    key={cast.id} 
-                    style={{ 
-                      borderBottom: '1px solid #eee',
-                      backgroundColor: cast.status === '退店' ? '#f5f5f5' : 'white',
-                      cursor: 'pointer'
-                    }}
-                    onClick={(e) => {
-                      // トグルをクリックした場合は編集モーダルを開かない
-                      const target = e.target as HTMLElement
-                      if (target.closest('.toggle-wrapper')) {
-                        return;
-                      }
+      {/* 検索バー */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="名前、属性、ステータスで検索..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-3 py-2 border rounded"
+        />
+      </div>
+
+      {/* キャスト一覧 */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="px-4 py-2 text-left">名前</th>
+              <th className="px-4 py-2 text-left">属性</th>
+              <th className="px-4 py-2 text-left">ステータス</th>
+              <th className="px-4 py-2 text-center">POS表示</th>
+              <th className="px-4 py-2 text-center">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredCasts.map((cast) => (
+              <tr key={cast.id} className="border-b hover:bg-gray-50">
+                <td className="px-4 py-2">{cast.name || '-'}</td>
+                <td className="px-4 py-2">{cast.attributes || '-'}</td>
+                <td className="px-4 py-2">{cast.status || '-'}</td>
+                <td className="px-4 py-2 text-center">
+                  <button
+                    onClick={() => toggleCastShowInPos(cast)}
+                    className={`px-3 py-1 rounded ${
+                      cast.show_in_pos 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-300 text-gray-700'
+                    }`}
+                  >
+                    {cast.show_in_pos ? 'ON' : 'OFF'}
+                  </button>
+                </td>
+                <td className="px-4 py-2 text-center">
+                  <button
+                    onClick={() => {
                       setEditingCast(cast)
                       setShowCastModal(true)
                     }}
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                   >
-                    <td style={{ padding: '10px' }}>
-                      <strong>{cast.name || '名前なし'}</strong>
-                    </td>
-                    <td style={{ padding: '10px' }}>
-                      {cast.attributes || '-'}
-                    </td>
-                    <td style={{ padding: '10px', textAlign: 'center' }}>
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        backgroundColor: 
-                          cast.status === '在籍' ? '#4CAF50' :
-                          cast.status === '退店' ? '#f44336' :
-                          '#FF9800',
-                        color: 'white'
-                      }}>
-                        {cast.status || '未定'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px', textAlign: 'center' }}>
-                      <div className="toggle-wrapper" style={{ display: 'inline-block' }}>
-                        <label style={{
-                          position: 'relative',
-                          display: 'inline-block',
-                          width: '50px',
-                          height: '24px',
-                          cursor: 'pointer'
-                        }}>
-                          <input
-                            type="checkbox"
-                            checked={cast.show_in_pos !== false}
-                            onChange={() => toggleCastShowInPos(cast)}
-                            style={{ display: 'none' }}
-                          />
-                          <span style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: cast.show_in_pos !== false ? '#4CAF50' : '#ccc',
-                            borderRadius: '24px',
-                            transition: 'all 0.3s'
-                          }}>
-                            <span style={{
-                              position: 'absolute',
-                              top: '2px',
-                              left: cast.show_in_pos !== false ? '26px' : '2px',
-                              width: '20px',
-                              height: '20px',
-                              backgroundColor: 'white',
-                              borderRadius: '50%',
-                              transition: 'all 0.3s'
-                            }}></span>
-                          </span>
-                        </label>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* 同期ボタン */}
-        <div style={{ textAlign: 'center', marginTop: '30px' }}>
-          <button
-            onClick={() => {
-              if (confirm('Google スプレッドシートから最新のキャストデータを同期しますか？')) {
-                alert('Google Apps Script側から手動で同期を実行してください')
-              }
-            }}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '16px',
-              cursor: 'pointer'
-            }}
-          >
-            <span style={{ marginRight: '8px' }}>🔄</span>
-            スプレッドシートから同期
-          </button>
-        </div>
+                    編集
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* キャスト編集モーダル */}
+      {/* 編集モーダル */}
       {showCastModal && editingCast && (
-        <>
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              zIndex: 2000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onClick={() => {
-              setShowCastModal(false)
-              setEditingCast(null)
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '30px',
-                width: '500px',
-                maxWidth: '90%',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                position: 'relative'
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
+            <h3 className="text-lg font-bold mb-4">キャスト編集</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">名前</label>
+                <input
+                  type="text"
+                  value={editingCast.name || ''}
+                  onChange={(e) => setEditingCast({...editingCast, name: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Twitter</label>
+                <input
+                  type="text"
+                  value={editingCast.twitter || ''}
+                  onChange={(e) => setEditingCast({...editingCast, twitter: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Instagram</label>
+                <input
+                  type="text"
+                  value={editingCast.instagram || ''}
+                  onChange={(e) => setEditingCast({...editingCast, instagram: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">属性</label>
+                <input
+                  type="text"
+                  value={editingCast.attributes || ''}
+                  onChange={(e) => setEditingCast({...editingCast, attributes: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">ステータス</label>
+                <input
+                  type="text"
+                  value={editingCast.status || ''}
+                  onChange={(e) => setEditingCast({...editingCast, status: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={editingCast.show_in_pos ?? true}
+                    onChange={(e) => setEditingCast({...editingCast, show_in_pos: e.target.checked})}
+                    className="mr-2"
+                  />
+                  POS表示
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-2">
               <button
                 onClick={() => {
                   setShowCastModal(false)
                   setEditingCast(null)
                 }}
-                style={{
-                  position: 'absolute',
-                  top: '15px',
-                  right: '15px',
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  color: '#666'
-                }}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
               >
-                ×
+                キャンセル
               </button>
-
-              <h2 style={{ marginTop: 0, marginBottom: '25px' }}>キャスト情報編集</h2>
-              
-              <div style={{ display: 'grid', gap: '20px' }}>
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    fontWeight: 'bold',
-                    fontSize: '14px'
-                  }}>
-                    源氏名
-                  </label>
-                  <input
-                    type="text"
-                    value={editingCast.name || ''}
-                    onChange={(e) => setEditingCast({ ...editingCast, name: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      fontSize: '16px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    fontWeight: 'bold',
-                    fontSize: '14px'
-                  }}>
-                    Twitter
-                  </label>
-                  <input
-                    type="text"
-                    value={editingCast.twitter || ''}
-                    onChange={(e) => setEditingCast({ ...editingCast, twitter: e.target.value })}
-                    placeholder="@なしで入力"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      fontSize: '16px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    fontWeight: 'bold',
-                    fontSize: '14px'
-                  }}>
-                    Instagram
-                  </label>
-                  <input
-                    type="text"
-                    value={editingCast.instagram || ''}
-                    onChange={(e) => setEditingCast({ ...editingCast, instagram: e.target.value })}
-                    placeholder="@なしで入力"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      fontSize: '16px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    fontWeight: 'bold',
-                    fontSize: '14px'
-                  }}>
-                    属性
-                  </label>
-                  <input
-                    type="text"
-                    value={editingCast.attributes || ''}
-                    onChange={(e) => setEditingCast({ ...editingCast, attributes: e.target.value })}
-                    placeholder="例: キャスト、幹部、スタッフ"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      fontSize: '16px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    fontWeight: 'bold',
-                    fontSize: '14px'
-                  }}>
-                    ステータス
-                  </label>
-                  <select
-                    value={editingCast.status || ''}
-                    onChange={(e) => setEditingCast({ ...editingCast, status: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      fontSize: '16px',
-                      boxSizing: 'border-box',
-                      backgroundColor: 'white',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="">-- 選択 --</option>
-                    <option value="在籍">在籍</option>
-                    <option value="退店">退店</option>
-                    <option value="未定">未定</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    fontWeight: 'bold',
-                    fontSize: '14px'
-                  }}>
-                    POS表示設定
-                  </label>
-                  <label style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '10px',
-                    cursor: 'pointer',
-                    fontSize: '16px'
-                  }}>
-                    <input
-                      type="checkbox"
-                      checked={editingCast.show_in_pos !== false}
-                      onChange={(e) => setEditingCast({ ...editingCast, show_in_pos: e.target.checked })}
-                      style={{ 
-                        width: '20px', 
-                        height: '20px',
-                        cursor: 'pointer'
-                      }}
-                    />
-                    POSレジの推し選択に表示する
-                  </label>
-                  <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
-                    オフにするとPOSレジの推し選択リストに表示されません
-                  </small>
-                </div>
-
-                {/* 読み取り専用情報 */}
-                <div style={{ 
-                  padding: '15px',
-                  backgroundColor: '#f5f5f5',
-                  borderRadius: '6px',
-                  fontSize: '14px'
-                }}>
-                  <div style={{ marginBottom: '8px' }}>
-                    <strong>LINE ID:</strong> {editingCast.line_number || 'なし'}
-                  </div>
-                  <div style={{ marginBottom: '8px' }}>
-                    <strong>入店日:</strong> {editingCast.hire_date || 'なし'}
-                  </div>
-                  <div>
-                    <strong>誕生日:</strong> {editingCast.birthday || 'なし'}
-                  </div>
-                </div>
-
-                {/* ボタン */}
-                <div style={{ 
-                  display: 'flex', 
-                  gap: '10px', 
-                  marginTop: '20px',
-                  justifyContent: 'flex-end'
-                }}>
-                  <button
-                    onClick={() => {
-                      setShowCastModal(false)
-                      setEditingCast(null)
-                    }}
-                    style={{
-                      padding: '10px 24px',
-                      backgroundColor: '#f5f5f5',
-                      color: '#333',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      fontSize: '16px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    onClick={updateCast}
-                    style={{
-                      padding: '10px 24px',
-                      backgroundColor: '#4CAF50',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '16px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    保存
-                  </button>
-                </div>
-              </div>
+              <button
+                onClick={updateCast}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                保存
+              </button>
             </div>
           </div>
-        </>
+        </div>
       )}
-    </>
+    </div>
   )
 }
