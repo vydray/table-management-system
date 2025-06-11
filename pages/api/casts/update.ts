@@ -1,68 +1,45 @@
-// toggleCastShowInPos関数を修正
-const toggleCastShowInPos = async (cast: Cast) => {
-  try {
-    const storeId = getCurrentStoreId()
-    const newValue = !cast.show_in_pos
-    
-    const response = await fetch('/api/casts/update', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id: cast.id,
-        storeId: storeId,
-        show_in_pos: newValue
-      })
-    })
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { createClient } from '@supabase/supabase-js'
 
-    if (!response.ok) {
-      throw new Error('Failed to update')
-    }
-    
-    setCasts(prev => prev.map(c => 
-      c.id === cast.id ? { ...c, show_in_pos: newValue } : c
-    ))
-  } catch (error) {
-    console.error('Error toggling show_in_pos:', error)
-    alert('更新に失敗しました')
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST' && req.method !== 'PUT') {
+    return res.status(405).json({ error: 'Method not allowed' })
   }
-}
-
-// updateCast関数も修正
-const updateCast = async () => {
-  if (!editingCast) return
 
   try {
-    const storeId = getCurrentStoreId()
-    
-    const response = await fetch('/api/casts/update', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id: editingCast.id,
-        storeId: storeId,
-        name: editingCast.name,
-        twitter: editingCast.twitter,
-        instagram: editingCast.instagram,
-        attributes: editingCast.attributes,
-        status: editingCast.status,
-        show_in_pos: editingCast.show_in_pos
-      })
-    })
+    const { id, storeId, ...updateData } = req.body
 
-    if (!response.ok) {
-      throw new Error('Failed to update')
+    if (!id || !storeId) {
+      return res.status(400).json({ error: 'ID and storeId are required' })
     }
-    
-    alert('キャスト情報を更新しました')
-    loadCasts()
-    setShowCastModal(false)
-    setEditingCast(null)
+
+    // キャストデータを更新
+    const { data, error } = await supabase
+      .from('casts')
+      .update({
+        ...updateData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .eq('store_id', storeId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Update error:', error)
+      throw error
+    }
+
+    res.status(200).json({ success: true, data })
   } catch (error) {
-    console.error('Failed to update cast:', error)
-    alert('更新に失敗しました')
+    console.error('Error updating cast:', error)
+    res.status(500).json({ error: 'Failed to update cast' })
   }
 }
