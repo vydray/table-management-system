@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../utils/storeContext'
-import { CastManagement } from '../components/settings/CastManagement'
+import CastManagement from '../components/settings/CastManagement'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

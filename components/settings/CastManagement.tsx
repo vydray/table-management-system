@@ -10,32 +10,31 @@ const supabase = createClient(
 // 型定義を追加
 interface Cast {
   id: number
-  line_number?: string
-  name?: string
-  twitter?: string
-  instagram?: string
-  attributes?: string
-  status?: string
-  show_in_pos?: boolean
-  hire_date?: string
-  birthday?: string
-  password?: string
-  password2?: string
-  attendance_certificate?: boolean
-  residence_record?: boolean
-  contract_documents?: boolean
-  submission_contract?: string
-  employee_name?: string
-  sales_previous_day?: number
-  experience_date?: string
-  resignation_date?: string
-  created_at?: string
-  updated_at?: string
-  store_id?: number
+  line_number?: string | null
+  name?: string | null
+  twitter?: string | null
+  instagram?: string | null
+  attributes?: string | null
+  status?: string | null
+  show_in_pos?: boolean | null
+  hire_date?: string | null
+  birthday?: string | null
+  password?: string | null
+  password2?: string | null
+  attendance_certificate?: boolean | null
+  residence_record?: boolean | null
+  contract_documents?: boolean | null
+  submission_contract?: string | null
+  employee_name?: string | null
+  sales_previous_day?: number | null
+  experience_date?: string | null
+  resignation_date?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  store_id?: number | null
 }
 
-// CastManagementPropsインターフェースを削除し、直接エクスポート
-export const CastManagement = () => {
+export default function CastManagement() {
   const [casts, setCasts] = useState<Cast[]>([])
   const [castSearchQuery, setCastSearchQuery] = useState('')
   const [editingCast, setEditingCast] = useState<Cast | null>(null)
@@ -90,12 +89,12 @@ export const CastManagement = () => {
       const { error } = await supabase
         .from('casts')
         .update({
-          name: editingCast.name,
-          twitter: editingCast.twitter,
-          instagram: editingCast.instagram,
-          attributes: editingCast.attributes,
-          status: editingCast.status,
-          show_in_pos: editingCast.show_in_pos,
+          name: editingCast.name || '',
+          twitter: editingCast.twitter || '',
+          instagram: editingCast.instagram || '',
+          attributes: editingCast.attributes || '',
+          status: editingCast.status || '',
+          show_in_pos: editingCast.show_in_pos ?? true,
           updated_at: new Date().toISOString()
         })
         .eq('id', editingCast.id)
@@ -104,7 +103,7 @@ export const CastManagement = () => {
       if (error) throw error
       
       alert('キャスト情報を更新しました')
-      loadCasts()
+      await loadCasts()
       setShowCastModal(false)
       setEditingCast(null)
     } catch (error) {
@@ -120,11 +119,16 @@ export const CastManagement = () => {
   // 検索フィルター
   const filteredCasts = casts.filter(cast => {
     const query = castSearchQuery.toLowerCase()
+    const name = cast.name || ''
+    const twitter = cast.twitter || ''
+    const instagram = cast.instagram || ''
+    const attributes = cast.attributes || ''
+    
     return (
-      cast.name?.toLowerCase().includes(query) ||
-      cast.twitter?.toLowerCase().includes(query) ||
-      cast.instagram?.toLowerCase().includes(query) ||
-      cast.attributes?.toLowerCase().includes(query)
+      name.toLowerCase().includes(query) ||
+      twitter.toLowerCase().includes(query) ||
+      instagram.toLowerCase().includes(query) ||
+      attributes.toLowerCase().includes(query)
     )
   })
 
@@ -186,7 +190,8 @@ export const CastManagement = () => {
                     }}
                     onClick={(e) => {
                       // トグルをクリックした場合は編集モーダルを開かない
-                      if ((e.target as HTMLElement).closest('.toggle-wrapper')) {
+                      const target = e.target as HTMLElement
+                      if (target.closest('.toggle-wrapper')) {
                         return;
                       }
                       setEditingCast(cast)
