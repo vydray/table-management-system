@@ -34,11 +34,8 @@ interface Cast {
   store_id?: number
 }
 
-interface CastManagementProps {
-  // 必要に応じてpropsを追加
-}
-
-export const CastManagement: React.FC<CastManagementProps> = () => {
+// CastManagementPropsインターフェースを削除し、直接エクスポート
+export const CastManagement = () => {
   const [casts, setCasts] = useState<Cast[]>([])
   const [castSearchQuery, setCastSearchQuery] = useState('')
   const [editingCast, setEditingCast] = useState<Cast | null>(null)
