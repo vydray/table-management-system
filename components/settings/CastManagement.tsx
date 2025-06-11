@@ -7,14 +7,41 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// 型定義を追加
+interface Cast {
+  id: number
+  line_number?: string
+  name?: string
+  twitter?: string
+  instagram?: string
+  attributes?: string
+  status?: string
+  show_in_pos?: boolean
+  hire_date?: string
+  birthday?: string
+  password?: string
+  password2?: string
+  attendance_certificate?: boolean
+  residence_record?: boolean
+  contract_documents?: boolean
+  submission_contract?: string
+  employee_name?: string
+  sales_previous_day?: number
+  experience_date?: string
+  resignation_date?: string
+  created_at?: string
+  updated_at?: string
+  store_id?: number
+}
+
 interface CastManagementProps {
   // 必要に応じてpropsを追加
 }
 
 export const CastManagement: React.FC<CastManagementProps> = () => {
-  const [casts, setCasts] = useState<any[]>([])
+  const [casts, setCasts] = useState<Cast[]>([])
   const [castSearchQuery, setCastSearchQuery] = useState('')
-  const [editingCast, setEditingCast] = useState<any>(null)
+  const [editingCast, setEditingCast] = useState<Cast | null>(null)
   const [showCastModal, setShowCastModal] = useState(false)
 
   // キャストデータを取得する関数
@@ -35,7 +62,7 @@ export const CastManagement: React.FC<CastManagementProps> = () => {
   }
 
   // キャストのPOS表示を切り替える関数
-  const toggleCastShowInPos = async (cast: any) => {
+  const toggleCastShowInPos = async (cast: Cast) => {
     try {
       const storeId = getCurrentStoreId()
       const newValue = !cast.show_in_pos
@@ -149,7 +176,6 @@ export const CastManagement: React.FC<CastManagementProps> = () => {
                   <th style={{ padding: '10px', textAlign: 'left', width: '25%' }}>属性</th>
                   <th style={{ padding: '10px', textAlign: 'center', width: '20%' }}>ステータス</th>
                   <th style={{ padding: '10px', textAlign: 'center', width: '20%' }}>POS表示</th>
-                
                 </tr>
               </thead>
               <tbody>
@@ -229,7 +255,6 @@ export const CastManagement: React.FC<CastManagementProps> = () => {
                         </label>
                       </div>
                     </td>
-                   
                   </tr>
                 ))}
               </tbody>
