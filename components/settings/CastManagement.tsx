@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
-// @ts-ignore
+// @ts-expect-error - storeContext import issue
 import { getCurrentStoreId } from '../../utils/storeContext'
 
 // Supabaseクライアントの初期化を確認
