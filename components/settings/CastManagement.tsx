@@ -134,7 +134,7 @@ export default function CastManagement() {
       const newValue = !cast.show_in_pos
       
       // Supabaseを更新
-      const { data: updatedCast, error } = await supabase
+      const { error } = await supabase
         .from('casts')
         .update({ 
           show_in_pos: newValue,
@@ -142,8 +142,6 @@ export default function CastManagement() {
         })
         .eq('id', cast.id)
         .eq('store_id', storeId)
-        .select()
-        .single()
       
       if (error) {
         console.error('Supabase error:', error)
