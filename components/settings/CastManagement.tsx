@@ -377,24 +377,22 @@ export default function CastManagement() {
   }, [casts, searchTerm])
 
   return (
-    <div style={{ backgroundColor: '#f2f2f7', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-      {/* ヘッダー */}
+    <div style={{ backgroundColor: 'white', borderRadius: '8px', marginTop: '20px' }}>
+      {/* コンポーネントヘッダー */}
       <div style={{
-        backgroundColor: 'white',
         padding: '16px 20px',
         borderBottom: '1px solid #e5e5e7',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <h1 style={{ 
-          fontSize: '34px', 
-          fontWeight: '700',
-          margin: 0,
-          letterSpacing: '-0.5px'
+        <h2 style={{ 
+          fontSize: '24px', 
+          fontWeight: '600',
+          margin: 0
         }}>
-          カテゴリー一覧
-        </h1>
+          キャスト管理
+        </h2>
         <button
           onClick={() => {
             setEditingCast(getDefaultCast())
@@ -408,19 +406,16 @@ export default function CastManagement() {
             borderRadius: '8px',
             border: 'none',
             cursor: 'pointer',
-            fontSize: '17px',
-            fontWeight: '600',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
+            fontSize: '15px',
+            fontWeight: '500'
           }}
         >
-          <span style={{ fontSize: '20px' }}>+</span> 新規追加
+          <span style={{ marginRight: '4px' }}>+</span> 新規追加
         </button>
       </div>
 
       {/* 検索バー */}
-      <div style={{ padding: '12px 16px' }}>
+      <div style={{ padding: '16px' }}>
         <input
           type="text"
           placeholder="検索"
@@ -429,90 +424,76 @@ export default function CastManagement() {
           style={{
             width: '100%',
             padding: '8px 12px',
-            borderRadius: '10px',
-            border: 'none',
-            backgroundColor: 'rgba(118, 118, 128, 0.12)',
-            fontSize: '17px',
+            borderRadius: '8px',
+            border: '1px solid #e5e5e7',
+            fontSize: '15px',
             outline: 'none'
           }}
         />
       </div>
 
-      {/* テーブルコンテナ */}
-      <div style={{ margin: '0 16px', backgroundColor: 'white', borderRadius: '10px', overflow: 'hidden' }}>
-        {/* テーブルヘッダー */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr 1fr 1fr',
-          padding: '12px 16px',
-          backgroundColor: '#f2f2f7',
-          fontSize: '13px',
-          fontWeight: '400',
-          color: '#8e8e93',
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px'
-        }}>
-          <div>カテゴリー名</div>
-          <div style={{ textAlign: 'center' }}>売上表</div>
-          <div style={{ textAlign: 'center' }}>推し優先表示</div>
-          <div style={{ textAlign: 'center' }}>操作</div>
-        </div>
-
-        {/* キャスト一覧 */}
-        {filteredCasts.map((cast, index) => (
-          <div key={cast.id} style={{
-            display: 'grid',
-            gridTemplateColumns: '2fr 1fr 1fr 1fr',
-            padding: '12px 16px',
-            alignItems: 'center',
-            borderTop: index > 0 ? '1px solid #e5e5e7' : 'none'
-          }}>
-            <div>
-              <div style={{ fontSize: '17px', fontWeight: '400' }}>{cast.name || '-'}</div>
-              {cast.attributes && (
-                <div style={{ fontSize: '13px', color: '#8e8e93', marginTop: '2px' }}>
-                  {cast.status} • {cast.attributes}
-                </div>
-              )}
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <ToggleSwitch
-                checked={cast.sales_previous_day === '有'}
-                onChange={() => toggleSalesPreviousDay(cast)}
-              />
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <ToggleSwitch
-                checked={cast.show_in_pos || false}
-                onChange={() => toggleCastShowInPos(cast)}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <button
-                onClick={() => {
-                  setEditingCast(cast)
-                  setIsNewCast(false)
-                  setShowCastModal(true)
-                }}
-                style={{
-                  backgroundColor: '#007aff',
-                  color: 'white',
-                  padding: '6px 16px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '15px',
-                  fontWeight: '500'
-                }}
-              >
-                編集
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* テーブル */}
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f9f9f9' }}>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#666' }}>名前</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#666' }}>ステータス</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#666' }}>属性</th>
+              <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '14px', fontWeight: '500', color: '#666' }}>売上表</th>
+              <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '14px', fontWeight: '500', color: '#666' }}>POS表示</th>
+              <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '14px', fontWeight: '500', color: '#666' }}>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredCasts.map((cast, index) => (
+              <tr key={cast.id} style={{ borderBottom: '1px solid #e5e5e7' }}>
+                <td style={{ padding: '12px 16px' }}>
+                  <div style={{ fontSize: '15px' }}>{cast.name || '-'}</div>
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>
+                  {cast.status || '-'}
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>
+                  {cast.attributes || '-'}
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <ToggleSwitch
+                    checked={cast.sales_previous_day === '有'}
+                    onChange={() => toggleSalesPreviousDay(cast)}
+                  />
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <ToggleSwitch
+                    checked={cast.show_in_pos || false}
+                    onChange={() => toggleCastShowInPos(cast)}
+                  />
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <button
+                    onClick={() => {
+                      setEditingCast(cast)
+                      setIsNewCast(false)
+                      setShowCastModal(true)
+                    }}
+                    style={{
+                      backgroundColor: '#007aff',
+                      color: 'white',
+                      padding: '6px 16px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    編集
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* 編集/追加モーダル */}
@@ -600,8 +581,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
-                  value={editingCast.name || ''}
-                  onChange={(e) => setEditingCast({...editingCast, name: e.target.value})}
+                  value={editingCast?.name || ''}
+                  onChange={(e) => editingCast && setEditingCast({...editingCast, name: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '12px',
@@ -627,8 +608,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
-                  value={editingCast.twitter || ''}
-                  onChange={(e) => setEditingCast({...editingCast, twitter: e.target.value})}
+                  value={editingCast?.twitter || ''}
+                  onChange={(e) => editingCast && setEditingCast({...editingCast, twitter: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '12px',
@@ -654,8 +635,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
-                  value={editingCast.instagram || ''}
-                  onChange={(e) => setEditingCast({...editingCast, instagram: e.target.value})}
+                  value={editingCast?.instagram || ''}
+                  onChange={(e) => editingCast && setEditingCast({...editingCast, instagram: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '12px',
@@ -681,8 +662,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
-                  value={editingCast.attributes || ''}
-                  onChange={(e) => setEditingCast({...editingCast, attributes: e.target.value})}
+                  value={editingCast?.attributes || ''}
+                  onChange={(e) => editingCast && setEditingCast({...editingCast, attributes: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '12px',
@@ -707,8 +688,8 @@ export default function CastManagement() {
                   ステータス
                 </label>
                 <select
-                  value={editingCast.status || '在籍'}
-                  onChange={(e) => setEditingCast({...editingCast, status: e.target.value})}
+                  value={editingCast?.status || '在籍'}
+                  onChange={(e) => editingCast && setEditingCast({...editingCast, status: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '12px',
@@ -737,8 +718,8 @@ export default function CastManagement() {
               }}>
                 <label style={{ fontSize: '17px' }}>売上表の有無</label>
                 <ToggleSwitch
-                  checked={editingCast.sales_previous_day === '有'}
-                  onChange={() => setEditingCast({
+                  checked={editingCast?.sales_previous_day === '有'}
+                  onChange={() => editingCast && setEditingCast({
                     ...editingCast, 
                     sales_previous_day: editingCast.sales_previous_day === '有' ? '無' : '有'
                   })}
@@ -758,8 +739,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="date"
-                  value={editingCast.experience_date || ''}
-                  onChange={(e) => setEditingCast({...editingCast, experience_date: e.target.value})}
+                  value={editingCast?.experience_date || ''}
+                  onChange={(e) => editingCast && setEditingCast({...editingCast, experience_date: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '12px',
@@ -784,8 +765,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="date"
-                  value={editingCast.hire_date || ''}
-                  onChange={(e) => setEditingCast({...editingCast, hire_date: e.target.value})}
+                  value={editingCast?.hire_date || ''}
+                  onChange={(e) => editingCast && setEditingCast({...editingCast, hire_date: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '12px',
@@ -805,8 +786,8 @@ export default function CastManagement() {
               }}>
                 <label style={{ fontSize: '17px' }}>POS表示</label>
                 <ToggleSwitch
-                  checked={editingCast.show_in_pos ?? true}
-                  onChange={() => setEditingCast({
+                  checked={editingCast?.show_in_pos ?? true}
+                  onChange={() => editingCast && setEditingCast({
                     ...editingCast, 
                     show_in_pos: !editingCast.show_in_pos
                   })}
