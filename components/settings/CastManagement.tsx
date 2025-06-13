@@ -541,18 +541,18 @@ export default function CastManagement() {
           }}>
             {/* モーダルヘッダー */}
             <div style={{
-              padding: '20px',
+              padding: '16px 20px',
               borderBottom: '1px solid #e5e5e7',
-              textAlign: 'center',
-              position: 'relative'
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: 'white',
+              borderTopLeftRadius: '14px',
+              borderTopRightRadius: '14px',
+              position: 'sticky',
+              top: 0,
+              zIndex: 10
             }}>
-              <h2 style={{ 
-                fontSize: '17px', 
-                fontWeight: '600', 
-                margin: 0 
-              }}>
-                {isNewCast ? 'キャスト新規追加' : 'キャスト編集'}
-              </h2>
               <button
                 onClick={() => {
                   setShowCastModal(false)
@@ -560,20 +560,29 @@ export default function CastManagement() {
                   setIsNewCast(false)
                 }}
                 style={{
-                  position: 'absolute',
-                  right: '20px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
                   fontSize: '17px',
                   color: '#007aff',
                   cursor: 'pointer',
-                  padding: 0
+                  padding: '4px 8px',
+                  marginRight: '8px'
                 }}
               >
                 キャンセル
               </button>
+              
+              <h2 style={{ 
+                fontSize: '17px', 
+                fontWeight: '600', 
+                margin: 0,
+                flex: 1,
+                textAlign: 'center'
+              }}>
+                {isNewCast ? 'キャスト新規追加' : 'キャスト編集'}
+              </h2>
+              
+              <div style={{ width: '80px' }}></div>
             </div>
 
             {/* モーダルコンテンツ */}
@@ -808,12 +817,34 @@ export default function CastManagement() {
             {/* モーダルフッター */}
             <div style={{
               padding: '20px',
-              borderTop: '1px solid #e5e5e7'
+              borderTop: '1px solid #e5e5e7',
+              display: 'flex',
+              gap: '10px'
             }}>
+              <button
+                onClick={() => {
+                  setShowCastModal(false)
+                  setEditingCast(null)
+                  setIsNewCast(false)
+                }}
+                style={{
+                  flex: 1,
+                  padding: '14px',
+                  backgroundColor: '#f2f2f7',
+                  color: '#007aff',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '17px',
+                  fontWeight: '600'
+                }}
+              >
+                キャンセル
+              </button>
               <button
                 onClick={isNewCast ? addNewCast : updateCast}
                 style={{
-                  width: '100%',
+                  flex: 1,
                   padding: '14px',
                   backgroundColor: '#007aff',
                   color: 'white',
