@@ -67,6 +67,7 @@ export default function CastManagement() {
         .order('id')
 
       if (error) throw error
+      console.log('Loaded casts:', data) // デバッグ用
       setCasts(data || [])
     } catch (error) {
       console.error('Failed to load casts:', error)
@@ -322,7 +323,9 @@ export default function CastManagement() {
                 <td className="px-4 py-2">{cast.attributes || '-'}</td>
                 <td className="px-4 py-2">{cast.status || '-'}</td>
                 <td className="px-4 py-2">{cast.hire_date || '-'}</td>
-                <td className="px-4 py-2 text-center">{cast.sales_previous_day || '無'}</td>
+                <td className="px-4 py-2 text-center">
+                  {cast.sales_previous_day === '有' ? '有' : '無'}
+                </td>
                 <td className="px-4 py-2 text-center">
                   <button
                     onClick={() => toggleCastShowInPos(cast)}
