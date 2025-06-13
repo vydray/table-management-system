@@ -276,76 +276,102 @@ export default function CastManagement() {
   }, [casts, searchTerm])
 
   return (
-    <div className="bg-white p-6 rounded shadow">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">キャスト管理</h2>
+    <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>キャスト管理</h2>
         <button
           onClick={() => {
             setEditingCast(getDefaultCast())
             setIsNewCast(true)
             setShowCastModal(true)
           }}
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          style={{
+            backgroundColor: '#10b981',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '4px',
+            border: 'none',
+            cursor: 'pointer'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
         >
           新規追加
         </button>
       </div>
 
       {/* 検索バー */}
-      <div className="mb-4">
+      <div style={{ marginBottom: '16px' }}>
         <input
           type="text"
           placeholder="名前、属性、ステータスで検索..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 border rounded"
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            border: '1px solid #d1d5db',
+            borderRadius: '4px'
+          }}
         />
       </div>
 
       {/* キャスト一覧 */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full table-auto">
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr className="bg-gray-100">
-              <th className="px-4 py-2 text-left">名前</th>
-              <th className="px-4 py-2 text-left">属性</th>
-              <th className="px-4 py-2 text-left">ステータス</th>
-              <th className="px-4 py-2 text-left">入店日</th>
-                              <th className="px-4 py-2 text-center">売上前</th>
-              <th className="px-4 py-2 text-center">POS表示</th>
-              <th className="px-4 py-2 text-center">操作</th>
+            <tr style={{ backgroundColor: '#f3f4f6' }}>
+              <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 'bold' }}>名前</th>
+              <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 'bold' }}>属性</th>
+              <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 'bold' }}>ステータス</th>
+              <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 'bold' }}>入店日</th>
+              <th style={{ padding: '8px 16px', textAlign: 'center', fontWeight: 'bold' }}>売上前</th>
+              <th style={{ padding: '8px 16px', textAlign: 'center', fontWeight: 'bold' }}>POS表示</th>
+              <th style={{ padding: '8px 16px', textAlign: 'center', fontWeight: 'bold' }}>操作</th>
             </tr>
           </thead>
           <tbody>
             {filteredCasts.map((cast) => (
-              <tr key={cast.id} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-2">{cast.name || '-'}</td>
-                <td className="px-4 py-2">{cast.attributes || '-'}</td>
-                <td className="px-4 py-2">{cast.status || '-'}</td>
-                <td className="px-4 py-2">{cast.hire_date || '-'}</td>
-                <td className="px-4 py-2 text-center">
+              <tr key={cast.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <td style={{ padding: '8px 16px' }}>{cast.name || '-'}</td>
+                <td style={{ padding: '8px 16px' }}>{cast.attributes || '-'}</td>
+                <td style={{ padding: '8px 16px' }}>{cast.status || '-'}</td>
+                <td style={{ padding: '8px 16px' }}>{cast.hire_date || '-'}</td>
+                <td style={{ padding: '8px 16px', textAlign: 'center' }}>
                   {cast.sales_previous_day || '無'}
                 </td>
-                <td className="px-4 py-2 text-center">
+                <td style={{ padding: '8px 16px', textAlign: 'center' }}>
                   <button
                     onClick={() => toggleCastShowInPos(cast)}
-                    className={`px-3 py-1 rounded ${
-                      cast.show_in_pos 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-gray-300 text-gray-700'
-                    }`}
+                    style={{
+                      padding: '4px 12px',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      backgroundColor: cast.show_in_pos ? '#10b981' : '#d1d5db',
+                      color: cast.show_in_pos ? 'white' : '#374151'
+                    }}
                   >
                     {cast.show_in_pos ? 'ON' : 'OFF'}
                   </button>
                 </td>
-                <td className="px-4 py-2 text-center">
+                <td style={{ padding: '8px 16px', textAlign: 'center' }}>
                   <button
                     onClick={() => {
                       setEditingCast(cast)
                       setIsNewCast(false)
                       setShowCastModal(true)
                     }}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                    style={{
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
                   >
                     編集
                   </button>
@@ -358,63 +384,103 @@ export default function CastManagement() {
 
       {/* 編集/追加モーダル */}
       {showCastModal && editingCast && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
-            <h3 className="text-lg font-bold mb-4">
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '24px',
+            borderRadius: '8px',
+            width: '400px',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>
               {isNewCast ? 'キャスト新規追加' : 'キャスト編集'}
             </h3>
             
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label className="block text-sm font-medium mb-1">名前 *</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>名前 *</label>
                 <input
                   type="text"
                   value={editingCast.name || ''}
                   onChange={(e) => setEditingCast({...editingCast, name: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
                   placeholder="必須"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Twitter</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>Twitter</label>
                 <input
                   type="text"
                   value={editingCast.twitter || ''}
                   onChange={(e) => setEditingCast({...editingCast, twitter: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
                   placeholder="@なしで入力"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Instagram</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>Instagram</label>
                 <input
                   type="text"
                   value={editingCast.instagram || ''}
                   onChange={(e) => setEditingCast({...editingCast, instagram: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
                   placeholder="@なしで入力"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">属性</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>属性</label>
                 <input
                   type="text"
                   value={editingCast.attributes || ''}
                   onChange={(e) => setEditingCast({...editingCast, attributes: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
                   placeholder="例: お姉さん、可愛い系"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">ステータス</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>ステータス</label>
                 <select
                   value={editingCast.status || '在籍'}
                   onChange={(e) => setEditingCast({...editingCast, status: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
                 >
                   <option value="在籍">在籍</option>
                   <option value="体験">体験</option>
@@ -424,11 +490,16 @@ export default function CastManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">売上前の有無</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>売上前の有無</label>
                 <select
                   value={editingCast.sales_previous_day || '無'}
                   onChange={(e) => setEditingCast({...editingCast, sales_previous_day: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
                 >
                   <option value="有">有</option>
                   <option value="無">無</option>
@@ -436,52 +507,79 @@ export default function CastManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">体験入店日</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>体験入店日</label>
                 <input
                   type="date"
                   value={editingCast.experience_date || ''}
                   onChange={(e) => setEditingCast({...editingCast, experience_date: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">本入店日</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>本入店日</label>
                 <input
                   type="date"
                   value={editingCast.hire_date || ''}
                   onChange={(e) => setEditingCast({...editingCast, hire_date: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
                 />
               </div>
 
               <div>
-                <label className="flex items-center">
+                <label style={{ display: 'flex', alignItems: 'center' }}>
                   <input
                     type="checkbox"
                     checked={editingCast.show_in_pos ?? true}
                     onChange={(e) => setEditingCast({...editingCast, show_in_pos: e.target.checked})}
-                    className="mr-2"
+                    style={{ marginRight: '8px' }}
                   />
                   POS表示
                 </label>
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end space-x-2">
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
               <button
                 onClick={() => {
                   setShowCastModal(false)
                   setEditingCast(null)
                   setIsNewCast(false)
                 }}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#d1d5db',
+                  borderRadius: '4px',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#9ca3af'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#d1d5db'}
               >
                 キャンセル
               </button>
               <button
                 onClick={isNewCast ? addNewCast : updateCast}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  borderRadius: '4px',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
               >
                 {isNewCast ? '追加' : '保存'}
               </button>
