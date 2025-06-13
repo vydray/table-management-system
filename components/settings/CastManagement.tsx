@@ -17,29 +17,41 @@ interface Cast {
   id: number
   store_id: number
   name: string | null
-  line_user_id: string | null
+  line_number: string | null  // LINE IDではなくLINE番号として扱う
   password: string | null
   twitter: string | null
   instagram: string | null
   photo: string | null
   attributes: string | null
-  is_writer: boolean | null
-  submission_date: string | null
-  back_number: string | null
   status: string | null
-  sales_previous_day: boolean | null
-  cast_point: number | null
+  sales_previous_day: string | null  // 文字列型（'有' or '無'）
+  experience_date: string | null  // 日付のみ
+  hire_date: string | null  // 日付のみ
   show_in_pos: boolean | null
   created_at: string | null
   updated_at: string | null
 }
+
+// 新規キャストのデフォルト値
+const getDefaultCast = (): Partial<Cast> => ({
+  name: '',
+  twitter: '',
+  instagram: '',
+  attributes: '',
+  status: '在籍',
+  sales_previous_day: '無',
+  experience_date: '',
+  hire_date: new Date().toISOString().split('T')[0], // 今日の日付
+  show_in_pos: true,
+})
 
 export default function CastManagement() {
   const [casts, setCasts] = useState<Cast[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredCasts, setFilteredCasts] = useState<Cast[]>([])
   const [showCastModal, setShowCastModal] = useState(false)
-  const [editingCast, setEditingCast] = useState<Cast | null>(null)
+  const [editingCast, setEditingCast] = useState<Partial<Cast> | null>(null)
+  const [isNewCast, setIsNewCast] = useState(false)
 
   // Google Apps ScriptのURL
   const gasUrl = 'https://script.google.com/macros/s/AKfycbwp10byL5IEGbEJAKOxVAQ1dSdjQ3UNJTGJnJOZ6jp6JOCWiiFURaQiqfqyfo390NvgZg/exec'
@@ -61,7 +73,61 @@ export default function CastManagement() {
     }
   }
 
-  // キャストのPOS表示を切り替える関数（修正版）
+  // 新規キャスト追加
+  const addNewCast = async () => {
+    if (!editingCast || !editingCast.name) {
+      alert('名前を入力してください')
+      return
+    }
+
+    try {
+      const storeId = getCurrentStoreId()
+      
+      const newCastData = {
+        ...editingCast,
+        store_id: storeId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      const { data, error } = await supabase
+        .from('casts')
+        .insert([newCastData])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Google Apps Scriptに通知
+      try {
+        await fetch(gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'INSERT',
+            table: 'casts',
+            record: data
+          })
+        })
+      } catch (gasError) {
+        console.error('GAS sync error:', gasError)
+      }
+
+      alert('キャストを追加しました')
+      await loadCasts()
+      setShowCastModal(false)
+      setEditingCast(null)
+      setIsNewCast(false)
+    } catch (error) {
+      console.error('Failed to add cast:', error)
+      alert('追加に失敗しました')
+    }
+  }
+
+  // キャストのPOS表示を切り替える関数
   const toggleCastShowInPos = async (cast: Cast) => {
     try {
       const storeId = getCurrentStoreId()
@@ -84,32 +150,38 @@ export default function CastManagement() {
         throw error
       }
       
-      // 成功したらGoogle Apps Scriptに直接送信
+      // 成功したらGoogle Apps Scriptに直接送信（即時反映）
       try {
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors', // CORSエラーを回避
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            type: 'UPDATE',
-            table: 'casts',
-            record: {
-              ...data,
-              show_in_pos: newValue
-            },
-            old_record: {
-              ...data,
-              show_in_pos: cast.show_in_pos
-            }
-          })
-        })
+        // フォームデータとして送信（CORSを回避）
+        const iframe = document.createElement('iframe')
+        iframe.style.display = 'none'
+        iframe.name = 'hidden-iframe-' + Date.now()
+        document.body.appendChild(iframe)
+        
+        const form = document.createElement('form')
+        form.method = 'POST'
+        form.action = gasUrl
+        form.target = iframe.name
+        
+        // フォームにデータを追加
+        form.innerHTML = `
+          <input name="action" value="updateShowInPos" />
+          <input name="name" value="${cast.name || ''}" />
+          <input name="showInPos" value="${newValue}" />
+        `
+        
+        document.body.appendChild(form)
+        form.submit()
+        
+        // クリーンアップ（1秒後）
+        setTimeout(() => {
+          document.body.removeChild(form)
+          document.body.removeChild(iframe)
+        }, 1000)
         
         console.log('Google Apps Script called successfully')
       } catch (gasError) {
         console.error('GAS sync error:', gasError)
-        // GASのエラーは無視（Supabaseの更新は成功しているので）
       }
       
       // UIを更新
@@ -122,25 +194,30 @@ export default function CastManagement() {
     }
   }
 
-  // キャスト情報を更新する関数（修正版）
+  // キャスト情報を更新する関数
   const updateCast = async () => {
-    if (!editingCast) return
+    if (!editingCast || !editingCast.id) return
 
     try {
       const storeId = getCurrentStoreId()
       const oldCast = casts.find(c => c.id === editingCast.id)
       
+      const updateData = {
+        name: editingCast.name || '',
+        twitter: editingCast.twitter || '',
+        instagram: editingCast.instagram || '',
+        attributes: editingCast.attributes || '',
+        status: editingCast.status || '',
+        sales_previous_day: editingCast.sales_previous_day || '無',
+        experience_date: editingCast.experience_date || null,
+        hire_date: editingCast.hire_date || null,
+        show_in_pos: editingCast.show_in_pos ?? true,
+        updated_at: new Date().toISOString()
+      }
+
       const { data, error } = await supabase
         .from('casts')
-        .update({
-          name: editingCast.name || '',
-          twitter: editingCast.twitter || '',
-          instagram: editingCast.instagram || '',
-          attributes: editingCast.attributes || '',
-          status: editingCast.status || '',
-          show_in_pos: editingCast.show_in_pos ?? true,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', editingCast.id)
         .eq('store_id', storeId)
         .select()
@@ -201,7 +278,19 @@ export default function CastManagement() {
 
   return (
     <div className="bg-white p-6 rounded shadow">
-      <h2 className="text-xl font-bold mb-4">キャスト管理</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">キャスト管理</h2>
+        <button
+          onClick={() => {
+            setEditingCast(getDefaultCast())
+            setIsNewCast(true)
+            setShowCastModal(true)
+          }}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        >
+          新規追加
+        </button>
+      </div>
 
       {/* 検索バー */}
       <div className="mb-4">
@@ -222,6 +311,8 @@ export default function CastManagement() {
               <th className="px-4 py-2 text-left">名前</th>
               <th className="px-4 py-2 text-left">属性</th>
               <th className="px-4 py-2 text-left">ステータス</th>
+              <th className="px-4 py-2 text-left">入店日</th>
+              <th className="px-4 py-2 text-center">売上前</th>
               <th className="px-4 py-2 text-center">POS表示</th>
               <th className="px-4 py-2 text-center">操作</th>
             </tr>
@@ -232,6 +323,8 @@ export default function CastManagement() {
                 <td className="px-4 py-2">{cast.name || '-'}</td>
                 <td className="px-4 py-2">{cast.attributes || '-'}</td>
                 <td className="px-4 py-2">{cast.status || '-'}</td>
+                <td className="px-4 py-2">{cast.hire_date || '-'}</td>
+                <td className="px-4 py-2 text-center">{cast.sales_previous_day || '無'}</td>
                 <td className="px-4 py-2 text-center">
                   <button
                     onClick={() => toggleCastShowInPos(cast)}
@@ -248,6 +341,7 @@ export default function CastManagement() {
                   <button
                     onClick={() => {
                       setEditingCast(cast)
+                      setIsNewCast(false)
                       setShowCastModal(true)
                     }}
                     className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
@@ -261,20 +355,23 @@ export default function CastManagement() {
         </table>
       </div>
 
-      {/* 編集モーダル */}
+      {/* 編集/追加モーダル */}
       {showCastModal && editingCast && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
-            <h3 className="text-lg font-bold mb-4">キャスト編集</h3>
+            <h3 className="text-lg font-bold mb-4">
+              {isNewCast ? 'キャスト新規追加' : 'キャスト編集'}
+            </h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">名前</label>
+                <label className="block text-sm font-medium mb-1">名前 *</label>
                 <input
                   type="text"
                   value={editingCast.name || ''}
                   onChange={(e) => setEditingCast({...editingCast, name: e.target.value})}
                   className="w-full px-3 py-2 border rounded"
+                  placeholder="必須"
                 />
               </div>
 
@@ -285,6 +382,7 @@ export default function CastManagement() {
                   value={editingCast.twitter || ''}
                   onChange={(e) => setEditingCast({...editingCast, twitter: e.target.value})}
                   className="w-full px-3 py-2 border rounded"
+                  placeholder="@なしで入力"
                 />
               </div>
 
@@ -295,6 +393,7 @@ export default function CastManagement() {
                   value={editingCast.instagram || ''}
                   onChange={(e) => setEditingCast({...editingCast, instagram: e.target.value})}
                   className="w-full px-3 py-2 border rounded"
+                  placeholder="@なしで入力"
                 />
               </div>
 
@@ -305,15 +404,52 @@ export default function CastManagement() {
                   value={editingCast.attributes || ''}
                   onChange={(e) => setEditingCast({...editingCast, attributes: e.target.value})}
                   className="w-full px-3 py-2 border rounded"
+                  placeholder="例: お姉さん、可愛い系"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1">ステータス</label>
-                <input
-                  type="text"
-                  value={editingCast.status || ''}
+                <select
+                  value={editingCast.status || '在籍'}
                   onChange={(e) => setEditingCast({...editingCast, status: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                >
+                  <option value="在籍">在籍</option>
+                  <option value="体験">体験</option>
+                  <option value="退店">退店</option>
+                  <option value="削除済み">削除済み</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">売上前の有無</label>
+                <select
+                  value={editingCast.sales_previous_day || '無'}
+                  onChange={(e) => setEditingCast({...editingCast, sales_previous_day: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                >
+                  <option value="有">有</option>
+                  <option value="無">無</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">体験入店日</label>
+                <input
+                  type="date"
+                  value={editingCast.experience_date || ''}
+                  onChange={(e) => setEditingCast({...editingCast, experience_date: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">本入店日</label>
+                <input
+                  type="date"
+                  value={editingCast.hire_date || ''}
+                  onChange={(e) => setEditingCast({...editingCast, hire_date: e.target.value})}
                   className="w-full px-3 py-2 border rounded"
                 />
               </div>
@@ -336,16 +472,17 @@ export default function CastManagement() {
                 onClick={() => {
                   setShowCastModal(false)
                   setEditingCast(null)
+                  setIsNewCast(false)
                 }}
                 className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
               >
                 キャンセル
               </button>
               <button
-                onClick={updateCast}
+                onClick={isNewCast ? addNewCast : updateCast}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
-                保存
+                {isNewCast ? '追加' : '保存'}
               </button>
             </div>
           </div>
