@@ -443,7 +443,7 @@ export default function CastManagement() {
         {/* テーブルヘッダー */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '2fr 1fr 1fr',
+          gridTemplateColumns: '2fr 1fr 1fr 1fr',
           padding: '12px 16px',
           backgroundColor: '#f2f2f7',
           fontSize: '13px',
@@ -453,6 +453,7 @@ export default function CastManagement() {
           letterSpacing: '0.5px'
         }}>
           <div>カテゴリー名</div>
+          <div style={{ textAlign: 'center' }}>売上表</div>
           <div style={{ textAlign: 'center' }}>推し優先表示</div>
           <div style={{ textAlign: 'center' }}>操作</div>
         </div>
@@ -461,7 +462,7 @@ export default function CastManagement() {
         {filteredCasts.map((cast, index) => (
           <div key={cast.id} style={{
             display: 'grid',
-            gridTemplateColumns: '2fr 1fr 1fr',
+            gridTemplateColumns: '2fr 1fr 1fr 1fr',
             padding: '12px 16px',
             alignItems: 'center',
             borderTop: index > 0 ? '1px solid #e5e5e7' : 'none'
@@ -473,6 +474,13 @@ export default function CastManagement() {
                   {cast.status} • {cast.attributes}
                 </div>
               )}
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <ToggleSwitch
+                checked={cast.sales_previous_day === '有'}
+                onChange={() => toggleSalesPreviousDay(cast)}
+              />
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'center' }}>
