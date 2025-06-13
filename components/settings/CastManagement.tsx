@@ -322,10 +322,10 @@ export default function CastManagement() {
           <thead>
             <tr style={{ backgroundColor: '#f3f4f6' }}>
               <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 'bold' }}>名前</th>
-              <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 'bold' }}>属性</th>
               <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 'bold' }}>ステータス</th>
+              <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 'bold' }}>属性</th>
               <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 'bold' }}>入店日</th>
-              <th style={{ padding: '8px 16px', textAlign: 'center', fontWeight: 'bold' }}>売上前</th>
+              <th style={{ padding: '8px 16px', textAlign: 'center', fontWeight: 'bold' }}>売上表</th>
               <th style={{ padding: '8px 16px', textAlign: 'center', fontWeight: 'bold' }}>POS表示</th>
               <th style={{ padding: '8px 16px', textAlign: 'center', fontWeight: 'bold' }}>操作</th>
             </tr>
@@ -334,8 +334,8 @@ export default function CastManagement() {
             {filteredCasts.map((cast) => (
               <tr key={cast.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <td style={{ padding: '8px 16px' }}>{cast.name || '-'}</td>
-                <td style={{ padding: '8px 16px' }}>{cast.attributes || '-'}</td>
                 <td style={{ padding: '8px 16px' }}>{cast.status || '-'}</td>
+                <td style={{ padding: '8px 16px' }}>{cast.attributes || '-'}</td>
                 <td style={{ padding: '8px 16px' }}>{cast.hire_date || '-'}</td>
                 <td style={{ padding: '8px 16px', textAlign: 'center' }}>
                   {cast.sales_previous_day || '無'}
@@ -466,7 +466,7 @@ export default function CastManagement() {
                     border: '1px solid #d1d5db',
                     borderRadius: '4px'
                   }}
-                  placeholder="例: お姉さん、可愛い系"
+                  placeholder="例: キャスト、店長、体験入店"
                 />
               </div>
 
@@ -490,7 +490,7 @@ export default function CastManagement() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>売上前の有無</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>売上表の有無</label>
                 <select
                   value={editingCast.sales_previous_day || '無'}
                   onChange={(e) => setEditingCast({...editingCast, sales_previous_day: e.target.value})}
