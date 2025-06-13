@@ -311,7 +311,7 @@ export default function CastManagement() {
               <th className="px-4 py-2 text-left">属性</th>
               <th className="px-4 py-2 text-left">ステータス</th>
               <th className="px-4 py-2 text-left">入店日</th>
-              <th className="px-4 py-2 text-center">売上前</th>
+                              <th className="px-4 py-2 text-center">売上前</th>
               <th className="px-4 py-2 text-center">POS表示</th>
               <th className="px-4 py-2 text-center">操作</th>
             </tr>
@@ -324,7 +324,7 @@ export default function CastManagement() {
                 <td className="px-4 py-2">{cast.status || '-'}</td>
                 <td className="px-4 py-2">{cast.hire_date || '-'}</td>
                 <td className="px-4 py-2 text-center">
-                  {cast.sales_previous_day === '有' ? '有' : '無'}
+                  {cast.sales_previous_day || '無'}
                 </td>
                 <td className="px-4 py-2 text-center">
                   <button
