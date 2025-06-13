@@ -90,7 +90,7 @@ export default function CastManagement() {
         updated_at: new Date().toISOString()
       }
 
-      const { data, error } = await supabase
+      const { data: insertedCast, error } = await supabase
         .from('casts')
         .insert([newCastData])
         .select()
@@ -109,7 +109,7 @@ export default function CastManagement() {
           body: JSON.stringify({
             type: 'INSERT',
             table: 'casts',
-            record: data
+            record: insertedCast
           })
         })
       } catch (gasError) {
@@ -134,7 +134,7 @@ export default function CastManagement() {
       const newValue = !cast.show_in_pos
       
       // Supabaseを更新
-      const { data, error } = await supabase
+      const { data: updatedCast, error } = await supabase
         .from('casts')
         .update({ 
           show_in_pos: newValue,
@@ -215,7 +215,7 @@ export default function CastManagement() {
         updated_at: new Date().toISOString()
       }
 
-      const { data, error } = await supabase
+      const { data: updatedCastData, error } = await supabase
         .from('casts')
         .update(updateData)
         .eq('id', editingCast.id)
@@ -236,7 +236,7 @@ export default function CastManagement() {
           body: JSON.stringify({
             type: 'UPDATE',
             table: 'casts',
-            record: data,
+            record: updatedCastData,
             old_record: oldCast
           })
         })
