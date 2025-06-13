@@ -128,6 +128,66 @@ export default function CastManagement() {
     }
   }
 
+  // 売上表の有無を切り替える関数
+  const toggleSalesPreviousDay = async (cast: Cast) => {
+    try {
+      const storeId = getCurrentStoreId()
+      const newValue = cast.sales_previous_day === '有' ? '無' : '有'
+      
+      // Supabaseを更新
+      const { error } = await supabase
+        .from('casts')
+        .update({ 
+          sales_previous_day: newValue,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', cast.id)
+        .eq('store_id', storeId)
+      
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      
+      // Google Apps Scriptに通知
+      try {
+        const iframe = document.createElement('iframe')
+        iframe.style.display = 'none'
+        iframe.name = 'hidden-iframe-' + Date.now()
+        document.body.appendChild(iframe)
+        
+        const form = document.createElement('form')
+        form.method = 'POST'
+        form.action = gasUrl
+        form.target = iframe.name
+        
+        form.innerHTML = `
+          <input name="action" value="updateSalesPreviousDay" />
+          <input name="name" value="${cast.name || ''}" />
+          <input name="salesPreviousDay" value="${newValue}" />
+        `
+        
+        document.body.appendChild(form)
+        form.submit()
+        
+        setTimeout(() => {
+          document.body.removeChild(form)
+          document.body.removeChild(iframe)
+        }, 1000)
+      } catch (gasError) {
+        console.error('GAS sync error:', gasError)
+      }
+      
+      // UIを更新
+      setCasts(prev => prev.map(c => 
+        c.id === cast.id ? { ...c, sales_previous_day: newValue } : c
+      ))
+    } catch (error) {
+      console.error('Error toggling sales_previous_day:', error)
+      alert('更新に失敗しました')
+    }
+  }
+
   // キャストのPOS表示を切り替える関数
   const toggleCastShowInPos = async (cast: Cast) => {
     try {
@@ -338,7 +398,19 @@ export default function CastManagement() {
                 <td style={{ padding: '8px 16px' }}>{cast.attributes || '-'}</td>
                 <td style={{ padding: '8px 16px' }}>{cast.hire_date || '-'}</td>
                 <td style={{ padding: '8px 16px', textAlign: 'center' }}>
-                  {cast.sales_previous_day || '無'}
+                  <button
+                    onClick={() => toggleSalesPreviousDay(cast)}
+                    style={{
+                      padding: '4px 12px',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      backgroundColor: cast.sales_previous_day === '有' ? '#10b981' : '#d1d5db',
+                      color: cast.sales_previous_day === '有' ? 'white' : '#374151'
+                    }}
+                  >
+                    {cast.sales_previous_day === '有' ? 'ON' : 'OFF'}
+                  </button>
                 </td>
                 <td style={{ padding: '8px 16px', textAlign: 'center' }}>
                   <button
