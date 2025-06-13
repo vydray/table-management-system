@@ -98,7 +98,7 @@ export default function CastManagement() {
   const [isNewCast, setIsNewCast] = useState(false)
 
   // Google Apps ScriptのURL
-  const gasUrl = 'https://script.google.com/macros/s/AKfycbwp10byL5IEGbEJAKOxVAQ1dSdjQ3UNJTGJnJOZ6jp6JOCWiiFURaQiqfqyfo390NvgZg/exec'
+  const gasUrl = 'https://script.google.com/macros/s/AKfycbw193siFFyTAHwlDIJGFh6GonwWSYsIPHaGA3_0wMNIkm2-c8LGl7ny6vqZmzagdFQFCw/exec'
 
   // キャスト一覧を読み込む
   const loadCasts = async () => {
