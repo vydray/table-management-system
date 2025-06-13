@@ -86,7 +86,7 @@ export default function CastManagement() {
       
       // 成功したらGoogle Apps Scriptに直接送信
       try {
-        const gasResponse = await fetch(gasUrl, {
+        await fetch(gasUrl, {
           method: 'POST',
           mode: 'no-cors', // CORSエラーを回避
           headers: {
