@@ -415,7 +415,7 @@ export default function CastManagement() {
             gap: '6px'
           }}
         >
-          <span style={{ fontSize: '20px' }}>+</span> 並び替え
+          <span style={{ fontSize: '20px' }}>+</span> 新規追加
         </button>
       </div>
 
@@ -524,16 +524,20 @@ export default function CastManagement() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 50
+          zIndex: 50,
+          padding: '20px',
+          overflow: 'hidden'
         }}>
           <div style={{
             backgroundColor: 'white',
             borderRadius: '14px',
             width: '90%',
             maxWidth: '500px',
-            maxHeight: '90vh',
+            maxHeight: 'calc(100vh - 40px)',
             overflowY: 'auto',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+            overflowX: 'hidden',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+            position: 'relative'
           }}>
             {/* モーダルヘッダー */}
             <div style={{
