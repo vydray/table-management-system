@@ -534,25 +534,6 @@ export default function CastManagement() {
               top: 0,
               zIndex: 10
             }}>
-              <button
-                onClick={() => {
-                  setShowCastModal(false)
-                  setEditingCast(null)
-                  setIsNewCast(false)
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '17px',
-                  color: '#007aff',
-                  cursor: 'pointer',
-                  padding: '4px 8px',
-                  marginRight: '8px'
-                }}
-              >
-                キャンセル
-              </button>
-              
               <h2 style={{ 
                 fontSize: '17px', 
                 fontWeight: '600', 
@@ -563,7 +544,40 @@ export default function CastManagement() {
                 {isNewCast ? 'キャスト新規追加' : 'キャスト編集'}
               </h2>
               
-              <div style={{ width: '80px' }}></div>
+              <button
+                onClick={() => {
+                  setShowCastModal(false)
+                  setEditingCast(null)
+                  setIsNewCast(false)
+                }}
+                style={{
+                  position: 'absolute',
+                  right: '20px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  color: '#999',
+                  cursor: 'pointer',
+                  padding: '0',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '4px',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f0f0f0'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                ×
+              </button>
             </div>
 
             {/* モーダルコンテンツ */}
