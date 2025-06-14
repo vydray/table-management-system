@@ -505,7 +505,7 @@ export default function CastManagement() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 50,
+          zIndex: 2000,
           padding: '20px',
           overflow: 'hidden'
         }}>
