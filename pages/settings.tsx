@@ -1,847 +1,1516 @@
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
+import Head from 'next/head'
 import { createClient } from '@supabase/supabase-js'
-import { getCurrentStoreId } from '../../utils/storeContext'
+import { getCurrentStoreId } from '../utils/storeContext'
+import CastManagement from '../components/settings/CastManagement'
 
-// Supabaseクライアントの初期化を確認
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables')
+// 型定義
+interface SystemSetting {
+  setting_key: string;
+  setting_value: number;
 }
 
-const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
-
-// キャストの型定義
-interface Cast {
+interface Category {
   id: number
-  store_id: number
-  name: string | null
-  line_number: string | null
-  password: string | null
-  twitter: string | null
-  instagram: string | null
-  photo: string | null
-  attributes: string | null
-  status: string | null
-  sales_previous_day: string | null
-  experience_date: string | null
-  hire_date: string | null
-  show_in_pos: boolean | null
-  created_at: string | null
-  updated_at: string | null
+  name: string
+  display_order: number
+  store_id?: number
+  show_oshi_first?: boolean
+  created_at?: string
 }
 
-// 新規キャストのデフォルト値
-const getDefaultCast = (): Partial<Cast> => ({
-  name: '',
-  twitter: '',
-  instagram: '',
-  attributes: '',
-  status: '在籍',
-  sales_previous_day: '無',
-  experience_date: '',
-  hire_date: new Date().toISOString().split('T')[0],
-  show_in_pos: true,
-})
-
-// iOSスタイルのトグルスイッチコンポーネント
-const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => {
-  return (
-    <label style={{
-      position: 'relative',
-      display: 'inline-block',
-      width: '51px',
-      height: '31px',
-      cursor: 'pointer'
-    }}>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        style={{ opacity: 0, width: 0, height: 0 }}
-      />
-      <span style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: checked ? '#4cd964' : '#e5e5e7',
-        borderRadius: '34px',
-        transition: 'background-color 0.3s',
-        boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)'
-      }}>
-        <span style={{
-          position: 'absolute',
-          content: '',
-          height: '27px',
-          width: '27px',
-          left: checked ? '22px' : '2px',
-          bottom: '2px',
-          backgroundColor: 'white',
-          borderRadius: '50%',
-          transition: 'left 0.3s',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-        }} />
-      </span>
-    </label>
-  )
+interface Product {
+  id: number
+  category_id: number
+  name: string
+  price: number
+  needs_cast: boolean
+  display_order: number
+  is_active: boolean
+  store_id?: number
+  created_at?: string
 }
 
-export default function CastManagement() {
-  const [casts, setCasts] = useState<Cast[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filteredCasts, setFilteredCasts] = useState<Cast[]>([])
-  const [showCastModal, setShowCastModal] = useState(false)
-  const [editingCast, setEditingCast] = useState<Partial<Cast> | null>(null)
-  const [isNewCast, setIsNewCast] = useState(false)
+export default function Settings() {
+  const router = useRouter()
+  const [activeMenu, setActiveMenu] = useState('system')
+  const [loading, setLoading] = useState(false)
+  
+  // システム設定の状態
+  const [systemSettings, setSystemSettings] = useState({
+    consumptionTaxRate: 10,
+    serviceChargeRate: 15,
+    roundingUnit: 100,
+    roundingMethod: 0,
+    businessDayStartHour: 5,
+    showOshiFirst: false
+  })
 
-  // Google Apps ScriptのURL
-  const gasUrl = 'https://script.google.com/macros/s/AKfycbw193siFFyTAHwlDIJGFh6GonwWSYsIPHaGA3_0wMNIkm2-c8LGl7ny6vqZmzagdFQFCw/exec'
+  // カテゴリー管理の状態
+  const [categories, setCategories] = useState<Category[]>([])
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null)
+  const [editingCategoryName, setEditingCategoryName] = useState('')
+  const [isCategorySortMode, setIsCategorySortMode] = useState(false)
+  const [draggedCategory, setDraggedCategory] = useState<Category | null>(null)
 
-  // キャスト一覧を読み込む
-  const loadCasts = async () => {
+  // 商品管理の状態
+  const [products, setProducts] = useState<Product[]>([])
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    price: 0,
+    needsCast: false,
+    categoryId: null as number | null
+  })
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [isSortMode, setIsSortMode] = useState(false)
+  const [draggedItem, setDraggedItem] = useState<Product | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+  // システム設定を読み込む関数
+  const loadSystemSettings = async () => {
     try {
       const storeId = getCurrentStoreId()
-      const { data, error } = await supabase
-        .from('casts')
-        .select('*')
+      const { data: settings }: { data: SystemSetting[] | null; error: any } = await supabase
+        .from('system_settings')
+        .select('setting_key, setting_value')
         .eq('store_id', storeId)
-        .order('id')
-
-      if (error) throw error
-      console.log('Loaded casts:', data)
-      setCasts(data || [])
+      
+      if (settings) {
+        setSystemSettings({
+          consumptionTaxRate: (settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value ?? 0.1) * 100,
+          serviceChargeRate: (settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value ?? 0.15) * 100,
+          roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
+          roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
+          businessDayStartHour: settings.find(s => s.setting_key === 'business_day_start_hour')?.setting_value || 5,
+          showOshiFirst: (settings.find(s => s.setting_key === 'show_oshi_first')?.setting_value ?? 0) === 1
+        })
+      }
     } catch (error) {
-      console.error('Failed to load casts:', error)
+      console.error('Error loading settings:', error)
     }
   }
 
-  // 新規キャスト追加
-  const addNewCast = async () => {
-    if (!editingCast || !editingCast.name) {
-      alert('名前を入力してください')
+  // システム設定を保存する関数
+  const saveSystemSettings = async () => {
+    setLoading(true)
+    try {
+      const storeId = getCurrentStoreId()
+      const updates = [
+        { setting_key: 'consumption_tax_rate', setting_value: systemSettings.consumptionTaxRate / 100 },
+        { setting_key: 'service_charge_rate', setting_value: systemSettings.serviceChargeRate / 100 },
+        { setting_key: 'rounding_unit', setting_value: systemSettings.roundingUnit },
+        { setting_key: 'rounding_method', setting_value: systemSettings.roundingMethod },
+        { setting_key: 'business_day_start_hour', setting_value: systemSettings.businessDayStartHour },
+        { setting_key: 'show_oshi_first', setting_value: systemSettings.showOshiFirst ? 1 : 0 }
+      ]
+      
+      for (const update of updates) {
+        const { data: existing } = await supabase
+          .from('system_settings')
+          .select('id')
+          .eq('setting_key', update.setting_key)
+          .eq('store_id', storeId)
+          .single()
+        
+        if (existing) {
+          const { error } = await supabase
+            .from('system_settings')
+            .update({ setting_value: update.setting_value })
+            .eq('setting_key', update.setting_key)
+            .eq('store_id', storeId)
+          
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('system_settings')
+            .insert({
+              setting_key: update.setting_key,
+              setting_value: update.setting_value,
+              store_id: storeId
+            })
+          
+          if (error) throw error
+        }
+      }
+      
+      alert('設定を保存しました')
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      alert('保存に失敗しました')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // カテゴリーを読み込む関数
+  const loadCategories = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+      const { data, error } = await supabase
+        .from('product_categories')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('display_order')
+      
+      if (error) throw error
+      setCategories(data || [])
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    }
+  }
+
+  // カテゴリーを追加する関数
+  const addCategory = async () => {
+    if (!newCategoryName.trim()) {
+      alert('カテゴリー名を入力してください')
       return
     }
 
     try {
       const storeId = getCurrentStoreId()
+      const maxOrder = Math.max(...categories.map(c => c.display_order), 0)
       
-      const newCastData = {
-        ...editingCast,
-        store_id: storeId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-
-      const { data: insertedCast, error } = await supabase
-        .from('casts')
-        .insert([newCastData])
-        .select()
-        .single()
-
-      if (error) throw error
-
-      // Google Apps Scriptに通知
-      try {
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            type: 'INSERT',
-            table: 'casts',
-            record: insertedCast
-          })
+      const { error } = await supabase
+        .from('product_categories')
+        .insert({
+          name: newCategoryName,
+          display_order: maxOrder + 1,
+          store_id: storeId
         })
-      } catch (gasError) {
-        console.error('GAS sync error:', gasError)
-      }
-
-      alert('キャストを追加しました')
-      await loadCasts()
-      setShowCastModal(false)
-      setEditingCast(null)
-      setIsNewCast(false)
+      
+      if (error) throw error
+      
+      setNewCategoryName('')
+      loadCategories()
+      alert('カテゴリーを追加しました')
     } catch (error) {
-      console.error('Failed to add cast:', error)
+      console.error('Error adding category:', error)
       alert('追加に失敗しました')
     }
   }
 
-  // 売上表の有無を切り替える関数
-  const toggleSalesPreviousDay = async (cast: Cast) => {
+  // カテゴリー名を更新する関数
+  const updateCategoryName = async (id: number) => {
     try {
       const storeId = getCurrentStoreId()
-      const newValue = cast.sales_previous_day === '有' ? '無' : '有'
-      
-      // Supabaseを更新
       const { error } = await supabase
-        .from('casts')
-        .update({ 
-          sales_previous_day: newValue,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', cast.id)
+        .from('product_categories')
+        .update({ name: editingCategoryName })
+        .eq('id', id)
         .eq('store_id', storeId)
       
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-      
-      // Google Apps Scriptに通知
-      try {
-        const iframe = document.createElement('iframe')
-        iframe.style.display = 'none'
-        iframe.name = 'hidden-iframe-' + Date.now()
-        document.body.appendChild(iframe)
-        
-        const form = document.createElement('form')
-        form.method = 'POST'
-        form.action = gasUrl
-        form.target = iframe.name
-        
-        form.innerHTML = `
-          <input name="action" value="updateSalesPreviousDay" />
-          <input name="name" value="${cast.name || ''}" />
-          <input name="salesPreviousDay" value="${newValue}" />
-        `
-        
-        document.body.appendChild(form)
-        form.submit()
-        
-        setTimeout(() => {
-          document.body.removeChild(form)
-          document.body.removeChild(iframe)
-        }, 1000)
-      } catch (gasError) {
-        console.error('GAS sync error:', gasError)
-      }
-      
-      // UIを更新
-      setCasts(prev => prev.map(c => 
-        c.id === cast.id ? { ...c, sales_previous_day: newValue } : c
-      ))
-    } catch (error) {
-      console.error('Error toggling sales_previous_day:', error)
-      alert('更新に失敗しました')
-    }
-  }
-
-  // キャストのPOS表示を切り替える関数
-  const toggleCastShowInPos = async (cast: Cast) => {
-    try {
-      const storeId = getCurrentStoreId()
-      const newValue = !cast.show_in_pos
-      
-      // Supabaseを更新
-      const { error } = await supabase
-        .from('casts')
-        .update({ 
-          show_in_pos: newValue,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', cast.id)
-        .eq('store_id', storeId)
-      
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-      
-      // 成功したらGoogle Apps Scriptに直接送信（即時反映）
-      try {
-        const iframe = document.createElement('iframe')
-        iframe.style.display = 'none'
-        iframe.name = 'hidden-iframe-' + Date.now()
-        document.body.appendChild(iframe)
-        
-        const form = document.createElement('form')
-        form.method = 'POST'
-        form.action = gasUrl
-        form.target = iframe.name
-        
-        form.innerHTML = `
-          <input name="action" value="updateShowInPos" />
-          <input name="name" value="${cast.name || ''}" />
-          <input name="showInPos" value="${newValue}" />
-        `
-        
-        document.body.appendChild(form)
-        form.submit()
-        
-        setTimeout(() => {
-          document.body.removeChild(form)
-          document.body.removeChild(iframe)
-        }, 1000)
-        
-        console.log('Google Apps Script called successfully')
-      } catch (gasError) {
-        console.error('GAS sync error:', gasError)
-      }
-      
-      // UIを更新
-      setCasts(prev => prev.map(c => 
-        c.id === cast.id ? { ...c, show_in_pos: newValue } : c
-      ))
-    } catch (error) {
-      console.error('Error toggling show_in_pos:', error)
-      alert('更新に失敗しました')
-    }
-  }
-
-  // キャスト情報を更新する関数
-  const updateCast = async () => {
-    if (!editingCast || !editingCast.id) return
-
-    try {
-      const storeId = getCurrentStoreId()
-      const oldCast = casts.find(c => c.id === editingCast.id)
-      
-      const updateData = {
-        name: editingCast.name || '',
-        twitter: editingCast.twitter || '',
-        instagram: editingCast.instagram || '',
-        attributes: editingCast.attributes || '',
-        status: editingCast.status || '',
-        sales_previous_day: editingCast.sales_previous_day || '無',
-        experience_date: editingCast.experience_date || null,
-        hire_date: editingCast.hire_date || null,
-        show_in_pos: editingCast.show_in_pos ?? true,
-        updated_at: new Date().toISOString()
-      }
-
-      const { data: updatedCastData, error } = await supabase
-        .from('casts')
-        .update(updateData)
-        .eq('id', editingCast.id)
-        .eq('store_id', storeId)
-        .select()
-        .single()
-
       if (error) throw error
       
-      // 成功したらGoogle Apps Scriptに直接送信
-      try {
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            type: 'UPDATE',
-            table: 'casts',
-            record: updatedCastData,
-            old_record: oldCast
-          })
-        })
-        
-        console.log('Google Apps Script called successfully')
-      } catch (gasError) {
-        console.error('GAS sync error:', gasError)
-      }
-      
-      alert('キャスト情報を更新しました')
-      await loadCasts()
-      setShowCastModal(false)
-      setEditingCast(null)
+      setEditingCategoryId(null)
+      loadCategories()
     } catch (error) {
-      console.error('Failed to update cast:', error)
+      console.error('Error updating category:', error)
       alert('更新に失敗しました')
     }
   }
 
-  // 初回読み込み
-  useEffect(() => {
-    loadCasts()
-  }, [])
+  // カテゴリーのドラッグ&ドロップ
+  const handleCategoryDragStart = (e: React.DragEvent, category: Category) => {
+    setDraggedCategory(category)
+  }
 
-  // 検索処理
-  useEffect(() => {
-    const filtered = casts.filter(cast => {
-      const name = cast.name || ''
-      const attributes = cast.attributes || ''
-      const status = cast.status || ''
-      const searchLower = searchTerm.toLowerCase()
+  const handleCategoryDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleCategoryDrop = async (e: React.DragEvent, targetCategory: Category) => {
+    e.preventDefault()
+    if (!draggedCategory || draggedCategory.id === targetCategory.id) return
+
+    const draggedIndex = categories.findIndex(c => c.id === draggedCategory.id)
+    const targetIndex = categories.findIndex(c => c.id === targetCategory.id)
+
+    const newCategories = [...categories]
+    newCategories.splice(draggedIndex, 1)
+    newCategories.splice(targetIndex, 0, draggedCategory)
+
+    const updates = newCategories.map((category, index) => ({
+      ...category,
+      display_order: index + 1
+    }))
+
+    setCategories(updates)
+
+    try {
+      const storeId = getCurrentStoreId()
+      for (const [index, category] of updates.entries()) {
+        await supabase
+          .from('product_categories')
+          .update({ display_order: index + 1 })
+          .eq('id', category.id)
+          .eq('store_id', storeId)
+      }
+    } catch (error) {
+      console.error('Error updating category order:', error)
+      alert('順序の更新に失敗しました')
+      loadCategories()
+    }
+
+    setDraggedCategory(null)
+  }
+
+  // 商品を読み込む関数
+  const loadProducts = async (categoryId?: number) => {
+    try {
+      const storeId = getCurrentStoreId()
+      let query = supabase.from('products').select('*').eq('store_id', storeId)
       
-      return name.toLowerCase().includes(searchLower) ||
-             attributes.toLowerCase().includes(searchLower) ||
-             status.toLowerCase().includes(searchLower)
-    })
-    setFilteredCasts(filtered)
-  }, [casts, searchTerm])
+      if (categoryId) {
+        query = query.eq('category_id', categoryId)
+      }
+      
+      const { data, error } = await query.order('display_order')
+      
+      if (error) throw error
+      setProducts(data || [])
+    } catch (error) {
+      console.error('Error loading products:', error)
+    }
+  }
+
+  // 商品を追加する関数
+  const addProduct = async () => {
+    if (!newProduct.categoryId) {
+      alert('カテゴリーを選択してください')
+      return
+    }
+    
+    if (!newProduct.name.trim()) {
+      alert('商品名を入力してください')
+      return
+    }
+    
+    if (newProduct.price <= 0) {
+      alert('価格を正しく入力してください')
+      return
+    }
+
+    try {
+      const storeId = getCurrentStoreId()
+      const maxOrder = Math.max(...products.map(p => p.display_order), 0)
+      
+      const { error } = await supabase
+        .from('products')
+        .insert({
+          category_id: newProduct.categoryId,
+          name: newProduct.name,
+          price: newProduct.price,
+          needs_cast: newProduct.needsCast,
+          display_order: maxOrder + 1,
+          is_active: true,
+          store_id: storeId
+        })
+      
+      if (error) throw error
+      
+      setNewProduct({
+        name: '',
+        price: 0,
+        needsCast: false,
+        categoryId: null
+      })
+      loadProducts(selectedCategoryId || undefined)
+      alert('商品を追加しました')
+    } catch (error) {
+      console.error('Error adding product:', error)
+      alert('追加に失敗しました')
+    }
+  }
+
+  // 商品を更新する関数
+  const updateProduct = async () => {
+    if (!editingProduct) return
+
+    try {
+      const storeId = getCurrentStoreId()
+      const { error } = await supabase
+        .from('products')
+        .update({
+          category_id: editingProduct.category_id,
+          name: editingProduct.name,
+          price: editingProduct.price,
+          needs_cast: editingProduct.needs_cast,
+          is_active: editingProduct.is_active
+        })
+        .eq('id', editingProduct.id)
+        .eq('store_id', storeId)
+      
+      if (error) throw error
+      
+      setEditingProduct(null)
+      setIsEditModalOpen(false)
+      loadProducts(selectedCategoryId || undefined)
+      alert('商品を更新しました')
+    } catch (error) {
+      console.error('Error updating product:', error)
+      alert('更新に失敗しました')
+    }
+  }
+
+  // ドラッグ&ドロップで商品の順序を変更
+  const handleDragStart = (e: React.DragEvent, product: Product) => {
+    setDraggedItem(product)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = async (e: React.DragEvent, targetProduct: Product) => {
+    e.preventDefault()
+    if (!draggedItem || draggedItem.id === targetProduct.id) return
+
+    const draggedIndex = products.findIndex(p => p.id === draggedItem.id)
+    const targetIndex = products.findIndex(p => p.id === targetProduct.id)
+
+    const newProducts = [...products]
+    newProducts.splice(draggedIndex, 1)
+    newProducts.splice(targetIndex, 0, draggedItem)
+
+    const updates = newProducts.map((product, index) => ({
+      ...product,
+      display_order: index + 1
+    }))
+
+    setProducts(updates)
+
+    try {
+      const storeId = getCurrentStoreId()
+      for (const [index, product] of updates.entries()) {
+        await supabase
+          .from('products')
+          .update({ display_order: index + 1 })
+          .eq('id', product.id)
+          .eq('store_id', storeId)
+      }
+    } catch (error) {
+      console.error('Error updating order:', error)
+      alert('順序の更新に失敗しました')
+      loadProducts(selectedCategoryId || undefined)
+    }
+
+    setDraggedItem(null)
+  }
+
+  // 商品の有効/無効を切り替える関数
+  const toggleProductActive = async (product: Product) => {
+    try {
+      const storeId = getCurrentStoreId()
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: !product.is_active })
+        .eq('id', product.id)
+        .eq('store_id', storeId)
+      
+      if (error) throw error
+      
+      loadProducts(selectedCategoryId || undefined)
+    } catch (error) {
+      console.error('Error toggling product:', error)
+      alert('更新に失敗しました')
+    }
+  }
+
+  // キャスト必要フラグを切り替える関数
+  const toggleProductNeedsCast = async (product: Product) => {
+    try {
+      const storeId = getCurrentStoreId()
+      const { error } = await supabase
+        .from('products')
+        .update({ needs_cast: !product.needs_cast })
+        .eq('id', product.id)
+        .eq('store_id', storeId)
+      
+      if (error) throw error
+      
+      loadProducts(selectedCategoryId || undefined)
+    } catch (error) {
+      console.error('Error toggling needs_cast:', error)
+      alert('更新に失敗しました')
+    }
+  }
+
+  // カテゴリーの推し優先表示を切り替える関数
+  const toggleCategoryOshiFirst = async (category: Category) => {
+    try {
+      const storeId = getCurrentStoreId()
+      const newValue = !category.show_oshi_first
+      
+      const { error } = await supabase
+        .from('product_categories')
+        .update({ show_oshi_first: newValue })
+        .eq('id', category.id)
+        .eq('store_id', storeId)
+      
+      if (error) throw error
+      
+      setCategories(prev => prev.map(cat => 
+        cat.id === category.id ? { ...cat, show_oshi_first: newValue } : cat
+      ))
+    } catch (error) {
+      console.error('Error toggling show_oshi_first:', error)
+      alert('更新に失敗しました')
+    }
+  }
+
+  // useEffectで読み込み
+  useEffect(() => {
+    loadSystemSettings()
+    if (activeMenu === 'categories' || activeMenu === 'products') {
+      loadCategories()
+    }
+  }, [activeMenu])
+
+  // カテゴリーが選択されたら商品を読み込む
+  useEffect(() => {
+    if (activeMenu === 'products') {
+      loadProducts(selectedCategoryId || undefined)
+    }
+  }, [selectedCategoryId, activeMenu])
 
   return (
-    <div style={{ backgroundColor: 'white', borderRadius: '8px', marginTop: '20px' }}>
-      {/* コンポーネントヘッダー */}
-      <div style={{
-        padding: '16px 20px',
-        borderBottom: '1px solid #e5e5e7',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+    <>
+      <Head>
+        <title>⚙️ 設定 - テーブル管理システム</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </Head>
+
+      <div style={{ 
+        display: 'flex', 
+        width: '1024px',
+        height: '768px',
+        backgroundColor: '#f5f5f5',
+        margin: '0 auto',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        <h2 style={{ 
-          fontSize: '24px', 
-          fontWeight: '600',
-          margin: 0
-        }}>
-          キャスト管理
-        </h2>
-        <button
-          onClick={() => {
-            setEditingCast(getDefaultCast())
-            setIsNewCast(true)
-            setShowCastModal(true)
-          }}
-          style={{
-            backgroundColor: '#007aff',
-            color: 'white',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '15px',
-            fontWeight: '500'
-          }}
-        >
-          <span style={{ marginRight: '4px' }}>+</span> 新規追加
-        </button>
-      </div>
-
-      {/* 検索バー */}
-      <div style={{ padding: '16px' }}>
-        <input
-          type="text"
-          placeholder="検索"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #e5e5e7',
-            fontSize: '15px',
-            outline: 'none'
-          }}
-        />
-      </div>
-
-      {/* テーブル */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f9f9f9' }}>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#666' }}>名前</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#666' }}>ステータス</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#666' }}>属性</th>
-              <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '14px', fontWeight: '500', color: '#666' }}>売上表</th>
-              <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '14px', fontWeight: '500', color: '#666' }}>POS表示</th>
-              <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '14px', fontWeight: '500', color: '#666' }}>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCasts.map((cast) => (
-              <tr key={cast.id} style={{ borderBottom: '1px solid #e5e5e7' }}>
-                <td style={{ padding: '12px 16px' }}>
-                  <div style={{ fontSize: '15px' }}>{cast.name || '-'}</div>
-                </td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>
-                  {cast.status || '-'}
-                </td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>
-                  {cast.attributes || '-'}
-                </td>
-                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                  <ToggleSwitch
-                    checked={cast.sales_previous_day === '有'}
-                    onChange={() => toggleSalesPreviousDay(cast)}
-                  />
-                </td>
-                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                  <ToggleSwitch
-                    checked={cast.show_in_pos || false}
-                    onChange={() => toggleCastShowInPos(cast)}
-                  />
-                </td>
-                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                  <button
-                    onClick={() => {
-                      setEditingCast(cast)
-                      setIsNewCast(false)
-                      setShowCastModal(true)
-                    }}
-                    style={{
-                      backgroundColor: '#007aff',
-                      color: 'white',
-                      padding: '6px 16px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: '500'
-                    }}
-                  >
-                    編集
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 編集/追加モーダル */}
-      {showCastModal && editingCast && (
+        {/* ヘッダー */}
         <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '60px',
+          backgroundColor: '#fff',
+          borderBottom: '1px solid #ddd',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-          padding: '20px',
-          overflow: 'hidden'
+          padding: '0 20px',
+          zIndex: 1000
         }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '14px',
-            width: '90%',
-            maxWidth: '500px',
-            maxHeight: 'calc(100vh - 40px)',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-            position: 'relative'
-          }}>
-            {/* モーダルヘッダー */}
-            <div style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid #e5e5e7',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              backgroundColor: 'white',
-              borderTopLeftRadius: '14px',
-              borderTopRightRadius: '14px',
-              position: 'sticky',
-              top: 0,
-              zIndex: 10
-            }}>
-              <button
-                onClick={() => {
-                  setShowCastModal(false)
-                  setEditingCast(null)
-                  setIsNewCast(false)
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '17px',
-                  color: '#007aff',
-                  cursor: 'pointer',
-                  padding: '4px 8px',
-                  marginRight: '8px'
-                }}
-              >
-                キャンセル
-              </button>
-              
-              <h2 style={{ 
-                fontSize: '17px', 
-                fontWeight: '600', 
-                margin: 0,
-                flex: 1,
-                textAlign: 'center'
-              }}>
-                {isNewCast ? 'キャスト新規追加' : 'キャスト編集'}
-              </h2>
-              
-              <div style={{ width: '80px' }}></div>
+          <button
+            onClick={() => router.push('/')}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              marginRight: '20px'
+            }}
+          >
+            ←
+          </button>
+          <h1 style={{ margin: 0, fontSize: '20px' }}>⚙️ 設定</h1>
+        </div>
+
+        {/* サイドメニュー */}
+        <div style={{
+          width: '250px',
+          backgroundColor: '#fff',
+          borderRight: '1px solid #ddd',
+          paddingTop: '60px',
+          position: 'absolute',
+          height: '100%',
+          left: 0
+        }}>
+          <div style={{ padding: '20px' }}>
+            <div
+              onClick={() => setActiveMenu('system')}
+              style={{
+                padding: '15px',
+                marginBottom: '5px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                backgroundColor: activeMenu === 'system' ? '#ff9800' : 'transparent',
+                color: activeMenu === 'system' ? '#fff' : '#333',
+                transition: 'all 0.3s'
+              }}
+            >
+              🔧 システム設定
             </div>
-
-            {/* モーダルコンテンツ */}
-            <div style={{ padding: '20px' }}>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '13px', 
-                  color: '#8e8e93',
-                  marginBottom: '6px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  名前 *
-                </label>
-                <input
-                  type="text"
-                  value={editingCast?.name || ''}
-                  onChange={(e) => editingCast && setEditingCast({...editingCast, name: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #e5e5e7',
-                    borderRadius: '8px',
-                    fontSize: '17px',
-                    outline: 'none'
-                  }}
-                  placeholder="必須"
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '13px', 
-                  color: '#8e8e93',
-                  marginBottom: '6px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  Twitter
-                </label>
-                <input
-                  type="text"
-                  value={editingCast?.twitter || ''}
-                  onChange={(e) => editingCast && setEditingCast({...editingCast, twitter: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #e5e5e7',
-                    borderRadius: '8px',
-                    fontSize: '17px',
-                    outline: 'none'
-                  }}
-                  placeholder="@なしで入力"
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '13px', 
-                  color: '#8e8e93',
-                  marginBottom: '6px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  Instagram
-                </label>
-                <input
-                  type="text"
-                  value={editingCast?.instagram || ''}
-                  onChange={(e) => editingCast && setEditingCast({...editingCast, instagram: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #e5e5e7',
-                    borderRadius: '8px',
-                    fontSize: '17px',
-                    outline: 'none'
-                  }}
-                  placeholder="@なしで入力"
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '13px', 
-                  color: '#8e8e93',
-                  marginBottom: '6px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  属性
-                </label>
-                <input
-                  type="text"
-                  value={editingCast?.attributes || ''}
-                  onChange={(e) => editingCast && setEditingCast({...editingCast, attributes: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #e5e5e7',
-                    borderRadius: '8px',
-                    fontSize: '17px',
-                    outline: 'none'
-                  }}
-                  placeholder="例: キャスト、店長、体験入店"
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '13px', 
-                  color: '#8e8e93',
-                  marginBottom: '6px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  ステータス
-                </label>
-                <select
-                  value={editingCast?.status || '在籍'}
-                  onChange={(e) => editingCast && setEditingCast({...editingCast, status: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #e5e5e7',
-                    borderRadius: '8px',
-                    fontSize: '17px',
-                    outline: 'none',
-                    backgroundColor: 'white'
-                  }}
-                >
-                  <option value="在籍">在籍</option>
-                  <option value="体験">体験</option>
-                  <option value="退店">退店</option>
-                  <option value="削除済み">削除済み</option>
-                </select>
-              </div>
-
-              <div style={{ 
-                marginBottom: '20px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '12px 0',
-                borderTop: '1px solid #e5e5e7',
-                borderBottom: '1px solid #e5e5e7'
-              }}>
-                <label style={{ fontSize: '17px' }}>売上表の有無</label>
-                <ToggleSwitch
-                  checked={editingCast?.sales_previous_day === '有'}
-                  onChange={() => editingCast && setEditingCast({
-                    ...editingCast, 
-                    sales_previous_day: editingCast.sales_previous_day === '有' ? '無' : '有'
-                  })}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '13px', 
-                  color: '#8e8e93',
-                  marginBottom: '6px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  体験入店日
-                </label>
-                <input
-                  type="date"
-                  value={editingCast?.experience_date || ''}
-                  onChange={(e) => editingCast && setEditingCast({...editingCast, experience_date: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #e5e5e7',
-                    borderRadius: '8px',
-                    fontSize: '17px',
-                    outline: 'none'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '13px', 
-                  color: '#8e8e93',
-                  marginBottom: '6px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  本入店日
-                </label>
-                <input
-                  type="date"
-                  value={editingCast?.hire_date || ''}
-                  onChange={(e) => editingCast && setEditingCast({...editingCast, hire_date: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #e5e5e7',
-                    borderRadius: '8px',
-                    fontSize: '17px',
-                    outline: 'none'
-                  }}
-                />
-              </div>
-
-              <div style={{ 
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '12px 0'
-              }}>
-                <label style={{ fontSize: '17px' }}>POS表示</label>
-                <ToggleSwitch
-                  checked={editingCast?.show_in_pos ?? true}
-                  onChange={() => editingCast && setEditingCast({
-                    ...editingCast, 
-                    show_in_pos: !editingCast.show_in_pos
-                  })}
-                />
-              </div>
+            
+            <div
+              onClick={() => setActiveMenu('products')}
+              style={{
+                padding: '15px',
+                marginBottom: '5px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                backgroundColor: activeMenu === 'products' ? '#ff9800' : 'transparent',
+                color: activeMenu === 'products' ? '#fff' : '#333',
+                transition: 'all 0.3s'
+              }}
+            >
+              📦 商品管理
             </div>
-
-            {/* モーダルフッター */}
-            <div style={{
-              padding: '20px',
-              borderTop: '1px solid #e5e5e7',
-              display: 'flex',
-              gap: '10px'
-            }}>
-              <button
-                onClick={() => {
-                  setShowCastModal(false)
-                  setEditingCast(null)
-                  setIsNewCast(false)
-                }}
-                style={{
-                  flex: 1,
-                  padding: '14px',
-                  backgroundColor: '#f2f2f7',
-                  color: '#007aff',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '17px',
-                  fontWeight: '600'
-                }}
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={isNewCast ? addNewCast : updateCast}
-                style={{
-                  flex: 1,
-                  padding: '14px',
-                  backgroundColor: '#007aff',
-                  color: 'white',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '17px',
-                  fontWeight: '600'
-                }}
-              >
-                {isNewCast ? '追加' : '保存'}
-              </button>
+            
+            <div
+              onClick={() => setActiveMenu('categories')}
+              style={{
+                padding: '15px',
+                marginBottom: '5px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                backgroundColor: activeMenu === 'categories' ? '#ff9800' : 'transparent',
+                color: activeMenu === 'categories' ? '#fff' : '#333',
+                transition: 'all 0.3s'
+              }}
+            >
+              📂 カテゴリー管理
+            </div>
+            
+            <div
+              onClick={() => setActiveMenu('casts')}
+              style={{
+                padding: '15px',
+                marginBottom: '5px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                backgroundColor: activeMenu === 'casts' ? '#ff9800' : 'transparent',
+                color: activeMenu === 'casts' ? '#fff' : '#333',
+                transition: 'all 0.3s'
+              }}
+            >
+              👥 キャスト管理
             </div>
           </div>
         </div>
+
+        {/* メインコンテンツ */}
+        <div style={{
+          position: 'absolute',
+          left: '250px',
+          top: '60px',
+          right: 0,
+          bottom: 0,
+          padding: '20px 40px 40px',
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}>
+         {activeMenu === 'system' && (
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              padding: '30px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              <h2 style={{ marginTop: 0 }}>システム設定</h2>
+              
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                  消費税率
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="number"
+                    value={systemSettings.consumptionTaxRate}
+                    onChange={(e) => setSystemSettings({
+                      ...systemSettings,
+                      consumptionTaxRate: Number(e.target.value)
+                    })}
+                    style={{
+                      width: '100px',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '16px'
+                    }}
+                  />
+                  <span>%</span>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                  サービス料率
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="number"
+                    value={systemSettings.serviceChargeRate}
+                    onChange={(e) => setSystemSettings({
+                      ...systemSettings,
+                      serviceChargeRate: Number(e.target.value)
+                    })}
+                    style={{
+                      width: '100px',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '16px'
+                    }}
+                  />
+                  <span>%</span>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                  端数処理
+                </label>
+                <select
+                  value={systemSettings.roundingMethod}
+                  onChange={(e) => setSystemSettings({
+                    ...systemSettings,
+                    roundingMethod: Number(e.target.value)
+                  })}
+                  style={{
+                    width: '200px',
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '16px'
+                  }}
+                >
+                  <option value={0}>切り捨て</option>
+                  <option value={1}>切り上げ</option>
+                  <option value={2}>四捨五入</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                  端数単位
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="number"
+                    value={systemSettings.roundingUnit}
+                    onChange={(e) => setSystemSettings({
+                      ...systemSettings,
+                      roundingUnit: Number(e.target.value)
+                    })}
+                    style={{
+                      width: '100px',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '16px'
+                    }}
+                  />
+                  <span>円</span>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                  営業日切り替え時間
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <select
+                    value={systemSettings.businessDayStartHour}
+                    onChange={(e) => setSystemSettings({
+                      ...systemSettings,
+                      businessDayStartHour: Number(e.target.value)
+                    })}
+                    style={{
+                      width: '100px',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '16px'
+                    }}
+                  >
+                    {[...Array(24)].map((_, hour) => (
+                      <option key={hour} value={hour}>
+                        {hour}時
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: '14px', color: '#666' }}>
+                    （この時間を基準に前日/当日を判定）
+                  </span>
+                </div>
+                <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                  例：5時設定の場合、朝4:59までは前日、5:00以降は当日として集計されます
+                </small>
+              </div>
+
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={systemSettings.showOshiFirst}
+                    onChange={(e) => setSystemSettings({
+                      ...systemSettings,
+                      showOshiFirst: e.target.checked
+                    })}
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  推しを優先表示
+                </label>
+                <small style={{ display: 'block', marginTop: '8px', marginLeft: '30px', color: '#666' }}>
+                  テーブル設定時の推しが、推し用・シャンパン・ノンアルシャンパンの選択時に一番上に表示されます
+                </small>
+              </div>
+
+              <button
+                onClick={saveSystemSettings}
+                disabled={loading}
+                style={{
+                  padding: '12px 40px',
+                  backgroundColor: '#ff9800',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '16px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.6 : 1
+                }}
+              >
+                {loading ? '保存中...' : '保存'}
+              </button>
+            </div>
+          )}
+           
+          {activeMenu === 'products' && (
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              padding: '30px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              <h2 style={{ marginTop: 0 }}>商品管理</h2>
+              
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                  カテゴリーで絞り込み
+                </label>
+                <select
+                  value={selectedCategoryId || ''}
+                  onChange={(e) => setSelectedCategoryId(Number(e.target.value) || null)}
+                  style={{
+                    width: '300px',
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '16px'
+                  }}
+                >
+                  <option value="">-- 全て表示 --</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '8px',
+                marginBottom: '30px'
+              }}>
+                <h3 style={{ marginTop: 0 }}>新規商品追加</h3>
+                <div style={{ display: 'grid', gap: '15px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>カテゴリー *</label>
+                    <select
+                      value={newProduct.categoryId || ''}
+                      onChange={(e) => setNewProduct({ ...newProduct, categoryId: Number(e.target.value) || null })}
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '16px'
+                      }}
+                    >
+                      <option value="">-- カテゴリーを選択 --</option>
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>商品名 *</label>
+                    <input
+                      type="text"
+                      value={newProduct.name}
+                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                      placeholder="商品名"
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>価格 *</label>
+                    <input
+                      type="number"
+                      value={newProduct.price}
+                      onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
+                      placeholder="価格"
+                      style={{
+                        width: '200px',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <input
+                        type="checkbox"
+                        checked={newProduct.needsCast}
+                        onChange={(e) => setNewProduct({ ...newProduct, needsCast: e.target.checked })}
+                        style={{ width: '20px', height: '20px' }}
+                      />
+                      キャスト必要
+                    </label>
+                  </div>
+                  
+                  <button
+                    onClick={addProduct}
+                    style={{
+                      padding: '10px 30px',
+                      backgroundColor: '#4CAF50',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontSize: '16px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    商品を追加
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: '20px'
+                }}>
+                  <h3 style={{ margin: 0 }}>商品一覧</h3>
+                  <button
+                    onClick={() => setIsSortMode(!isSortMode)}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: isSortMode ? '#ff9800' : '#2196F3',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <span style={{ fontSize: '16px' }}>↕</span>
+                    {isSortMode ? '並び替え完了' : '並び替え'}
+                  </button>
+                </div>
+                {products.length === 0 ? (
+                  <p>商品がありません</p>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #ddd' }}>
+                        <th style={{ padding: '10px', textAlign: 'left', width: '40%' }}>商品名</th>
+                        <th style={{ padding: '10px', width: '120px', textAlign: 'right' }}>価格</th>
+                        <th style={{ padding: '10px', width: '100px', textAlign: 'center' }}>キャスト</th>
+                        <th style={{ padding: '10px', width: '80px', textAlign: 'center' }}>表示</th>
+                        <th style={{ padding: '10px', width: '100px', textAlign: 'center' }}>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {products.map((product) => (
+                        <tr 
+                          key={product.id} 
+                          style={{ 
+                            borderBottom: '1px solid #eee',
+                            cursor: isSortMode ? 'grab' : 'default',
+                            backgroundColor: draggedItem?.id === product.id ? '#f0f0f0' : 'white'
+                          }}
+                          draggable={isSortMode}
+                          onDragStart={(e) => handleDragStart(e, product)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, product)}
+                        >
+                          <td style={{ padding: '10px' }}>
+                            {isSortMode && (
+                              <span style={{ marginRight: '10px', color: '#999' }}>≡</span>
+                            )}
+                            {product.name}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            ¥{product.price.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            <label style={{
+                              position: 'relative',
+                              display: 'inline-block',
+                              width: '40px',
+                              height: '22px',
+                              cursor: 'pointer'
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={product.needs_cast}
+                                onChange={() => toggleProductNeedsCast(product)}
+                                style={{ display: 'none' }}
+                              />
+                              <span style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: product.needs_cast ? '#4CAF50' : '#ccc',
+                                borderRadius: '22px',
+                                transition: 'all 0.3s'
+                              }}>
+                                <span style={{
+                                  position: 'absolute',
+                                  top: '2px',
+                                  left: product.needs_cast ? '20px' : '2px',
+                                  width: '18px',
+                                  height: '18px',
+                                  backgroundColor: 'white',
+                                  borderRadius: '50%',
+                                  transition: 'all 0.3s'
+                                }}></span>
+                              </span>
+                            </label>
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            <label style={{
+                              position: 'relative',
+                              display: 'inline-block',
+                              width: '50px',
+                              height: '24px',
+                              cursor: 'pointer'
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={product.is_active}
+                                onChange={() => toggleProductActive(product)}
+                                style={{ display: 'none' }}
+                              />
+                              <span style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: product.is_active ? '#4CAF50' : '#ccc',
+                                borderRadius: '24px',
+                                transition: 'all 0.3s'
+                              }}>
+                                <span style={{
+                                  position: 'absolute',
+                                  top: '2px',
+                                  left: product.is_active ? '26px' : '2px',
+                                  width: '20px',
+                                  height: '20px',
+                                  backgroundColor: 'white',
+                                  borderRadius: '50%',
+                                  transition: 'all 0.3s'
+                                }}></span>
+                              </span>
+                            </label>
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            {!isSortMode && (
+                              <button
+                                onClick={() => {
+                                  setEditingProduct(product)
+                                  setIsEditModalOpen(true)
+                                }}
+                                style={{
+                                  padding: '4px 12px',
+                                  backgroundColor: '#2196F3',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                編集
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeMenu === 'categories' && (
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              padding: '30px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              <h2 style={{ marginTop: 0 }}>カテゴリー管理</h2>
+              
+              <div style={{ 
+                marginBottom: '30px',
+                padding: '20px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '8px'
+              }}>
+                <h3 style={{ marginTop: 0 }}>新規カテゴリー追加</h3>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="カテゴリー名"
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '16px'
+                    }}
+                  />
+                  <button
+                    onClick={addCategory}
+                    style={{
+                      padding: '8px 20px',
+                      backgroundColor: '#4CAF50',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    追加
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: '20px'
+                }}>
+                  <h3 style={{ margin: 0 }}>カテゴリー一覧</h3>
+                  <button
+                    onClick={() => setIsCategorySortMode(!isCategorySortMode)}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: isCategorySortMode ? '#ff9800' : '#2196F3',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <span style={{ fontSize: '16px' }}>↕</span>
+                    {isCategorySortMode ? '並び替え完了' : '並び替え'}
+                  </button>
+                </div>
+                {categories.length === 0 ? (
+                  <p>カテゴリーがありません</p>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #ddd' }}>
+                        <th style={{ padding: '10px', textAlign: 'left' }}>カテゴリー名</th>
+                        <th style={{ padding: '10px', width: '120px', textAlign: 'center' }}>推し優先表示</th>
+                        <th style={{ padding: '10px', width: '100px' }}>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {categories.map((category) => (
+                        <tr 
+                          key={category.id} 
+                          style={{ 
+                            borderBottom: '1px solid #eee',
+                            cursor: isCategorySortMode ? 'grab' : 'default',
+                            backgroundColor: draggedCategory?.id === category.id ? '#f0f0f0' : 'white'
+                          }}
+                          draggable={isCategorySortMode}
+                          onDragStart={(e) => handleCategoryDragStart(e, category)}
+                          onDragOver={handleCategoryDragOver}
+                          onDrop={(e) => handleCategoryDrop(e, category)}
+                        >
+                          <td style={{ padding: '10px' }}>
+                            {isCategorySortMode && (
+                              <span style={{ marginRight: '10px', color: '#999' }}>≡</span>
+                            )}
+                            {editingCategoryId === category.id ? (
+                              <input
+                                type="text"
+                                value={editingCategoryName}
+                                onChange={(e) => setEditingCategoryName(e.target.value)}
+                                onBlur={() => updateCategoryName(category.id)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    updateCategoryName(category.id)
+                                  }
+                                }}
+                                style={{
+                                  width: 'calc(100% - 30px)',
+                                  padding: '4px',
+                                  border: '1px solid #ddd',
+                                  borderRadius: '4px'
+                                }}
+                                autoFocus
+                              />
+                            ) : (
+                              <span 
+                                onClick={() => {
+                                  if (!isCategorySortMode) {
+                                    setEditingCategoryId(category.id)
+                                    setEditingCategoryName(category.name)
+                                  }
+                                }}
+                                style={{ cursor: isCategorySortMode ? 'grab' : 'pointer' }}
+                              >
+                                {category.name}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            <label style={{
+                              position: 'relative',
+                              display: 'inline-block',
+                              width: '50px',
+                              height: '24px',
+                              cursor: 'pointer'
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={category.show_oshi_first || false}
+                                onChange={() => toggleCategoryOshiFirst(category)}
+                                style={{ display: 'none' }}
+                                disabled={isCategorySortMode}
+                              />
+                              <span style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: category.show_oshi_first ? '#4CAF50' : '#ccc',
+                                borderRadius: '24px',
+                                transition: 'all 0.3s',
+                                opacity: isCategorySortMode ? 0.6 : 1
+                              }}>
+                                <span style={{
+                                  position: 'absolute',
+                                  top: '2px',
+                                  left: category.show_oshi_first ? '26px' : '2px',
+                                  width: '20px',
+                                  height: '20px',
+                                  backgroundColor: 'white',
+                                  borderRadius: '50%',
+                                  transition: 'all 0.3s'
+                                }}></span>
+                              </span>
+                            </label>
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            {!isCategorySortMode && (
+                              <button
+                                onClick={() => {
+                                  setEditingCategoryId(category.id)
+                                  setEditingCategoryName(category.name)
+                                }}
+                                style={{
+                                  padding: '4px 12px',
+                                  backgroundColor: '#2196F3',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                編集
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeMenu === 'casts' && <CastManagement />}
+        </div>
+      </div>
+
+      {/* 編集モーダル */}
+      {isEditModalOpen && editingProduct && (
+        <>
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 2000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onClick={() => {
+              setIsEditModalOpen(false)
+              setEditingProduct(null)
+            }}
+          >
+            <div 
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                padding: '30px',
+                width: '500px',
+                maxWidth: '90%',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                position: 'relative'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  setIsEditModalOpen(false)
+                  setEditingProduct(null)
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '15px',
+                  right: '15px',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#666',
+                  padding: '5px',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '4px'
+                }}
+              >
+                ×
+              </button>
+
+              <h2 style={{ marginTop: 0, marginBottom: '25px' }}>商品編集</h2>
+
+              <div style={{ display: 'grid', gap: '20px' }}>
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    fontWeight: 'bold',
+                    fontSize: '14px'
+                  }}>
+                    カテゴリー
+                  </label>
+                  <select
+                    value={editingProduct.category_id}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, category_id: Number(e.target.value) })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      fontSize: '16px',
+                      boxSizing: 'border-box',
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    fontWeight: 'bold',
+                    fontSize: '14px'
+                  }}>
+                    商品名
+                  </label>
+                  <input
+                    type="text"
+                    value={editingProduct.name}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      fontSize: '16px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    fontWeight: 'bold',
+                    fontSize: '14px'
+                  }}>
+                    価格
+                  </label>
+                  <input
+                    type="number"
+                    value={editingProduct.price}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      fontSize: '16px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    cursor: 'pointer',
+                    fontSize: '16px'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={editingProduct.needs_cast}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, needs_cast: e.target.checked })}
+                      style={{ 
+                        width: '20px', 
+                        height: '20px',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    キャスト必要
+                  </label>
+                </div>
+
+                <div>
+                  <label style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    cursor: 'pointer',
+                    fontSize: '16px'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={editingProduct.is_active}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, is_active: e.target.checked })}
+                      style={{ 
+                        width: '20px', 
+                        height: '20px',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    表示する
+                  </label>
+                </div>
+
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '10px', 
+                  marginTop: '20px',
+                  justifyContent: 'flex-end'
+                }}>
+                  <button
+                    onClick={() => {
+                      setIsEditModalOpen(false)
+                      setEditingProduct(null)
+                    }}
+                    style={{
+                      padding: '10px 24px',
+                      backgroundColor: '#f5f5f5',
+                      color: '#333',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={updateProduct}
+                    style={{
+                      padding: '10px 24px',
+                      backgroundColor: '#4CAF50',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    保存
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
-    </div>
+    </>
   )
 }
