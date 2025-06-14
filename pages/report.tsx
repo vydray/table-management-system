@@ -183,7 +183,7 @@ export default function Report() {
         const { start, end } = getBusinessDayRange(targetDate)
 
         // 売上データを取得（ordersテーブルから）
-        const { data: salesData } = await supabase
+         const { data: salesData } = await supabase
           .from('orders')
           .select(`
             *,
@@ -191,9 +191,10 @@ export default function Report() {
           `)
           .gte('checkout_datetime', start.toISOString())
           .lt('checkout_datetime', end.toISOString())
-          .eq('store_id', storeId)  // 店舗IDでフィルタ
+          .eq('store_id', storeId)
           .not('checkout_datetime', 'is', null)
-
+          .is('deleted_at', null)  // 削除済みを除外
+          
         if (salesData && salesData.length > 0) {
           const dailyStats: DailyData = {
             date: `${selectedMonth}月${day}日`,
