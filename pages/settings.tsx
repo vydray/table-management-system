@@ -78,7 +78,7 @@ export default function Settings() {
   const loadSystemSettings = async () => {
     try {
       const storeId = getCurrentStoreId()
-      const { data: settings }: { data: SystemSetting[] | null; error: any } = await supabase
+      const { data: settings } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
         .eq('store_id', storeId)
