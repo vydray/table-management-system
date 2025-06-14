@@ -7,6 +7,8 @@ export interface Receipt {
   total_incl_tax: number
   guest_name: string
   staff_name: string
+  deleted_at?: string
+  deleted_by?: number
 }
 
 // 注文明細の型定義

@@ -37,7 +37,9 @@ export default function Receipts() {
           table_number,
           total_incl_tax,
           guest_name,
-          staff_name
+          staff_name,
+          deleted_at,
+          deleted_by
         `)
         .eq('store_id', storeId)
         .not('checkout_datetime', 'is', null)

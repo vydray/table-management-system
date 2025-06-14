@@ -74,9 +74,24 @@ export default function ReceiptList({
               fontSize: '14px', 
               color: '#666', 
               marginBottom: '6px',
-              fontWeight: '500'
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}>
               {formatTime(receipt.checkout_datetime)} {receipt.table_number}
+              {receipt.deleted_at && (
+                <span style={{
+                  backgroundColor: '#f44336',
+                  color: '#fff',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: '600'
+                }}>
+                  削除済み
+                </span>
+              )}
             </div>
             <div style={{ 
               fontSize: '13px', 
