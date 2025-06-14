@@ -505,6 +505,10 @@ export default function Home() {
         break
       case 'cast-sync':
         alert('キャスト同期機能は準備中です')
+        
+        break
+      case 'receipts':
+        router.push('/receipts')
         break
       case 'report':
         router.push('/report')
@@ -995,6 +999,10 @@ export default function Home() {
               キャスト同期
             </button>
             <div className="menu-divider"></div>
+            <button className="menu-item" onClick={() => handleMenuClick('receipts')}>
+              <span className="menu-icon">📋</span>
+              伝票管理
+            </button>
             <button className="menu-item" onClick={() => handleMenuClick('report')}>
               <span className="menu-icon">📊</span>
               レポート
