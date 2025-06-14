@@ -11,11 +11,6 @@ const supabase = createClient(
 )
 
 // 型定義
-interface SystemSetting {
-  setting_key: string;
-  setting_value: number;
-}
-
 interface Category {
   id: number
   name: string
