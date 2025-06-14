@@ -446,7 +446,7 @@ export default function CastManagement() {
             </tr>
           </thead>
           <tbody>
-            {filteredCasts.map((cast, index) => (
+            {filteredCasts.map((cast) => (
               <tr key={cast.id} style={{ borderBottom: '1px solid #e5e5e7' }}>
                 <td style={{ padding: '12px 16px' }}>
                   <div style={{ fontSize: '15px' }}>{cast.name || '-'}</div>
