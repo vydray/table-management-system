@@ -505,86 +505,86 @@ export default function Attendance() {
                 }}>
                   <tr>
                     <th style={{ 
-                      padding: '16px 12px', 
+                      padding: '12px 8px', 
                       textAlign: 'left', 
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
                       borderBottom: '2px solid #e0e0e0',
                       backgroundColor: '#f8f8f8',
-                      width: '160px'
+                      width: '140px'
                     }}>
                       名前
                     </th>
                     <th style={{ 
-                      padding: '16px 12px', 
+                      padding: '12px 8px', 
                       textAlign: 'center', 
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
                       borderBottom: '2px solid #e0e0e0',
                       backgroundColor: '#f8f8f8',
-                      width: '110px'
+                      width: '100px'
                     }}>
                       出勤
                     </th>
                     <th style={{ 
-                      padding: '16px 12px', 
+                      padding: '12px 8px', 
                       textAlign: 'center', 
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
                       borderBottom: '2px solid #e0e0e0',
                       backgroundColor: '#f8f8f8',
-                      width: '110px'
+                      width: '100px'
                     }}>
                       退勤
                     </th>
                     <th style={{ 
-                      padding: '16px 12px', 
+                      padding: '12px 8px', 
                       textAlign: 'center', 
-                      fontSize: '14px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#333',
+                      borderBottom: '2px solid #e0e0e0',
+                      backgroundColor: '#f8f8f8',
+                      width: '100px'
+                    }}>
+                      状況
+                    </th>
+                    <th style={{ 
+                      padding: '12px 8px', 
+                      textAlign: 'center', 
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#333',
+                      borderBottom: '2px solid #e0e0e0',
+                      backgroundColor: '#f8f8f8',
+                      width: '90px'
+                    }}>
+                      遅刻
+                    </th>
+                    <th style={{ 
+                      padding: '12px 8px', 
+                      textAlign: 'center', 
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#333',
+                      borderBottom: '2px solid #e0e0e0',
+                      backgroundColor: '#f8f8f8',
+                      width: '90px'
+                    }}>
+                      休憩
+                    </th>
+                    <th style={{ 
+                      padding: '12px 8px', 
+                      textAlign: 'center', 
+                      fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
                       borderBottom: '2px solid #e0e0e0',
                       backgroundColor: '#f8f8f8',
                       width: '110px'
-                    }}>
-                      状況
-                    </th>
-                    <th style={{ 
-                      padding: '16px 12px', 
-                      textAlign: 'center', 
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      borderBottom: '2px solid #e0e0e0',
-                      backgroundColor: '#f8f8f8',
-                      width: '100px'
-                    }}>
-                      遅刻
-                    </th>
-                    <th style={{ 
-                      padding: '16px 12px', 
-                      textAlign: 'center', 
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      borderBottom: '2px solid #e0e0e0',
-                      backgroundColor: '#f8f8f8',
-                      width: '100px'
-                    }}>
-                      休憩
-                    </th>
-                    <th style={{ 
-                      padding: '16px 12px', 
-                      textAlign: 'center', 
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      borderBottom: '2px solid #e0e0e0',
-                      backgroundColor: '#f8f8f8',
-                      width: '130px'
                     }}>
                       日払
                     </th>
@@ -603,28 +603,35 @@ export default function Attendance() {
                         <div className="cast-name-container" style={{ position: 'relative' }}>
                           <input
                             type="text"
-                            value={searchTexts[index] || row.cast_name}
+                            value={searchTexts[index] !== undefined ? searchTexts[index] : row.cast_name}
                             onChange={(e) => updateSearchText(index, e.target.value)}
                             onFocus={() => toggleDropdown(index, true)}
-                            placeholder="名前を選択または入力"
+                            placeholder="名前を選択"
                             style={{
                               width: '100%',
-                              padding: '10px 12px',
-                              border: '2px solid #e0e0e0',
-                              borderRadius: '8px',
+                              padding: '8px 10px',
+                              border: '1px solid #d0d0d0',
+                              borderRadius: '6px',
                               fontSize: '14px',
-                              backgroundColor: '#f8f8f8',
+                              backgroundColor: '#fff',
                               color: '#000',
                               outline: 'none',
                               cursor: 'text',
-                              transition: 'border-color 0.2s'
+                              transition: 'all 0.2s',
+                              boxSizing: 'border-box'
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#007AFF'}
-                            onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#007AFF'
+                              e.currentTarget.style.backgroundColor = '#f8f8f8'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#d0d0d0'
+                              e.currentTarget.style.backgroundColor = '#fff'
+                            }}
                           />
                           
                           {/* ドロップダウンリスト */}
-                          {showDropdowns[index] && (
+                          {showDropdowns[index] && casts.length > 0 && (
                             <div style={{
                               position: 'absolute',
                               top: '100%',
@@ -633,31 +640,30 @@ export default function Attendance() {
                               maxHeight: '200px',
                               overflowY: 'auto',
                               backgroundColor: '#fff',
-                              border: '2px solid #007AFF',
-                              borderRadius: '8px',
-                              marginTop: '4px',
+                              border: '1px solid #007AFF',
+                              borderRadius: '6px',
+                              marginTop: '2px',
                               zIndex: 1000,
                               boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                             }}>
-                              {getFilteredCasts(searchTexts[index] || '').length > 0 ? (
-                                getFilteredCasts(searchTexts[index] || '').map(cast => (
-                                  <div
-                                    key={cast.id}
-                                    onClick={() => selectCast(index, cast.name)}
-                                    style={{
-                                      padding: '10px 12px',
-                                      cursor: 'pointer',
-                                      fontSize: '14px',
-                                      borderBottom: '1px solid #f0f0f0',
-                                      transition: 'background-color 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                  >
-                                    {cast.name}
-                                  </div>
-                                ))
-                              ) : (
+                              {getFilteredCasts(searchTexts[index] || '').map(cast => (
+                                <div
+                                  key={cast.id}
+                                  onClick={() => selectCast(index, cast.name)}
+                                  style={{
+                                    padding: '10px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    borderBottom: '1px solid #f0f0f0',
+                                    transition: 'background-color 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  {cast.name}
+                                </div>
+                              ))}
+                              {getFilteredCasts(searchTexts[index] || '').length === 0 && (
                                 <div style={{
                                   padding: '10px 12px',
                                   fontSize: '14px',
@@ -677,20 +683,27 @@ export default function Attendance() {
                           onChange={(e) => updateRow(index, 'check_in_time', e.target.value)}
                           style={{
                             width: '100%',
-                            padding: '10px 12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
+                            padding: '8px 10px',
+                            border: '1px solid #d0d0d0',
+                            borderRadius: '6px',
                             fontSize: '14px',
-                            backgroundColor: '#f8f8f8',
+                            backgroundColor: '#fff',
                             color: '#000',
                             outline: 'none',
                             textAlign: 'center',
                             WebkitAppearance: 'none',
                             cursor: 'pointer',
-                            transition: 'border-color 0.2s'
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
                           }}
-                          onFocus={(e) => e.currentTarget.style.borderColor = '#007AFF'}
-                          onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#007AFF'
+                            e.currentTarget.style.backgroundColor = '#f8f8f8'
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = '#d0d0d0'
+                            e.currentTarget.style.backgroundColor = '#fff'
+                          }}
                         >
                           {timeOptions.map(time => (
                             <option key={time} value={time}>{time || '--:--'}</option>
@@ -703,20 +716,27 @@ export default function Attendance() {
                           onChange={(e) => updateRow(index, 'check_out_time', e.target.value)}
                           style={{
                             width: '100%',
-                            padding: '10px 12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
+                            padding: '8px 10px',
+                            border: '1px solid #d0d0d0',
+                            borderRadius: '6px',
                             fontSize: '14px',
-                            backgroundColor: '#f8f8f8',
+                            backgroundColor: '#fff',
                             color: '#000',
                             outline: 'none',
                             textAlign: 'center',
                             WebkitAppearance: 'none',
                             cursor: 'pointer',
-                            transition: 'border-color 0.2s'
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
                           }}
-                          onFocus={(e) => e.currentTarget.style.borderColor = '#007AFF'}
-                          onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#007AFF'
+                            e.currentTarget.style.backgroundColor = '#f8f8f8'
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = '#d0d0d0'
+                            e.currentTarget.style.backgroundColor = '#fff'
+                          }}
                         >
                           {timeOptions.map(time => (
                             <option key={time} value={time}>{time || '--:--'}</option>
@@ -729,23 +749,24 @@ export default function Attendance() {
                           onChange={(e) => updateRow(index, 'status', e.target.value)}
                           style={{
                             width: '100%',
-                            padding: '10px 12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
+                            padding: '8px 10px',
+                            border: '1px solid #d0d0d0',
+                            borderRadius: '6px',
                             fontSize: '14px',
                             backgroundColor: row.status === '出勤' ? '#e6f7e6' : 
                                            row.status === '欠勤' ? '#ffe6e6' : 
-                                           row.status === '遅刻' ? '#fff7e6' : '#f8f8f8',
+                                           row.status === '遅刻' ? '#fff7e6' : '#fff',
                             color: '#000',
                             outline: 'none',
                             textAlign: 'center',
                             fontWeight: '600',
                             WebkitAppearance: 'none',
                             cursor: 'pointer',
-                            transition: 'all 0.2s'
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
                           }}
                           onFocus={(e) => e.currentTarget.style.borderColor = '#007AFF'}
-                          onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                          onBlur={(e) => e.currentTarget.style.borderColor = '#d0d0d0'}
                         >
                           <option value="未設定">未設定</option>
                           <option value="出勤">出勤</option>
@@ -760,20 +781,27 @@ export default function Attendance() {
                           onChange={(e) => updateRow(index, 'late_minutes', Number(e.target.value))}
                           style={{
                             width: '100%',
-                            padding: '10px 12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
+                            padding: '8px 10px',
+                            border: '1px solid #d0d0d0',
+                            borderRadius: '6px',
                             fontSize: '14px',
-                            backgroundColor: '#f8f8f8',
+                            backgroundColor: '#fff',
                             color: '#000',
                             outline: 'none',
                             textAlign: 'center',
                             WebkitAppearance: 'none',
                             cursor: 'pointer',
-                            transition: 'border-color 0.2s'
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
                           }}
-                          onFocus={(e) => e.currentTarget.style.borderColor = '#007AFF'}
-                          onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#007AFF'
+                            e.currentTarget.style.backgroundColor = '#f8f8f8'
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = '#d0d0d0'
+                            e.currentTarget.style.backgroundColor = '#fff'
+                          }}
                         >
                           <option value={0}>0分</option>
                           <option value={15}>15分</option>
@@ -790,20 +818,27 @@ export default function Attendance() {
                           onChange={(e) => updateRow(index, 'break_minutes', Number(e.target.value))}
                           style={{
                             width: '100%',
-                            padding: '10px 12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
+                            padding: '8px 10px',
+                            border: '1px solid #d0d0d0',
+                            borderRadius: '6px',
                             fontSize: '14px',
-                            backgroundColor: '#f8f8f8',
+                            backgroundColor: '#fff',
                             color: '#000',
                             outline: 'none',
                             textAlign: 'center',
                             WebkitAppearance: 'none',
                             cursor: 'pointer',
-                            transition: 'border-color 0.2s'
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
                           }}
-                          onFocus={(e) => e.currentTarget.style.borderColor = '#007AFF'}
-                          onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#007AFF'
+                            e.currentTarget.style.backgroundColor = '#f8f8f8'
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = '#d0d0d0'
+                            e.currentTarget.style.backgroundColor = '#fff'
+                          }}
                         >
                           <option value={0}>0分</option>
                           <option value={30}>30分</option>
@@ -822,19 +857,26 @@ export default function Attendance() {
                           placeholder="¥0"
                           style={{
                             width: '100%',
-                            padding: '10px 12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
+                            padding: '8px 10px',
+                            border: '1px solid #d0d0d0',
+                            borderRadius: '6px',
                             fontSize: '14px',
                             textAlign: 'right',
-                            backgroundColor: '#f8f8f8',
+                            backgroundColor: '#fff',
                             color: '#000',
                             outline: 'none',
                             fontWeight: '600',
-                            transition: 'border-color 0.2s'
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
                           }}
-                          onFocus={(e) => e.currentTarget.style.borderColor = '#007AFF'}
-                          onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#007AFF'
+                            e.currentTarget.style.backgroundColor = '#f8f8f8'
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = '#d0d0d0'
+                            e.currentTarget.style.backgroundColor = '#fff'
+                          }}
                         />
                       </td>
                     </tr>
