@@ -503,9 +503,8 @@ export default function Home() {
         loadProducts() // 商品データも更新
         alert('データを更新しました')
         break
-      case 'cast-sync':
-        alert('キャスト同期機能は準備中です')
-        
+      case 'attendance':
+        router.push('/attendance')
         break
       case 'receipts':
         router.push('/receipts')
@@ -994,9 +993,9 @@ export default function Home() {
               <span className="menu-icon">🔄</span>
               データ更新
             </button>
-            <button className="menu-item" onClick={() => handleMenuClick('cast-sync')}>
+            <button className="menu-item" onClick={() => handleMenuClick('attendance')}>
               <span className="menu-icon">👥</span>
-              キャスト同期
+              勤怠登録
             </button>
             <div className="menu-divider"></div>
             <button className="menu-item" onClick={() => handleMenuClick('receipts')}>
