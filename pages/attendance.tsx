@@ -140,11 +140,33 @@ export default function Attendance() {
     }])
   }
 
-  // 行を更新
+  // 行を更新（金額フォーマット対応）
   const updateRow = (index: number, field: keyof AttendanceRow, value: string | number) => {
     const newRows = [...attendanceRows]
-    newRows[index] = { ...newRows[index], [field]: value }
+    
+    // 日払い金額の場合は特別処理
+    if (field === 'daily_payment') {
+      // 数値以外の文字を削除してから数値に変換
+      const numericValue = parseInt(value.toString().replace(/[^\d]/g, '') || '0')
+      newRows[index] = { ...newRows[index], [field]: numericValue }
+    } else {
+      newRows[index] = { ...newRows[index], [field]: value }
+    }
+    
     setAttendanceRows(newRows)
+  }
+
+  // 金額をフォーマット（¥とカンマ付き）
+  const formatCurrency = (value: number): string => {
+    if (!value) return ''
+    return `¥${value.toLocaleString()}`
+  }
+
+  // 金額入力をハンドル
+  const handleCurrencyInput = (index: number, value: string) => {
+    // ¥とカンマを除去して数値のみ抽出
+    const numericValue = value.replace(/[¥,]/g, '')
+    updateRow(index, 'daily_payment', numericValue)
   }
 
   // 保存
@@ -239,66 +261,141 @@ export default function Attendance() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div style={{
+      <style jsx global>{`
+        /* 勤怠登録ページ専用のスタイル */
+        body {
+          overflow: auto !important;
+          position: static !important;
+        }
+        
+        /* テーブルのフォントサイズを強制 */
+        .attendance-page table {
+          font-size: 12px !important;
+        }
+        
+        .attendance-page td,
+        .attendance-page th {
+          font-size: 12px !important;
+        }
+        
+        .attendance-page select,
+        .attendance-page input {
+          font-size: 12px !important;
+        }
+        
+        /* スクロールバーのスタイル */
+        .attendance-page ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        
+        .attendance-page ::-webkit-scrollbar-track {
+          background: #f1f1f1;
+        }
+        
+        .attendance-page ::-webkit-scrollbar-thumb {
+          background: #888;
+          border-radius: 4px;
+        }
+        
+        .attendance-page ::-webkit-scrollbar-thumb:hover {
+          background: #555;
+        }
+      `}</style>
+
+      <div className="attendance-page" style={{
         width: '1024px',
         height: '768px',
         margin: '0 auto',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#f2f2f7',
         overflow: 'hidden',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        position: 'relative'
       }}>
         {/* ヘッダー */}
         <div style={{
           backgroundColor: '#fff',
-          borderBottom: '1px solid #e0e0e0',
-          padding: '20px',
+          borderBottom: '1px solid #c6c6c8',
+          padding: '16px',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
               onClick={() => router.push('/')}
               style={{
                 background: 'none',
                 border: 'none',
-                fontSize: '24px',
+                fontSize: '18px',
                 cursor: 'pointer',
-                padding: '5px'
+                padding: '6px',
+                color: '#007AFF',
+                borderRadius: '6px',
+                transition: 'background-color 0.2s'
               }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              ←
+              ← 戻る
             </button>
-            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '600' }}>
-              👥 勤怠登録
+            <h1 style={{ 
+              margin: 0, 
+              fontSize: '18px', 
+              fontWeight: '600',
+              color: '#000'
+            }}>
+              勤怠登録
             </h1>
           </div>
 
-          <div style={{ fontSize: '18px', fontWeight: '500' }}>
-            {selectedDate}
+          <div style={{ 
+            fontSize: '14px', 
+            fontWeight: '500',
+            color: '#000'
+          }}>
+            {new Date(selectedDate).toLocaleDateString('ja-JP', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric',
+              weekday: 'short'
+            })}
           </div>
         </div>
 
         {/* 日付選択 */}
         <div style={{
           backgroundColor: '#fff',
-          padding: '20px',
-          borderBottom: '1px solid #e0e0e0'
+          padding: '12px 16px',
+          borderBottom: '1px solid #c6c6c8',
+          marginBottom: '12px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '16px' }}>📅 日付選択:</span>
+            <span style={{ 
+              fontSize: '14px',
+              color: '#000',
+              fontWeight: '500'
+            }}>
+              日付:
+            </span>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               style={{
-                padding: '8px 12px',
-                fontSize: '16px',
-                border: '2px solid #e0e0e0',
-                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '14px',
+                border: '1px solid #c6c6c8',
+                borderRadius: '8px',
                 outline: 'none',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                backgroundColor: '#f2f2f7',
+                color: '#000',
+                fontWeight: '500',
+                WebkitAppearance: 'none'
               }}
             />
           </div>
@@ -308,212 +405,335 @@ export default function Attendance() {
         <div style={{
           flex: 1,
           backgroundColor: '#fff',
-          margin: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          overflow: 'auto'
+          margin: '0 8px',
+          borderRadius: '10px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
         }}>
           {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center' }}>
+            <div style={{ 
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#8e8e93'
+            }}>
               読み込み中...
             </div>
           ) : (
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse'
+            <div style={{ 
+              flex: 1,
+              overflowX: 'auto',
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch'
             }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f8f8f8' }}>
-                  <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '2px solid #e0e0e0', minWidth: '120px' }}>
-                    名前
-                  </th>
-                  <th style={{ padding: '12px 8px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', minWidth: '90px' }}>
-                    出勤時間
-                  </th>
-                  <th style={{ padding: '12px 8px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', minWidth: '90px' }}>
-                    退勤時間
-                  </th>
-                  <th style={{ padding: '12px 8px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', minWidth: '90px' }}>
-                    出勤状況
-                  </th>
-                  <th style={{ padding: '12px 8px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', minWidth: '70px' }}>
-                    遅刻
-                  </th>
-                  <th style={{ padding: '12px 8px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', minWidth: '70px' }}>
-                    休憩
-                  </th>
-                  <th style={{ padding: '12px 8px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', minWidth: '90px' }}>
-                    日払い
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {attendanceRows.map((row, index) => (
-                  <tr key={row.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '8px' }}>
-                      <select
-                        value={row.cast_name}
-                        onChange={(e) => updateRow(index, 'cast_name', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        <option value="">選択</option>
-                        {casts.map(cast => (
-                          <option key={cast.id} value={cast.name}>{cast.name}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td style={{ padding: '8px' }}>
-                      <select
-                        value={row.check_in_time}
-                        onChange={(e) => updateRow(index, 'check_in_time', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        {timeOptions.map(time => (
-                          <option key={time} value={time}>{time || '--:--'}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td style={{ padding: '8px' }}>
-                      <select
-                        value={row.check_out_time}
-                        onChange={(e) => updateRow(index, 'check_out_time', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        {timeOptions.map(time => (
-                          <option key={time} value={time}>{time || '--:--'}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td style={{ padding: '8px' }}>
-                      <select
-                        value={row.status}
-                        onChange={(e) => updateRow(index, 'status', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        <option value="未設定">----</option>
-                        <option value="出勤">出勤</option>
-                        <option value="出勤中">出勤中</option>
-                        <option value="欠勤">欠勤</option>
-                        <option value="遅刻">遅刻</option>
-                        <option value="早退">早退</option>
-                      </select>
-                    </td>
-                    <td style={{ padding: '8px' }}>
-                      <select
-                        value={row.late_minutes}
-                        onChange={(e) => updateRow(index, 'late_minutes', Number(e.target.value))}
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        <option value={0}>0分</option>
-                        <option value={15}>15分</option>
-                        <option value={30}>30分</option>
-                        <option value={45}>45分</option>
-                        <option value={60}>60分</option>
-                        <option value={90}>90分</option>
-                        <option value={120}>120分</option>
-                      </select>
-                    </td>
-                    <td style={{ padding: '8px' }}>
-                      <select
-                        value={row.break_minutes}
-                        onChange={(e) => updateRow(index, 'break_minutes', Number(e.target.value))}
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        <option value={0}>0分</option>
-                        <option value={30}>30分</option>
-                        <option value={60}>60分</option>
-                        <option value={90}>90分</option>
-                        <option value={120}>120分</option>
-                        <option value={150}>150分</option>
-                        <option value={180}>180分</option>
-                      </select>
-                    </td>
-                    <td style={{ padding: '8px' }}>
-                      <input
-                        type="number"
-                        value={row.daily_payment}
-                        onChange={(e) => updateRow(index, 'daily_payment', Number(e.target.value))}
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          textAlign: 'right'
-                        }}
-                        step="1000"
-                      />
-                    </td>
+              <table style={{
+                width: '100%',
+                minWidth: '900px',
+                borderCollapse: 'collapse',
+                tableLayout: 'fixed',
+                fontSize: '12px'
+              }}>
+                <thead style={{ 
+                  position: 'sticky',
+                  top: 0,
+                  backgroundColor: '#f2f2f7',
+                  zIndex: 10
+                }}>
+                  <tr>
+                    <th style={{ 
+                      padding: '10px 4px', 
+                      textAlign: 'left', 
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#3c3c43',
+                      borderBottom: '1px solid #c6c6c8',
+                      backgroundColor: '#f2f2f7',
+                      width: '140px'
+                    }}>
+                      名前
+                    </th>
+                    <th style={{ 
+                      padding: '10px 4px', 
+                      textAlign: 'center', 
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#3c3c43',
+                      borderBottom: '1px solid #c6c6c8',
+                      backgroundColor: '#f2f2f7',
+                      width: '100px'
+                    }}>
+                      出勤
+                    </th>
+                    <th style={{ 
+                      padding: '10px 4px', 
+                      textAlign: 'center', 
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#3c3c43',
+                      borderBottom: '1px solid #c6c6c8',
+                      backgroundColor: '#f2f2f7',
+                      width: '100px'
+                    }}>
+                      退勤
+                    </th>
+                    <th style={{ 
+                      padding: '10px 4px', 
+                      textAlign: 'center', 
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#3c3c43',
+                      borderBottom: '1px solid #c6c6c8',
+                      backgroundColor: '#f2f2f7',
+                      width: '100px'
+                    }}>
+                      状況
+                    </th>
+                    <th style={{ 
+                      padding: '10px 4px', 
+                      textAlign: 'center', 
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#3c3c43',
+                      borderBottom: '1px solid #c6c6c8',
+                      backgroundColor: '#f2f2f7',
+                      width: '90px'
+                    }}>
+                      遅刻
+                    </th>
+                    <th style={{ 
+                      padding: '10px 4px', 
+                      textAlign: 'center', 
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#3c3c43',
+                      borderBottom: '1px solid #c6c6c8',
+                      backgroundColor: '#f2f2f7',
+                      width: '90px'
+                    }}>
+                      休憩
+                    </th>
+                    <th style={{ 
+                      padding: '10px 4px', 
+                      textAlign: 'center', 
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#3c3c43',
+                      borderBottom: '1px solid #c6c6c8',
+                      backgroundColor: '#f2f2f7',
+                      width: '110px'
+                    }}>
+                      日払
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {attendanceRows.map((row, index) => (
+                    <tr key={row.id} style={{ 
+                      borderBottom: '1px solid #e5e5ea'
+                    }}>
+                      <td style={{ padding: '4px' }}>
+                        <select
+                          value={row.cast_name}
+                          onChange={(e) => updateRow(index, 'cast_name', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 4px',
+                            border: '1px solid #e5e5ea',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            backgroundColor: '#f2f2f7',
+                            color: '#000',
+                            outline: 'none',
+                            WebkitAppearance: 'none'
+                          }}
+                        >
+                          <option value="">-</option>
+                          {casts.map(cast => (
+                            <option key={cast.id} value={cast.name}>{cast.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={{ padding: '4px' }}>
+                        <select
+                          value={row.check_in_time}
+                          onChange={(e) => updateRow(index, 'check_in_time', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 4px',
+                            border: '1px solid #e5e5ea',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            backgroundColor: '#f2f2f7',
+                            color: '#000',
+                            outline: 'none',
+                            textAlign: 'center',
+                            WebkitAppearance: 'none'
+                          }}
+                        >
+                          {timeOptions.map(time => (
+                            <option key={time} value={time}>{time || '--:--'}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={{ padding: '4px' }}>
+                        <select
+                          value={row.check_out_time}
+                          onChange={(e) => updateRow(index, 'check_out_time', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 4px',
+                            border: '1px solid #e5e5ea',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            backgroundColor: '#f2f2f7',
+                            color: '#000',
+                            outline: 'none',
+                            textAlign: 'center',
+                            WebkitAppearance: 'none'
+                          }}
+                        >
+                          {timeOptions.map(time => (
+                            <option key={time} value={time}>{time || '--:--'}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={{ padding: '4px' }}>
+                        <select
+                          value={row.status}
+                          onChange={(e) => updateRow(index, 'status', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 4px',
+                            border: '1px solid #e5e5ea',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            backgroundColor: row.status === '出勤' ? '#d1f2d1' : 
+                                           row.status === '欠勤' ? '#ffd1d1' : 
+                                           row.status === '遅刻' ? '#fff3cd' : '#f2f2f7',
+                            color: '#000',
+                            outline: 'none',
+                            textAlign: 'center',
+                            fontWeight: '500',
+                            WebkitAppearance: 'none'
+                          }}
+                        >
+                          <option value="未設定">-</option>
+                          <option value="出勤">出勤</option>
+                          <option value="欠勤">欠勤</option>
+                          <option value="遅刻">遅刻</option>
+                          <option value="早退">早退</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: '4px' }}>
+                        <select
+                          value={row.late_minutes}
+                          onChange={(e) => updateRow(index, 'late_minutes', Number(e.target.value))}
+                          style={{
+                            width: '100%',
+                            padding: '6px 4px',
+                            border: '1px solid #e5e5ea',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            backgroundColor: '#f2f2f7',
+                            color: '#000',
+                            outline: 'none',
+                            textAlign: 'center',
+                            WebkitAppearance: 'none'
+                          }}
+                        >
+                          <option value={0}>0分</option>
+                          <option value={15}>15分</option>
+                          <option value={30}>30分</option>
+                          <option value={45}>45分</option>
+                          <option value={60}>60分</option>
+                          <option value={90}>90分</option>
+                          <option value={120}>120分</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: '4px' }}>
+                        <select
+                          value={row.break_minutes}
+                          onChange={(e) => updateRow(index, 'break_minutes', Number(e.target.value))}
+                          style={{
+                            width: '100%',
+                            padding: '6px 4px',
+                            border: '1px solid #e5e5ea',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            backgroundColor: '#f2f2f7',
+                            color: '#000',
+                            outline: 'none',
+                            textAlign: 'center',
+                            WebkitAppearance: 'none'
+                          }}
+                        >
+                          <option value={0}>0分</option>
+                          <option value={30}>30分</option>
+                          <option value={60}>60分</option>
+                          <option value={90}>90分</option>
+                          <option value={120}>120分</option>
+                          <option value={150}>150分</option>
+                          <option value={180}>180分</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: '4px' }}>
+                        <input
+                          type="text"
+                          value={formatCurrency(row.daily_payment)}
+                          onChange={(e) => handleCurrencyInput(index, e.target.value)}
+                          placeholder="¥0"
+                          style={{
+                            width: '100%',
+                            padding: '6px 4px',
+                            border: '1px solid #e5e5ea',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            textAlign: 'right',
+                            backgroundColor: '#f2f2f7',
+                            color: '#000',
+                            outline: 'none',
+                            fontWeight: '500'
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
         {/* ボタンエリア */}
         <div style={{
           backgroundColor: '#fff',
-          padding: '20px',
-          borderTop: '1px solid #e0e0e0',
+          padding: '12px 16px',
+          borderTop: '1px solid #c6c6c8',
           display: 'flex',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          gap: '10px'
         }}>
           <button
             onClick={addRow}
             style={{
               padding: '10px 20px',
-              backgroundColor: '#f0f0f0',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
+              backgroundColor: '#f2f2f7',
+              border: 'none',
+              borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '16px',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#007AFF',
               display: 'flex',
               alignItems: 'center',
-              gap: '5px'
+              gap: '6px',
+              transition: 'all 0.2s'
             }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e5ea'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f2f2f7'}
           >
             + 行を追加
           </button>
@@ -522,15 +742,19 @@ export default function Attendance() {
             onClick={saveAttendance}
             disabled={saving}
             style={{
-              padding: '12px 40px',
-              backgroundColor: saving ? '#ccc' : '#2196F3',
+              padding: '10px 36px',
+              backgroundColor: saving ? '#c6c6c8' : '#007AFF',
               color: '#fff',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: '8px',
               cursor: saving ? 'not-allowed' : 'pointer',
-              fontSize: '16px',
-              fontWeight: '500'
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+              opacity: saving ? 0.6 : 1
             }}
+            onMouseEnter={(e) => !saving && (e.currentTarget.style.backgroundColor = '#0051D5')}
+            onMouseLeave={(e) => !saving && (e.currentTarget.style.backgroundColor = '#007AFF')}
           >
             {saving ? '保存中...' : '保存'}
           </button>
