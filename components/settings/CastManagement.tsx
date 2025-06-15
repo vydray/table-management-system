@@ -118,6 +118,58 @@ export default function CastManagement() {
     }
   }
 
+  // ステータスを直接更新する関数
+  const updateCastStatus = async (cast: Cast, newStatus: string) => {
+    try {
+      const storeId = getCurrentStoreId()
+      
+      // Supabaseを更新
+      const { error } = await supabase
+        .from('casts')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', cast.id)
+        .eq('store_id', storeId)
+      
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      
+      // Google Apps Scriptに通知
+      try {
+        await fetch(gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'UPDATE_STATUS',
+            table: 'casts',
+            record: {
+              ...cast,
+              status: newStatus
+            },
+            old_record: cast
+          })
+        })
+      } catch (gasError) {
+        console.error('GAS sync error:', gasError)
+      }
+      
+      // UIを更新
+      setCasts(prev => prev.map(c => 
+        c.id === cast.id ? { ...c, status: newStatus } : c
+      ))
+    } catch (error) {
+      console.error('Error updating status:', error)
+      alert('ステータスの更新に失敗しました')
+    }
+  }
+
   // 新規キャスト追加
   const addNewCast = async () => {
     if (!editingCast || !editingCast.name) {
@@ -376,6 +428,22 @@ export default function CastManagement() {
     setFilteredCasts(filtered)
   }, [casts, searchTerm])
 
+  // ステータスの背景色を取得
+  const getStatusColor = (status: string | null) => {
+    switch (status) {
+      case '在籍':
+        return '#e6f7e6'
+      case '体験':
+        return '#fff7e6'
+      case '退店':
+        return '#f0f0f0'
+      case '削除済み':
+        return '#ffe6e6'
+      default:
+        return '#fff'
+    }
+  }
+
   return (
     <div style={{ backgroundColor: 'white', borderRadius: '8px', marginTop: '20px' }}>
       {/* コンポーネントヘッダー */}
@@ -438,7 +506,7 @@ export default function CastManagement() {
           <thead>
             <tr style={{ backgroundColor: '#f9f9f9' }}>
               <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#666' }}>名前</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#666' }}>ステータス</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#666', minWidth: '120px' }}>ステータス</th>
               <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#666' }}>属性</th>
               <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '14px', fontWeight: '500', color: '#666' }}>売上表</th>
               <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '14px', fontWeight: '500', color: '#666' }}>POS表示</th>
@@ -451,8 +519,34 @@ export default function CastManagement() {
                 <td style={{ padding: '12px 16px' }}>
                   <div style={{ fontSize: '15px' }}>{cast.name || '-'}</div>
                 </td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>
-                  {cast.status || '-'}
+                <td style={{ padding: '12px 16px' }}>
+                  <select
+                    value={cast.status || '在籍'}
+                    onChange={(e) => updateCastStatus(cast, e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '6px 10px',
+                      border: '1px solid #e5e5e7',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      backgroundColor: getStatusColor(cast.status),
+                      color: '#000',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#007aff'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e5e5e7'
+                    }}
+                  >
+                    <option value="在籍">在籍</option>
+                    <option value="体験">体験</option>
+                    <option value="退店">退店</option>
+                    <option value="削除済み">削除済み</option>
+                  </select>
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>
                   {cast.attributes || '-'}
