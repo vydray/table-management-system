@@ -141,7 +141,7 @@ export default function Attendance() {
   }
 
   // 行を更新
-  const updateRow = (index: number, field: keyof AttendanceRow, value: any) => {
+  const updateRow = (index: number, field: keyof AttendanceRow, value: string | number) => {
     const newRows = [...attendanceRows]
     newRows[index] = { ...newRows[index], [field]: value }
     setAttendanceRows(newRows)
