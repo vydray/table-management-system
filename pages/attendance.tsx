@@ -24,6 +24,7 @@ interface AttendanceRow {
 interface Cast {
   id: number
   name: string
+  status?: string
 }
 
 export default function Attendance() {
@@ -62,9 +63,9 @@ export default function Attendance() {
       const storeId = getCurrentStoreId()
       const { data, error } = await supabase
         .from('casts')
-        .select('id, name')
+        .select('id, name, status')
         .eq('store_id', storeId)
-        .eq('status', 'active')
+        .in('status', ['在籍', '体験'])  // 在籍と体験のみ表示
         .order('name')
 
       if (error) throw error
@@ -181,7 +182,10 @@ export default function Attendance() {
   // 検索テキストの更新
   const updateSearchText = (index: number, text: string) => {
     setSearchTexts({ ...searchTexts, [index]: text })
-    updateRow(index, 'cast_name', text)
+    // キャスト名は選択されたときのみ更新（手入力を無効化）
+    if (text === '') {
+      updateRow(index, 'cast_name', '')
+    }
   }
 
   // ドロップダウンの表示/非表示
@@ -191,9 +195,14 @@ export default function Attendance() {
 
   // フィルタリングされたキャスト一覧
   const getFilteredCasts = (searchText: string) => {
-    if (!searchText) return casts
+    if (!searchText || searchText.trim() === '') {
+      // 検索テキストが空の場合は全員表示
+      return casts
+    }
+    // 検索テキストがある場合は、名前に含まれるキャストのみ表示
+    const searchLower = searchText.toLowerCase()
     return casts.filter(cast => 
-      cast.name.toLowerCase().includes(searchText.toLowerCase())
+      cast.name && cast.name.toLowerCase().includes(searchLower)
     )
   }
 
@@ -605,11 +614,28 @@ export default function Attendance() {
                             type="text"
                             value={searchTexts[index] !== undefined ? searchTexts[index] : row.cast_name}
                             onChange={(e) => updateSearchText(index, e.target.value)}
-                            onFocus={() => toggleDropdown(index, true)}
-                            placeholder="名前を選択"
+                            onFocus={() => {
+                              toggleDropdown(index, true)
+                              // フォーカス時に検索テキストをクリア（全員表示のため）
+                              if (!searchTexts[index] && row.cast_name) {
+                                setSearchTexts({ ...searchTexts, [index]: '' })
+                              }
+                            }}
+                            onBlur={() => {
+                              // 少し遅延を入れてクリックイベントを優先
+                              setTimeout(() => {
+                                // 選択されていない場合は元の値に戻す
+                                if (!row.cast_name && searchTexts[index]) {
+                                  setSearchTexts({ ...searchTexts, [index]: '' })
+                                }
+                              }, 200)
+                            }}
+                            placeholder="キャストを選択"
+                            autoComplete="off"
                             style={{
                               width: '100%',
                               padding: '8px 10px',
+                              paddingRight: '30px',
                               border: '1px solid #d0d0d0',
                               borderRadius: '6px',
                               fontSize: '14px',
@@ -630,14 +656,27 @@ export default function Attendance() {
                             }}
                           />
                           
+                          {/* ドロップダウン矢印 */}
+                          <span style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                            color: '#666',
+                            fontSize: '12px'
+                          }}>
+                            ▼
+                          </span>
+                          
                           {/* ドロップダウンリスト */}
-                          {showDropdowns[index] && casts.length > 0 && (
+                          {showDropdowns[index] && (
                             <div style={{
                               position: 'absolute',
                               top: '100%',
                               left: 0,
                               right: 0,
-                              maxHeight: '200px',
+                              maxHeight: '250px',
                               overflowY: 'auto',
                               backgroundColor: '#fff',
                               border: '1px solid #007AFF',
@@ -646,32 +685,58 @@ export default function Attendance() {
                               zIndex: 1000,
                               boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                             }}>
-                              {getFilteredCasts(searchTexts[index] || '').map(cast => (
-                                <div
-                                  key={cast.id}
-                                  onClick={() => selectCast(index, cast.name)}
-                                  style={{
-                                    padding: '10px 12px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    borderBottom: '1px solid #f0f0f0',
-                                    transition: 'background-color 0.2s'
-                                  }}
-                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
-                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                >
-                                  {cast.name}
-                                </div>
-                              ))}
-                              {getFilteredCasts(searchTexts[index] || '').length === 0 && (
+                              {casts.length === 0 ? (
                                 <div style={{
                                   padding: '10px 12px',
                                   fontSize: '14px',
                                   color: '#888',
                                   textAlign: 'center'
                                 }}>
-                                  該当するキャストがいません
+                                  キャストが登録されていません
                                 </div>
+                              ) : (
+                                <>
+                                  {searchTexts[index] && getFilteredCasts(searchTexts[index]).length === 0 ? (
+                                    <div style={{
+                                      padding: '10px 12px',
+                                      fontSize: '14px',
+                                      color: '#888',
+                                      textAlign: 'center'
+                                    }}>
+                                      「{searchTexts[index]}」に一致するキャストがいません
+                                    </div>
+                                  ) : (
+                                    getFilteredCasts(searchTexts[index] || '').map(cast => (
+                                      <div
+                                        key={cast.id}
+                                        onClick={() => selectCast(index, cast.name)}
+                                        style={{
+                                          padding: '10px 12px',
+                                          cursor: 'pointer',
+                                          fontSize: '14px',
+                                          borderBottom: '1px solid #f0f0f0',
+                                          transition: 'background-color 0.2s',
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          alignItems: 'center'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                      >
+                                        <span>{cast.name}</span>
+                                        {cast.status === '体験' && (
+                                          <span style={{
+                                            fontSize: '12px',
+                                            color: '#888',
+                                            marginLeft: '8px'
+                                          }}>
+                                            (体験)
+                                          </span>
+                                        )}
+                                      </div>
+                                    ))
+                                  )}
+                                </>
                               )}
                             </div>
                           )}
