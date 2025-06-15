@@ -262,8 +262,7 @@ export default function Attendance() {
       </Head>
 
       <div style={{
-        width: '100%',
-        maxWidth: '1024px',
+        width: '1024px',
         height: '768px',
         margin: '0 auto',
         backgroundColor: '#f2f2f7',
@@ -276,24 +275,24 @@ export default function Attendance() {
         <div style={{
           backgroundColor: '#fff',
           borderBottom: '1px solid #c6c6c8',
-          padding: '20px',
+          padding: '16px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
               onClick={() => router.push('/')}
               style={{
                 background: 'none',
                 border: 'none',
-                fontSize: '20px',
+                fontSize: '18px',
                 cursor: 'pointer',
-                padding: '8px',
+                padding: '6px',
                 color: '#007AFF',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 transition: 'background-color 0.2s'
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
@@ -303,7 +302,7 @@ export default function Attendance() {
             </button>
             <h1 style={{ 
               margin: 0, 
-              fontSize: '20px', 
+              fontSize: '18px', 
               fontWeight: '600',
               color: '#000'
             }}>
@@ -312,7 +311,7 @@ export default function Attendance() {
           </div>
 
           <div style={{ 
-            fontSize: '16px', 
+            fontSize: '14px', 
             fontWeight: '500',
             color: '#000'
           }}>
@@ -328,13 +327,13 @@ export default function Attendance() {
         {/* 日付選択 */}
         <div style={{
           backgroundColor: '#fff',
-          padding: '16px 20px',
+          padding: '12px 16px',
           borderBottom: '1px solid #c6c6c8',
-          marginBottom: '16px'
+          marginBottom: '12px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ 
-              fontSize: '15px',
+              fontSize: '14px',
               color: '#000',
               fontWeight: '500'
             }}>
@@ -345,10 +344,10 @@ export default function Attendance() {
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               style={{
-                padding: '8px 16px',
-                fontSize: '15px',
+                padding: '6px 12px',
+                fontSize: '14px',
                 border: '1px solid #c6c6c8',
-                borderRadius: '10px',
+                borderRadius: '8px',
                 outline: 'none',
                 cursor: 'pointer',
                 backgroundColor: '#f2f2f7',
@@ -364,13 +363,12 @@ export default function Attendance() {
         <div style={{
           flex: 1,
           backgroundColor: '#fff',
-          margin: '0 16px',
-          borderRadius: '12px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-          overflow: 'auto',  // 'hidden'から'auto'に変更
+          margin: '0 8px',
+          borderRadius: '10px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          overflow: 'hidden',
           display: 'flex',
-          flexDirection: 'column',
-          maxWidth: 'calc(100% - 32px)'
+          flexDirection: 'column'
         }}>
           {loading ? (
             <div style={{ 
@@ -385,14 +383,16 @@ export default function Attendance() {
           ) : (
             <div style={{ 
               flex: 1,
+              overflowX: 'auto',
               overflowY: 'auto',
               WebkitOverflowScrolling: 'touch'
             }}>
               <table style={{
                 width: '100%',
+                minWidth: '900px',
                 borderCollapse: 'collapse',
                 tableLayout: 'fixed',
-                fontSize: '11px'  // 全体的に小さく
+                fontSize: '12px'
               }}>
                 <thead style={{ 
                   position: 'sticky',
@@ -409,7 +409,7 @@ export default function Attendance() {
                       color: '#3c3c43',
                       borderBottom: '1px solid #c6c6c8',
                       backgroundColor: '#f2f2f7',
-                      width: '20%'
+                      width: '140px'
                     }}>
                       名前
                     </th>
@@ -420,7 +420,8 @@ export default function Attendance() {
                       fontWeight: '600',
                       color: '#3c3c43',
                       borderBottom: '1px solid #c6c6c8',
-                      backgroundColor: '#f2f2f7'
+                      backgroundColor: '#f2f2f7',
+                      width: '100px'
                     }}>
                       出勤
                     </th>
@@ -431,7 +432,8 @@ export default function Attendance() {
                       fontWeight: '600',
                       color: '#3c3c43',
                       borderBottom: '1px solid #c6c6c8',
-                      backgroundColor: '#f2f2f7'
+                      backgroundColor: '#f2f2f7',
+                      width: '100px'
                     }}>
                       退勤
                     </th>
@@ -442,7 +444,8 @@ export default function Attendance() {
                       fontWeight: '600',
                       color: '#3c3c43',
                       borderBottom: '1px solid #c6c6c8',
-                      backgroundColor: '#f2f2f7'
+                      backgroundColor: '#f2f2f7',
+                      width: '100px'
                     }}>
                       状況
                     </th>
@@ -453,7 +456,8 @@ export default function Attendance() {
                       fontWeight: '600',
                       color: '#3c3c43',
                       borderBottom: '1px solid #c6c6c8',
-                      backgroundColor: '#f2f2f7'
+                      backgroundColor: '#f2f2f7',
+                      width: '90px'
                     }}>
                       遅刻
                     </th>
@@ -464,7 +468,8 @@ export default function Attendance() {
                       fontWeight: '600',
                       color: '#3c3c43',
                       borderBottom: '1px solid #c6c6c8',
-                      backgroundColor: '#f2f2f7'
+                      backgroundColor: '#f2f2f7',
+                      width: '90px'
                     }}>
                       休憩
                     </th>
@@ -475,7 +480,8 @@ export default function Attendance() {
                       fontWeight: '600',
                       color: '#3c3c43',
                       borderBottom: '1px solid #c6c6c8',
-                      backgroundColor: '#f2f2f7'
+                      backgroundColor: '#f2f2f7',
+                      width: '110px'
                     }}>
                       日払
                     </th>
@@ -492,10 +498,10 @@ export default function Attendance() {
                           onChange={(e) => updateRow(index, 'cast_name', e.target.value)}
                           style={{
                             width: '100%',
-                            padding: '4px',
+                            padding: '6px 4px',
                             border: '1px solid #e5e5ea',
                             borderRadius: '6px',
-                            fontSize: '11px',
+                            fontSize: '12px',
                             backgroundColor: '#f2f2f7',
                             color: '#000',
                             outline: 'none',
@@ -516,8 +522,8 @@ export default function Attendance() {
                             width: '100%',
                             padding: '6px 4px',
                             border: '1px solid #e5e5ea',
-                            borderRadius: '8px',
-                            fontSize: '13px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
                             backgroundColor: '#f2f2f7',
                             color: '#000',
                             outline: 'none',
@@ -538,8 +544,8 @@ export default function Attendance() {
                             width: '100%',
                             padding: '6px 4px',
                             border: '1px solid #e5e5ea',
-                            borderRadius: '8px',
-                            fontSize: '13px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
                             backgroundColor: '#f2f2f7',
                             color: '#000',
                             outline: 'none',
@@ -560,8 +566,8 @@ export default function Attendance() {
                             width: '100%',
                             padding: '6px 4px',
                             border: '1px solid #e5e5ea',
-                            borderRadius: '8px',
-                            fontSize: '13px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
                             backgroundColor: row.status === '出勤' ? '#d1f2d1' : 
                                            row.status === '欠勤' ? '#ffd1d1' : 
                                            row.status === '遅刻' ? '#fff3cd' : '#f2f2f7',
@@ -587,8 +593,8 @@ export default function Attendance() {
                             width: '100%',
                             padding: '6px 4px',
                             border: '1px solid #e5e5ea',
-                            borderRadius: '8px',
-                            fontSize: '13px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
                             backgroundColor: '#f2f2f7',
                             color: '#000',
                             outline: 'none',
@@ -613,8 +619,8 @@ export default function Attendance() {
                             width: '100%',
                             padding: '6px 4px',
                             border: '1px solid #e5e5ea',
-                            borderRadius: '8px',
-                            fontSize: '13px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
                             backgroundColor: '#f2f2f7',
                             color: '#000',
                             outline: 'none',
@@ -639,9 +645,9 @@ export default function Attendance() {
                           placeholder="¥0"
                           style={{
                             width: '100%',
-                            padding: '4px',
+                            padding: '6px 4px',
                             border: '1px solid #e5e5ea',
-                            borderRadius: '8px',
+                            borderRadius: '6px',
                             fontSize: '12px',
                             textAlign: 'right',
                             backgroundColor: '#f2f2f7',
@@ -662,21 +668,21 @@ export default function Attendance() {
         {/* ボタンエリア */}
         <div style={{
           backgroundColor: '#fff',
-          padding: '16px 20px',
+          padding: '12px 16px',
           borderTop: '1px solid #c6c6c8',
           display: 'flex',
           justifyContent: 'space-between',
-          gap: '12px'
+          gap: '10px'
         }}>
           <button
             onClick={addRow}
             style={{
-              padding: '12px 24px',
+              padding: '10px 20px',
               backgroundColor: '#f2f2f7',
               border: 'none',
-              borderRadius: '10px',
+              borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '15px',
+              fontSize: '14px',
               fontWeight: '500',
               color: '#007AFF',
               display: 'flex',
@@ -694,13 +700,13 @@ export default function Attendance() {
             onClick={saveAttendance}
             disabled={saving}
             style={{
-              padding: '12px 48px',
+              padding: '10px 36px',
               backgroundColor: saving ? '#c6c6c8' : '#007AFF',
               color: '#fff',
               border: 'none',
-              borderRadius: '10px',
+              borderRadius: '8px',
               cursor: saving ? 'not-allowed' : 'pointer',
-              fontSize: '15px',
+              fontSize: '14px',
               fontWeight: '600',
               transition: 'all 0.2s',
               opacity: saving ? 0.6 : 1
