@@ -37,7 +37,6 @@ export default function Attendance() {
   // 名前検索用の状態
   const [searchTexts, setSearchTexts] = useState<{[key: string]: string}>({})
   const [showDropdowns, setShowDropdowns] = useState<{[key: string]: boolean}>({})
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
 
   // 初期行を5行作成
   const initializeRows = () => {
@@ -119,13 +118,24 @@ export default function Attendance() {
         }
 
         setAttendanceRows([...formattedData, ...emptyRows])
+        
+        // 検索テキストをリセット
+        const newSearchTexts: {[key: string]: string} = {}
+        formattedData.forEach((row, index) => {
+          if (row.cast_name) {
+            newSearchTexts[index] = row.cast_name
+          }
+        })
+        setSearchTexts(newSearchTexts)
       } else {
         // データがない場合は初期行を表示
         setAttendanceRows(initializeRows())
+        setSearchTexts({})
       }
     } catch (error) {
       console.error('Error loading attendance:', error)
       setAttendanceRows(initializeRows())
+      setSearchTexts({})
     } finally {
       setLoading(false)
     }
@@ -177,11 +187,6 @@ export default function Attendance() {
   // ドロップダウンの表示/非表示
   const toggleDropdown = (index: number, show: boolean) => {
     setShowDropdowns({ ...showDropdowns, [index]: show })
-    if (show) {
-      setFocusedIndex(index)
-    } else {
-      setFocusedIndex(null)
-    }
   }
 
   // フィルタリングされたキャスト一覧
