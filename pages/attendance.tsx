@@ -141,7 +141,7 @@ export default function Attendance() {
   }
 
   // 行を更新（金額フォーマット対応）
-  const updateRow = (index: number, field: keyof AttendanceRow, value: any) => {
+  const updateRow = (index: number, field: keyof AttendanceRow, value: string | number) => {
     const newRows = [...attendanceRows]
     
     // 日払い金額の場合は特別処理
