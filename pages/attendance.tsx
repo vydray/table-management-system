@@ -261,7 +261,49 @@ export default function Attendance() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div style={{
+      <style jsx global>{`
+        /* 勤怠登録ページ専用のスタイル */
+        body {
+          overflow: auto !important;
+          position: static !important;
+        }
+        
+        /* テーブルのフォントサイズを強制 */
+        .attendance-page table {
+          font-size: 12px !important;
+        }
+        
+        .attendance-page td,
+        .attendance-page th {
+          font-size: 12px !important;
+        }
+        
+        .attendance-page select,
+        .attendance-page input {
+          font-size: 12px !important;
+        }
+        
+        /* スクロールバーのスタイル */
+        .attendance-page ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        
+        .attendance-page ::-webkit-scrollbar-track {
+          background: #f1f1f1;
+        }
+        
+        .attendance-page ::-webkit-scrollbar-thumb {
+          background: #888;
+          border-radius: 4px;
+        }
+        
+        .attendance-page ::-webkit-scrollbar-thumb:hover {
+          background: #555;
+        }
+      `}</style>
+
+      <div className="attendance-page" style={{
         width: '1024px',
         height: '768px',
         margin: '0 auto',
