@@ -274,86 +274,13 @@ export default function CastManagement() {
     setFilteredCasts(filtered)
   }, [casts, searchTerm])
 
-  // テーブルのスタイル（グローバルCSS対策）
-  const tableStyles = {
-    container: {
+  return (
+    <div style={{
       backgroundColor: '#fff',
       borderRadius: '10px',
       padding: '20px',
       boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-    },
-    tableWrapper: {
-      backgroundColor: '#f8f8f8',
-      borderRadius: '8px',
-      overflow: 'hidden'
-    },
-    tableScroll: {
-      maxHeight: '600px',
-      overflowY: 'auto' as const,
-      overflowX: 'auto' as const
-    },
-    table: {
-      width: '100% !important',
-      minWidth: '800px',
-      borderCollapse: 'collapse' as const,
-      tableLayout: 'fixed' as const,
-      backgroundColor: '#fff !important',
-      border: 'none !important',
-      borderRadius: '0 !important',
-      height: 'auto !important',
-      position: 'static !important' as any,
-      display: 'table !important',
-      flexDirection: 'unset !important' as any,
-      alignItems: 'unset !important' as any,
-      justifyContent: 'unset !important' as any,
-      fontSize: 'inherit !important',
-      cursor: 'default !important',
-      padding: '0 !important',
-      boxSizing: 'content-box !important' as any,
-      transition: 'none !important'
-    },
-    thead: {
-      position: 'sticky' as const,
-      top: 0,
-      zIndex: 10
-    },
-    headerRow: {
-      backgroundColor: '#f0f0f0'
-    },
-    th: {
-      padding: '12px 16px !important',
-      textAlign: 'left' as const,
-      fontSize: '14px !important',
-      fontWeight: '600' as any,
-      color: '#333 !important',
-      backgroundColor: '#f0f0f0 !important',
-      borderBottom: '2px solid #e0e0e0 !important',
-      position: 'static !important' as any,
-      width: 'auto !important',
-      height: 'auto !important'
-    },
-    tr: {
-      borderBottom: '1px solid #e5e5e7',
-      backgroundColor: '#fff !important',
-      transition: 'background-color 0.2s',
-      width: 'auto !important',
-      height: 'auto !important',
-      display: 'table-row !important',
-      position: 'static !important' as any
-    },
-    td: {
-      padding: '12px 16px !important',
-      fontSize: '14px !important',
-      position: 'static !important' as any,
-      width: 'auto !important',
-      height: 'auto !important',
-      backgroundColor: 'transparent !important',
-      display: 'table-cell !important'
-    }
-  }
-
-  return (
-    <div style={tableStyles.container}>
+    }}>
       <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>キャスト管理</h2>
 
       {/* 検索バー */}
@@ -376,28 +303,114 @@ export default function CastManagement() {
       </div>
 
       {/* キャスト一覧テーブル */}
-      <div style={tableStyles.tableWrapper}>
-        <div style={tableStyles.tableScroll}>
-          <table style={tableStyles.table}>
-            <thead style={tableStyles.thead}>
-              <tr style={tableStyles.headerRow}>
-                <th style={{...tableStyles.th, width: '20%'}}>名前</th>
-                <th style={{...tableStyles.th, width: '20%'}}>属性</th>
-                <th style={{...tableStyles.th, width: '20%', minWidth: '120px'}}>ステータス</th>
-                <th style={{...tableStyles.th, width: '20%', textAlign: 'center' as const}}>POS表示</th>
-                <th style={{...tableStyles.th, width: '20%', textAlign: 'center' as const}}>操作</th>
+      <div style={{ 
+        backgroundColor: '#f8f8f8',
+        borderRadius: '8px',
+        overflow: 'hidden'
+      }}>
+        <div style={{ 
+          maxHeight: '600px',
+          overflowY: 'auto',
+          overflowX: 'auto'
+        }}>
+          {/* グローバルCSSの影響を避けるためにdata-cast-tableを追加 */}
+          <table data-cast-table style={{ 
+            width: '100%',
+            minWidth: '800px',
+            borderCollapse: 'collapse',
+            tableLayout: 'fixed',
+            backgroundColor: '#fff',
+            border: 'none',
+            borderRadius: '0',
+            height: 'auto',
+            position: 'static',
+            display: 'table'
+          }}>
+            <thead style={{ 
+              position: 'sticky',
+              top: 0,
+              zIndex: 10
+            }}>
+              <tr style={{ backgroundColor: '#f0f0f0' }}>
+                <th style={{ 
+                  padding: '12px 16px',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#333',
+                  backgroundColor: '#f0f0f0',
+                  borderBottom: '2px solid #e0e0e0',
+                  width: '20%'
+                }}>名前</th>
+                <th style={{ 
+                  padding: '12px 16px',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#333',
+                  backgroundColor: '#f0f0f0',
+                  borderBottom: '2px solid #e0e0e0',
+                  width: '20%'
+                }}>属性</th>
+                <th style={{ 
+                  padding: '12px 16px',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#333',
+                  backgroundColor: '#f0f0f0',
+                  borderBottom: '2px solid #e0e0e0',
+                  width: '20%',
+                  minWidth: '120px'
+                }}>ステータス</th>
+                <th style={{ 
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#333',
+                  backgroundColor: '#f0f0f0',
+                  borderBottom: '2px solid #e0e0e0',
+                  width: '20%'
+                }}>POS表示</th>
+                <th style={{ 
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#333',
+                  backgroundColor: '#f0f0f0',
+                  borderBottom: '2px solid #e0e0e0',
+                  width: '20%'
+                }}>操作</th>
               </tr>
             </thead>
             <tbody>
               {filteredCasts.map((cast) => (
-                <tr key={cast.id} style={tableStyles.tr}>
-                  <td style={tableStyles.td}>
+                <tr key={cast.id} style={{ 
+                  borderBottom: '1px solid #e5e5e7',
+                  backgroundColor: '#fff',
+                  transition: 'background-color 0.2s',
+                  display: 'table-row'
+                }}>
+                  <td style={{ 
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    display: 'table-cell'
+                  }}>
                     {cast.name || '-'}
                   </td>
-                  <td style={tableStyles.td}>
+                  <td style={{ 
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    display: 'table-cell'
+                  }}>
                     {cast.attributes || '-'}
                   </td>
-                  <td style={tableStyles.td}>
+                  <td style={{ 
+                    padding: '12px 16px',
+                    display: 'table-cell'
+                  }}>
                     <select
                       value={cast.status || '在籍'}
                       onChange={(e) => updateCastStatus(cast, e.target.value)}
@@ -426,7 +439,11 @@ export default function CastManagement() {
                       <option value="削除済み">削除済み</option>
                     </select>
                   </td>
-                  <td style={{...tableStyles.td, textAlign: 'center' as const}}>
+                  <td style={{ 
+                    padding: '12px 16px',
+                    textAlign: 'center',
+                    display: 'table-cell'
+                  }}>
                     <button
                       onClick={() => toggleCastShowInPos(cast)}
                       style={{
@@ -444,7 +461,11 @@ export default function CastManagement() {
                       {cast.show_in_pos ? 'ON' : 'OFF'}
                     </button>
                   </td>
-                  <td style={{...tableStyles.td, textAlign: 'center' as const}}>
+                  <td style={{ 
+                    padding: '12px 16px',
+                    textAlign: 'center',
+                    display: 'table-cell'
+                  }}>
                     <button
                       onClick={() => {
                         setEditingCast(cast)
