@@ -487,21 +487,81 @@ export default function CastManagement() {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>キャスト管理</h2>
-        <button
-          onClick={() => setShowPositionModal(true)}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#4CAF50',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '14px',
-            fontWeight: '500',
-            cursor: 'pointer'
-          }}
-        >
-          役職管理
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => setShowPositionModal(true)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#4CAF50',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            役職管理
+          </button>
+          <button
+            onClick={async () => {
+              console.log('=== GASデバッグ開始 ===')
+              const testData = {
+                type: 'UPDATE',
+                table: 'casts',
+                record: {
+                  id: 999,
+                  name: 'テストキャスト',
+                  attributes: 'テスト役職',
+                  status: '在籍',
+                  show_in_pos: true,
+                  updated_at: new Date().toISOString()
+                },
+                old_record: {
+                  id: 999,
+                  name: 'テストキャスト',
+                  attributes: '旧役職',
+                  status: '在籍',
+                  show_in_pos: false
+                }
+              }
+              
+              console.log('送信データ:', JSON.stringify(testData, null, 2))
+              console.log('GAS URL:', gasUrl)
+              
+              try {
+                console.log('送信中...')
+                const response = await fetch(gasUrl, {
+                  method: 'POST',
+                  mode: 'no-cors',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(testData)
+                })
+                console.log('送信完了')
+                alert('送信完了！スプレッドシートを確認してください')
+              } catch (error) {
+                console.error('エラー:', error)
+                alert('エラーが発生しました。コンソールを確認してください')
+              }
+              
+              console.log('=== デバッグ終了 ===')
+            }}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#FF5722',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            GASデバッグ
+          </button>
+        </div>
       </div>
 
       {/* 検索バー */}
