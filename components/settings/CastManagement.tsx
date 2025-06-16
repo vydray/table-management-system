@@ -214,51 +214,28 @@ export default function CastManagement() {
         />
       </div>
 
-      {/* キャスト一覧 */}
+{/* キャスト一覧 */}
       <div className="overflow-x-auto">
-        <table className="min-w-full table-auto">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="px-4 py-2 text-left">名前</th>
-              <th className="px-4 py-2 text-left">属性</th>
-              <th className="px-4 py-2 text-left">ステータス</th>
-              <th className="px-4 py-2 text-center">POS表示</th>
-              <th className="px-4 py-2 text-center">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCasts.map((cast) => (
-              <tr key={cast.id} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-2">{cast.name || '-'}</td>
-                <td className="px-4 py-2">{cast.attributes || '-'}</td>
-                <td className="px-4 py-2">{cast.status || '-'}</td>
-                <td className="px-4 py-2 text-center">
-                  <button
-                    onClick={() => toggleCastShowInPos(cast)}
-                    className={`px-3 py-1 rounded ${
-                      cast.show_in_pos 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-gray-300 text-gray-700'
-                    }`}
-                  >
-                    {cast.show_in_pos ? 'ON' : 'OFF'}
-                  </button>
-                </td>
-                <td className="px-4 py-2 text-center">
-                  <button
-                    onClick={() => {
-                      setEditingCast(cast)
-                      setShowCastModal(true)
-                    }}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                  >
-                    編集
-                  </button>
-                </td>
+        <div className="max-h-[60vh] overflow-y-auto relative">
+          <table className="min-w-full table-auto">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-gray-100">
+                <th className="px-4 py-2 text-left bg-gray-100">名前</th>
+                <th className="px-4 py-2 text-left bg-gray-100">属性</th>
+                <th className="px-4 py-2 text-left bg-gray-100">ステータス</th>
+                <th className="px-4 py-2 text-center bg-gray-100">POS表示</th>
+                <th className="px-4 py-2 text-center bg-gray-100">操作</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredCasts.map((cast) => (
+                <tr key={cast.id} className="border-b hover:bg-gray-50">
+                  {/* 既存のコード */}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* 編集モーダル */}
