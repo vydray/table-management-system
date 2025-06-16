@@ -34,12 +34,24 @@ interface Cast {
   updated_at: string | null
 }
 
+// 役職の型定義
+interface Position {
+  id: number
+  store_id: number
+  name: string
+  display_order: number
+  is_active: boolean
+}
+
 export default function CastManagement() {
   const [casts, setCasts] = useState<Cast[]>([])
+  const [positions, setPositions] = useState<Position[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredCasts, setFilteredCasts] = useState<Cast[]>([])
   const [showCastModal, setShowCastModal] = useState(false)
   const [editingCast, setEditingCast] = useState<Cast | null>(null)
+  const [showPositionModal, setShowPositionModal] = useState(false)
+  const [newPositionName, setNewPositionName] = useState('')
 
   // Google Apps ScriptのURL
   const gasUrl = 'https://script.google.com/macros/s/AKfycbwp10byL5IEGbEJAKOxVAQ1dSdjQ3UNJTGJnJOZ6jp6JOCWiiFURaQiqfqyfo390NvgZg/exec'
@@ -60,6 +72,75 @@ export default function CastManagement() {
     }
   }
 
+  // 役職一覧を読み込む
+  const loadPositions = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+      const { data, error } = await supabase
+        .from('cast_positions')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('is_active', true)
+        .order('display_order')
+
+      if (error) throw error
+      setPositions(data || [])
+    } catch (error) {
+      console.error('Failed to load positions:', error)
+      // テーブルが存在しない場合はエラーを無視
+    }
+  }
+
+  // 役職を追加
+  const addPosition = async () => {
+    if (!newPositionName.trim()) return
+
+    try {
+      const storeId = getCurrentStoreId()
+      const maxOrder = Math.max(...positions.map(p => p.display_order), 0)
+      
+      const { error } = await supabase
+        .from('cast_positions')
+        .insert({
+          store_id: storeId,
+          name: newPositionName,
+          display_order: maxOrder + 10,
+          is_active: true
+        })
+
+      if (error) throw error
+      
+      setNewPositionName('')
+      loadPositions()
+      alert('役職を追加しました')
+    } catch (error) {
+      console.error('Failed to add position:', error)
+      alert('役職の追加に失敗しました')
+    }
+  }
+
+  // 役職を削除（非アクティブ化）
+  const deletePosition = async (id: number) => {
+    if (!confirm('この役職を削除しますか？')) return
+
+    try {
+      const storeId = getCurrentStoreId()
+      const { error } = await supabase
+        .from('cast_positions')
+        .update({ is_active: false })
+        .eq('id', id)
+        .eq('store_id', storeId)
+
+      if (error) throw error
+      
+      loadPositions()
+      alert('役職を削除しました')
+    } catch (error) {
+      console.error('Failed to delete position:', error)
+      alert('役職の削除に失敗しました')
+    }
+  }
+
   // キャスト一覧を読み込む
   const loadCasts = async () => {
     try {
@@ -77,12 +158,66 @@ export default function CastManagement() {
     }
   }
 
+  // キャストの役職を更新
+  const updateCastPosition = async (cast: Cast, newPosition: string) => {
+    try {
+      const storeId = getCurrentStoreId()
+      
+      const { data, error } = await supabase
+        .from('casts')
+        .update({ 
+          attributes: newPosition,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', cast.id)
+        .eq('store_id', storeId)
+        .select()
+        .single()
+      
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      
+      // Google Apps Scriptに送信
+      try {
+        await fetch(gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'UPDATE',
+            table: 'casts',
+            record: {
+              ...data,
+              attributes: newPosition
+            },
+            old_record: {
+              ...data,
+              attributes: cast.attributes
+            }
+          })
+        })
+      } catch (gasError) {
+        console.error('GAS sync error:', gasError)
+      }
+      
+      setCasts(prev => prev.map(c => 
+        c.id === cast.id ? { ...c, attributes: newPosition } : c
+      ))
+    } catch (error) {
+      console.error('Error updating position:', error)
+      alert('役職の更新に失敗しました')
+    }
+  }
+
   // キャストのステータスを更新
   const updateCastStatus = async (cast: Cast, newStatus: string) => {
     try {
       const storeId = getCurrentStoreId()
       
-      // Supabaseを更新
       const { data, error } = await supabase
         .from('casts')
         .update({ 
@@ -99,7 +234,7 @@ export default function CastManagement() {
         throw error
       }
       
-      // 成功したらGoogle Apps Scriptに直接送信
+      // Google Apps Scriptに送信
       try {
         await fetch(gasUrl, {
           method: 'POST',
@@ -120,13 +255,10 @@ export default function CastManagement() {
             }
           })
         })
-        
-        console.log('Google Apps Script called successfully')
       } catch (gasError) {
         console.error('GAS sync error:', gasError)
       }
       
-      // UIを更新
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, status: newStatus } : c
       ))
@@ -136,13 +268,12 @@ export default function CastManagement() {
     }
   }
 
-  // キャストのPOS表示を切り替える関数（修正版）
+  // キャストのPOS表示を切り替える関数
   const toggleCastShowInPos = async (cast: Cast) => {
     try {
       const storeId = getCurrentStoreId()
       const newValue = !cast.show_in_pos
       
-      // Supabaseを更新
       const { data, error } = await supabase
         .from('casts')
         .update({ 
@@ -159,7 +290,7 @@ export default function CastManagement() {
         throw error
       }
       
-      // 成功したらGoogle Apps Scriptに直接送信
+      // Google Apps Scriptに送信
       try {
         await fetch(gasUrl, {
           method: 'POST',
@@ -180,13 +311,10 @@ export default function CastManagement() {
             }
           })
         })
-        
-        console.log('Google Apps Script called successfully')
       } catch (gasError) {
         console.error('GAS sync error:', gasError)
       }
       
-      // UIを更新
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, show_in_pos: newValue } : c
       ))
@@ -196,7 +324,7 @@ export default function CastManagement() {
     }
   }
 
-  // キャスト情報を更新する関数（修正版）
+  // キャスト情報を更新する関数
   const updateCast = async () => {
     if (!editingCast) return
 
@@ -222,7 +350,7 @@ export default function CastManagement() {
 
       if (error) throw error
       
-      // 成功したらGoogle Apps Scriptに直接送信
+      // Google Apps Scriptに送信
       try {
         await fetch(gasUrl, {
           method: 'POST',
@@ -237,8 +365,6 @@ export default function CastManagement() {
             old_record: oldCast
           })
         })
-        
-        console.log('Google Apps Script called successfully')
       } catch (gasError) {
         console.error('GAS sync error:', gasError)
       }
@@ -256,6 +382,7 @@ export default function CastManagement() {
   // 初回読み込み
   useEffect(() => {
     loadCasts()
+    loadPositions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -263,12 +390,12 @@ export default function CastManagement() {
   useEffect(() => {
     const filtered = casts.filter(cast => {
       const name = cast.name || ''
-      const attributes = cast.attributes || ''
+      const position = cast.attributes || ''
       const status = cast.status || ''
       const searchLower = searchTerm.toLowerCase()
       
       return name.toLowerCase().includes(searchLower) ||
-             attributes.toLowerCase().includes(searchLower) ||
+             position.toLowerCase().includes(searchLower) ||
              status.toLowerCase().includes(searchLower)
     })
     setFilteredCasts(filtered)
@@ -281,13 +408,30 @@ export default function CastManagement() {
       padding: '20px',
       boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
     }}>
-      <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>キャスト管理</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>キャスト管理</h2>
+        <button
+          onClick={() => setShowPositionModal(true)}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#4CAF50',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer'
+          }}
+        >
+          役職管理
+        </button>
+      </div>
 
       {/* 検索バー */}
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
-          placeholder="名前、属性、ステータスで検索..."
+          placeholder="名前、役職、ステータスで検索..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
@@ -306,25 +450,16 @@ export default function CastManagement() {
       <div style={{ 
         backgroundColor: '#f8f8f8',
         borderRadius: '8px',
-        overflow: 'hidden'
+        padding: '1px'
       }}>
         <div style={{ 
           maxHeight: '600px',
-          overflowY: 'auto',
-          overflowX: 'auto'
+          overflowY: 'auto'
         }}>
-          {/* グローバルCSSの影響を避けるためにdata-cast-tableを追加 */}
           <table data-cast-table style={{ 
             width: '100%',
-            minWidth: '800px',
             borderCollapse: 'collapse',
-            tableLayout: 'fixed',
-            backgroundColor: '#fff',
-            border: 'none',
-            borderRadius: '0',
-            height: 'auto',
-            position: 'static',
-            display: 'table'
+            backgroundColor: '#fff'
           }}>
             <thead style={{ 
               position: 'sticky',
@@ -339,8 +474,7 @@ export default function CastManagement() {
                   fontWeight: '600',
                   color: '#333',
                   backgroundColor: '#f0f0f0',
-                  borderBottom: '2px solid #e0e0e0',
-                  width: '20%'
+                  borderBottom: '2px solid #e0e0e0'
                 }}>名前</th>
                 <th style={{ 
                   padding: '12px 16px',
@@ -349,9 +483,8 @@ export default function CastManagement() {
                   fontWeight: '600',
                   color: '#333',
                   backgroundColor: '#f0f0f0',
-                  borderBottom: '2px solid #e0e0e0',
-                  width: '20%'
-                }}>属性</th>
+                  borderBottom: '2px solid #e0e0e0'
+                }}>役職</th>
                 <th style={{ 
                   padding: '12px 16px',
                   textAlign: 'left',
@@ -359,9 +492,7 @@ export default function CastManagement() {
                   fontWeight: '600',
                   color: '#333',
                   backgroundColor: '#f0f0f0',
-                  borderBottom: '2px solid #e0e0e0',
-                  width: '20%',
-                  minWidth: '120px'
+                  borderBottom: '2px solid #e0e0e0'
                 }}>ステータス</th>
                 <th style={{ 
                   padding: '12px 16px',
@@ -370,8 +501,7 @@ export default function CastManagement() {
                   fontWeight: '600',
                   color: '#333',
                   backgroundColor: '#f0f0f0',
-                  borderBottom: '2px solid #e0e0e0',
-                  width: '20%'
+                  borderBottom: '2px solid #e0e0e0'
                 }}>POS表示</th>
                 <th style={{ 
                   padding: '12px 16px',
@@ -380,8 +510,7 @@ export default function CastManagement() {
                   fontWeight: '600',
                   color: '#333',
                   backgroundColor: '#f0f0f0',
-                  borderBottom: '2px solid #e0e0e0',
-                  width: '20%'
+                  borderBottom: '2px solid #e0e0e0'
                 }}>操作</th>
               </tr>
             </thead>
@@ -389,33 +518,48 @@ export default function CastManagement() {
               {filteredCasts.map((cast) => (
                 <tr key={cast.id} style={{ 
                   borderBottom: '1px solid #e5e5e7',
-                  backgroundColor: '#fff',
-                  transition: 'background-color 0.2s',
-                  display: 'table-row'
+                  backgroundColor: '#fff'
                 }}>
                   <td style={{ 
                     padding: '12px 16px',
-                    fontSize: '14px',
-                    display: 'table-cell'
+                    fontSize: '14px'
                   }}>
                     {cast.name || '-'}
                   </td>
                   <td style={{ 
-                    padding: '12px 16px',
-                    fontSize: '14px',
-                    display: 'table-cell'
+                    padding: '12px 16px'
                   }}>
-                    {cast.attributes || '-'}
+                    <select
+                      value={cast.attributes || ''}
+                      onChange={(e) => updateCastPosition(cast, e.target.value)}
+                      style={{
+                        width: '100%',
+                        maxWidth: '150px',
+                        padding: '6px 10px',
+                        border: '1px solid #e5e5e7',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        backgroundColor: '#fff',
+                        color: '#000',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="">未設定</option>
+                      {positions.map(pos => (
+                        <option key={pos.id} value={pos.name}>{pos.name}</option>
+                      ))}
+                    </select>
                   </td>
                   <td style={{ 
-                    padding: '12px 16px',
-                    display: 'table-cell'
+                    padding: '12px 16px'
                   }}>
                     <select
                       value={cast.status || '在籍'}
                       onChange={(e) => updateCastStatus(cast, e.target.value)}
                       style={{
                         width: '100%',
+                        maxWidth: '120px',
                         padding: '6px 10px',
                         border: '1px solid #e5e5e7',
                         borderRadius: '6px',
@@ -423,14 +567,7 @@ export default function CastManagement() {
                         backgroundColor: getStatusColor(cast.status),
                         color: '#000',
                         outline: 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#007aff'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#e5e5e7'
+                        cursor: 'pointer'
                       }}
                     >
                       <option value="在籍">在籍</option>
@@ -441,30 +578,54 @@ export default function CastManagement() {
                   </td>
                   <td style={{ 
                     padding: '12px 16px',
-                    textAlign: 'center',
-                    display: 'table-cell'
+                    textAlign: 'center'
                   }}>
-                    <button
-                      onClick={() => toggleCastShowInPos(cast)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
+                    <label style={{
+                      position: 'relative',
+                      display: 'inline-block',
+                      width: '51px',
+                      height: '31px',
+                      cursor: 'pointer'
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={cast.show_in_pos || false}
+                        onChange={() => toggleCastShowInPos(cast)}
+                        style={{
+                          opacity: 0,
+                          width: 0,
+                          height: 0
+                        }}
+                      />
+                      <span style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
                         backgroundColor: cast.show_in_pos ? '#34c759' : '#e5e5e7',
-                        color: cast.show_in_pos ? '#fff' : '#666'
-                      }}
-                    >
-                      {cast.show_in_pos ? 'ON' : 'OFF'}
-                    </button>
+                        borderRadius: '34px',
+                        transition: 'background-color 0.3s',
+                        boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)'
+                      }}>
+                        <span style={{
+                          position: 'absolute',
+                          content: '',
+                          height: '27px',
+                          width: '27px',
+                          left: cast.show_in_pos ? '22px' : '2px',
+                          bottom: '2px',
+                          backgroundColor: 'white',
+                          borderRadius: '50%',
+                          transition: 'left 0.3s',
+                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                        }}></span>
+                      </span>
+                    </label>
                   </td>
                   <td style={{ 
                     padding: '12px 16px',
-                    textAlign: 'center',
-                    display: 'table-cell'
+                    textAlign: 'center'
                   }}>
                     <button
                       onClick={() => {
@@ -479,14 +640,7 @@ export default function CastManagement() {
                         borderRadius: '6px',
                         fontSize: '14px',
                         fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#0051d5'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#007aff'
+                        cursor: 'pointer'
                       }}
                     >
                       編集
@@ -498,6 +652,123 @@ export default function CastManagement() {
           </table>
         </div>
       </div>
+
+      {/* 役職管理モーダル */}
+      {showPositionModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '90%',
+            maxWidth: '500px',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <h3 style={{ 
+              fontSize: '18px', 
+              fontWeight: 'bold', 
+              marginBottom: '20px' 
+            }}>
+              役職管理
+            </h3>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                <input
+                  type="text"
+                  value={newPositionName}
+                  onChange={(e) => setNewPositionName(e.target.value)}
+                  placeholder="新しい役職名"
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    border: '1px solid #e5e5e7',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+                <button
+                  onClick={addPosition}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#4CAF50',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  追加
+                </button>
+              </div>
+              
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                {positions.map((pos) => (
+                  <div key={pos.id} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '10px',
+                    borderBottom: '1px solid #e5e5e7'
+                  }}>
+                    <span>{pos.name}</span>
+                    <button
+                      onClick={() => deletePosition(pos.id)}
+                      style={{
+                        padding: '4px 12px',
+                        backgroundColor: '#ff4444',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      削除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ 
+              marginTop: '24px', 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: '12px' 
+            }}>
+              <button
+                onClick={() => setShowPositionModal(false)}
+                style={{
+                  padding: '8px 20px',
+                  backgroundColor: '#f0f0f0',
+                  color: '#333',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 編集モーダル */}
       {showCastModal && editingCast && (
@@ -520,8 +791,7 @@ export default function CastManagement() {
             width: '90%',
             maxWidth: '400px',
             maxHeight: '80vh',
-            overflowY: 'auto',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+            overflowY: 'auto'
           }}>
             <h3 style={{ 
               fontSize: '18px', 
@@ -550,8 +820,7 @@ export default function CastManagement() {
                     padding: '8px 12px',
                     border: '1px solid #e5e5e7',
                     borderRadius: '6px',
-                    fontSize: '14px',
-                    outline: 'none'
+                    fontSize: '14px'
                   }}
                 />
               </div>
@@ -574,8 +843,7 @@ export default function CastManagement() {
                     padding: '8px 12px',
                     border: '1px solid #e5e5e7',
                     borderRadius: '6px',
-                    fontSize: '14px',
-                    outline: 'none'
+                    fontSize: '14px'
                   }}
                 />
               </div>
@@ -598,8 +866,7 @@ export default function CastManagement() {
                     padding: '8px 12px',
                     border: '1px solid #e5e5e7',
                     borderRadius: '6px',
-                    fontSize: '14px',
-                    outline: 'none'
+                    fontSize: '14px'
                   }}
                 />
               </div>
@@ -611,10 +878,9 @@ export default function CastManagement() {
                   fontWeight: '500', 
                   marginBottom: '4px' 
                 }}>
-                  属性
+                  役職
                 </label>
-                <input
-                  type="text"
+                <select
                   value={editingCast.attributes || ''}
                   onChange={(e) => setEditingCast({...editingCast, attributes: e.target.value})}
                   style={{
@@ -623,9 +889,15 @@ export default function CastManagement() {
                     border: '1px solid #e5e5e7',
                     borderRadius: '6px',
                     fontSize: '14px',
-                    outline: 'none'
+                    backgroundColor: '#fff',
+                    cursor: 'pointer'
                   }}
-                />
+                >
+                  <option value="">未設定</option>
+                  {positions.map(pos => (
+                    <option key={pos.id} value={pos.name}>{pos.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -646,7 +918,6 @@ export default function CastManagement() {
                     border: '1px solid #e5e5e7',
                     borderRadius: '6px',
                     fontSize: '14px',
-                    outline: 'none',
                     backgroundColor: '#fff',
                     cursor: 'pointer'
                   }}
@@ -690,8 +961,7 @@ export default function CastManagement() {
                   borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  cursor: 'pointer'
                 }}
               >
                 キャンセル
@@ -706,8 +976,7 @@ export default function CastManagement() {
                   borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  cursor: 'pointer'
                 }}
               >
                 保存
