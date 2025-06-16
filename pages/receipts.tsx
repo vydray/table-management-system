@@ -105,13 +105,15 @@ export default function Receipts() {
   // 日付変更時
   useEffect(() => {
     loadReceipts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
 
-  // 伝票選択時
+// 伝票選択時
   useEffect(() => {
     if (selectedReceipt) {
       loadOrderItems(selectedReceipt.id)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedReceipt])
 
   return (

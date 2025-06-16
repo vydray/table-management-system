@@ -300,11 +300,13 @@ export default function Report() {
 
   useEffect(() => {
     loadBusinessDayStartHour()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     loadMonthlyData()
     loadMonthlyTargets()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedYear, selectedMonth, businessDayStartHour])
 
   // 月次集計

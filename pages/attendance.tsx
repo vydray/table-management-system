@@ -251,8 +251,9 @@ export default function Attendance() {
     loadCasts()
   }, [])
 
-  useEffect(() => {
+useEffect(() => {
     loadAttendance()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
 
   // クリックイベントの処理（ドロップダウンを閉じる）
