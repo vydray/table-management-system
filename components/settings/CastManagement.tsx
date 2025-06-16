@@ -230,7 +230,13 @@ export default function CastManagement() {
     try {
       const storeId = getCurrentStoreId()
       
-      const updateData: any = {
+      interface UpdateData {
+        status: string
+        updated_at: string
+        retirement_date?: string | null
+      }
+      
+      const updateData: UpdateData = {
         status: newStatus,
         updated_at: new Date().toISOString()
       }
