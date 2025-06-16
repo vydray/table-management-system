@@ -80,12 +80,12 @@ export default function Settings() {
       
       if (settings) {
         setSystemSettings({
-          consumptionTaxRate: settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value * 100 || 10,
-          serviceChargeRate: settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value * 100 || 15,
+          consumptionTaxRate: (settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value ?? 0.1) * 100,
+          serviceChargeRate: (settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value ?? 0.15) * 100,
           roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
           roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
           businessDayStartHour: settings.find(s => s.setting_key === 'business_day_start_hour')?.setting_value || 5,
-          showOshiFirst: settings.find(s => s.setting_key === 'show_oshi_first')?.setting_value === 1
+          showOshiFirst: (settings.find(s => s.setting_key === 'show_oshi_first')?.setting_value ?? 0) === 1
         })
       }
     } catch (error) {
