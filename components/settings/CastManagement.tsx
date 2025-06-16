@@ -12,30 +12,36 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
 
-// キャストの型定義
+// キャストの型定義（正しいカラム名）
 interface Cast {
   id: number
   store_id: number
   name: string | null
-  line: string | null  // line_user_id を line に変更
-  password: string | null
+  line_number: string | null
   twitter: string | null
-  twitter_password: string | null  // 追加
+  password: string | null
   instagram: string | null
-  instagram_password: string | null  // 追加
+  password2: string | null
   photo: string | null
-  position: string | null  // attributes を position に変更
+  attributes: string | null
   is_writer: boolean | null
   submission_date: string | null
   back_number: string | null
   status: string | null
-  sales_previous_day: string | null  // boolean から string に変更
+  sales_previous_day: string | null
   cast_point: number | null
   show_in_pos: boolean | null
-  birth_date: string | null  // 追加
+  birthday: string | null
   created_at: string | null
   updated_at: string | null
-  retirement_date: string | null
+  resignation_date: string | null
+  attendance_certificate: boolean | null
+  residence_record: boolean | null
+  contract_documents: boolean | null
+  submission_contract: string | null
+  employee_name: string | null
+  experience_date: string | null
+  hire_date: string | null
 }
 
 // 役職の型定義
@@ -68,14 +74,14 @@ export default function CastManagement() {
     const data = {
       name: cast.name,
       showInPos: cast.show_in_pos,
-      position: cast.position,
+      position: cast.attributes,  // attributes → position
       status: cast.status,
-      line: cast.line,
+      line: cast.line_number,     // line_number → line
       twitter: cast.twitter,
-      twitter_password: cast.twitter_password,
+      twitter_password: cast.password,     // password → twitter_password
       instagram: cast.instagram,
-      instagram_password: cast.instagram_password,
-      birth_date: cast.birth_date
+      instagram_password: cast.password2,  // password2 → instagram_password
+      birth_date: cast.birthday            // birthday → birth_date
     }
     
     console.log('Sending to GAS:', data)
@@ -188,15 +194,7 @@ export default function CastManagement() {
 
       if (error) throw error
       
-      // データベースの attributes を position に、line_user_id を line にマッピング
-      const mappedData = (data || []).map(cast => ({
-        ...cast,
-        position: cast.attributes || cast.position,
-        line: cast.line_user_id || cast.line,
-        sales_previous_day: cast.sales_previous_day || '無'
-      }))
-      
-      setCasts(mappedData)
+      setCasts(data || [])
     } catch (error) {
       console.error('Failed to load casts:', error)
     }
@@ -210,7 +208,7 @@ export default function CastManagement() {
       const { error } = await supabase
         .from('casts')
         .update({ 
-          attributes: newPosition,  // データベースでは attributes として保存
+          attributes: newPosition,
           updated_at: new Date().toISOString()
         })
         .eq('id', cast.id)
@@ -224,11 +222,11 @@ export default function CastManagement() {
       }
       
       // 更新されたキャストをGASに送信
-      const updatedCast = { ...cast, position: newPosition }
+      const updatedCast = { ...cast, attributes: newPosition }
       sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
-        c.id === cast.id ? { ...c, position: newPosition } : c
+        c.id === cast.id ? { ...c, attributes: newPosition } : c
       ))
     } catch (error) {
       console.error('Error updating position:', error)
@@ -252,7 +250,7 @@ export default function CastManagement() {
       interface UpdateData {
         status: string
         updated_at: string
-        retirement_date?: string | null
+        resignation_date?: string | null
       }
       
       const updateData: UpdateData = {
@@ -262,7 +260,7 @@ export default function CastManagement() {
       
       // 退店以外のステータスに変更する場合は退店日をクリア
       if (newStatus !== '退店') {
-        updateData.retirement_date = null
+        updateData.resignation_date = null
       }
       
       const { error } = await supabase
@@ -279,7 +277,7 @@ export default function CastManagement() {
       }
       
       // 更新されたキャストをGASに送信
-      const updatedCast = { ...cast, status: newStatus, retirement_date: updateData.retirement_date || null }
+      const updatedCast = { ...cast, status: newStatus, resignation_date: updateData.resignation_date || null }
       sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
@@ -302,7 +300,7 @@ export default function CastManagement() {
         .from('casts')
         .update({ 
           status: '退店',
-          retirement_date: retirementDate,
+          resignation_date: retirementDate,
           updated_at: new Date().toISOString()
         })
         .eq('id', retirementCast.id)
@@ -316,7 +314,7 @@ export default function CastManagement() {
       }
       
       // 更新されたキャストをGASに送信
-      const updatedCast = { ...retirementCast, status: '退店', retirement_date: retirementDate }
+      const updatedCast = { ...retirementCast, status: '退店', resignation_date: retirementDate }
       sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
@@ -379,16 +377,16 @@ export default function CastManagement() {
         .from('casts')
         .update({
           name: editingCast.name || '',
-          line_user_id: editingCast.line || '',  // line を line_user_id として保存
+          line_number: editingCast.line_number || '',
           twitter: editingCast.twitter || '',
-          twitter_password: editingCast.twitter_password || '',
+          password: editingCast.password || '',
           instagram: editingCast.instagram || '',
-          instagram_password: editingCast.instagram_password || '',
-          attributes: editingCast.position || '',  // position を attributes として保存
+          password2: editingCast.password2 || '',
+          attributes: editingCast.attributes || '',
           status: editingCast.status || '',
           show_in_pos: editingCast.show_in_pos ?? true,
-          birth_date: editingCast.birth_date || null,
-          retirement_date: editingCast.retirement_date,
+          birthday: editingCast.birthday || null,
+          resignation_date: editingCast.resignation_date,
           updated_at: new Date().toISOString()
         })
         .eq('id', editingCast.id)
@@ -422,7 +420,7 @@ export default function CastManagement() {
   useEffect(() => {
     const filtered = casts.filter(cast => {
       const name = cast.name || ''
-      const position = cast.position || ''
+      const position = cast.attributes || ''
       const status = cast.status || ''
       const searchLower = searchTerm.toLowerCase()
       
@@ -476,14 +474,14 @@ export default function CastManagement() {
               const testData = {
                 name: firstCast.name,
                 showInPos: !firstCast.show_in_pos,
-                position: firstCast.position || '',
+                position: firstCast.attributes || '',
                 status: firstCast.status || '在籍',
-                line: firstCast.line || '',
+                line: firstCast.line_number || '',
                 twitter: firstCast.twitter || '',
-                twitter_password: firstCast.twitter_password || '',
+                twitter_password: firstCast.password || '',
                 instagram: firstCast.instagram || '',
-                instagram_password: firstCast.instagram_password || '',
-                birth_date: firstCast.birth_date || ''
+                instagram_password: firstCast.password2 || '',
+                birth_date: firstCast.birthday || ''
               }
               
               console.log('送信データ:', JSON.stringify(testData, null, 2))
@@ -622,13 +620,13 @@ export default function CastManagement() {
                     fontSize: '14px'
                   }}>
                     {cast.name || '-'}
-                    {cast.retirement_date && (
+                    {cast.resignation_date && (
                       <span style={{
                         marginLeft: '8px',
                         fontSize: '12px',
                         color: '#666'
                       }}>
-                        ({new Date(cast.retirement_date).toLocaleDateString('ja-JP')}退店)
+                        ({new Date(cast.resignation_date).toLocaleDateString('ja-JP')}退店)
                       </span>
                     )}
                   </td>
@@ -636,7 +634,7 @@ export default function CastManagement() {
                     padding: '12px 16px'
                   }}>
                     <select
-                      value={cast.position || ''}
+                      value={cast.attributes || ''}
                       onChange={(e) => updateCastPosition(cast, e.target.value)}
                       style={{
                         width: '100%',
@@ -1033,8 +1031,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
-                  value={editingCast.line || ''}
-                  onChange={(e) => setEditingCast({...editingCast, line: e.target.value})}
+                  value={editingCast.line_number || ''}
+                  onChange={(e) => setEditingCast({...editingCast, line_number: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -1079,8 +1077,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
-                  value={editingCast.twitter_password || ''}
-                  onChange={(e) => setEditingCast({...editingCast, twitter_password: e.target.value})}
+                  value={editingCast.password || ''}
+                  onChange={(e) => setEditingCast({...editingCast, password: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -1125,8 +1123,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
-                  value={editingCast.instagram_password || ''}
-                  onChange={(e) => setEditingCast({...editingCast, instagram_password: e.target.value})}
+                  value={editingCast.password2 || ''}
+                  onChange={(e) => setEditingCast({...editingCast, password2: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -1148,8 +1146,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="date"
-                  value={editingCast.birth_date || ''}
-                  onChange={(e) => setEditingCast({...editingCast, birth_date: e.target.value})}
+                  value={editingCast.birthday || ''}
+                  onChange={(e) => setEditingCast({...editingCast, birthday: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -1170,8 +1168,8 @@ export default function CastManagement() {
                   役職
                 </label>
                 <select
-                  value={editingCast.position || ''}
-                  onChange={(e) => setEditingCast({...editingCast, position: e.target.value})}
+                  value={editingCast.attributes || ''}
+                  onChange={(e) => setEditingCast({...editingCast, attributes: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -1230,8 +1228,8 @@ export default function CastManagement() {
                   </label>
                   <input
                     type="date"
-                    value={editingCast.retirement_date || ''}
-                    onChange={(e) => setEditingCast({...editingCast, retirement_date: e.target.value})}
+                    value={editingCast.resignation_date || ''}
+                    onChange={(e) => setEditingCast({...editingCast, resignation_date: e.target.value})}
                     style={{
                       width: '100%',
                       padding: '8px 12px',
