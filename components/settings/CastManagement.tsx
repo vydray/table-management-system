@@ -374,30 +374,28 @@ export default function CastManagement() {
         throw error
       }
       
-      // Google Apps Scriptに送信
-      try {
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
+      // Google Apps Scriptに送信（非同期、エラーを無視）
+      fetch(gasUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'UPDATE',
+          table: 'casts',
+          record: {
+            ...data,
+            show_in_pos: newValue
           },
-          body: JSON.stringify({
-            type: 'UPDATE',
-            table: 'casts',
-            record: {
-              ...data,
-              show_in_pos: newValue
-            },
-            old_record: {
-              ...data,
-              show_in_pos: cast.show_in_pos
-            }
-          })
+          old_record: {
+            ...data,
+            show_in_pos: cast.show_in_pos
+          }
         })
-      } catch (gasError) {
-        console.error('GAS sync error:', gasError)
-      }
+      }).catch(error => {
+        console.error('GAS sync error:', error)
+      })
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, show_in_pos: newValue } : c
