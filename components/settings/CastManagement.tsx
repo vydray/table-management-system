@@ -32,6 +32,7 @@ interface Cast {
   show_in_pos: boolean | null
   created_at: string | null
   updated_at: string | null
+  retirement_date: string | null  // 退店日を追加
 }
 
 // 役職の型定義
@@ -52,9 +53,12 @@ export default function CastManagement() {
   const [editingCast, setEditingCast] = useState<Cast | null>(null)
   const [showPositionModal, setShowPositionModal] = useState(false)
   const [newPositionName, setNewPositionName] = useState('')
+  const [showRetirementModal, setShowRetirementModal] = useState(false)
+  const [retirementDate, setRetirementDate] = useState('')
+  const [retirementCast, setRetirementCast] = useState<Cast | null>(null)
 
   // Google Apps ScriptのURL
-  const gasUrl = 'https://script.google.com/macros/s/AKfycbwp10byL5IEGbEJAKOxVAQ1dSdjQ3UNJTGJnJOZ6jp6JOCWiiFURaQiqfqyfo390NvgZg/exec'
+  const gasUrl = 'https://script.google.com/macros/s/AKfycbw193siFFyTAHwlDIJGFh6GonwWSYsIPHaGA3_0wMNIkm2-c8LGl7ny6vqZmzagdFQFCw/exec'
 
   // ステータスの背景色を取得
   const getStatusColor = (status: string | null) => {
@@ -215,15 +219,30 @@ export default function CastManagement() {
 
   // キャストのステータスを更新
   const updateCastStatus = async (cast: Cast, newStatus: string) => {
+    // 退店を選択した場合は退店日設定モーダルを表示
+    if (newStatus === '退店') {
+      setRetirementCast(cast)
+      setRetirementDate(new Date().toISOString().split('T')[0])
+      setShowRetirementModal(true)
+      return
+    }
+
     try {
       const storeId = getCurrentStoreId()
       
+      const updateData: any = {
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      }
+      
+      // 退店以外のステータスに変更する場合は退店日をクリア
+      if (newStatus !== '退店') {
+        updateData.retirement_date = null
+      }
+      
       const { data, error } = await supabase
         .from('casts')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', cast.id)
         .eq('store_id', storeId)
         .select()
@@ -245,14 +264,8 @@ export default function CastManagement() {
           body: JSON.stringify({
             type: 'UPDATE',
             table: 'casts',
-            record: {
-              ...data,
-              status: newStatus
-            },
-            old_record: {
-              ...data,
-              status: cast.status
-            }
+            record: data,
+            old_record: cast
           })
         })
       } catch (gasError) {
@@ -260,11 +273,68 @@ export default function CastManagement() {
       }
       
       setCasts(prev => prev.map(c => 
-        c.id === cast.id ? { ...c, status: newStatus } : c
+        c.id === cast.id ? { ...data } : c
       ))
     } catch (error) {
       console.error('Error updating status:', error)
       alert('ステータス更新に失敗しました')
+    }
+  }
+
+  // 退店処理
+  const confirmRetirement = async () => {
+    if (!retirementCast || !retirementDate) return
+
+    try {
+      const storeId = getCurrentStoreId()
+      
+      const { data, error } = await supabase
+        .from('casts')
+        .update({ 
+          status: '退店',
+          retirement_date: retirementDate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', retirementCast.id)
+        .eq('store_id', storeId)
+        .select()
+        .single()
+      
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      
+      // Google Apps Scriptに送信
+      try {
+        await fetch(gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'UPDATE',
+            table: 'casts',
+            record: data,
+            old_record: retirementCast
+          })
+        })
+      } catch (gasError) {
+        console.error('GAS sync error:', gasError)
+      }
+      
+      setCasts(prev => prev.map(c => 
+        c.id === retirementCast.id ? { ...data } : c
+      ))
+      
+      setShowRetirementModal(false)
+      setRetirementCast(null)
+      setRetirementDate('')
+      alert('退店処理が完了しました')
+    } catch (error) {
+      console.error('Error updating retirement:', error)
+      alert('退店処理に失敗しました')
     }
   }
 
@@ -341,6 +411,7 @@ export default function CastManagement() {
           attributes: editingCast.attributes || '',
           status: editingCast.status || '',
           show_in_pos: editingCast.show_in_pos ?? true,
+          retirement_date: editingCast.retirement_date,
           updated_at: new Date().toISOString()
         })
         .eq('id', editingCast.id)
@@ -525,6 +596,15 @@ export default function CastManagement() {
                     fontSize: '14px'
                   }}>
                     {cast.name || '-'}
+                    {cast.retirement_date && (
+                      <span style={{
+                        marginLeft: '8px',
+                        fontSize: '12px',
+                        color: '#666'
+                      }}>
+                        ({new Date(cast.retirement_date).toLocaleDateString('ja-JP')}退店)
+                      </span>
+                    )}
                   </td>
                   <td style={{ 
                     padding: '12px 16px'
@@ -652,6 +732,97 @@ export default function CastManagement() {
           </table>
         </div>
       </div>
+
+      {/* 退店日設定モーダル */}
+      {showRetirementModal && retirementCast && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1001
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '90%',
+            maxWidth: '400px'
+          }}>
+            <h3 style={{ 
+              fontSize: '18px', 
+              fontWeight: 'bold', 
+              marginBottom: '20px' 
+            }}>
+              退店日の設定
+            </h3>
+            
+            <p style={{ marginBottom: '20px', color: '#666' }}>
+              {retirementCast.name}さんの退店日を設定してください
+            </p>
+            
+            <input
+              type="date"
+              value={retirementDate}
+              onChange={(e) => setRetirementDate(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #e5e5e7',
+                borderRadius: '6px',
+                fontSize: '16px',
+                marginBottom: '20px'
+              }}
+            />
+            
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: '12px' 
+            }}>
+              <button
+                onClick={() => {
+                  setShowRetirementModal(false)
+                  setRetirementCast(null)
+                  setRetirementDate('')
+                }}
+                style={{
+                  padding: '8px 20px',
+                  backgroundColor: '#f0f0f0',
+                  color: '#333',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={confirmRetirement}
+                style={{
+                  padding: '8px 20px',
+                  backgroundColor: '#ff4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                退店処理
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 役職管理モーダル */}
       {showPositionModal && (
@@ -928,6 +1099,31 @@ export default function CastManagement() {
                   <option value="削除済み">削除済み</option>
                 </select>
               </div>
+
+              {editingCast.status === '退店' && (
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    marginBottom: '4px' 
+                  }}>
+                    退店日
+                  </label>
+                  <input
+                    type="date"
+                    value={editingCast.retirement_date || ''}
+                    onChange={(e) => setEditingCast({...editingCast, retirement_date: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #e5e5e7',
+                      borderRadius: '6px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              )}
 
               <div>
                 <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
