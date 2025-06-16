@@ -531,7 +531,7 @@ export default function CastManagement() {
               
               try {
                 console.log('送信中...')
-                const response = await fetch(gasUrl, {
+                await fetch(gasUrl, {
                   method: 'POST',
                   mode: 'no-cors',
                   headers: {
