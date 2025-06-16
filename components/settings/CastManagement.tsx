@@ -17,22 +17,25 @@ interface Cast {
   id: number
   store_id: number
   name: string | null
-  line_user_id: string | null
+  line: string | null  // line_user_id を line に変更
   password: string | null
   twitter: string | null
+  twitter_password: string | null  // 追加
   instagram: string | null
+  instagram_password: string | null  // 追加
   photo: string | null
-  attributes: string | null
+  position: string | null  // attributes を position に変更
   is_writer: boolean | null
   submission_date: string | null
   back_number: string | null
   status: string | null
-  sales_previous_day: boolean | null
+  sales_previous_day: string | null  // boolean から string に変更
   cast_point: number | null
   show_in_pos: boolean | null
+  birth_date: string | null  // 追加
   created_at: string | null
   updated_at: string | null
-  retirement_date: string | null  // 退店日を追加
+  retirement_date: string | null
 }
 
 // 役職の型定義
@@ -59,6 +62,35 @@ export default function CastManagement() {
 
   // Google Apps ScriptのURL
   const gasUrl = 'https://script.google.com/macros/s/AKfycbw193siFFyTAHwlDIJGFh6GonwWSYsIPHaGA3_0wMNIkm2-c8LGl7ny6vqZmzagdFQFCw/exec'
+
+  // GASに送信（シンプルな形式）
+  const sendToGAS = (cast: Cast) => {
+    const data = {
+      name: cast.name,
+      showInPos: cast.show_in_pos,
+      position: cast.position,
+      status: cast.status,
+      line: cast.line,
+      twitter: cast.twitter,
+      twitter_password: cast.twitter_password,
+      instagram: cast.instagram,
+      instagram_password: cast.instagram_password,
+      birth_date: cast.birth_date
+    }
+    
+    console.log('Sending to GAS:', data)
+    
+    fetch(gasUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    }).catch(error => {
+      console.error('GAS送信エラー:', error)
+    })
+  }
 
   // ステータスの背景色を取得
   const getStatusColor = (status: string | null) => {
@@ -91,7 +123,6 @@ export default function CastManagement() {
       setPositions(data || [])
     } catch (error) {
       console.error('Failed to load positions:', error)
-      // テーブルが存在しない場合はエラーを無視
     }
   }
 
@@ -156,7 +187,16 @@ export default function CastManagement() {
         .order('id')
 
       if (error) throw error
-      setCasts(data || [])
+      
+      // データベースの attributes を position に、line_user_id を line にマッピング
+      const mappedData = (data || []).map(cast => ({
+        ...cast,
+        position: cast.attributes || cast.position,
+        line: cast.line_user_id || cast.line,
+        sales_previous_day: cast.sales_previous_day || '無'
+      }))
+      
+      setCasts(mappedData)
     } catch (error) {
       console.error('Failed to load casts:', error)
     }
@@ -170,7 +210,7 @@ export default function CastManagement() {
       const { data, error } = await supabase
         .from('casts')
         .update({ 
-          attributes: newPosition,
+          attributes: newPosition,  // データベースでは attributes として保存
           updated_at: new Date().toISOString()
         })
         .eq('id', cast.id)
@@ -183,41 +223,12 @@ export default function CastManagement() {
         throw error
       }
       
-      // Google Apps Scriptに送信
-      try {
-        console.log('GAS送信開始:', {
-          url: gasUrl,
-          name: cast.name,
-          attributes: newPosition
-        })
-        
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            type: 'UPDATE',
-            table: 'casts',
-            record: {
-              ...data,
-              attributes: newPosition
-            },
-            old_record: {
-              ...data,
-              attributes: cast.attributes
-            }
-          })
-        })
-        
-        console.log('GAS送信完了')
-      } catch (gasError) {
-        console.error('GAS sync error:', gasError)
-      }
+      // 更新されたキャストをGASに送信
+      const updatedCast = { ...cast, position: newPosition }
+      sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
-        c.id === cast.id ? { ...c, attributes: newPosition } : c
+        c.id === cast.id ? { ...c, position: newPosition } : c
       ))
     } catch (error) {
       console.error('Error updating position:', error)
@@ -267,27 +278,12 @@ export default function CastManagement() {
         throw error
       }
       
-      // Google Apps Scriptに送信
-      try {
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            type: 'UPDATE',
-            table: 'casts',
-            record: data,
-            old_record: cast
-          })
-        })
-      } catch (gasError) {
-        console.error('GAS sync error:', gasError)
-      }
+      // 更新されたキャストをGASに送信
+      const updatedCast = { ...cast, status: newStatus, retirement_date: updateData.retirement_date || null }
+      sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
-        c.id === cast.id ? { ...data } : c
+        c.id === cast.id ? { ...updatedCast } : c
       ))
     } catch (error) {
       console.error('Error updating status:', error)
@@ -319,27 +315,12 @@ export default function CastManagement() {
         throw error
       }
       
-      // Google Apps Scriptに送信
-      try {
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            type: 'UPDATE',
-            table: 'casts',
-            record: data,
-            old_record: retirementCast
-          })
-        })
-      } catch (gasError) {
-        console.error('GAS sync error:', gasError)
-      }
+      // 更新されたキャストをGASに送信
+      const updatedCast = { ...retirementCast, status: '退店', retirement_date: retirementDate }
+      sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
-        c.id === retirementCast.id ? { ...data } : c
+        c.id === retirementCast.id ? { ...updatedCast } : c
       ))
       
       setShowRetirementModal(false)
@@ -374,28 +355,9 @@ export default function CastManagement() {
         throw error
       }
       
-      // Google Apps Scriptに送信（非同期、エラーを無視）
-      fetch(gasUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'UPDATE',
-          table: 'casts',
-          record: {
-            ...data,
-            show_in_pos: newValue
-          },
-          old_record: {
-            ...data,
-            show_in_pos: cast.show_in_pos
-          }
-        })
-      }).catch(error => {
-        console.error('GAS sync error:', error)
-      })
+      // 更新されたキャストをGASに送信
+      const updatedCast = { ...cast, show_in_pos: newValue }
+      sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, show_in_pos: newValue } : c
@@ -412,17 +374,20 @@ export default function CastManagement() {
 
     try {
       const storeId = getCurrentStoreId()
-      const oldCast = casts.find(c => c.id === editingCast.id)
       
       const { data, error } = await supabase
         .from('casts')
         .update({
           name: editingCast.name || '',
+          line_user_id: editingCast.line || '',  // line を line_user_id として保存
           twitter: editingCast.twitter || '',
+          twitter_password: editingCast.twitter_password || '',
           instagram: editingCast.instagram || '',
-          attributes: editingCast.attributes || '',
+          instagram_password: editingCast.instagram_password || '',
+          attributes: editingCast.position || '',  // position を attributes として保存
           status: editingCast.status || '',
           show_in_pos: editingCast.show_in_pos ?? true,
+          birth_date: editingCast.birth_date || null,
           retirement_date: editingCast.retirement_date,
           updated_at: new Date().toISOString()
         })
@@ -433,24 +398,8 @@ export default function CastManagement() {
 
       if (error) throw error
       
-      // Google Apps Scriptに送信
-      try {
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            type: 'UPDATE',
-            table: 'casts',
-            record: data,
-            old_record: oldCast
-          })
-        })
-      } catch (gasError) {
-        console.error('GAS sync error:', gasError)
-      }
+      // 更新されたキャストをGASに送信
+      sendToGAS(editingCast)
       
       alert('キャスト情報を更新しました')
       await loadCasts()
@@ -473,7 +422,7 @@ export default function CastManagement() {
   useEffect(() => {
     const filtered = casts.filter(cast => {
       const name = cast.name || ''
-      const position = cast.attributes || ''
+      const position = cast.position || ''
       const status = cast.status || ''
       const searchLower = searchTerm.toLowerCase()
       
@@ -520,26 +469,21 @@ export default function CastManagement() {
                 return
               }
               
+              console.log('送信するキャスト:', firstCast.name)
+              console.log('現在のPOS表示:', firstCast.show_in_pos)
+              
+              // POS表示を反転してテスト送信
               const testData = {
-                type: 'UPDATE',
-                table: 'casts',
-                record: {
-                  id: firstCast.id,
-                  name: firstCast.name,
-                  attributes: firstCast.attributes || 'メイド',  // 現在の役職または「メイド」
-                  status: firstCast.status || '在籍',
-                  show_in_pos: !firstCast.show_in_pos,  // POS表示を反転
-                  twitter: firstCast.twitter,
-                  instagram: firstCast.instagram,
-                  updated_at: new Date().toISOString()
-                },
-                old_record: {
-                  id: firstCast.id,
-                  name: firstCast.name,
-                  attributes: firstCast.attributes,
-                  status: firstCast.status,
-                  show_in_pos: firstCast.show_in_pos
-                }
+                name: firstCast.name,
+                showInPos: !firstCast.show_in_pos,
+                position: firstCast.position || '',
+                status: firstCast.status || '在籍',
+                line: firstCast.line || '',
+                twitter: firstCast.twitter || '',
+                twitter_password: firstCast.twitter_password || '',
+                instagram: firstCast.instagram || '',
+                instagram_password: firstCast.instagram_password || '',
+                birth_date: firstCast.birth_date || ''
               }
               
               console.log('送信データ:', JSON.stringify(testData, null, 2))
@@ -556,7 +500,7 @@ export default function CastManagement() {
                   body: JSON.stringify(testData)
                 })
                 console.log('送信完了')
-                alert(`送信完了！\n${firstCast.name}のデータを送信しました。\nスプレッドシートを確認してください。`)
+                alert(`送信完了！\n${firstCast.name}のPOS表示を${testData.showInPos ? 'ON' : 'OFF'}に送信しました。\nスプレッドシートを確認してください。`)
               } catch (error) {
                 console.error('エラー:', error)
                 alert('エラーが発生しました。コンソールを確認してください')
@@ -692,7 +636,7 @@ export default function CastManagement() {
                     padding: '12px 16px'
                   }}>
                     <select
-                      value={cast.attributes || ''}
+                      value={cast.position || ''}
                       onChange={(e) => updateCastPosition(cast, e.target.value)}
                       style={{
                         width: '100%',
@@ -1085,12 +1029,58 @@ export default function CastManagement() {
                   fontWeight: '500', 
                   marginBottom: '4px' 
                 }}>
+                  LINE
+                </label>
+                <input
+                  type="text"
+                  value={editingCast.line || ''}
+                  onChange={(e) => setEditingCast({...editingCast, line: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #e5e5e7',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  marginBottom: '4px' 
+                }}>
                   Twitter
                 </label>
                 <input
                   type="text"
                   value={editingCast.twitter || ''}
                   onChange={(e) => setEditingCast({...editingCast, twitter: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #e5e5e7',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  marginBottom: '4px' 
+                }}>
+                  Twitterパスワード
+                </label>
+                <input
+                  type="text"
+                  value={editingCast.twitter_password || ''}
+                  onChange={(e) => setEditingCast({...editingCast, twitter_password: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -1131,11 +1121,57 @@ export default function CastManagement() {
                   fontWeight: '500', 
                   marginBottom: '4px' 
                 }}>
+                  Instagramパスワード
+                </label>
+                <input
+                  type="text"
+                  value={editingCast.instagram_password || ''}
+                  onChange={(e) => setEditingCast({...editingCast, instagram_password: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #e5e5e7',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  marginBottom: '4px' 
+                }}>
+                  誕生日
+                </label>
+                <input
+                  type="date"
+                  value={editingCast.birth_date || ''}
+                  onChange={(e) => setEditingCast({...editingCast, birth_date: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #e5e5e7',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  marginBottom: '4px' 
+                }}>
                   役職
                 </label>
                 <select
-                  value={editingCast.attributes || ''}
-                  onChange={(e) => setEditingCast({...editingCast, attributes: e.target.value})}
+                  value={editingCast.position || ''}
+                  onChange={(e) => setEditingCast({...editingCast, position: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
