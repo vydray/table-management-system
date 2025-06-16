@@ -185,6 +185,12 @@ export default function CastManagement() {
       
       // Google Apps Scriptに送信
       try {
+        console.log('GAS送信開始:', {
+          url: gasUrl,
+          name: cast.name,
+          attributes: newPosition
+        })
+        
         await fetch(gasUrl, {
           method: 'POST',
           mode: 'no-cors',
@@ -204,6 +210,8 @@ export default function CastManagement() {
             }
           })
         })
+        
+        console.log('GAS送信完了')
       } catch (gasError) {
         console.error('GAS sync error:', gasError)
       }
@@ -506,23 +514,33 @@ export default function CastManagement() {
           <button
             onClick={async () => {
               console.log('=== GASデバッグ開始 ===')
+              
+              // 実在のキャストを使用
+              const firstCast = filteredCasts[0]
+              if (!firstCast) {
+                alert('キャストが存在しません')
+                return
+              }
+              
               const testData = {
                 type: 'UPDATE',
                 table: 'casts',
                 record: {
-                  id: 999,
-                  name: 'テストキャスト',
-                  attributes: 'テスト役職',
-                  status: '在籍',
-                  show_in_pos: true,
+                  id: firstCast.id,
+                  name: firstCast.name,
+                  attributes: firstCast.attributes || 'メイド',  // 現在の役職または「メイド」
+                  status: firstCast.status || '在籍',
+                  show_in_pos: !firstCast.show_in_pos,  // POS表示を反転
+                  twitter: firstCast.twitter,
+                  instagram: firstCast.instagram,
                   updated_at: new Date().toISOString()
                 },
                 old_record: {
-                  id: 999,
-                  name: 'テストキャスト',
-                  attributes: '旧役職',
-                  status: '在籍',
-                  show_in_pos: false
+                  id: firstCast.id,
+                  name: firstCast.name,
+                  attributes: firstCast.attributes,
+                  status: firstCast.status,
+                  show_in_pos: firstCast.show_in_pos
                 }
               }
               
@@ -540,7 +558,7 @@ export default function CastManagement() {
                   body: JSON.stringify(testData)
                 })
                 console.log('送信完了')
-                alert('送信完了！スプレッドシートを確認してください')
+                alert(`送信完了！\n${firstCast.name}のデータを送信しました。\nスプレッドシートを確認してください。`)
               } catch (error) {
                 console.error('エラー:', error)
                 alert('エラーが発生しました。コンソールを確認してください')
