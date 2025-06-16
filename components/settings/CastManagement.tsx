@@ -228,12 +228,37 @@ export default function CastManagement() {
               </tr>
             </thead>
             <tbody>
-              {filteredCasts.map((cast) => (
-                <tr key={cast.id} className="border-b hover:bg-gray-50">
-                  {/* 既存のコード */}
-                </tr>
-              ))}
-            </tbody>
+  {filteredCasts.map((cast) => (
+    <tr key={cast.id} className="border-b hover:bg-gray-50">
+      <td className="px-4 py-2">{cast.name || '-'}</td>
+      <td className="px-4 py-2">{cast.attributes || '-'}</td>
+      <td className="px-4 py-2">{cast.status || '-'}</td>
+      <td className="px-4 py-2 text-center">
+        <button
+          onClick={() => toggleCastShowInPos(cast)}
+          className={`px-3 py-1 rounded ${
+            cast.show_in_pos 
+              ? 'bg-green-500 text-white' 
+              : 'bg-gray-300 text-gray-700'
+          }`}
+        >
+          {cast.show_in_pos ? 'ON' : 'OFF'}
+        </button>
+      </td>
+      <td className="px-4 py-2 text-center">
+        <button
+          onClick={() => {
+            setEditingCast(cast)
+            setShowCastModal(true)
+          }}
+          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+        >
+          編集
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
           </table>
         </div>
       </div>
