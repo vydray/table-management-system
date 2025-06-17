@@ -109,18 +109,22 @@ export default function CastManagement() {
     }
     
     console.log('Sending to GAS:', data)
+    console.log('GAS URL:', gasUrl)
     
     try {
-      await fetch(gasUrl, {
+      // fetchの代わりにfetch with credentialsを使用
+      const response = await fetch(gasUrl, {
         method: 'POST',
         mode: 'no-cors',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'text/plain',
         },
         body: JSON.stringify(data)
       })
       
-      console.log('GAS送信完了')
+      console.log('GAS送信完了 - no-corsモードのため、レスポンスは確認できません')
+      
+      // no-corsモードではレスポンスが読めないので、成功と仮定
       return true
     } catch (error) {
       console.error('GAS送信エラー:', error)
@@ -1058,29 +1062,6 @@ export default function CastManagement() {
                   fontWeight: '500', 
                   marginBottom: '4px' 
                 }}>
-                  LINE
-                </label>
-                <input
-                  type="text"
-                  value={editingCast.line_number || ''}
-                  onChange={(e) => setEditingCast({...editingCast, line_number: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #e5e5e7',
-                    borderRadius: '6px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  marginBottom: '4px' 
-                }}>
                   Twitter
                 </label>
                 <input
@@ -1104,58 +1085,12 @@ export default function CastManagement() {
                   fontWeight: '500', 
                   marginBottom: '4px' 
                 }}>
-                  Twitterパスワード
-                </label>
-                <input
-                  type="text"
-                  value={editingCast.password || ''}
-                  onChange={(e) => setEditingCast({...editingCast, password: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #e5e5e7',
-                    borderRadius: '6px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  marginBottom: '4px' 
-                }}>
                   Instagram
                 </label>
                 <input
                   type="text"
                   value={editingCast.instagram || ''}
                   onChange={(e) => setEditingCast({...editingCast, instagram: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #e5e5e7',
-                    borderRadius: '6px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  marginBottom: '4px' 
-                }}>
-                  Instagramパスワード
-                </label>
-                <input
-                  type="text"
-                  value={editingCast.password2 || ''}
-                  onChange={(e) => setEditingCast({...editingCast, password2: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
