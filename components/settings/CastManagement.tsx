@@ -275,7 +275,7 @@ export default function CastManagement() {
     try {
       const storeId = getStoreIdAsNumber()
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('casts')
         .update({ 
           attributes: newPosition,
@@ -335,7 +335,7 @@ export default function CastManagement() {
         updateData.resignation_date = null
       }
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('casts')
         .update(updateData)
         .eq('id', cast.id)
@@ -370,7 +370,7 @@ export default function CastManagement() {
     try {
       const storeId = getStoreIdAsNumber()
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('casts')
         .update({ 
           status: '退店',
@@ -411,7 +411,7 @@ export default function CastManagement() {
       const storeId = getStoreIdAsNumber()
       const newValue = !cast.show_in_pos
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('casts')
         .update({ 
           show_in_pos: newValue,
@@ -449,7 +449,7 @@ export default function CastManagement() {
     try {
       const storeId = getStoreIdAsNumber()
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('casts')
         .update({
           name: editingCast.name || '',
