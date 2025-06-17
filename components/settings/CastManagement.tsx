@@ -1,23 +1,33 @@
 import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../../utils/storeContext'
 
-// Supabaseクライアントの初期化を確認
+// Supabaseクライアントの初期化
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables')
+  throw new Error('Missing Supabase environment variables')
 }
 
-const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
+const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey)
 
 // getCurrentStoreIdの結果を数値に変換するヘルパー関数
 const getStoreIdAsNumber = (): number => {
   // 型アサーションを使って一時的に回避
   const storeId = getCurrentStoreId() as unknown as string
   const numericId = parseInt(storeId)
-  return isNaN(numericId) ? 1 : numericId
+  
+  // デバッグ用ログ
+  console.log('Store ID conversion:', { original: storeId, numeric: numericId })
+  
+  // デフォルトは1ではなく、エラーを明確にする
+  if (isNaN(numericId) || numericId <= 0) {
+    console.error('Invalid store ID:', storeId)
+    return 1 // または throw new Error('Invalid store ID')
+  }
+  
+  return numericId
 }
 
 // キャストの型定義（正しいカラム名）
@@ -170,17 +180,24 @@ export default function CastManagement() {
   const loadCasts = async () => {
     try {
       const storeId = getStoreIdAsNumber()
+      console.log('Loading casts for store_id:', storeId) // デバッグ用
+      
       const { data, error } = await supabase
         .from('casts')
         .select('*')
         .eq('store_id', storeId)
         .order('id')
 
-      if (error) throw error
+      if (error) {
+        console.error('Failed to load casts:', error)
+        throw error
+      }
       
+      console.log('Loaded casts:', data) // デバッグ用
       setCasts(data || [])
     } catch (error) {
       console.error('Failed to load casts:', error)
+      alert('キャスト一覧の読み込みに失敗しました: ' + (error as Error).message)
     }
   }
 
@@ -188,32 +205,21 @@ export default function CastManagement() {
   const addNewCast = async () => {
     if (!editingCast) return
     
+    // 必須フィールドを含む新規キャストデータ
     const newCast = {
       name: editingCast.name || '新規キャスト',
       store_id: getStoreIdAsNumber(),
       status: editingCast.status || '体験',
       show_in_pos: editingCast.show_in_pos ?? false,
       attributes: editingCast.attributes || null,
-      line_number: null,
       twitter: editingCast.twitter || null,
       instagram: editingCast.instagram || null,
-      password: null,
-      password2: null,
       birthday: editingCast.birthday || null,
       experience_date: editingCast.experience_date || null,
       hire_date: editingCast.hire_date || null,
-      photo: null,
-      is_writer: false,
-      submission_date: null,
-      back_number: null,
-      sales_previous_day: '無',
-      cast_point: 0,
-      resignation_date: null,
-      attendance_certificate: false,
-      residence_record: false,
-      contract_documents: false,
-      submission_contract: null,
-      employee_name: null
+      // 以下のフィールドはデフォルト値を設定
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
     
     try {
@@ -306,13 +312,7 @@ export default function CastManagement() {
     try {
       const storeId = getStoreIdAsNumber()
       
-      interface UpdateData {
-        status: string
-        updated_at: string
-        resignation_date?: string | null
-      }
-      
-      const updateData: UpdateData = {
+      const updateData: Record<string, any> = {
         status: newStatus,
         updated_at: new Date().toISOString()
       }
@@ -424,27 +424,29 @@ export default function CastManagement() {
     try {
       const storeId = getStoreIdAsNumber()
       
+      const updateData: Record<string, any> = {
+        name: editingCast.name || '',
+        twitter: editingCast.twitter || '',
+        instagram: editingCast.instagram || '',
+        attributes: editingCast.attributes || '',
+        status: editingCast.status || '',
+        show_in_pos: editingCast.show_in_pos ?? true,
+        birthday: editingCast.birthday || null,
+        resignation_date: editingCast.resignation_date,
+        attendance_certificate: editingCast.attendance_certificate || false,
+        residence_record: editingCast.residence_record || false,
+        contract_documents: editingCast.contract_documents || false,
+        submission_contract: editingCast.submission_contract || '',
+        employee_name: editingCast.employee_name || '',
+        experience_date: editingCast.experience_date || null,
+        hire_date: editingCast.hire_date || null,
+        sales_previous_day: editingCast.sales_previous_day || '無',
+        updated_at: new Date().toISOString()
+      }
+      
       const { error } = await supabase
         .from('casts')
-        .update({
-          name: editingCast.name || '',
-          twitter: editingCast.twitter || '',
-          instagram: editingCast.instagram || '',
-          attributes: editingCast.attributes || '',
-          status: editingCast.status || '',
-          show_in_pos: editingCast.show_in_pos ?? true,
-          birthday: editingCast.birthday || null,
-          resignation_date: editingCast.resignation_date,
-          attendance_certificate: editingCast.attendance_certificate || false,
-          residence_record: editingCast.residence_record || false,
-          contract_documents: editingCast.contract_documents || false,
-          submission_contract: editingCast.submission_contract || '',
-          employee_name: editingCast.employee_name || '',
-          experience_date: editingCast.experience_date || null,
-          hire_date: editingCast.hire_date || null,
-          sales_previous_day: editingCast.sales_previous_day || '無',
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', editingCast.id)
         .eq('store_id', storeId)
 
@@ -462,6 +464,21 @@ export default function CastManagement() {
 
   // 初回読み込み
   useEffect(() => {
+    // Supabase接続テスト
+    const testConnection = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('casts')
+          .select('count')
+          .single()
+        
+        console.log('Supabase connection test:', { data, error })
+      } catch (err) {
+        console.error('Supabase connection error:', err)
+      }
+    }
+    
+    testConnection()
     loadCasts()
     loadPositions()
   }, [])
