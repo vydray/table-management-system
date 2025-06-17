@@ -192,6 +192,52 @@ export default function Settings() {
     }
   }
 
+  // カテゴリーを削除する関数
+  const deleteCategory = async (id: number) => {
+    const category = categories.find(c => c.id === id)
+    if (!category) return
+
+    if (!confirm(`「${category.name}」カテゴリーを削除しますか？\n\n※このカテゴリーに属する商品も全て削除されます`)) {
+      return
+    }
+
+    try {
+      const storeId = getCurrentStoreId()
+      
+      // まず、このカテゴリーに属する商品を削除
+      const { error: productsError } = await supabase
+        .from('products')
+        .delete()
+        .eq('category_id', id)
+        .eq('store_id', storeId)
+      
+      if (productsError) throw productsError
+
+      // カテゴリーを削除
+      const { error } = await supabase
+        .from('product_categories')
+        .delete()
+        .eq('id', id)
+        .eq('store_id', storeId)
+      
+      if (error) throw error
+      
+      loadCategories()
+      // カテゴリーが削除されたら商品リストも更新
+      if (selectedCategoryId === id) {
+        setSelectedCategoryId(null)
+        setProducts([])
+      } else {
+        loadProducts(selectedCategoryId || undefined)
+      }
+      
+      alert('カテゴリーと関連商品を削除しました')
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      alert('削除に失敗しました')
+    }
+  }
+
   // カテゴリー名を更新する関数
   const updateCategoryName = async (id: number) => {
     try {
@@ -322,6 +368,33 @@ export default function Settings() {
     } catch (error) {
       console.error('Error adding product:', error)
       alert('追加に失敗しました')
+    }
+  }
+
+  // 商品を削除する関数
+  const deleteProduct = async (id: number) => {
+    const product = products.find(p => p.id === id)
+    if (!product) return
+
+    if (!confirm(`「${product.name}」を削除しますか？`)) {
+      return
+    }
+
+    try {
+      const storeId = getCurrentStoreId()
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id)
+        .eq('store_id', storeId)
+      
+      if (error) throw error
+      
+      loadProducts(selectedCategoryId || undefined)
+      alert('商品を削除しました')
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      alert('削除に失敗しました')
     }
   }
 
@@ -939,11 +1012,11 @@ export default function Settings() {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid #ddd' }}>
-                        <th style={{ padding: '10px', textAlign: 'left', width: '40%' }}>商品名</th>
+                        <th style={{ padding: '10px', textAlign: 'left', width: '35%' }}>商品名</th>
                         <th style={{ padding: '10px', width: '120px', textAlign: 'right' }}>価格</th>
                         <th style={{ padding: '10px', width: '100px', textAlign: 'center' }}>キャスト</th>
                         <th style={{ padding: '10px', width: '80px', textAlign: 'center' }}>表示</th>
-                        <th style={{ padding: '10px', width: '100px', textAlign: 'center' }}>操作</th>
+                        <th style={{ padding: '10px', width: '150px', textAlign: 'center' }}>操作</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1045,22 +1118,37 @@ export default function Settings() {
                           </td>
                           <td style={{ padding: '10px', textAlign: 'center' }}>
                             {!isSortMode && (
-                              <button
-                                onClick={() => {
-                                  setEditingProduct(product)
-                                  setIsEditModalOpen(true)
-                                }}
-                                style={{
-                                  padding: '4px 12px',
-                                  backgroundColor: '#2196F3',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                編集
-                              </button>
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                <button
+                                  onClick={() => {
+                                    setEditingProduct(product)
+                                    setIsEditModalOpen(true)
+                                  }}
+                                  style={{
+                                    padding: '4px 12px',
+                                    backgroundColor: '#2196F3',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  編集
+                                </button>
+                                <button
+                                  onClick={() => deleteProduct(product.id)}
+                                  style={{
+                                    padding: '4px 12px',
+                                    backgroundColor: '#f44336',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  削除
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -1152,7 +1240,7 @@ export default function Settings() {
                       <tr style={{ borderBottom: '2px solid #ddd' }}>
                         <th style={{ padding: '10px', textAlign: 'left' }}>カテゴリー名</th>
                         <th style={{ padding: '10px', width: '120px', textAlign: 'center' }}>推し優先表示</th>
-                        <th style={{ padding: '10px', width: '100px' }}>操作</th>
+                        <th style={{ padding: '10px', width: '150px' }}>操作</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1247,22 +1335,37 @@ export default function Settings() {
                           </td>
                           <td style={{ padding: '10px', textAlign: 'center' }}>
                             {!isCategorySortMode && (
-                              <button
-                                onClick={() => {
-                                  setEditingCategoryId(category.id)
-                                  setEditingCategoryName(category.name)
-                                }}
-                                style={{
-                                  padding: '4px 12px',
-                                  backgroundColor: '#2196F3',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                編集
-                              </button>
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                <button
+                                  onClick={() => {
+                                    setEditingCategoryId(category.id)
+                                    setEditingCategoryName(category.name)
+                                  }}
+                                  style={{
+                                    padding: '4px 12px',
+                                    backgroundColor: '#2196F3',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  編集
+                                </button>
+                                <button
+                                  onClick={() => deleteCategory(category.id)}
+                                  style={{
+                                    padding: '4px 12px',
+                                    backgroundColor: '#f44336',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  削除
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
