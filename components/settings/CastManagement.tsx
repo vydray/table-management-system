@@ -78,12 +78,11 @@ export default function CastManagement() {
   // スプレッドシート連携機能を削除（コメントアウト）
   // const gasUrl = 'https://script.google.com/macros/s/AKfycbw193siFFyTAHwlDIJGFh6GonwWSYsIPHaGA3_0wMNIkm2-c8LGl7ny6vqZmzagdFQFCw/exec'
   
-  // GAS送信機能を無効化
-  const sendToGAS = async (cast: Cast, isNewCast: boolean = false) => {
-    // スプレッドシート連携を無効化
-    console.log('スプレッドシート連携は無効化されています')
-    return true
-  }
+  // GAS送信機能を無効化（完全に削除）
+  // const sendToGAS = async (cast: Cast, isNewCast: boolean = false) => {
+  //   console.log('スプレッドシート連携は無効化されています')
+  //   return true
+  // }
 
   // ステータスの背景色を取得
   const getStatusColor = (status: string | null) => {
@@ -214,9 +213,6 @@ export default function CastManagement() {
       
       if (error) throw error
       
-      // スプレッドシート連携は無効化
-      // await sendToGAS(data, true)
-      
       alert('新規キャストを追加しました')
       await loadCasts()
       setShowCastModal(false)
@@ -274,9 +270,6 @@ export default function CastManagement() {
         throw error
       }
       
-      // スプレッドシート連携は無効化
-      // await sendToGAS(updatedCast)
-      
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, attributes: newPosition } : c
       ))
@@ -331,9 +324,6 @@ export default function CastManagement() {
       // 更新されたキャストの状態を定義
       const updatedCast = { ...cast, status: newStatus, resignation_date: updateData.resignation_date || null }
       
-      // スプレッドシート連携は無効化
-      // await sendToGAS(updatedCast)
-      
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...updatedCast } : c
       ))
@@ -370,9 +360,6 @@ export default function CastManagement() {
       // 更新されたキャストの状態を定義
       const updatedCast = { ...retirementCast, status: '退店', resignation_date: retirementDate }
       
-      // スプレッドシート連携は無効化
-      // await sendToGAS(updatedCast)
-      
       setCasts(prev => prev.map(c => 
         c.id === retirementCast.id ? { ...updatedCast } : c
       ))
@@ -406,9 +393,6 @@ export default function CastManagement() {
         console.error('Supabase error:', error)
         throw error
       }
-      
-      // スプレッドシート連携は無効化
-      // await sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, show_in_pos: newValue } : c
@@ -453,9 +437,6 @@ export default function CastManagement() {
         .eq('store_id', storeId)
 
       if (error) throw error
-      
-      // スプレッドシート連携は無効化
-      // await sendToGAS(editingCast)
       
       alert('キャスト情報を更新しました')
       await loadCasts()
