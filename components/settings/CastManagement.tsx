@@ -205,16 +205,16 @@ export default function CastManagement() {
     }
     
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('casts')
         .insert(newCast)
-        .select()
-        .single()
       
       if (error) throw error
       
       alert('新規キャストを追加しました')
       await loadCasts()
+      setShowCastModal(false)
+      setEditingCast(null)
       setShowCastModal(false)
       setEditingCast(null)
     } catch (error) {
