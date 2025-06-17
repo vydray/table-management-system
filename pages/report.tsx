@@ -84,6 +84,64 @@ export default function Report() {
     tiktokFollowers: 0
   })
 
+  // 勤怠データから内勤・キャストの人数を取得
+  const getAttendanceCounts = async (dateStr: string) => {
+    try {
+      const storeId = getCurrentStoreId()
+      
+      // 日付から月と日を抽出（例: "12月25日" → month: 12, day: 25）
+      const matches = dateStr.match(/(\d+)月(\d+)日/)
+      if (!matches) return { staffCount: 0, castCount: 0 }
+      
+      const month = parseInt(matches[1])
+      const day = parseInt(matches[2])
+      const date = `${selectedYear}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+      
+      // 出勤している人の勤怠データを取得
+      const { data: attendanceData } = await supabase
+        .from('attendance')
+        .select('cast_name')
+        .eq('store_id', storeId)
+        .eq('date', date)
+        .eq('status', '出勤')
+      
+      if (!attendanceData || attendanceData.length === 0) {
+        return { staffCount: 0, castCount: 0 }
+      }
+      
+      // キャスト名のリストを取得
+      const castNames = attendanceData.map(a => a.cast_name)
+      
+      // キャストの役職情報を取得
+      const { data: castsData } = await supabase
+        .from('casts')
+        .select('name, attributes')
+        .eq('store_id', storeId)
+        .in('name', castNames)
+      
+      if (!castsData) {
+        return { staffCount: 0, castCount: castNames.length }
+      }
+      
+      // 内勤とキャストを分類
+      let staffCount = 0
+      let castCount = 0
+      
+      castsData.forEach(cast => {
+        if (cast.attributes === '内勤') {
+          staffCount++
+        } else {
+          castCount++
+        }
+      })
+      
+      return { staffCount, castCount }
+    } catch (error) {
+      console.error('Error getting attendance counts:', error)
+      return { staffCount: 0, castCount: 0 }
+    }
+  }
+
   // 月次目標を読み込む
   const loadMonthlyTargets = async () => {
     try {
@@ -260,8 +318,12 @@ export default function Report() {
   }
 
   // 日別詳細を開く
-  const openDailyReport = (day: DailyData) => {
+  const openDailyReport = async (day: DailyData) => {
     setSelectedDate(day.date)
+    
+    // 勤怠データから内勤とキャストの人数を取得
+    const { staffCount, castCount } = await getAttendanceCounts(day.date)
+    
     setDailyReportData({
       date: day.date,
       eventName: '無し',
@@ -276,8 +338,8 @@ export default function Report() {
       incomeAmount: 0,
       expenseAmount: 0,
       balance: day.totalSales,
-      staffCount: 2,
-      castCount: 5,
+      staffCount: staffCount,
+      castCount: castCount,
       remarks: '',
       twitterFollowers: 0,
       instagramFollowers: 0,
