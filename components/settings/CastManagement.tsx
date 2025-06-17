@@ -15,7 +15,7 @@ const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
 // getCurrentStoreIdの結果を数値に変換するヘルパー関数
 const getStoreIdAsNumber = (): number => {
   // 型アサーションを使って一時的に回避
-  const storeId = getCurrentStoreId() as any
+  const storeId = getCurrentStoreId() as unknown as string
   const numericId = parseInt(storeId)
   return isNaN(numericId) ? 1 : numericId
 }
@@ -493,7 +493,6 @@ export default function CastManagement() {
   useEffect(() => {
     loadCasts()
     loadPositions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 検索処理
