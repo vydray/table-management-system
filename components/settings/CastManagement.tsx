@@ -12,6 +12,42 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey)
 
+// ユーザーのstore_idを取得する関数
+const getUserStoreId = async (): Promise<number> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      throw new Error('ユーザーが認証されていません')
+    }
+    
+    // usersテーブルからstore_idを取得
+    const { data, error } = await supabase
+      .from('users')
+      .select('store_id')
+      .eq('id', user.id)
+      .single()
+    
+    if (error) {
+      console.error('Failed to get user store_id:', error)
+      throw error
+    }
+    
+    if (!data || !data.store_id) {
+      throw new Error('ユーザーのstore_idが見つかりません')
+    }
+    
+    console.log('User store_id:', data.store_id)
+    return data.store_id
+  } catch (error) {
+    console.error('Error getting user store_id:', error)
+    // フォールバックとして getCurrentStoreId を使用
+    const storeId = getCurrentStoreId() as unknown as string
+    const numericId = parseInt(storeId)
+    return isNaN(numericId) || numericId <= 0 ? 1 : numericId
+  }
+}
+
 // getCurrentStoreIdの結果を数値に変換するヘルパー関数
 const getStoreIdAsNumber = (): number => {
   // 型アサーションを使って一時的に回避
@@ -83,6 +119,8 @@ export default function CastManagement() {
   const [showRetirementModal, setShowRetirementModal] = useState(false)
   const [retirementDate, setRetirementDate] = useState('')
   const [retirementCast, setRetirementCast] = useState<Cast | null>(null)
+  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null)
+  const [stores, setStores] = useState<Array<{id: number, name: string}>>([])
   const [isNewCast, setIsNewCast] = useState(false)
 
   // スプレッドシート連携機能を削除（コメントアウト）
@@ -176,24 +214,41 @@ export default function CastManagement() {
     }
   }
 
-  // キャスト一覧を読み込む
+  // キャスト一覧を読み込む（管理者対応版）
   const loadCasts = async () => {
     try {
-      const storeId = getStoreIdAsNumber()
-      console.log('Loading casts for store_id:', storeId) // デバッグ用
+      // 現在のユーザー情報を取得
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('認証されていません')
       
-      const { data, error } = await supabase
-        .from('casts')
-        .select('*')
-        .eq('store_id', storeId)
-        .order('id')
-
+      // ユーザーの詳細情報を取得
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('store_id, is_admin')  // is_adminフィールドがある場合
+        .eq('id', user.id)
+        .single()
+      
+      if (userError) throw userError
+      
+      let query = supabase.from('casts').select('*')
+      
+      // 管理者でない場合は、自分の店舗のみ表示
+      if (!userData?.is_admin) {
+        const storeId = userData?.store_id || getStoreIdAsNumber()
+        console.log('Loading casts for store_id:', storeId)
+        query = query.eq('store_id', storeId)
+      } else {
+        console.log('Loading all casts (admin mode)')
+      }
+      
+      const { data, error } = await query.order('id')
+      
       if (error) {
         console.error('Failed to load casts:', error)
         throw error
       }
       
-      console.log('Loaded casts:', data) // デバッグ用
+      console.log('Loaded casts:', data)
       setCasts(data || [])
     } catch (error) {
       console.error('Failed to load casts:', error)
@@ -312,7 +367,7 @@ export default function CastManagement() {
     try {
       const storeId = getStoreIdAsNumber()
       
-      const updateData: Record<string, any> = {
+      const updateData: Record<string, unknown> = {
         status: newStatus,
         updated_at: new Date().toISOString()
       }
@@ -334,7 +389,11 @@ export default function CastManagement() {
       }
       
       // 更新されたキャストの状態を定義
-      const updatedCast = { ...cast, status: newStatus, resignation_date: updateData.resignation_date || null }
+      const updatedCast = { 
+        ...cast, 
+        status: newStatus, 
+        resignation_date: (updateData.resignation_date as string | null) || null 
+      }
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...updatedCast } : c
@@ -424,7 +483,7 @@ export default function CastManagement() {
     try {
       const storeId = getStoreIdAsNumber()
       
-      const updateData: Record<string, any> = {
+      const updateData: Record<string, unknown> = {
         name: editingCast.name || '',
         twitter: editingCast.twitter || '',
         instagram: editingCast.instagram || '',
