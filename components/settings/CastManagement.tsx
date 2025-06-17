@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../../utils/storeContext'
 
-// Supabaseクライアントの初期化
+// Supabaseクライアントをモジュール外で一度だけ初期化
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -10,21 +10,30 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // getCurrentStoreIdの結果を数値に変換するヘルパー関数
 const getStoreIdAsNumber = (): number => {
-  // 型アサーションを使って一時的に回避
-  const storeId = getCurrentStoreId() as unknown as string
-  const numericId = parseInt(storeId)
-  
+  const storeId = getCurrentStoreId()
   // デバッグ用ログ
+  console.log('getCurrentStoreId result:', storeId)
+  
+  // 文字列または数値として処理
+  let numericId: number
+  if (typeof storeId === 'string') {
+    numericId = parseInt(storeId)
+  } else if (typeof storeId === 'number') {
+    numericId = storeId
+  } else {
+    console.error('Invalid store ID type:', typeof storeId, storeId)
+    numericId = 1
+  }
+  
   console.log('Store ID conversion:', { original: storeId, numeric: numericId })
   
-  // デフォルトは1ではなく、エラーを明確にする
   if (isNaN(numericId) || numericId <= 0) {
     console.error('Invalid store ID:', storeId)
-    return 1 // または throw new Error('Invalid store ID')
+    return 1
   }
   
   return numericId
@@ -84,15 +93,6 @@ export default function CastManagement() {
   const [retirementDate, setRetirementDate] = useState('')
   const [retirementCast, setRetirementCast] = useState<Cast | null>(null)
   const [isNewCast, setIsNewCast] = useState(false)
-
-  // スプレッドシート連携機能を削除（コメントアウト）
-  // const gasUrl = 'https://script.google.com/macros/s/AKfycbw193siFFyTAHwlDIJGFh6GonwWSYsIPHaGA3_0wMNIkm2-c8LGl7ny6vqZmzagdFQFCw/exec'
-  
-  // GAS送信機能を無効化（完全に削除）
-  // const sendToGAS = async (cast: Cast, isNewCast: boolean = false) => {
-  //   console.log('スプレッドシート連携は無効化されています')
-  //   return true
-  // }
 
   // ステータスの背景色を取得
   const getStatusColor = (status: string | null) => {
@@ -176,35 +176,23 @@ export default function CastManagement() {
     }
   }
 
-  // キャスト一覧を読み込む（管理者対応版）
+  // キャスト一覧を読み込む
   const loadCasts = async () => {
     try {
-      // 現在のユーザー情報を取得
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('認証されていません')
+      const storeId = getStoreIdAsNumber()
+      console.log('Loading casts for store_id:', storeId)
       
-      // ユーザーの詳細情報を取得
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('store_id, is_admin')  // is_adminフィールドがある場合
-        .eq('id', user.id)
-        .single()
-      
-      if (userError) throw userError
-      
-      let query = supabase.from('casts').select('*')
-      
-      // 管理者でない場合は、自分の店舗のみ表示
-      if (!userData?.is_admin) {
-        const storeId = userData?.store_id || getStoreIdAsNumber()
-        console.log('Loading casts for store_id:', storeId)
-        query = query.eq('store_id', storeId)
-      } else {
-        console.log('Loading all casts (admin mode)')
+      if (!storeId || storeId === 0) {
+        console.error('Invalid store_id, cannot load casts')
+        return
       }
       
-      const { data, error } = await query.order('id')
-      
+      const { data, error } = await supabase
+        .from('casts')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('id')
+
       if (error) {
         console.error('Failed to load casts:', error)
         throw error
@@ -214,7 +202,7 @@ export default function CastManagement() {
       setCasts(data || [])
     } catch (error) {
       console.error('Failed to load casts:', error)
-      alert('キャスト一覧の読み込みに失敗しました: ' + (error as Error).message)
+      // エラーの詳細を表示しない（ユーザーには関係ない技術的な内容のため）
     }
   }
 
@@ -222,39 +210,58 @@ export default function CastManagement() {
   const addNewCast = async () => {
     if (!editingCast) return
     
-    // 必須フィールドを含む新規キャストデータ
-    const newCast = {
-      name: editingCast.name || '新規キャスト',
-      store_id: getStoreIdAsNumber(),
-      status: editingCast.status || '体験',
-      show_in_pos: editingCast.show_in_pos ?? false,
-      attributes: editingCast.attributes || null,
-      twitter: editingCast.twitter || null,
-      instagram: editingCast.instagram || null,
-      birthday: editingCast.birthday || null,
-      experience_date: editingCast.experience_date || null,
-      hire_date: editingCast.hire_date || null,
-      // 以下のフィールドはデフォルト値を設定
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-    
     try {
-      const { error } = await supabase
+      const storeId = getStoreIdAsNumber()
+      console.log('Current store_id:', storeId)
+      
+      if (!storeId || storeId === 0) {
+        alert('店舗情報が取得できません。ページを再読み込みしてください。')
+        return
+      }
+      
+      // 必須フィールドを含む新規キャストデータ
+      const newCast = {
+        name: editingCast.name || '新規キャスト',
+        store_id: storeId,
+        status: editingCast.status || '体験',
+        show_in_pos: editingCast.show_in_pos ?? false,
+        attributes: editingCast.attributes || null,
+        twitter: editingCast.twitter || null,
+        instagram: editingCast.instagram || null,
+        birthday: editingCast.birthday || null,
+        experience_date: editingCast.experience_date || null,
+        hire_date: editingCast.hire_date || null
+      }
+      
+      console.log('新規キャスト追加:', newCast)
+      
+      const { data, error } = await supabase
         .from('casts')
         .insert(newCast)
+        .select()
+        .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Supabase insert error:', error)
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        throw error
+      }
+      
+      console.log('追加成功:', data)
       
       alert('新規キャストを追加しました')
       await loadCasts()
       setShowCastModal(false)
       setEditingCast(null)
-      setShowCastModal(false)
-      setEditingCast(null)
+      setIsNewCast(false)
     } catch (error) {
       console.error('Failed to add new cast:', error)
-      alert('キャストの追加に失敗しました')
+      alert('キャストの追加に失敗しました: ' + (error as Error).message)
     }
   }
 
@@ -286,7 +293,7 @@ export default function CastManagement() {
     }
   }
 
-  // キャストの役職を更新（修正版）
+  // キャストの役職を更新
   const updateCastPosition = async (cast: Cast, newPosition: string) => {
     try {
       const storeId = getStoreIdAsNumber()
@@ -316,7 +323,7 @@ export default function CastManagement() {
     }
   }
 
-  // キャストのステータスを更新（修正版）
+  // キャストのステータスを更新
   const updateCastStatus = async (cast: Cast, newStatus: string) => {
     // 退店を選択した場合は退店日設定モーダルを表示
     if (newStatus === '退店') {
@@ -407,7 +414,7 @@ export default function CastManagement() {
     }
   }
 
-  // キャストのPOS表示を切り替える関数（修正版）
+  // キャストのPOS表示を切り替える関数
   const toggleCastShowInPos = async (cast: Cast) => {
     try {
       const storeId = getStoreIdAsNumber()
@@ -438,7 +445,7 @@ export default function CastManagement() {
     }
   }
 
-  // キャスト情報を更新する関数（修正版）
+  // キャスト情報を更新する関数
   const updateCast = async () => {
     if (!editingCast) return
 
@@ -485,23 +492,14 @@ export default function CastManagement() {
 
   // 初回読み込み
   useEffect(() => {
-    // Supabase接続テスト
-    const testConnection = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('casts')
-          .select('count')
-          .single()
-        
-        console.log('Supabase connection test:', { data, error })
-      } catch (err) {
-        console.error('Supabase connection error:', err)
-      }
+    // コンポーネントマウント時に読み込み
+    const initializeData = async () => {
+      console.log('Initializing CastManagement component')
+      await loadCasts()
+      await loadPositions()
     }
     
-    testConnection()
-    loadCasts()
-    loadPositions()
+    initializeData()
   }, [])
 
   // 検索処理
