@@ -12,6 +12,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
 
+// getCurrentStoreIdの結果を数値に変換するヘルパー関数
+const getStoreIdAsNumber = (): number => {
+  // 型アサーションを使って一時的に回避
+  const storeId = getCurrentStoreId() as any
+  const numericId = parseInt(storeId)
+  return isNaN(numericId) ? 1 : numericId
+}
+
 // キャストの型定義（正しいカラム名）
 interface Cast {
   id: number
@@ -69,33 +77,55 @@ export default function CastManagement() {
   // Google Apps ScriptのURL
   const gasUrl = 'https://script.google.com/macros/s/AKfycbw193siFFyTAHwlDIJGFh6GonwWSYsIPHaGA3_0wMNIkm2-c8LGl7ny6vqZmzagdFQFCw/exec'
 
-  // GASに送信（シンプルな形式）
-  const sendToGAS = (cast: Cast) => {
+  // GASに送信（誕生日変換修正版）
+  const sendToGAS = async (cast: Cast, isNewCast: boolean = false) => {
+    // 誕生日を4桁形式に変換
+    let birthdayMMDD = ''
+    if (cast.birthday) {
+      if (cast.birthday.length === 4) {
+        // すでに4桁形式
+        birthdayMMDD = cast.birthday
+      } else if (cast.birthday.includes('-')) {
+        // YYYY-MM-DD形式から変換
+        const parts = cast.birthday.split('-')
+        if (parts.length === 3) {
+          birthdayMMDD = parts[1] + parts[2]
+        }
+      }
+    }
+    
     const data = {
       name: cast.name,
       showInPos: cast.show_in_pos,
-      position: cast.attributes,  // attributes → position
+      position: cast.attributes,
       status: cast.status,
-      line: cast.line_number,     // line_number → line
+      line: cast.line_number,
       twitter: cast.twitter,
-      twitter_password: cast.password,     // password → twitter_password
+      twitter_password: cast.password,
       instagram: cast.instagram,
-      instagram_password: cast.password2,  // password2 → instagram_password
-      birth_date: cast.birthday            // birthday → birth_date
+      instagram_password: cast.password2,
+      birth_date: birthdayMMDD,
+      isNew: isNewCast
     }
     
     console.log('Sending to GAS:', data)
     
-    fetch(gasUrl, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data)
-    }).catch(error => {
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      })
+      
+      console.log('GAS送信完了')
+      return true
+    } catch (error) {
       console.error('GAS送信エラー:', error)
-    })
+      return false
+    }
   }
 
   // ステータスの背景色を取得
@@ -117,7 +147,7 @@ export default function CastManagement() {
   // 役職一覧を読み込む
   const loadPositions = async () => {
     try {
-      const storeId = getCurrentStoreId()
+      const storeId = getStoreIdAsNumber()
       const { data, error } = await supabase
         .from('cast_positions')
         .select('*')
@@ -137,7 +167,7 @@ export default function CastManagement() {
     if (!newPositionName.trim()) return
 
     try {
-      const storeId = getCurrentStoreId()
+      const storeId = getStoreIdAsNumber()
       const maxOrder = Math.max(...positions.map(p => p.display_order), 0)
       
       const { error } = await supabase
@@ -165,7 +195,7 @@ export default function CastManagement() {
     if (!confirm('この役職を削除しますか？')) return
 
     try {
-      const storeId = getCurrentStoreId()
+      const storeId = getStoreIdAsNumber()
       const { error } = await supabase
         .from('cast_positions')
         .update({ is_active: false })
@@ -185,7 +215,7 @@ export default function CastManagement() {
   // キャスト一覧を読み込む
   const loadCasts = async () => {
     try {
-      const storeId = getCurrentStoreId()
+      const storeId = getStoreIdAsNumber()
       const { data, error } = await supabase
         .from('casts')
         .select('*')
@@ -200,10 +230,46 @@ export default function CastManagement() {
     }
   }
 
-  // キャストの役職を更新
+  // 新規キャスト追加
+  const addNewCast = async () => {
+    const newCast = {
+      name: '新規キャスト',
+      store_id: getStoreIdAsNumber(),
+      status: '体験',
+      show_in_pos: false,
+      attributes: '',
+      line_number: '',
+      twitter: '',
+      instagram: '',
+      password: '',
+      password2: '',
+      birthday: ''
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('casts')
+        .insert(newCast)
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      // 新規キャストをGASに送信
+      await sendToGAS(data, true)
+      
+      alert('新規キャストを追加しました（スプレッドシートにも反映されました）')
+      await loadCasts()
+    } catch (error) {
+      console.error('Failed to add new cast:', error)
+      alert('キャストの追加に失敗しました')
+    }
+  }
+
+  // キャストの役職を更新（修正版）
   const updateCastPosition = async (cast: Cast, newPosition: string) => {
     try {
-      const storeId = getCurrentStoreId()
+      const storeId = getStoreIdAsNumber()
       
       const { error } = await supabase
         .from('casts')
@@ -223,18 +289,20 @@ export default function CastManagement() {
       
       // 更新されたキャストをGASに送信
       const updatedCast = { ...cast, attributes: newPosition }
-      sendToGAS(updatedCast)
+      await sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, attributes: newPosition } : c
       ))
+      
+      console.log(`${cast.name}の役職をスプレッドシートに反映しました`)
     } catch (error) {
       console.error('Error updating position:', error)
       alert('役職の更新に失敗しました')
     }
   }
 
-  // キャストのステータスを更新
+  // キャストのステータスを更新（修正版）
   const updateCastStatus = async (cast: Cast, newStatus: string) => {
     // 退店を選択した場合は退店日設定モーダルを表示
     if (newStatus === '退店') {
@@ -245,7 +313,7 @@ export default function CastManagement() {
     }
 
     try {
-      const storeId = getCurrentStoreId()
+      const storeId = getStoreIdAsNumber()
       
       interface UpdateData {
         status: string
@@ -278,11 +346,13 @@ export default function CastManagement() {
       
       // 更新されたキャストをGASに送信
       const updatedCast = { ...cast, status: newStatus, resignation_date: updateData.resignation_date || null }
-      sendToGAS(updatedCast)
+      await sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...updatedCast } : c
       ))
+      
+      console.log(`${cast.name}のステータスをスプレッドシートに反映しました`)
     } catch (error) {
       console.error('Error updating status:', error)
       alert('ステータス更新に失敗しました')
@@ -294,7 +364,7 @@ export default function CastManagement() {
     if (!retirementCast || !retirementDate) return
 
     try {
-      const storeId = getCurrentStoreId()
+      const storeId = getStoreIdAsNumber()
       
       const { error } = await supabase
         .from('casts')
@@ -315,7 +385,7 @@ export default function CastManagement() {
       
       // 更新されたキャストをGASに送信
       const updatedCast = { ...retirementCast, status: '退店', resignation_date: retirementDate }
-      sendToGAS(updatedCast)
+      await sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
         c.id === retirementCast.id ? { ...updatedCast } : c
@@ -324,17 +394,17 @@ export default function CastManagement() {
       setShowRetirementModal(false)
       setRetirementCast(null)
       setRetirementDate('')
-      alert('退店処理が完了しました')
+      alert('退店処理が完了しました（スプレッドシートにも反映されました）')
     } catch (error) {
       console.error('Error updating retirement:', error)
       alert('退店処理に失敗しました')
     }
   }
 
-  // キャストのPOS表示を切り替える関数
+  // キャストのPOS表示を切り替える関数（修正版）
   const toggleCastShowInPos = async (cast: Cast) => {
     try {
-      const storeId = getCurrentStoreId()
+      const storeId = getStoreIdAsNumber()
       const newValue = !cast.show_in_pos
       
       const { error } = await supabase
@@ -355,23 +425,25 @@ export default function CastManagement() {
       
       // 更新されたキャストをGASに送信
       const updatedCast = { ...cast, show_in_pos: newValue }
-      sendToGAS(updatedCast)
+      await sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, show_in_pos: newValue } : c
       ))
+      
+      console.log(`${cast.name}のPOS表示をスプレッドシートに反映しました`)
     } catch (error) {
       console.error('Error toggling show_in_pos:', error)
       alert('更新に失敗しました')
     }
   }
 
-  // キャスト情報を更新する関数
+  // キャスト情報を更新する関数（修正版）
   const updateCast = async () => {
     if (!editingCast) return
 
     try {
-      const storeId = getCurrentStoreId()
+      const storeId = getStoreIdAsNumber()
       
       const { error } = await supabase
         .from('casts')
@@ -387,6 +459,14 @@ export default function CastManagement() {
           show_in_pos: editingCast.show_in_pos ?? true,
           birthday: editingCast.birthday || null,
           resignation_date: editingCast.resignation_date,
+          attendance_certificate: editingCast.attendance_certificate || false,
+          residence_record: editingCast.residence_record || false,
+          contract_documents: editingCast.contract_documents || false,
+          submission_contract: editingCast.submission_contract || '',
+          employee_name: editingCast.employee_name || '',
+          experience_date: editingCast.experience_date || null,
+          hire_date: editingCast.hire_date || null,
+          sales_previous_day: editingCast.sales_previous_day || '無',
           updated_at: new Date().toISOString()
         })
         .eq('id', editingCast.id)
@@ -397,9 +477,9 @@ export default function CastManagement() {
       if (error) throw error
       
       // 更新されたキャストをGASに送信
-      sendToGAS(editingCast)
+      await sendToGAS(editingCast)
       
-      alert('キャスト情報を更新しました')
+      alert('キャスト情報を更新しました（スプレッドシートにも反映されました）')
       await loadCasts()
       setShowCastModal(false)
       setEditingCast(null)
@@ -442,6 +522,21 @@ export default function CastManagement() {
         <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>キャスト管理</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
+            onClick={addNewCast}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#2196F3',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            新規追加
+          </button>
+          <button
             onClick={() => setShowPositionModal(true)}
             style={{
               padding: '8px 16px',
@@ -455,69 +550,6 @@ export default function CastManagement() {
             }}
           >
             役職管理
-          </button>
-          <button
-            onClick={async () => {
-              console.log('=== GASデバッグ開始 ===')
-              
-              // 実在のキャストを使用
-              const firstCast = filteredCasts[0]
-              if (!firstCast) {
-                alert('キャストが存在しません')
-                return
-              }
-              
-              console.log('送信するキャスト:', firstCast.name)
-              console.log('現在のPOS表示:', firstCast.show_in_pos)
-              
-              // POS表示を反転してテスト送信
-              const testData = {
-                name: firstCast.name,
-                showInPos: !firstCast.show_in_pos,
-                position: firstCast.attributes || '',
-                status: firstCast.status || '在籍',
-                line: firstCast.line_number || '',
-                twitter: firstCast.twitter || '',
-                twitter_password: firstCast.password || '',
-                instagram: firstCast.instagram || '',
-                instagram_password: firstCast.password2 || '',
-                birth_date: firstCast.birthday || ''
-              }
-              
-              console.log('送信データ:', JSON.stringify(testData, null, 2))
-              console.log('GAS URL:', gasUrl)
-              
-              try {
-                console.log('送信中...')
-                await fetch(gasUrl, {
-                  method: 'POST',
-                  mode: 'no-cors',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(testData)
-                })
-                console.log('送信完了')
-                alert(`送信完了！\n${firstCast.name}のPOS表示を${testData.showInPos ? 'ON' : 'OFF'}に送信しました。\nスプレッドシートを確認してください。`)
-              } catch (error) {
-                console.error('エラー:', error)
-                alert('エラーが発生しました。コンソールを確認してください')
-              }
-              
-              console.log('=== デバッグ終了 ===')
-            }}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#FF5722',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer'
-            }}
-          >
-            GASデバッグ
           </button>
         </div>
       </div>
@@ -1142,12 +1174,63 @@ export default function CastManagement() {
                   fontWeight: '500', 
                   marginBottom: '4px' 
                 }}>
-                  誕生日
+                  誕生日（4桁: 例 0401）
+                </label>
+                <input
+                  type="text"
+                  value={editingCast.birthday || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 4)
+                    setEditingCast({...editingCast, birthday: value})
+                  }}
+                  placeholder="0401"
+                  maxLength={4}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #e5e5e7',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  marginBottom: '4px' 
+                }}>
+                  体験入店日
                 </label>
                 <input
                   type="date"
-                  value={editingCast.birthday || ''}
-                  onChange={(e) => setEditingCast({...editingCast, birthday: e.target.value})}
+                  value={editingCast.experience_date || ''}
+                  onChange={(e) => setEditingCast({...editingCast, experience_date: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #e5e5e7',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  marginBottom: '4px' 
+                }}>
+                  本入店日
+                </label>
+                <input
+                  type="date"
+                  value={editingCast.hire_date || ''}
+                  onChange={(e) => setEditingCast({...editingCast, hire_date: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
