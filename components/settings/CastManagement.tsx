@@ -12,42 +12,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey)
 
-// ユーザーのstore_idを取得する関数
-const getUserStoreId = async (): Promise<number> => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      throw new Error('ユーザーが認証されていません')
-    }
-    
-    // usersテーブルからstore_idを取得
-    const { data, error } = await supabase
-      .from('users')
-      .select('store_id')
-      .eq('id', user.id)
-      .single()
-    
-    if (error) {
-      console.error('Failed to get user store_id:', error)
-      throw error
-    }
-    
-    if (!data || !data.store_id) {
-      throw new Error('ユーザーのstore_idが見つかりません')
-    }
-    
-    console.log('User store_id:', data.store_id)
-    return data.store_id
-  } catch (error) {
-    console.error('Error getting user store_id:', error)
-    // フォールバックとして getCurrentStoreId を使用
-    const storeId = getCurrentStoreId() as unknown as string
-    const numericId = parseInt(storeId)
-    return isNaN(numericId) || numericId <= 0 ? 1 : numericId
-  }
-}
-
 // getCurrentStoreIdの結果を数値に変換するヘルパー関数
 const getStoreIdAsNumber = (): number => {
   // 型アサーションを使って一時的に回避
@@ -119,8 +83,6 @@ export default function CastManagement() {
   const [showRetirementModal, setShowRetirementModal] = useState(false)
   const [retirementDate, setRetirementDate] = useState('')
   const [retirementCast, setRetirementCast] = useState<Cast | null>(null)
-  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null)
-  const [stores, setStores] = useState<Array<{id: number, name: string}>>([])
   const [isNewCast, setIsNewCast] = useState(false)
 
   // スプレッドシート連携機能を削除（コメントアウト）
