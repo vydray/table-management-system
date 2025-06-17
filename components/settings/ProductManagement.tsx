@@ -8,44 +8,48 @@ const supabase = createClient(
 )
 
 interface Category {
-  id: string
+  id: number
   name: string
-  color: string
-  order_index: number
+  display_order: number
 }
 
 interface Product {
-  id: string
+  id: number
   name: string
   price: number
-  category_id: string
-  order_index: number
-  category?: Category
+  category_id: number
+  display_order: number
+  is_active: boolean
+  needs_cast?: boolean
+  discount_rate?: number
+  store_id: number
 }
 
 export default function ProductManagement() {
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [showAddProduct, setShowAddProduct] = useState(false)
-  const [showEditProduct, setShowEditProduct] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [newProductName, setNewProductName] = useState('')
   const [newProductPrice, setNewProductPrice] = useState('')
-  const [newProductCategory, setNewProductCategory] = useState('')
-  const [isSortingProducts, setIsSortingProducts] = useState(false)
+  const [newProductCategory, setNewProductCategory] = useState<number | null>(null)
+  const [newProductNeedsCast, setNewProductNeedsCast] = useState(false)
 
   // カテゴリーを読み込む
   const loadCategories = async () => {
     try {
       const storeId = getCurrentStoreId()
       const { data, error } = await supabase
-        .from('categories')
+        .from('product_categories')
         .select('*')
         .eq('store_id', storeId)
-        .order('order_index')
+        .order('display_order')
 
       if (error) throw error
       setCategories(data || [])
+      // 初期状態では全商品を表示（カテゴリー選択なし）
     } catch (error) {
       console.error('Error loading categories:', error)
     }
@@ -57,12 +61,9 @@ export default function ProductManagement() {
       const storeId = getCurrentStoreId()
       const { data, error } = await supabase
         .from('products')
-        .select(`
-          *,
-          category:categories(*)
-        `)
+        .select('*')
         .eq('store_id', storeId)
-        .order('order_index')
+        .order('display_order')
 
       if (error) throw error
       setProducts(data || [])
@@ -78,6 +79,9 @@ export default function ProductManagement() {
     try {
       const storeId = getCurrentStoreId()
       const categoryProducts = products.filter(p => p.category_id === newProductCategory)
+      const maxDisplayOrder = categoryProducts.length > 0
+        ? Math.max(...categoryProducts.map(p => p.display_order))
+        : 0
       
       const { error } = await supabase
         .from('products')
@@ -85,16 +89,20 @@ export default function ProductManagement() {
           name: newProductName,
           price: parseInt(newProductPrice),
           category_id: newProductCategory,
-          order_index: categoryProducts.length,
-          store_id: storeId
+          display_order: maxDisplayOrder + 1,
+          store_id: storeId,
+          is_active: true,
+          needs_cast: newProductNeedsCast,
+          discount_rate: 0
         })
 
       if (error) throw error
 
       setNewProductName('')
       setNewProductPrice('')
-      setNewProductCategory('')
-      setShowAddProduct(false)
+      setNewProductCategory(null)
+      setNewProductNeedsCast(false)
+      setShowAddModal(false)
       loadProducts()
     } catch (error) {
       console.error('Error adding product:', error)
@@ -111,7 +119,8 @@ export default function ProductManagement() {
         .from('products')
         .update({
           name: newProductName,
-          price: parseInt(newProductPrice)
+          price: parseInt(newProductPrice),
+          needs_cast: newProductNeedsCast
         })
         .eq('id', editingProduct.id)
 
@@ -120,7 +129,8 @@ export default function ProductManagement() {
       setEditingProduct(null)
       setNewProductName('')
       setNewProductPrice('')
-      setShowEditProduct(false)
+      setNewProductNeedsCast(false)
+      setShowEditModal(false)
       loadProducts()
     } catch (error) {
       console.error('Error updating product:', error)
@@ -129,7 +139,7 @@ export default function ProductManagement() {
   }
 
   // 商品を削除
-  const deleteProduct = async (productId: string) => {
+  const deleteProduct = async (productId: number) => {
     if (!confirm('この商品を削除しますか？')) return
 
     try {
@@ -139,7 +149,6 @@ export default function ProductManagement() {
         .eq('id', productId)
 
       if (error) throw error
-
       loadProducts()
     } catch (error) {
       console.error('Error deleting product:', error)
@@ -147,42 +156,33 @@ export default function ProductManagement() {
     }
   }
 
-  // 商品の並び順を更新
-  const updateProductOrder = async (productId: string, direction: 'up' | 'down', categoryId: string) => {
-    const categoryProducts = products.filter(p => p.category_id === categoryId)
-    const index = categoryProducts.findIndex(p => p.id === productId)
-    if (index === -1) return
-
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
-    if (targetIndex < 0 || targetIndex >= categoryProducts.length) return
-
-    // 入れ替え
-    [categoryProducts[index], categoryProducts[targetIndex]] = [categoryProducts[targetIndex], categoryProducts[index]]
-
-    // order_indexを更新
-    for (let i = 0; i < categoryProducts.length; i++) {
-      categoryProducts[i].order_index = i
-    }
-
-    // 全商品リストを更新
-    const newProducts = products.map(p => {
-      const updated = categoryProducts.find(cp => cp.id === p.id)
-      return updated || p
-    })
-
-    setProducts(newProducts)
-
-    // DBを更新
+  // キャスト表示を切り替え
+  const toggleCast = async (productId: number, currentValue: boolean) => {
     try {
-      for (const product of categoryProducts) {
-        await supabase
-          .from('products')
-          .update({ order_index: product.order_index })
-          .eq('id', product.id)
-      }
+      const { error } = await supabase
+        .from('products')
+        .update({ needs_cast: !currentValue })
+        .eq('id', productId)
+
+      if (error) throw error
+      loadProducts()
     } catch (error) {
-      console.error('Error updating product order:', error)
-      loadProducts() // エラーの場合は再読み込み
+      console.error('Error toggling cast:', error)
+    }
+  }
+
+  // 商品の有効/無効を切り替え
+  const toggleActive = async (productId: number, currentValue: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: !currentValue })
+        .eq('id', productId)
+
+      if (error) throw error
+      loadProducts()
+    } catch (error) {
+      console.error('Error toggling active:', error)
     }
   }
 
@@ -191,282 +191,329 @@ export default function ProductManagement() {
     loadProducts()
   }, [])
 
+  const filteredProducts = selectedCategory
+    ? products.filter(p => p.category_id === selectedCategory)
+    : products // 全商品を表示
+
   return (
-    <div>
+    <div style={{ 
+      height: '100%',
+      overflowY: 'auto',
+      paddingBottom: '50px'
+    }}>
+      <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 'bold' }}>商品管理</h2>
+
+      {/* カテゴリー選択 */}
+      <div style={{ marginBottom: '30px' }}>
+        <label style={{ display: 'block', marginBottom: '10px', fontSize: '14px' }}>
+          カテゴリーで絞り込み
+        </label>
+        <select
+          value={selectedCategory || ''}
+          onChange={(e) => setSelectedCategory(Number(e.target.value))}
+          style={{
+            width: '300px',
+            padding: '10px',
+            fontSize: '16px',
+            border: '1px solid #ddd',
+            borderRadius: '5px',
+            backgroundColor: 'white'
+          }}
+        >
+          <option value="">-- 全て表示 --</option>
+          {categories.map(category => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* 新規商品追加セクション */}
       <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '20px'
+        backgroundColor: '#f5f5f5',
+        padding: '20px',
+        borderRadius: '5px',
+        marginBottom: '30px'
       }}>
-        <h2 style={{ margin: 0, fontSize: '20px' }}>商品一覧</h2>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={() => setIsSortingProducts(!isSortingProducts)}
+        <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: 'bold' }}>
+          新規商品追加
+        </h3>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+            カテゴリー *
+          </label>
+          <select
+            value={newProductCategory || ''}
+            onChange={(e) => setNewProductCategory(Number(e.target.value))}
             style={{
-              padding: '10px 20px',
-              backgroundColor: isSortingProducts ? '#666' : '#f0f0f0',
-              color: isSortingProducts ? 'white' : '#333',
-              border: 'none',
+              width: '100%',
+              padding: '10px',
+              fontSize: '16px',
+              border: '1px solid #ddd',
               borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '14px'
+              backgroundColor: 'white'
             }}
           >
-            {isSortingProducts ? '並び替え完了' : '並び替え'}
-          </button>
-          <button
-            onClick={() => setShowAddProduct(true)}
+            <option value="">-- カテゴリーを選択 --</option>
+            {categories.map(category => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+            商品名 *
+          </label>
+          <input
+            type="text"
+            placeholder="商品名"
+            value={newProductName}
+            onChange={(e) => setNewProductName(e.target.value)}
             style={{
-              padding: '10px 20px',
-              backgroundColor: '#4A90E2',
+              width: '100%',
+              padding: '10px',
+              fontSize: '16px',
+              border: '1px solid #ddd',
+              borderRadius: '5px'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+            価格 *
+          </label>
+          <input
+            type="number"
+            placeholder="0"
+            value={newProductPrice}
+            onChange={(e) => setNewProductPrice(e.target.value)}
+            style={{
+              width: '200px',
+              padding: '10px',
+              fontSize: '16px',
+              border: '1px solid #ddd',
+              borderRadius: '5px'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={newProductNeedsCast}
+              onChange={(e) => setNewProductNeedsCast(e.target.checked)}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <span style={{ fontSize: '14px' }}>キャスト必要</span>
+          </label>
+        </div>
+
+        <button
+          onClick={addProduct}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          商品を追加
+        </button>
+      </div>
+
+      {/* 商品一覧 */}
+      <div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '20px',
+          marginBottom: '15px'
+        }}>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>商品一覧</h3>
+          <button
+            style={{
+              padding: '5px 15px',
+              backgroundColor: '#2196F3',
               color: 'white',
               border: 'none',
-              borderRadius: '5px',
+              borderRadius: '20px',
               cursor: 'pointer',
-              fontSize: '14px'
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px'
             }}
           >
-            + 商品追加
+            ↑ 並び替え
           </button>
+        </div>
+
+        {/* テーブルヘッダー */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 100px 80px 80px 120px',
+          padding: '10px 20px',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '5px 5px 0 0',
+          fontWeight: 'bold',
+          fontSize: '14px',
+          color: '#666'
+        }}>
+          <div>商品名</div>
+          <div style={{ textAlign: 'right' }}>価格</div>
+          <div style={{ textAlign: 'center' }}>キャスト</div>
+          <div style={{ textAlign: 'center' }}>表示</div>
+          <div style={{ textAlign: 'center' }}>操作</div>
+        </div>
+
+        {/* 商品リスト */}
+        <div style={{
+          backgroundColor: 'white',
+          border: '1px solid #e0e0e0',
+          borderRadius: '0 0 5px 5px'
+        }}>
+          {filteredProducts.map((product, index) => (
+            <div
+              key={product.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 100px 80px 80px 120px',
+                padding: '15px 20px',
+                borderBottom: index < filteredProducts.length - 1 ? '1px solid #e0e0e0' : 'none',
+                alignItems: 'center'
+              }}
+            >
+              <div style={{ fontSize: '16px' }}>{product.name}</div>
+              
+              <div style={{ textAlign: 'right', fontSize: '16px', fontWeight: 'bold' }}>
+                ¥{product.price.toLocaleString()}
+              </div>
+              
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  onClick={() => toggleCast(product.id, product.needs_cast || false)}
+                  style={{
+                    width: '50px',
+                    height: '25px',
+                    borderRadius: '15px',
+                    border: 'none',
+                    backgroundColor: product.needs_cast ? '#4CAF50' : '#ccc',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.3s'
+                  }}
+                >
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    backgroundColor: 'white',
+                    position: 'absolute',
+                    top: '2.5px',
+                    left: product.needs_cast ? '27px' : '3px',
+                    transition: 'left 0.3s',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }} />
+                </button>
+              </div>
+              
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  onClick={() => toggleActive(product.id, product.is_active)}
+                  style={{
+                    width: '50px',
+                    height: '25px',
+                    borderRadius: '15px',
+                    border: 'none',
+                    backgroundColor: product.is_active ? '#4CAF50' : '#ccc',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.3s'
+                  }}
+                >
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    backgroundColor: 'white',
+                    position: 'absolute',
+                    top: '2.5px',
+                    left: product.is_active ? '27px' : '3px',
+                    transition: 'left 0.3s',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }} />
+                </button>
+              </div>
+              
+              <div style={{ 
+                display: 'flex', 
+                gap: '10px',
+                justifyContent: 'center'
+              }}>
+                <button
+                  onClick={() => {
+                    setEditingProduct(product)
+                    setNewProductName(product.name)
+                    setNewProductPrice(product.price.toString())
+                    setNewProductNeedsCast(product.needs_cast || false)
+                    setShowEditModal(true)
+                  }}
+                  style={{
+                    padding: '5px 15px',
+                    backgroundColor: '#2196F3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  編集
+                </button>
+                <button
+                  onClick={() => deleteProduct(product.id)}
+                  style={{
+                    padding: '5px 15px',
+                    backgroundColor: '#f44336',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  削除
+                </button>
+              </div>
+            </div>
+          ))}
+          
+          {filteredProducts.length === 0 && (
+            <div style={{
+              padding: '40px',
+              textAlign: 'center',
+              color: '#999'
+            }}>
+              商品がありません
+            </div>
+          )}
         </div>
       </div>
 
-      {categories.map(category => {
-        const categoryProducts = products.filter(p => p.category_id === category.id)
-        if (categoryProducts.length === 0) return null
-
-        return (
-          <div key={category.id} style={{ marginBottom: '30px' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              marginBottom: '10px'
-            }}>
-              <div
-                style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '3px',
-                  backgroundColor: category.color
-                }}
-              />
-              <h3 style={{ margin: 0, fontSize: '18px', color: '#333' }}>{category.name}</h3>
-            </div>
-
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '10px',
-              overflow: 'hidden',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f8f8f8' }}>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', color: '#666' }}>商品名</th>
-                    <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', color: '#666', width: '100px' }}>価格</th>
-                    <th style={{ padding: '12px', textAlign: 'center', fontSize: '14px', color: '#666', width: '150px' }}>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categoryProducts.map((product, index) => (
-                    <tr key={product.id} style={{ borderTop: '1px solid #eee' }}>
-                      <td style={{ padding: '12px', fontSize: '16px' }}>{product.name}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontSize: '16px', fontWeight: 'bold' }}>
-                        ¥{product.price.toLocaleString()}
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'center' }}>
-                        {isSortingProducts ? (
-                          <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                            <button
-                              onClick={() => updateProductOrder(product.id, 'up', category.id)}
-                              disabled={index === 0}
-                              style={{
-                                padding: '5px 10px',
-                                backgroundColor: index === 0 ? '#ccc' : '#f0f0f0',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: index === 0 ? 'default' : 'pointer',
-                                fontSize: '14px'
-                              }}
-                            >
-                              ↑
-                            </button>
-                            <button
-                              onClick={() => updateProductOrder(product.id, 'down', category.id)}
-                              disabled={index === categoryProducts.length - 1}
-                              style={{
-                                padding: '5px 10px',
-                                backgroundColor: index === categoryProducts.length - 1 ? '#ccc' : '#f0f0f0',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: index === categoryProducts.length - 1 ? 'default' : 'pointer',
-                                fontSize: '14px'
-                              }}
-                            >
-                              ↓
-                            </button>
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                            <button
-                              onClick={() => {
-                                setEditingProduct(product)
-                                setNewProductName(product.name)
-                                setNewProductPrice(product.price.toString())
-                                setShowEditProduct(true)
-                              }}
-                              style={{
-                                padding: '5px 15px',
-                                backgroundColor: '#4A90E2',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: 'pointer',
-                                fontSize: '14px'
-                              }}
-                            >
-                              編集
-                            </button>
-                            <button
-                              onClick={() => deleteProduct(product.id)}
-                              style={{
-                                padding: '5px 15px',
-                                backgroundColor: '#ff4444',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: 'pointer',
-                                fontSize: '14px'
-                              }}
-                            >
-                              削除
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )
-      })}
-
-      {/* 商品追加モーダル */}
-      {showAddProduct && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '10px',
-            padding: '30px',
-            width: '90%',
-            maxWidth: '400px'
-          }}>
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>商品追加</h3>
-            
-            <select
-              value={newProductCategory}
-              onChange={(e) => setNewProductCategory(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                fontSize: '16px',
-                border: '1px solid #ddd',
-                borderRadius: '5px',
-                marginBottom: '15px'
-              }}
-            >
-              <option value="">カテゴリーを選択</option>
-              {categories.map(category => (
-                <option key={category.id} value={category.id}>{category.name}</option>
-              ))}
-            </select>
-
-            <input
-              type="text"
-              placeholder="商品名"
-              value={newProductName}
-              onChange={(e) => setNewProductName(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                fontSize: '16px',
-                border: '1px solid #ddd',
-                borderRadius: '5px',
-                marginBottom: '15px'
-              }}
-            />
-
-            <input
-              type="number"
-              placeholder="価格"
-              value={newProductPrice}
-              onChange={(e) => setNewProductPrice(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                fontSize: '16px',
-                border: '1px solid #ddd',
-                borderRadius: '5px',
-                marginBottom: '20px'
-              }}
-            />
-
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => {
-                  setShowAddProduct(false)
-                  setNewProductName('')
-                  setNewProductPrice('')
-                  setNewProductCategory('')
-                }}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#ccc',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  fontSize: '16px'
-                }}
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={addProduct}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#4A90E2',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  fontSize: '16px'
-                }}
-              >
-                追加
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 商品編集モーダル */}
-      {showEditProduct && (
+      {/* 編集モーダル */}
+      {showEditModal && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -488,43 +535,62 @@ export default function ProductManagement() {
           }}>
             <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>商品編集</h3>
             
-            <input
-              type="text"
-              placeholder="商品名"
-              value={newProductName}
-              onChange={(e) => setNewProductName(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                fontSize: '16px',
-                border: '1px solid #ddd',
-                borderRadius: '5px',
-                marginBottom: '15px'
-              }}
-            />
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                商品名 *
+              </label>
+              <input
+                type="text"
+                value={newProductName}
+                onChange={(e) => setNewProductName(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  fontSize: '16px',
+                  border: '1px solid #ddd',
+                  borderRadius: '5px'
+                }}
+              />
+            </div>
 
-            <input
-              type="number"
-              placeholder="価格"
-              value={newProductPrice}
-              onChange={(e) => setNewProductPrice(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                fontSize: '16px',
-                border: '1px solid #ddd',
-                borderRadius: '5px',
-                marginBottom: '20px'
-              }}
-            />
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                価格 *
+              </label>
+              <input
+                type="number"
+                value={newProductPrice}
+                onChange={(e) => setNewProductPrice(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  fontSize: '16px',
+                  border: '1px solid #ddd',
+                  borderRadius: '5px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={newProductNeedsCast}
+                  onChange={(e) => setNewProductNeedsCast(e.target.checked)}
+                  style={{ width: '18px', height: '18px' }}
+                />
+                <span style={{ fontSize: '14px' }}>キャスト必要</span>
+              </label>
+            </div>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => {
-                  setShowEditProduct(false)
+                  setShowEditModal(false)
                   setEditingProduct(null)
                   setNewProductName('')
                   setNewProductPrice('')
+                  setNewProductNeedsCast(false)
                 }}
                 style={{
                   padding: '10px 20px',
@@ -542,7 +608,7 @@ export default function ProductManagement() {
                 onClick={updateProduct}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: '#4A90E2',
+                  backgroundColor: '#2196F3',
                   color: 'white',
                   border: 'none',
                   borderRadius: '5px',

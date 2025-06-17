@@ -8,34 +8,30 @@ const supabase = createClient(
 )
 
 interface Category {
-  id: string
+  id: number
   name: string
-  color: string
-  order_index: number
+  display_order: number
+  store_id: number
+  created_at?: string
+  show_oshi_first?: boolean
 }
 
 export default function CategoryManagement() {
   const [categories, setCategories] = useState<Category[]>([])
-  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [newCategoryName, setNewCategoryName] = useState('')
-  const [newCategoryColor, setNewCategoryColor] = useState('#FF6B6B')
-  const [isSortingCategories, setIsSortingCategories] = useState(false)
-
-  const colorPresets = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
-    '#48DBFB', '#FF9FF3', '#54A0FF', '#FDA7DF', '#A29BFE',
-    '#6C5CE7', '#FD79A8', '#FDCB6E', '#E17055', '#74B9FF'
-  ]
 
   // カテゴリーを読み込む
   const loadCategories = async () => {
     try {
       const storeId = getCurrentStoreId()
       const { data, error } = await supabase
-        .from('categories')
+        .from('product_categories')
         .select('*')
         .eq('store_id', storeId)
-        .order('order_index')
+        .order('display_order')
 
       if (error) throw error
       setCategories(data || [])
@@ -50,20 +46,23 @@ export default function CategoryManagement() {
 
     try {
       const storeId = getCurrentStoreId()
+      const maxDisplayOrder = categories.length > 0 
+        ? Math.max(...categories.map(c => c.display_order)) 
+        : 0
+      
       const { error } = await supabase
-        .from('categories')
+        .from('product_categories')
         .insert({
           name: newCategoryName,
-          color: newCategoryColor,
-          order_index: categories.length,
-          store_id: storeId
+          display_order: maxDisplayOrder + 1,
+          store_id: storeId,
+          show_oshi_first: false
         })
 
       if (error) throw error
 
       setNewCategoryName('')
-      setNewCategoryColor('#FF6B6B')
-      setShowAddCategory(false)
+      setShowAddModal(false)
       loadCategories()
     } catch (error) {
       console.error('Error adding category:', error)
@@ -71,25 +70,39 @@ export default function CategoryManagement() {
     }
   }
 
+  // カテゴリーを更新
+  const updateCategory = async () => {
+    if (!editingCategory || !newCategoryName) return
+
+    try {
+      const { error } = await supabase
+        .from('product_categories')
+        .update({ name: newCategoryName })
+        .eq('id', editingCategory.id)
+
+      if (error) throw error
+
+      setNewCategoryName('')
+      setShowEditModal(false)
+      setEditingCategory(null)
+      loadCategories()
+    } catch (error) {
+      console.error('Error updating category:', error)
+      alert('カテゴリーの更新に失敗しました')
+    }
+  }
+
   // カテゴリーを削除
-  const deleteCategory = async (categoryId: string) => {
+  const deleteCategory = async (categoryId: number) => {
     if (!confirm('このカテゴリーを削除しますか？\n※このカテゴリーに属する商品も全て削除されます')) return
 
     try {
-      // まず関連する商品を削除
-      await supabase
-        .from('products')
-        .delete()
-        .eq('category_id', categoryId)
-
-      // その後カテゴリーを削除
       const { error } = await supabase
-        .from('categories')
+        .from('product_categories')
         .delete()
         .eq('id', categoryId)
 
       if (error) throw error
-
       loadCategories()
     } catch (error) {
       console.error('Error deleting category:', error)
@@ -97,37 +110,18 @@ export default function CategoryManagement() {
     }
   }
 
-  // カテゴリーの並び順を更新
-  const updateCategoryOrder = async (categoryId: string, direction: 'up' | 'down') => {
-    const index = categories.findIndex(c => c.id === categoryId)
-    if (index === -1) return
-
-    const newCategories = [...categories]
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
-
-    if (targetIndex < 0 || targetIndex >= categories.length) return
-
-    // 入れ替え
-    [newCategories[index], newCategories[targetIndex]] = [newCategories[targetIndex], newCategories[index]]
-
-    // order_indexを更新
-    for (let i = 0; i < newCategories.length; i++) {
-      newCategories[i].order_index = i
-    }
-
-    setCategories(newCategories)
-
-    // DBを更新
+  // 推し優先表示を切り替え
+  const toggleOshiFirst = async (categoryId: number, currentValue: boolean) => {
     try {
-      for (const category of newCategories) {
-        await supabase
-          .from('categories')
-          .update({ order_index: category.order_index })
-          .eq('id', category.id)
-      }
+      const { error } = await supabase
+        .from('product_categories')
+        .update({ show_oshi_first: !currentValue })
+        .eq('id', categoryId)
+
+      if (error) throw error
+      loadCategories()
     } catch (error) {
-      console.error('Error updating category order:', error)
-      loadCategories() // エラーの場合は再読み込み
+      console.error('Error toggling oshi first:', error)
     }
   }
 
@@ -137,123 +131,198 @@ export default function CategoryManagement() {
 
   return (
     <div>
+      {/* ヘッダー部分 */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '20px'
+        marginBottom: '30px'
       }}>
-        <h2 style={{ margin: 0, fontSize: '20px' }}>カテゴリー一覧</h2>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={() => setIsSortingCategories(!isSortingCategories)}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: isSortingCategories ? '#666' : '#f0f0f0',
-              color: isSortingCategories ? 'white' : '#333',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            {isSortingCategories ? '並び替え完了' : '並び替え'}
-          </button>
-          <button
-            onClick={() => setShowAddCategory(true)}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#4A90E2',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            + カテゴリー追加
-          </button>
-        </div>
+        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>新規カテゴリー追加</h2>
       </div>
 
-      <div style={{ backgroundColor: 'white', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        {categories.map((category, index) => (
-          <div
-            key={category.id}
+      {/* カテゴリー追加フォーム */}
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        marginBottom: '30px'
+      }}>
+        <input
+          type="text"
+          placeholder="カテゴリー名"
+          value={newCategoryName}
+          onChange={(e) => setNewCategoryName(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addCategory()}
+          style={{
+            flex: 1,
+            padding: '10px 15px',
+            fontSize: '16px',
+            border: '1px solid #ddd',
+            borderRadius: '5px'
+          }}
+        />
+        <button
+          onClick={addCategory}
+          style={{
+            padding: '10px 30px',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          追加
+        </button>
+      </div>
+
+      {/* カテゴリー一覧 */}
+      <div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '20px',
+          marginBottom: '15px'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>カテゴリー一覧</h2>
+          <button
             style={{
-              padding: '15px 20px',
-              borderBottom: index < categories.length - 1 ? '1px solid #eee' : 'none',
+              padding: '5px 15px',
+              backgroundColor: '#2196F3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '14px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              gap: '5px'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <div
-                style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '5px',
-                  backgroundColor: category.color
-                }}
-              />
-              <span style={{ fontSize: '16px', fontWeight: '500' }}>{category.name}</span>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              {isSortingCategories ? (
-                <>
-                  <button
-                    onClick={() => updateCategoryOrder(category.id, 'up')}
-                    disabled={index === 0}
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: index === 0 ? '#ccc' : '#f0f0f0',
-                      border: 'none',
-                      borderRadius: '3px',
-                      cursor: index === 0 ? 'default' : 'pointer',
-                      fontSize: '14px'
-                    }}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() => updateCategoryOrder(category.id, 'down')}
-                    disabled={index === categories.length - 1}
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: index === categories.length - 1 ? '#ccc' : '#f0f0f0',
-                      border: 'none',
-                      borderRadius: '3px',
-                      cursor: index === categories.length - 1 ? 'default' : 'pointer',
-                      fontSize: '14px'
-                    }}
-                  >
-                    ↓
-                  </button>
-                </>
-              ) : (
+            ↑ 並び替え
+          </button>
+        </div>
+
+        {/* テーブルヘッダー */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 150px 120px',
+          padding: '10px 20px',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '5px 5px 0 0',
+          fontWeight: 'bold',
+          fontSize: '14px',
+          color: '#666'
+        }}>
+          <div>カテゴリー名</div>
+          <div style={{ textAlign: 'center' }}>推し優先表示</div>
+          <div style={{ textAlign: 'center' }}>操作</div>
+        </div>
+
+        {/* カテゴリーリスト */}
+        <div style={{
+          backgroundColor: 'white',
+          border: '1px solid #e0e0e0',
+          borderRadius: '0 0 5px 5px'
+        }}>
+          {categories.map((category, index) => (
+            <div
+              key={category.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 150px 120px',
+                padding: '15px 20px',
+                borderBottom: index < categories.length - 1 ? '1px solid #e0e0e0' : 'none',
+                alignItems: 'center'
+              }}
+            >
+              <div style={{ fontSize: '16px' }}>{category.name}</div>
+              
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  onClick={() => toggleOshiFirst(category.id, category.show_oshi_first || false)}
+                  style={{
+                    width: '50px',
+                    height: '25px',
+                    borderRadius: '15px',
+                    border: 'none',
+                    backgroundColor: category.show_oshi_first ? '#4CAF50' : '#ccc',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.3s'
+                  }}
+                >
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    backgroundColor: 'white',
+                    position: 'absolute',
+                    top: '2.5px',
+                    left: category.show_oshi_first ? '27px' : '3px',
+                    transition: 'left 0.3s',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }} />
+                </button>
+              </div>
+              
+              <div style={{ 
+                display: 'flex', 
+                gap: '10px',
+                justifyContent: 'center'
+              }}>
+                <button
+                  onClick={() => {
+                    setEditingCategory(category)
+                    setNewCategoryName(category.name)
+                    setShowEditModal(true)
+                  }}
+                  style={{
+                    padding: '5px 15px',
+                    backgroundColor: '#2196F3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  編集
+                </button>
                 <button
                   onClick={() => deleteCategory(category.id)}
                   style={{
                     padding: '5px 15px',
-                    backgroundColor: '#ff4444',
+                    backgroundColor: '#f44336',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '3px',
+                    borderRadius: '5px',
                     cursor: 'pointer',
                     fontSize: '14px'
                   }}
                 >
                   削除
                 </button>
-              )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+          
+          {categories.length === 0 && (
+            <div style={{
+              padding: '40px',
+              textAlign: 'center',
+              color: '#999'
+            }}>
+              カテゴリーがありません
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* カテゴリー追加モーダル */}
-      {showAddCategory && (
+      {/* 編集モーダル */}
+      {showEditModal && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -273,11 +342,10 @@ export default function CategoryManagement() {
             width: '90%',
             maxWidth: '400px'
           }}>
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>カテゴリー追加</h3>
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>カテゴリー編集</h3>
             
             <input
               type="text"
-              placeholder="カテゴリー名"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               style={{
@@ -286,38 +354,16 @@ export default function CategoryManagement() {
                 fontSize: '16px',
                 border: '1px solid #ddd',
                 borderRadius: '5px',
-                marginBottom: '15px'
+                marginBottom: '20px'
               }}
             />
-
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '10px', fontSize: '14px', color: '#666' }}>
-                カラー選択
-              </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {colorPresets.map(color => (
-                  <button
-                    key={color}
-                    onClick={() => setNewCategoryColor(color)}
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '5px',
-                      backgroundColor: color,
-                      border: newCategoryColor === color ? '3px solid #333' : '1px solid #ddd',
-                      cursor: 'pointer'
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => {
-                  setShowAddCategory(false)
+                  setShowEditModal(false)
+                  setEditingCategory(null)
                   setNewCategoryName('')
-                  setNewCategoryColor('#FF6B6B')
                 }}
                 style={{
                   padding: '10px 20px',
@@ -332,10 +378,10 @@ export default function CategoryManagement() {
                 キャンセル
               </button>
               <button
-                onClick={addCategory}
+                onClick={updateCategory}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: '#4A90E2',
+                  backgroundColor: '#2196F3',
                   color: 'white',
                   border: 'none',
                   borderRadius: '5px',
@@ -343,7 +389,7 @@ export default function CategoryManagement() {
                   fontSize: '16px'
                 }}
               >
-                追加
+                更新
               </button>
             </div>
           </div>

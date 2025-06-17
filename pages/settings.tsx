@@ -9,7 +9,15 @@ import AttendanceStatus from '../components/settings/AttendanceStatus'
 
 export default function Settings() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState('categories')
+  const [activeMenu, setActiveMenu] = useState('system')
+
+  const menuItems = [
+    { id: 'system', label: 'システム設定', icon: '⚙️' },
+    { id: 'products', label: '商品管理', icon: '🛍️' },
+    { id: 'categories', label: 'カテゴリー管理', icon: '📁' },
+    { id: 'cast', label: 'キャスト管理', icon: '👥' },
+    { id: 'attendance', label: '勤怠ステータス', icon: '📊' }
+  ]
 
   return (
     <>
@@ -20,17 +28,16 @@ export default function Settings() {
 
       <div style={{
         minHeight: '100vh',
-        backgroundColor: '#f5f5f5',
-        paddingBottom: '100px'
+        backgroundColor: '#f5f5f5'
       }}>
         {/* ヘッダー */}
         <div style={{
-          backgroundColor: '#4A90E2',
+          backgroundColor: '#FF9800',
           color: 'white',
-          padding: '20px',
+          padding: '15px 20px',
           display: 'flex',
           alignItems: 'center',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          gap: '20px'
         }}>
           <button
             onClick={() => router.push('/')}
@@ -38,63 +45,99 @@ export default function Settings() {
               background: 'none',
               border: 'none',
               color: 'white',
-              fontSize: '24px',
-              marginRight: '20px',
+              fontSize: '20px',
               cursor: 'pointer',
-              padding: '5px'
+              padding: '5px',
+              display: 'flex',
+              alignItems: 'center'
             }}
           >
             ←
           </button>
-          <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>設定</h1>
+          <h1 style={{ 
+            margin: 0, 
+            fontSize: '18px',
+            fontWeight: 'normal',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            ⚙️ 設定
+          </h1>
         </div>
 
-        {/* タブ */}
+        {/* メインコンテンツ */}
         <div style={{
-          backgroundColor: 'white',
-          borderBottom: '1px solid #eee',
           display: 'flex',
-          overflowX: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
+          flex: 1,
+          minHeight: 'calc(100vh - 54px)'
         }}>
-          {[
-            { id: 'categories', label: 'カテゴリー管理' },
-            { id: 'products', label: '商品管理' },
-            { id: 'cast', label: 'キャスト管理' },
-            { id: 'system', label: 'システム設定' },
-            { id: 'attendance', label: '勤怠ステータス' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '15px 20px',
-                border: 'none',
-                background: 'none',
-                borderBottom: activeTab === tab.id ? '3px solid #4A90E2' : '3px solid transparent',
-                color: activeTab === tab.id ? '#4A90E2' : '#666',
-                fontWeight: activeTab === tab.id ? 'bold' : 'normal',
-                cursor: 'pointer',
-                fontSize: '16px',
-                whiteSpace: 'nowrap',
-                minWidth: 'auto'
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+          {/* 左側サイドメニュー */}
+          <div style={{
+            width: '220px',
+            backgroundColor: '#f5f5f5',
+            borderRight: '1px solid #e0e0e0'
+          }}>
+            {menuItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveMenu(item.id)}
+                style={{
+                  width: '100%',
+                  padding: '15px 20px',
+                  border: 'none',
+                  background: activeMenu === item.id ? '#FF9800' : 'transparent',
+                  color: activeMenu === item.id ? 'white' : '#333',
+                  fontSize: '14px',
+                  fontWeight: activeMenu === item.id ? 'bold' : 'normal',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeMenu !== item.id) {
+                    e.currentTarget.style.backgroundColor = '#e0e0e0'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeMenu !== item.id) {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }
+                }}
+              >
+                <span style={{ fontSize: '16px' }}>{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+          </div>
 
-        {/* コンテンツ */}
-        <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-          {activeTab === 'categories' && <CategoryManagement />}
-          {activeTab === 'products' && <ProductManagement />}
-          {activeTab === 'cast' && <CastManagement />}
-          {activeTab === 'system' && <SystemSettings />}
-          {activeTab === 'attendance' && <AttendanceStatus />}
+          {/* 右側コンテンツエリア */}
+          <div style={{
+            flex: 1,
+            backgroundColor: 'white',
+            padding: '30px 40px',
+            paddingBottom: '100px',
+            overflowY: 'auto',
+            height: 'calc(100vh - 54px)'
+          }}>
+            <h2 style={{
+              margin: '0 0 30px 0',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#333'
+            }}>
+              {menuItems.find(item => item.id === activeMenu)?.label}
+            </h2>
+            
+            {activeMenu === 'system' && <SystemSettings />}
+            {activeMenu === 'products' && <ProductManagement />}
+            {activeMenu === 'categories' && <CategoryManagement />}
+            {activeMenu === 'cast' && <CastManagement />}
+            {activeMenu === 'attendance' && <AttendanceStatus />}
+          </div>
         </div>
       </div>
     </>
