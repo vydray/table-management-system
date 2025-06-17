@@ -18,7 +18,6 @@ interface Category {
 
 export default function CategoryManagement() {
   const [categories, setCategories] = useState<Category[]>([])
-  const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -62,7 +61,6 @@ export default function CategoryManagement() {
       if (error) throw error
 
       setNewCategoryName('')
-      setShowAddModal(false)
       loadCategories()
     } catch (error) {
       console.error('Error adding category:', error)
