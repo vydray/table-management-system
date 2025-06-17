@@ -73,6 +73,7 @@ export default function CastManagement() {
   const [showRetirementModal, setShowRetirementModal] = useState(false)
   const [retirementDate, setRetirementDate] = useState('')
   const [retirementCast, setRetirementCast] = useState<Cast | null>(null)
+  const [isNewCast, setIsNewCast] = useState(false)
 
   // Google Apps ScriptのURL
   const gasUrl = 'https://script.google.com/macros/s/AKfycbw193siFFyTAHwlDIJGFh6GonwWSYsIPHaGA3_0wMNIkm2-c8LGl7ny6vqZmzagdFQFCw/exec'
@@ -236,18 +237,22 @@ export default function CastManagement() {
 
   // 新規キャスト追加
   const addNewCast = async () => {
+    if (!editingCast) return
+    
     const newCast = {
-      name: '新規キャスト',
+      name: editingCast.name || '新規キャスト',
       store_id: getStoreIdAsNumber(),
-      status: '体験',
-      show_in_pos: false,
-      attributes: '',
+      status: editingCast.status || '体験',
+      show_in_pos: editingCast.show_in_pos ?? false,
+      attributes: editingCast.attributes || '',
       line_number: '',
-      twitter: '',
-      instagram: '',
+      twitter: editingCast.twitter || '',
+      instagram: editingCast.instagram || '',
       password: '',
       password2: '',
-      birthday: ''
+      birthday: editingCast.birthday || '',
+      experience_date: editingCast.experience_date || null,
+      hire_date: editingCast.hire_date || null
     }
     
     try {
@@ -262,11 +267,47 @@ export default function CastManagement() {
       // 新規キャストをGASに送信
       await sendToGAS(data, true)
       
-      alert('新規キャストを追加しました（スプレッドシートにも反映されました）')
+      alert('新規キャストを追加しました')
       await loadCasts()
+      setShowCastModal(false)
+      setEditingCast(null)
     } catch (error) {
       console.error('Failed to add new cast:', error)
       alert('キャストの追加に失敗しました')
+    }
+  }
+
+  // キャストを削除
+  const deleteCast = async () => {
+    if (!editingCast || !editingCast.id) return
+    
+    if (!confirm(`${editingCast.name}を削除しますか？\n\n※「削除済み」ステータスに変更されます`)) return
+    
+    try {
+      const storeId = getStoreIdAsNumber()
+      
+      const { error } = await supabase
+        .from('casts')
+        .update({ 
+          status: '削除済み',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingCast.id)
+        .eq('store_id', storeId)
+
+      if (error) throw error
+      
+      // 更新されたキャストをGASに送信
+      const updatedCast = { ...editingCast, status: '削除済み' }
+      await sendToGAS(updatedCast)
+      
+      alert('キャストを削除しました')
+      await loadCasts()
+      setShowCastModal(false)
+      setEditingCast(null)
+    } catch (error) {
+      console.error('Failed to delete cast:', error)
+      alert('削除に失敗しました')
     }
   }
 
@@ -512,7 +553,40 @@ export default function CastManagement() {
         <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>キャスト管理</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
-            onClick={addNewCast}
+            onClick={() => {
+              setEditingCast({
+                id: 0,
+                store_id: getStoreIdAsNumber(),
+                name: '',
+                line_number: null,
+                twitter: null,
+                password: null,
+                instagram: null,
+                password2: null,
+                photo: null,
+                attributes: null,
+                is_writer: null,
+                submission_date: null,
+                back_number: null,
+                status: '体験',
+                sales_previous_day: null,
+                cast_point: null,
+                show_in_pos: false,
+                birthday: null,
+                created_at: null,
+                updated_at: null,
+                resignation_date: null,
+                attendance_certificate: null,
+                residence_record: null,
+                contract_documents: null,
+                submission_contract: null,
+                employee_name: null,
+                experience_date: null,
+                hire_date: null
+              })
+              setIsNewCast(true)
+              setShowCastModal(true)
+            }}
             style={{
               padding: '8px 16px',
               backgroundColor: '#2196F3',
@@ -756,6 +830,7 @@ export default function CastManagement() {
                     <button
                       onClick={() => {
                         setEditingCast(cast)
+                        setIsNewCast(false)
                         setShowCastModal(true)
                       }}
                       style={{
@@ -1015,7 +1090,7 @@ export default function CastManagement() {
               fontWeight: 'bold', 
               marginBottom: '20px' 
             }}>
-              キャスト編集
+              {isNewCast ? '新規キャスト追加' : 'キャスト編集'}
             </h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1261,42 +1336,64 @@ export default function CastManagement() {
             <div style={{ 
               marginTop: '24px', 
               display: 'flex', 
-              justifyContent: 'flex-end', 
+              justifyContent: 'space-between', 
               gap: '12px' 
             }}>
-              <button
-                onClick={() => {
-                  setShowCastModal(false)
-                  setEditingCast(null)
-                }}
-                style={{
-                  padding: '8px 20px',
-                  backgroundColor: '#f0f0f0',
-                  color: '#333',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer'
-                }}
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={updateCast}
-                style={{
-                  padding: '8px 20px',
-                  backgroundColor: '#007aff',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer'
-                }}
-              >
-                保存
-              </button>
+              <div>
+                {!isNewCast && editingCast?.id && (
+                  <button
+                    onClick={deleteCast}
+                    style={{
+                      padding: '8px 20px',
+                      backgroundColor: '#ff4444',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    削除
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => {
+                    setShowCastModal(false)
+                    setEditingCast(null)
+                    setIsNewCast(false)
+                  }}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#f0f0f0',
+                    color: '#333',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={isNewCast ? addNewCast : updateCast}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#007aff',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {isNewCast ? '追加' : '保存'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
