@@ -112,8 +112,8 @@ export default function CastManagement() {
     console.log('GAS URL:', gasUrl)
     
     try {
-      // fetchの代わりにfetch with credentialsを使用
-      const response = await fetch(gasUrl, {
+      // no-corsモードで送信
+      await fetch(gasUrl, {
         method: 'POST',
         mode: 'no-cors',
         headers: {
@@ -283,9 +283,7 @@ export default function CastManagement() {
         })
         .eq('id', cast.id)
         .eq('store_id', storeId)
-        .select()
-        .single()
-      
+
       if (error) {
         console.error('Supabase error:', error)
         throw error
@@ -340,9 +338,7 @@ export default function CastManagement() {
         .update(updateData)
         .eq('id', cast.id)
         .eq('store_id', storeId)
-        .select()
-        .single()
-      
+
       if (error) {
         console.error('Supabase error:', error)
         throw error
@@ -379,9 +375,7 @@ export default function CastManagement() {
         })
         .eq('id', retirementCast.id)
         .eq('store_id', storeId)
-        .select()
-        .single()
-      
+
       if (error) {
         console.error('Supabase error:', error)
         throw error
@@ -419,9 +413,7 @@ export default function CastManagement() {
         })
         .eq('id', cast.id)
         .eq('store_id', storeId)
-        .select()
-        .single()
-      
+
       if (error) {
         console.error('Supabase error:', error)
         throw error
@@ -453,11 +445,8 @@ export default function CastManagement() {
         .from('casts')
         .update({
           name: editingCast.name || '',
-          line_number: editingCast.line_number || '',
           twitter: editingCast.twitter || '',
-          password: editingCast.password || '',
           instagram: editingCast.instagram || '',
-          password2: editingCast.password2 || '',
           attributes: editingCast.attributes || '',
           status: editingCast.status || '',
           show_in_pos: editingCast.show_in_pos ?? true,
@@ -475,8 +464,6 @@ export default function CastManagement() {
         })
         .eq('id', editingCast.id)
         .eq('store_id', storeId)
-        .select()
-        .single()
 
       if (error) throw error
       
