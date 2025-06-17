@@ -75,62 +75,14 @@ export default function CastManagement() {
   const [retirementCast, setRetirementCast] = useState<Cast | null>(null)
   const [isNewCast, setIsNewCast] = useState(false)
 
-  // Google Apps ScriptのURL
-  const gasUrl = 'https://script.google.com/macros/s/AKfycbw193siFFyTAHwlDIJGFh6GonwWSYsIPHaGA3_0wMNIkm2-c8LGl7ny6vqZmzagdFQFCw/exec'
-
-  // GASに送信（誕生日変換修正版）
+  // スプレッドシート連携機能を削除（コメントアウト）
+  // const gasUrl = 'https://script.google.com/macros/s/AKfycbw193siFFyTAHwlDIJGFh6GonwWSYsIPHaGA3_0wMNIkm2-c8LGl7ny6vqZmzagdFQFCw/exec'
+  
+  // GAS送信機能を無効化
   const sendToGAS = async (cast: Cast, isNewCast: boolean = false) => {
-    // 誕生日を4桁形式に変換
-    let birthdayMMDD = ''
-    if (cast.birthday) {
-      if (cast.birthday.length === 4) {
-        // すでに4桁形式
-        birthdayMMDD = cast.birthday
-      } else if (cast.birthday.includes('-')) {
-        // YYYY-MM-DD形式から変換
-        const parts = cast.birthday.split('-')
-        if (parts.length === 3) {
-          birthdayMMDD = parts[1] + parts[2]
-        }
-      }
-    }
-    
-    const data = {
-      name: cast.name,
-      showInPos: cast.show_in_pos,
-      position: cast.attributes,
-      status: cast.status,
-      line: cast.line_number,
-      twitter: cast.twitter,
-      twitter_password: cast.password,
-      instagram: cast.instagram,
-      instagram_password: cast.password2,
-      birth_date: birthdayMMDD,
-      isNew: isNewCast
-    }
-    
-    console.log('Sending to GAS:', data)
-    console.log('GAS URL:', gasUrl)
-    
-    try {
-      // no-corsモードで送信
-      await fetch(gasUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'text/plain',
-        },
-        body: JSON.stringify(data)
-      })
-      
-      console.log('GAS送信完了 - no-corsモードのため、レスポンスは確認できません')
-      
-      // no-corsモードではレスポンスが読めないので、成功と仮定
-      return true
-    } catch (error) {
-      console.error('GAS送信エラー:', error)
-      return false
-    }
+    // スプレッドシート連携を無効化
+    console.log('スプレッドシート連携は無効化されています')
+    return true
   }
 
   // ステータスの背景色を取得
@@ -142,8 +94,6 @@ export default function CastManagement() {
         return '#fff7e6'
       case '退店':
         return '#f0f0f0'
-      case '削除済み':
-        return '#ffe6e6'
       default:
         return '#ffffff'
     }
@@ -264,8 +214,8 @@ export default function CastManagement() {
       
       if (error) throw error
       
-      // 新規キャストをGASに送信
-      await sendToGAS(data, true)
+      // スプレッドシート連携は無効化
+      // await sendToGAS(data, true)
       
       alert('新規キャストを追加しました')
       await loadCasts()
@@ -277,29 +227,23 @@ export default function CastManagement() {
     }
   }
 
-  // キャストを削除
+  // キャストを完全削除
   const deleteCast = async () => {
     if (!editingCast || !editingCast.id) return
     
-    if (!confirm(`${editingCast.name}を削除しますか？\n\n※「削除済み」ステータスに変更されます`)) return
+    if (!confirm(`${editingCast.name}を完全に削除しますか？\n\n※この操作は取り消せません`)) return
     
     try {
       const storeId = getStoreIdAsNumber()
       
+      // Supabaseから完全削除
       const { error } = await supabase
         .from('casts')
-        .update({ 
-          status: '削除済み',
-          updated_at: new Date().toISOString()
-        })
+        .delete()
         .eq('id', editingCast.id)
         .eq('store_id', storeId)
 
       if (error) throw error
-      
-      // 更新されたキャストをGASに送信
-      const updatedCast = { ...editingCast, status: '削除済み' }
-      await sendToGAS(updatedCast)
       
       alert('キャストを削除しました')
       await loadCasts()
@@ -330,15 +274,14 @@ export default function CastManagement() {
         throw error
       }
       
-      // 更新されたキャストをGASに送信
-      const updatedCast = { ...cast, attributes: newPosition }
-      await sendToGAS(updatedCast)
+      // スプレッドシート連携は無効化
+      // await sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, attributes: newPosition } : c
       ))
       
-      console.log(`${cast.name}の役職をスプレッドシートに反映しました`)
+      console.log(`${cast.name}の役職を更新しました`)
     } catch (error) {
       console.error('Error updating position:', error)
       alert('役職の更新に失敗しました')
@@ -385,15 +328,17 @@ export default function CastManagement() {
         throw error
       }
       
-      // 更新されたキャストをGASに送信
+      // 更新されたキャストの状態を定義
       const updatedCast = { ...cast, status: newStatus, resignation_date: updateData.resignation_date || null }
-      await sendToGAS(updatedCast)
+      
+      // スプレッドシート連携は無効化
+      // await sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...updatedCast } : c
       ))
       
-      console.log(`${cast.name}のステータスをスプレッドシートに反映しました`)
+      console.log(`${cast.name}のステータスを更新しました`)
     } catch (error) {
       console.error('Error updating status:', error)
       alert('ステータス更新に失敗しました')
@@ -422,9 +367,11 @@ export default function CastManagement() {
         throw error
       }
       
-      // 更新されたキャストをGASに送信
+      // 更新されたキャストの状態を定義
       const updatedCast = { ...retirementCast, status: '退店', resignation_date: retirementDate }
-      await sendToGAS(updatedCast)
+      
+      // スプレッドシート連携は無効化
+      // await sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
         c.id === retirementCast.id ? { ...updatedCast } : c
@@ -433,7 +380,7 @@ export default function CastManagement() {
       setShowRetirementModal(false)
       setRetirementCast(null)
       setRetirementDate('')
-      alert('退店処理が完了しました（スプレッドシートにも反映されました）')
+      alert('退店処理が完了しました')
     } catch (error) {
       console.error('Error updating retirement:', error)
       alert('退店処理に失敗しました')
@@ -460,15 +407,14 @@ export default function CastManagement() {
         throw error
       }
       
-      // 更新されたキャストをGASに送信
-      const updatedCast = { ...cast, show_in_pos: newValue }
-      await sendToGAS(updatedCast)
+      // スプレッドシート連携は無効化
+      // await sendToGAS(updatedCast)
       
       setCasts(prev => prev.map(c => 
         c.id === cast.id ? { ...c, show_in_pos: newValue } : c
       ))
       
-      console.log(`${cast.name}のPOS表示をスプレッドシートに反映しました`)
+      console.log(`${cast.name}のPOS表示を更新しました`)
     } catch (error) {
       console.error('Error toggling show_in_pos:', error)
       alert('更新に失敗しました')
@@ -508,10 +454,10 @@ export default function CastManagement() {
 
       if (error) throw error
       
-      // 更新されたキャストをGASに送信
-      await sendToGAS(editingCast)
+      // スプレッドシート連携は無効化
+      // await sendToGAS(editingCast)
       
-      alert('キャスト情報を更新しました（スプレッドシートにも反映されました）')
+      alert('キャスト情報を更新しました')
       await loadCasts()
       setShowCastModal(false)
       setEditingCast(null)
@@ -773,7 +719,6 @@ export default function CastManagement() {
                       <option value="在籍">在籍</option>
                       <option value="体験">体験</option>
                       <option value="退店">退店</option>
-                      <option value="削除済み">削除済み</option>
                     </select>
                   </td>
                   <td style={{ 
@@ -1291,7 +1236,6 @@ export default function CastManagement() {
                   <option value="在籍">在籍</option>
                   <option value="体験">体験</option>
                   <option value="退店">退店</option>
-                  <option value="削除済み">削除済み</option>
                 </select>
               </div>
 
