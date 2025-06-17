@@ -76,13 +76,37 @@ export default function Report() {
     incomeAmount: 0,
     expenseAmount: 0,
     balance: 0,
-    staffCount: 2,
-    castCount: 5,
+    staffCount: 0,
+    castCount: 0,
     remarks: '',
     twitterFollowers: 0,
     instagramFollowers: 0,
     tiktokFollowers: 0
   })
+  const [activeAttendanceStatuses, setActiveAttendanceStatuses] = useState<string[]>(['出勤'])
+
+  // 出勤として扱うステータスを取得
+  const loadActiveAttendanceStatuses = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+      const { data } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('setting_key', 'active_attendance_statuses')
+        .eq('store_id', storeId)
+        .single()
+      
+      if (data && data.setting_value) {
+        // JSON形式で保存されているステータス配列を取得
+        const statuses = JSON.parse(data.setting_value)
+        setActiveAttendanceStatuses(statuses)
+      }
+    } catch (error) {
+      console.error('Error loading active attendance statuses:', error)
+      // デフォルト値を使用
+      setActiveAttendanceStatuses(['出勤'])
+    }
+  }
 
   // 勤怠データから内勤・キャストの人数を取得
   const getAttendanceCounts = async (dateStr: string) => {
@@ -97,13 +121,13 @@ export default function Report() {
       const day = parseInt(matches[2])
       const date = `${selectedYear}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
       
-      // 出勤している人の勤怠データを取得
+      // 出勤として扱うステータスの人の勤怠データを取得
       const { data: attendanceData } = await supabase
         .from('attendance')
         .select('cast_name')
         .eq('store_id', storeId)
         .eq('date', date)
-        .eq('status', '出勤')
+        .in('status', activeAttendanceStatuses)  // 設定されたステータスで絞り込み
       
       if (!attendanceData || attendanceData.length === 0) {
         return { staffCount: 0, castCount: 0 }
@@ -151,7 +175,7 @@ export default function Report() {
         .select('*')
         .eq('year', selectedYear)
         .eq('month', selectedMonth)
-        .eq('store_id', storeId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)
         .single()
       
       if (data) {
@@ -180,9 +204,9 @@ export default function Report() {
           month: selectedMonth,
           sales_target: tempTargets.salesTarget,
           customer_target: tempTargets.customerTarget,
-          store_id: storeId  // 店舗IDを追加
+          store_id: storeId
         }, {
-          onConflict: 'year,month,store_id'  // 店舗IDも含める
+          onConflict: 'year,month,store_id'
         })
       
       if (!error) {
@@ -204,7 +228,7 @@ export default function Report() {
         .from('system_settings')
         .select('setting_value')
         .eq('setting_key', 'business_day_start_hour')
-        .eq('store_id', storeId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)
         .single()
       
       if (data) {
@@ -232,7 +256,6 @@ export default function Report() {
     setLoading(true)
     try {
       const storeId = getCurrentStoreId()
-      // その月の日数を取得
       const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate()
       const monthlyData: DailyData[] = []
 
@@ -240,8 +263,7 @@ export default function Report() {
         const targetDate = new Date(selectedYear, selectedMonth - 1, day)
         const { start, end } = getBusinessDayRange(targetDate)
 
-        // 売上データを取得（ordersテーブルから）
-         const { data: salesData } = await supabase
+        const { data: salesData } = await supabase
           .from('orders')
           .select(`
             *,
@@ -251,7 +273,7 @@ export default function Report() {
           .lt('checkout_datetime', end.toISOString())
           .eq('store_id', storeId)
           .not('checkout_datetime', 'is', null)
-          .is('deleted_at', null)  // 削除済みを除外
+          .is('deleted_at', null)
           
         if (salesData && salesData.length > 0) {
           const dailyStats: DailyData = {
@@ -267,10 +289,8 @@ export default function Report() {
           }
 
           salesData.forEach(sale => {
-            // 合計売上
             dailyStats.totalSales += sale.total_incl_tax || 0
             
-            // 支払い方法別（paymentsテーブルから）
             if (sale.payments && sale.payments.length > 0) {
               const payment = sale.payments[0]
               dailyStats.cashSales += payment.cash_amount || 0
@@ -278,7 +298,6 @@ export default function Report() {
               dailyStats.otherSales += payment.other_payment_amount || 0
             }
             
-            // 来店種別
             switch (sale.visit_type) {
               case '初回':
                 dailyStats.firstTimeCount++
@@ -294,7 +313,6 @@ export default function Report() {
 
           monthlyData.push(dailyStats)
         } else {
-          // データがない日
           monthlyData.push({
             date: `${selectedMonth}月${day}日`,
             totalSales: 0,
@@ -351,7 +369,6 @@ export default function Report() {
   // 業務日報を保存
   const saveDailyReport = async () => {
     try {
-      // ここでSupabaseに保存する処理を実装
       alert('業務日報を保存しました')
       setShowDailyReportModal(false)
     } catch (error) {
@@ -362,6 +379,7 @@ export default function Report() {
 
   useEffect(() => {
     loadBusinessDayStartHour()
+    loadActiveAttendanceStatuses()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -878,7 +896,7 @@ export default function Report() {
                     </tbody>
                   </table>
 
-                  {/* 内勤・キャスト人数 */}
+                  {/* 内勤・キャスト人数（読み取り専用） */}
                   <div style={{ marginTop: '20px' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                       <tbody>
@@ -886,32 +904,23 @@ export default function Report() {
                           <td style={{ backgroundColor: '#e8e8ff', padding: '12px', textAlign: 'center', border: '1px solid #999', width: '30%', fontSize: '16px' }}>
                             内勤
                           </td>
-                          <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
-                            <input
-                              type="number"
-                              value={dailyReportData.staffCount}
-                              onChange={(e) => setDailyReportData({...dailyReportData, staffCount: Number(e.target.value)})}
-                              style={{ width: '50px', textAlign: 'center', border: 'none', fontSize: '16px' }}
-                            />
-                            人
+                          <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px', fontWeight: 'bold' }}>
+                            {dailyReportData.staffCount}人
                           </td>
                         </tr>
                         <tr>
                           <td style={{ backgroundColor: '#e8e8ff', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
                             キャスト
                           </td>
-                          <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
-                            <input
-                              type="number"
-                              value={dailyReportData.castCount}
-                              onChange={(e) => setDailyReportData({...dailyReportData, castCount: Number(e.target.value)})}
-                              style={{ width: '50px', textAlign: 'center', border: 'none', fontSize: '16px' }}
-                            />
-                            人
+                          <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px', fontWeight: 'bold' }}>
+                            {dailyReportData.castCount}人
                           </td>
                         </tr>
                       </tbody>
                     </table>
+                    <div style={{ marginTop: '5px', fontSize: '12px', color: '#666', textAlign: 'center' }}>
+                      ※勤怠データから自動集計
+                    </div>
                   </div>
                 </div>
 
