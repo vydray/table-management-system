@@ -382,6 +382,74 @@ body.modal-open {
   height: auto;
 }
 
+/* タブレット対応（画面が小さい場合） */
+@media screen and (max-width: 900px) {
+  #modal.modal-edit {
+    width: 95%;
+    max-width: 100%;
+    font-size: 14px;
+  }
+  
+  /* モーダル内の要素のサイズ調整 */
+  #modal h3 {
+    font-size: 18px;
+    padding: 15px;
+  }
+  
+  .datetime-edit {
+    font-size: 14px;
+    padding: 10px 15px;
+  }
+  
+  .date-select, .time-select {
+    font-size: 13px;
+    padding: 4px 6px;
+  }
+  
+  /* POSコンテナの調整 */
+  .pos-container {
+    padding: 15px;
+    gap: 15px;
+  }
+  
+  .left-section {
+    width: 50%;
+    padding: 15px;
+    height: 400px;
+  }
+  
+  .right-section {
+    width: 50%;
+    padding: 15px;
+    min-height: 400px;
+  }
+  
+  /* カテゴリーと商品リストの文字サイズ */
+  .category-title {
+    font-size: 13px;
+  }
+  
+  .main-category-item, .sub-category-item, .cast-item {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+  
+  /* 注文テーブルの調整 */
+  .order-table-header, .order-table-row {
+    font-size: 13px;
+  }
+  
+  .order-title {
+    font-size: 16px;
+  }
+  
+  /* ボタンの調整 */
+  .btn-checkout, .btn-delete {
+    font-size: 14px;
+    padding: 10px;
+  }
+}
+
 /* スマホ対応 */
 @media screen and (max-width: 600px) {
   #modal.modal-edit {

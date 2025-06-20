@@ -974,7 +974,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
         top: `${tablePosition.top}px`, 
         left: `${tablePosition.left}px`,
         width: `${tableSize.width}px`,
-        height: `${tableSize.height}px`
+        height: `${tableSize.height}px`,
+        padding: `${5 * scale}px`,
+        borderRadius: `${16 * scale}px`,
+        fontSize: `${14 * scale}px`
       }}
       onTouchStart={(e) => {
         e.preventDefault()
@@ -1009,17 +1012,17 @@ const Table = ({ tableId, data, scale, tableSize }: {
         }
       }}
     >
-      <div className="table-name">
+      <div className="table-name" style={{ fontSize: `${16 * scale}px` }}>
         {tableId} {data.visit && data.status === 'occupied' ? data.visit : ''}
       </div>
-      <div className="table-info">
+      <div className="table-info" style={{ fontSize: `${12 * scale}px` }}>
         {data.status === 'empty' ? (
-          <small>空席</small>
+          <small style={{ fontSize: `${11 * scale}px` }}>空席</small>
         ) : (
           <>
-            <strong>{data.name}</strong>
-            推し: {data.oshi}
-            <div className="table-elapsed">{data.elapsed}</div>
+            <strong style={{ fontSize: `${13 * scale}px` }}>{data.name}</strong>
+            <span style={{ fontSize: `${11 * scale}px` }}>推し: {data.oshi}</span>
+            <div className="table-elapsed" style={{ fontSize: `${10 * scale}px` }}>{data.elapsed}</div>
           </>
         )}
       </div>
@@ -1419,11 +1422,12 @@ const Table = ({ tableId, data, scale, tableSize }: {
               borderRadius: '10px',
               boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
               zIndex: 10001,
-              width: '900px',
+              width: window.innerWidth > 900 ? '900px' : '95%',
               maxWidth: '95%',
               maxHeight: '90vh',
               display: 'flex',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              fontSize: window.innerWidth > 900 ? '16px' : '14px'
             }}
           >
             {/* 左側：支払い方法入力部分 */}
