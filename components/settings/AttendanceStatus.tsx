@@ -19,6 +19,8 @@ interface AttendanceStatusItem {
 export default function AttendanceStatus() {
   const [attendanceStatuses, setAttendanceStatuses] = useState<AttendanceStatusItem[]>([])
   const [showAddStatus, setShowAddStatus] = useState(false)
+  const [showEditStatus, setShowEditStatus] = useState(false)
+  const [editingStatus, setEditingStatus] = useState<AttendanceStatusItem | null>(null)
   const [newStatusName, setNewStatusName] = useState('')
   const [newStatusColor, setNewStatusColor] = useState('#4ECDC4')
 
@@ -118,6 +120,43 @@ export default function AttendanceStatus() {
         alert(`ステータスの追加に失敗しました: ${error.message}`)
       } else {
         alert('ステータスの追加に失敗しました')
+      }
+    }
+  }
+
+  // ステータスを更新
+  const updateStatus = async () => {
+    if (!editingStatus || !newStatusName.trim()) {
+      alert('ステータス名を入力してください')
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('attendance_statuses')
+        .update({
+          name: newStatusName.trim(),
+          color: newStatusColor
+        })
+        .eq('id', editingStatus.id)
+
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+
+      setEditingStatus(null)
+      setNewStatusName('')
+      setNewStatusColor('#4ECDC4')
+      setShowEditStatus(false)
+      await loadAttendanceStatuses()
+      await updateActiveStatusesInSettings()
+    } catch (error) {
+      console.error('Error updating status:', error)
+      if (error instanceof Error) {
+        alert(`ステータスの更新に失敗しました: ${error.message}`)
+      } else {
+        alert('ステータスの更新に失敗しました')
       }
     }
   }
@@ -276,6 +315,25 @@ export default function AttendanceStatus() {
                 </span>
               </label>
               <button
+                onClick={() => {
+                  setEditingStatus(status)
+                  setNewStatusName(status.name)
+                  setNewStatusColor(status.color)
+                  setShowEditStatus(true)
+                }}
+                style={{
+                  padding: '5px 15px',
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                編集
+              </button>
+              <button
                 onClick={() => deleteStatus(status.id)}
                 style={{
                   padding: '5px 15px',
@@ -386,6 +444,105 @@ export default function AttendanceStatus() {
                 }}
               >
                 追加
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ステータス編集モーダル */}
+      {showEditStatus && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '10px',
+            padding: '30px',
+            width: '90%',
+            maxWidth: '400px'
+          }}>
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>ステータス編集</h3>
+            
+            <input
+              type="text"
+              placeholder="ステータス名"
+              value={newStatusName}
+              onChange={(e) => setNewStatusName(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: '16px',
+                border: '1px solid #ddd',
+                borderRadius: '5px',
+                marginBottom: '15px'
+              }}
+            />
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '10px', fontSize: '14px', color: '#666' }}>
+                カラー選択
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {statusColorPresets.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => setNewStatusColor(color)}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '5px',
+                      backgroundColor: color,
+                      border: newStatusColor === color ? '3px solid #333' : '1px solid #ddd',
+                      cursor: 'pointer'
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowEditStatus(false)
+                  setEditingStatus(null)
+                  setNewStatusName('')
+                  setNewStatusColor('#4ECDC4')
+                }}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#ccc',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '16px'
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={updateStatus}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '16px'
+                }}
+              >
+                更新
               </button>
             </div>
           </div>
