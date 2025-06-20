@@ -832,36 +832,81 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
   
   // レスポンシブ対応：画面サイズに応じた位置計算
   useEffect(() => {
+    let isCalculating = false
+    let lastWidth = 0
+    let lastHeight = 0
+    
     const calculatePosition = () => {
+      if (isCalculating) return
+      isCalculating = true
+      
       const layout = document.getElementById('layout')
-      if (!layout) return
+      if (!layout) {
+        isCalculating = false
+        return
+      }
       
       // 元の固定位置を取得
       const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
-      if (!originalPosition) return
+      if (!originalPosition) {
+        isCalculating = false
+        return
+      }
       
       const layoutRect = layout.getBoundingClientRect()
+      
+      // サイズが実質的に変わっていない場合はスキップ
+      if (Math.abs(layoutRect.width - lastWidth) < 1 && 
+          Math.abs(layoutRect.height - lastHeight) < 1) {
+        isCalculating = false
+        return
+      }
+      
+      lastWidth = layoutRect.width
+      lastHeight = layoutRect.height
+      
       const baseWidth = 1024
       const baseHeight = 768
       
-      // 現在のレイアウトサイズに応じて比率計算
+      // 画面サイズに応じて位置を計算（ただし、元のサイズを超えない）
       const scaleX = Math.min(layoutRect.width / baseWidth, 1)
       const scaleY = Math.min(layoutRect.height / baseHeight, 1)
       
+      // 最小スケールを設定してテーブルが小さくなりすぎないようにする
+      const minScale = 0.5
+      const finalScaleX = Math.max(scaleX, minScale)
+      const finalScaleY = Math.max(scaleY, minScale)
+      
       setTablePosition({
-        top: originalPosition.top * scaleY,
-        left: originalPosition.left * scaleX
+        top: originalPosition.top * finalScaleY,
+        left: originalPosition.left * finalScaleX
       })
+      
+      isCalculating = false
     }
     
-    // 初回実行を少し遅らせる
-    const timer = setTimeout(calculatePosition, 100)
+    // 初回実行を遅らせる
+    const initialTimer = setTimeout(calculatePosition, 200)
     
-    window.addEventListener('resize', calculatePosition)
+    // リサイズイベントにdebounceを適用
+    let resizeTimer: NodeJS.Timeout
+    const handleResize = () => {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(calculatePosition, 100)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    
+    // Androidのorientationchangeイベントも考慮
+    window.addEventListener('orientationchange', () => {
+      setTimeout(calculatePosition, 300)
+    })
     
     return () => {
-      clearTimeout(timer)
-      window.removeEventListener('resize', calculatePosition)
+      clearTimeout(initialTimer)
+      clearTimeout(resizeTimer)
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('orientationchange', calculatePosition)
     }
   }, [tableId])
   
