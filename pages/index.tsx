@@ -834,9 +834,12 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
   // レスポンシブ対応：画面サイズに応じた位置計算（改善版）
   useEffect(() => {
     let mounted = true
+    let calculationCount = 0
+    const maxCalculations = 3  // 最大3回まで
     
     const calculatePositionAndSize = () => {
-      if (!mounted) return
+      if (!mounted || calculationCount >= maxCalculations) return
+      calculationCount++
       
       const layout = document.getElementById('layout')
       if (!layout) return
@@ -847,17 +850,21 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
       const layoutRect = layout.getBoundingClientRect()
       const baseWidth = 1024
       const baseHeight = 768
+      const headerHeight = 72  // ヘッダーの高さ
+      
+      // 実際の使用可能な高さ（ヘッダーを除く）
+      const availableHeight = layoutRect.height - headerHeight
       
       // 画面サイズに応じたスケール計算
       const scaleX = layoutRect.width / baseWidth
-      const scaleY = layoutRect.height / baseHeight
+      const scaleY = availableHeight / (baseHeight - headerHeight)
       
       // アスペクト比を維持するため、小さい方のスケールを使用
-      const scale = Math.min(scaleX, scaleY)
+      const scale = Math.min(scaleX, scaleY, 1)  // 最大1倍まで
       
-      // 位置の計算
+      // 位置の計算（ヘッダーの高さを考慮）
       setTablePosition({
-        top: Math.round(originalPosition.top * scale),
+        top: Math.round((originalPosition.top - headerHeight) * scale + headerHeight),
         left: Math.round(originalPosition.left * scale)
       })
       
@@ -874,22 +881,19 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
     // リサイズ時の再計算（debounce付き）
     let resizeTimer: NodeJS.Timeout
     const handleResize = () => {
+      calculationCount = 0  // リサイズ時はカウントリセット
       clearTimeout(resizeTimer)
-      resizeTimer = setTimeout(calculatePositionAndSize, 150)
+      resizeTimer = setTimeout(calculatePositionAndSize, 200)
     }
     
-    // イベントリスナーの設定
+    // イベントリスナーの設定（リサイズのみ）
     window.addEventListener('resize', handleResize)
-    window.addEventListener('orientationchange', () => {
-      setTimeout(calculatePositionAndSize, 300)
-    })
     
     return () => {
       mounted = false
       clearTimeout(timer)
       clearTimeout(resizeTimer)
       window.removeEventListener('resize', handleResize)
-      window.removeEventListener('orientationchange', calculatePositionAndSize)
     }
   }, [tableId])
   
