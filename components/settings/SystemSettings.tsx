@@ -259,33 +259,6 @@ export default function SystemSettings() {
       </div>
 
       <div style={{ 
-        marginTop: '40px',
-        paddingTop: '20px',
-        borderTop: '1px solid #eee'
-      }}>
-        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            style={{
-              width: '18px',
-              height: '18px',
-              marginRight: '10px',
-              cursor: 'pointer'
-            }}
-          />
-          <span style={{ fontSize: '16px' }}>推しを優先表示</span>
-        </label>
-        <p style={{ 
-          marginTop: '10px',
-          marginLeft: '28px',
-          color: '#666',
-          fontSize: '13px'
-        }}>
-          テーブル設定時の推しが、推し用・シャンパン・ノンアルシャンパンの選択時に一番上に表示されます
-        </p>
-      </div>
-
-      <div style={{ 
         display: 'flex',
         justifyContent: 'center',
         marginTop: '40px'
