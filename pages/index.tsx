@@ -824,22 +824,31 @@ export default function Home() {
     const [startPos, setStartPos] = useState({ x: 0, y: 0, time: 0 })
     
     const handleStart = (x: number, y: number) => {
-      // モーダルが開いている場合は長押し機能を無効化
-      if (showModal) {
-        return;
+  // モーダルが開いている場合は長押し機能を無効化
+  if (showModal) {
+    return;
+  }
+  
+  // 振動フィードバック（Android対応）
+  if ('vibrate' in navigator) {
+    navigator.vibrate(10); // 10ms振動
+  }
+  
+  setStartPos({ x, y, time: Date.now() })
+  
+  if (data.status === 'occupied' && !moveMode) {
+    longPressTimer.current = setTimeout(() => {
+      if (!isLongPress.current) {
+        isLongPress.current = true
+        // 長押し成功時も振動
+        if ('vibrate' in navigator) {
+          navigator.vibrate(50); // 50ms振動
+        }
+        startMoveMode(tableId)
       }
-      
-      setStartPos({ x, y, time: Date.now() })
-      
-      if (data.status === 'occupied' && !moveMode) {
-        longPressTimer.current = setTimeout(() => {
-          if (!isLongPress.current) {
-            isLongPress.current = true
-            startMoveMode(tableId)
-          }
-        }, 800)
-      }
-    }
+    }, 800)
+  }
+}
     
     const handleMove = (x: number, y: number) => {
       const moveX = Math.abs(x - startPos.x)
