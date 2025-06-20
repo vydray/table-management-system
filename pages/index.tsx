@@ -883,11 +883,17 @@ const Table = ({ tableId, data, scale, tableSize }: {
     return null
   }
   
-  // 位置を計算（ヘッダーの高さを考慮）
+  // レイアウトのサイズを取得して中央配置を計算
+  const layout = document.getElementById('layout')
+  const layoutWidth = layout?.getBoundingClientRect().width || 1024
+  const scaledContentWidth = 1024 * scale
+  const horizontalOffset = (layoutWidth - scaledContentWidth) / 2
+  
+  // 位置を計算（ヘッダーの高さと中央配置を考慮）
   const headerHeight = 72
   const tablePosition = {
     top: Math.round((originalPosition.top - headerHeight) * scale + headerHeight),
-    left: Math.round(originalPosition.left * scale)
+    left: Math.round(originalPosition.left * scale + horizontalOffset)
   }
   
   
