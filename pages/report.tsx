@@ -33,7 +33,7 @@ interface DailyReportData {
   otherSales: number
   notTransmittedReceipt: number
   notTransmittedAmount: number
-  unpaidAmount: number  // 未収額
+  unpaidAmount: number
   incomeAmount: number
   expenseAmount: number
   balance: number
@@ -44,6 +44,17 @@ interface DailyReportData {
   instagramFollowers: number
   tiktokFollowers: number
   dailyPaymentTotal: number
+}
+
+interface SalesStats {
+  totalSales: number
+  orderCount: number
+  cashSales: number
+  cardSales: number
+  otherSales: number
+  firstTimeCount: number
+  returnCount: number
+  regularCount: number
 }
 
 export default function Report() {
@@ -88,6 +99,7 @@ export default function Report() {
     dailyPaymentTotal: 0
   })
   const [activeAttendanceStatuses, setActiveAttendanceStatuses] = useState<string[]>(['出勤'])
+  const [isUpdating, setIsUpdating] = useState(false)
 
   // 現金回収を計算する関数
   const calculateCashReceipt = () => {
@@ -276,6 +288,73 @@ export default function Report() {
     return { start, end }
   }
 
+  // 最新の売上データを取得する関数
+  const getLatestSalesData = async (dateStr: string): Promise<SalesStats> => {
+    try {
+      const storeId = getCurrentStoreId()
+      const matches = dateStr.match(/(\d+)月(\d+)日/)
+      if (!matches) return { totalSales: 0, orderCount: 0, cashSales: 0, cardSales: 0, otherSales: 0, firstTimeCount: 0, returnCount: 0, regularCount: 0 }
+      
+      const month = parseInt(matches[1])
+      const day = parseInt(matches[2])
+      const targetDate = new Date(selectedYear, month - 1, day)
+      const { start, end } = getBusinessDayRange(targetDate)
+
+      const { data: salesData } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          payments(cash_amount, credit_card_amount, other_payment_amount)
+        `)
+        .gte('checkout_datetime', start.toISOString())
+        .lt('checkout_datetime', end.toISOString())
+        .eq('store_id', storeId)
+        .not('checkout_datetime', 'is', null)
+        .is('deleted_at', null)
+      
+      const stats: SalesStats = {
+        totalSales: 0,
+        orderCount: salesData?.length || 0,
+        cashSales: 0,
+        cardSales: 0,
+        otherSales: 0,
+        firstTimeCount: 0,
+        returnCount: 0,
+        regularCount: 0
+      }
+
+      if (salesData && salesData.length > 0) {
+        salesData.forEach(sale => {
+          stats.totalSales += sale.total_incl_tax || 0
+          
+          if (sale.payments && sale.payments.length > 0) {
+            const payment = sale.payments[0]
+            stats.cashSales += payment.cash_amount || 0
+            stats.cardSales += payment.credit_card_amount || 0
+            stats.otherSales += payment.other_payment_amount || 0
+          }
+          
+          switch (sale.visit_type) {
+            case '初回':
+              stats.firstTimeCount++
+              break
+            case '再訪':
+              stats.returnCount++
+              break
+            case '常連':
+              stats.regularCount++
+              break
+          }
+        })
+      }
+
+      return stats
+    } catch (error) {
+      console.error('Error getting latest sales data:', error)
+      return { totalSales: 0, orderCount: 0, cashSales: 0, cardSales: 0, otherSales: 0, firstTimeCount: 0, returnCount: 0, regularCount: 0 }
+    }
+  }
+
   // 月次データを取得
   const loadMonthlyData = async () => {
     setLoading(true)
@@ -360,41 +439,191 @@ export default function Report() {
     }
   }
 
-  // 日別詳細を開く
+  // 業務日報を読み込む関数
+  const loadDailyReport = async (businessDate: string) => {
+    try {
+      const storeId = getCurrentStoreId()
+      
+      const { data, error } = await supabase
+        .from('daily_reports')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('business_date', businessDate)
+        .single()
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading daily report:', error)
+        return null
+      }
+      
+      return data
+    } catch (error) {
+      console.error('Error loading daily report:', error)
+      return null
+    }
+  }
+
+  // 日別詳細を開く（リアルタイム対応）
   const openDailyReport = async (day: DailyData) => {
     setSelectedDate(day.date)
     
+    // 常に最新の売上データを取得
+    const latestSalesData = await getLatestSalesData(day.date)
+    
+    // 勤怠データから人数と日払いを取得
     const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(day.date)
     
-    setDailyReportData({
-      date: day.date,
-      eventName: '無し',
-      totalReceipt: day.orderCount,
-      totalSales: day.totalSales,
-      cashReceipt: day.cashSales,
-      cardReceipt: day.cardSales,
-      payPayReceipt: 0,
-      otherSales: day.otherSales,
-      notTransmittedReceipt: 0,
-      notTransmittedAmount: 0,
-      unpaidAmount: 0,
-      incomeAmount: 0,
-      expenseAmount: 0,
-      balance: day.totalSales,
-      staffCount: staffCount,
-      castCount: castCount,
-      remarks: '',
-      twitterFollowers: 0,
-      instagramFollowers: 0,
-      tiktokFollowers: 0,
-      dailyPaymentTotal: dailyPaymentTotal
-    })
+    // 日付を解析して業務日を取得
+    const matches = day.date.match(/(\d+)月(\d+)日/)
+    if (matches) {
+      const month = parseInt(matches[1])
+      const dayNum = parseInt(matches[2])
+      const businessDate = new Date(selectedYear, month - 1, dayNum).toISOString().slice(0, 10)
+      
+      // 保存されたデータ（調整項目とSNS）を読み込む
+      const savedReport = await loadDailyReport(businessDate)
+      
+      setDailyReportData({
+        date: day.date,
+        eventName: savedReport?.event_name || '無し',
+        weather: savedReport?.weather || '晴れ',
+        // 売上関連は常に最新データを使用
+        totalReceipt: latestSalesData.orderCount,
+        totalSales: latestSalesData.totalSales,
+        cashReceipt: latestSalesData.cashSales,
+        cardReceipt: latestSalesData.cardSales,
+        payPayReceipt: 0,
+        otherSales: latestSalesData.otherSales,
+        // 調整項目は保存されたデータを使用
+        notTransmittedReceipt: savedReport?.unknown_receipt || 0,
+        notTransmittedAmount: savedReport?.unknown_amount || 0,
+        unpaidAmount: savedReport?.unpaid_amount || 0,
+        incomeAmount: 0,
+        expenseAmount: savedReport?.expense_amount || 0,
+        balance: latestSalesData.totalSales,
+        staffCount: staffCount,
+        castCount: castCount,
+        remarks: savedReport?.remarks || '',
+        // SNSデータは保存されたデータを使用
+        twitterFollowers: savedReport?.twitter_followers || 0,
+        instagramFollowers: savedReport?.instagram_followers || 0,
+        tiktokFollowers: savedReport?.tiktok_followers || 0,
+        // 日払いは保存されたデータがあればそれを、なければ勤怠から
+        dailyPaymentTotal: savedReport?.daily_payment_total ?? dailyPaymentTotal
+      })
+      
+      // dailyDataも更新（表の表示用）
+      const updatedDailyData = [...dailyData]
+      const dayIndex = updatedDailyData.findIndex(d => d.date === day.date)
+      if (dayIndex !== -1) {
+        updatedDailyData[dayIndex] = {
+          ...updatedDailyData[dayIndex],
+          ...latestSalesData
+        }
+        setDailyData(updatedDailyData)
+      }
+    }
+    
     setShowDailyReportModal(true)
+  }
+
+  // 最新データを取得する関数
+  const updateLatestData = async () => {
+    setIsUpdating(true)
+    try {
+      const latestData = await getLatestSalesData(selectedDate)
+      const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(selectedDate)
+      
+      setDailyReportData(prev => ({
+        ...prev,
+        totalReceipt: latestData.orderCount,
+        totalSales: latestData.totalSales,
+        cashReceipt: latestData.cashSales,
+        cardReceipt: latestData.cardSales,
+        otherSales: latestData.otherSales,
+        staffCount: staffCount,
+        castCount: castCount,
+        // 日払いは保存された値があればそれを優先
+        dailyPaymentTotal: prev.dailyPaymentTotal || dailyPaymentTotal
+      }))
+      
+      // dailyDataも更新
+      const updatedDailyData = [...dailyData]
+      const dayIndex = updatedDailyData.findIndex(d => d.date === selectedDate)
+      if (dayIndex !== -1) {
+        updatedDailyData[dayIndex] = {
+          ...updatedDailyData[dayIndex],
+          totalSales: latestData.totalSales,
+          orderCount: latestData.orderCount,
+          cashSales: latestData.cashSales,
+          cardSales: latestData.cardSales,
+          otherSales: latestData.otherSales,
+          firstTimeCount: latestData.firstTimeCount,
+          returnCount: latestData.returnCount,
+          regularCount: latestData.regularCount
+        }
+        setDailyData(updatedDailyData)
+      }
+    } catch (error) {
+      console.error('Error updating latest data:', error)
+      alert('データの更新中にエラーが発生しました')
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   // 業務日報を保存
   const saveDailyReport = async () => {
     try {
+      const storeId = getCurrentStoreId()
+      
+      // 日付を解析（"6月21日" → "2025-06-21"）
+      const matches = selectedDate.match(/(\d+)月(\d+)日/)
+      if (!matches) {
+        alert('日付の形式が正しくありません')
+        return
+      }
+      
+      const month = parseInt(matches[1])
+      const day = parseInt(matches[2])
+      const businessDate = new Date(selectedYear, month - 1, day).toISOString().slice(0, 10)
+      
+      // 保存するデータ（売上データは保存しない）
+      const reportData = {
+        store_id: storeId,
+        business_date: businessDate,
+        event_name: dailyReportData.eventName || '無し',
+        weather: dailyReportData.weather || '晴れ',
+        
+        // 調整項目のみ保存
+        unknown_receipt: dailyReportData.notTransmittedReceipt,
+        unknown_amount: dailyReportData.notTransmittedAmount,
+        unpaid_amount: dailyReportData.unpaidAmount,
+        expense_amount: dailyReportData.expenseAmount,
+        daily_payment_total: dailyReportData.dailyPaymentTotal,
+        
+        // SNSフォロワー
+        twitter_followers: dailyReportData.twitterFollowers,
+        instagram_followers: dailyReportData.instagramFollowers,
+        tiktok_followers: dailyReportData.tiktokFollowers,
+        
+        // その他
+        remarks: dailyReportData.remarks || ''
+      }
+      
+      // upsert（既存データがあれば更新、なければ新規作成）
+      const { error } = await supabase
+        .from('daily_reports')
+        .upsert(reportData, {
+          onConflict: 'store_id,business_date'
+        })
+      
+      if (error) {
+        console.error('Error saving daily report:', error)
+        alert('保存中にエラーが発生しました: ' + error.message)
+        return
+      }
+      
       alert('業務日報を保存しました')
       setShowDailyReportModal(false)
     } catch (error) {
@@ -826,6 +1055,28 @@ export default function Report() {
                 </div>
               </div>
 
+              {/* 最新データを取得ボタン */}
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <button
+                  onClick={updateLatestData}
+                  disabled={isUpdating}
+                  style={{
+                    padding: '8px 20px',
+                    border: '1px solid #2196F3',
+                    borderRadius: '4px',
+                    backgroundColor: isUpdating ? '#e0e0e0' : '#fff',
+                    color: isUpdating ? '#999' : '#2196F3',
+                    cursor: isUpdating ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  {isUpdating ? '更新中...' : '🔄 最新データを取得'}
+                </button>
+              </div>
+
               {/* 左側と右側のコンテナ */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 {/* 左側：売上情報 */}
@@ -1149,9 +1400,19 @@ export default function Report() {
                       <div style={{ backgroundColor: '#fff', padding: '10px', textAlign: 'center', border: '1px solid #999' }}>
                         <input
                           type="number"
-                          value={dailyReportData.twitterFollowers}
-                          onChange={(e) => setDailyReportData({...dailyReportData, twitterFollowers: Number(e.target.value)})}
-                          style={{ width: '60px', textAlign: 'center', border: 'none', fontSize: '16px' }}
+                          value={dailyReportData.twitterFollowers || ''}
+                          onChange={(e) => setDailyReportData({...dailyReportData, twitterFollowers: Number(e.target.value) || 0})}
+                          style={{ 
+                            width: '90%',
+                            textAlign: 'center', 
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '4px',
+                            padding: '4px',
+                            fontSize: '14px',
+                            backgroundColor: '#f9f9f9',
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                          }}
+                          placeholder="0"
                         />
                       </div>
                     </div>
@@ -1163,9 +1424,19 @@ export default function Report() {
                       <div style={{ backgroundColor: '#fff', padding: '10px', textAlign: 'center', border: '1px solid #999' }}>
                         <input
                           type="number"
-                          value={dailyReportData.instagramFollowers}
-                          onChange={(e) => setDailyReportData({...dailyReportData, instagramFollowers: Number(e.target.value)})}
-                          style={{ width: '60px', textAlign: 'center', border: 'none', fontSize: '16px' }}
+                          value={dailyReportData.instagramFollowers || ''}
+                          onChange={(e) => setDailyReportData({...dailyReportData, instagramFollowers: Number(e.target.value) || 0})}
+                          style={{ 
+                            width: '90%',
+                            textAlign: 'center', 
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '4px',
+                            padding: '4px',
+                            fontSize: '14px',
+                            backgroundColor: '#f9f9f9',
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                          }}
+                          placeholder="0"
                         />
                       </div>
                     </div>
@@ -1177,9 +1448,19 @@ export default function Report() {
                       <div style={{ backgroundColor: '#fff', padding: '10px', textAlign: 'center', border: '1px solid #999' }}>
                         <input
                           type="number"
-                          value={dailyReportData.tiktokFollowers}
-                          onChange={(e) => setDailyReportData({...dailyReportData, tiktokFollowers: Number(e.target.value)})}
-                          style={{ width: '60px', textAlign: 'center', border: 'none', fontSize: '16px' }}
+                          value={dailyReportData.tiktokFollowers || ''}
+                          onChange={(e) => setDailyReportData({...dailyReportData, tiktokFollowers: Number(e.target.value) || 0})}
+                          style={{ 
+                            width: '90%',
+                            textAlign: 'center', 
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '4px',
+                            padding: '4px',
+                            fontSize: '14px',
+                            backgroundColor: '#f9f9f9',
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                          }}
+                          placeholder="0"
                         />
                       </div>
                     </div>
