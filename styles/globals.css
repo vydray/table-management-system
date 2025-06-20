@@ -35,6 +35,10 @@ body.modal-open {
   border: 1px solid #ccc;
   overflow: hidden;
   --scale-factor: 1;
+  /* Androidのレイアウト安定化 */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* スマホ・タブレット対応 */
@@ -46,6 +50,10 @@ body.modal-open {
     max-height: 100%;
     border: none;
     --scale-factor: min(1, calc(100vw / 1024));
+    /* 固定サイズモードに切り替え */
+    position: fixed;
+    top: 0;
+    left: 0;
   }
 }
 
@@ -68,11 +76,15 @@ body.modal-open {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: calc(14px * var(--scale-factor, 1));
+  font-size: 14px;
   cursor: pointer;
-  padding: calc(5px * var(--scale-factor, 1));
+  padding: 5px;
   box-sizing: border-box;
   transition: all 0.3s ease;
+  /* Androidでのちらつき防止 */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .table:hover {

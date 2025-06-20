@@ -132,7 +132,7 @@ export default function Receipts() {
         backgroundColor: '#f5f5f5',
         overflow: 'hidden',
         position: 'relative'
-      }}>
+     }}>
         <div style={{
           display: 'flex',
           width: '100%',
