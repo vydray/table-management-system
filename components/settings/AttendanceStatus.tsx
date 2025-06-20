@@ -7,60 +7,98 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-interface Category {
-  id: number
+interface AttendanceStatusItem {
+  id: string
   name: string
-  display_order: number
-  store_id: number
-  created_at?: string
-  show_oshi_first?: boolean
+  color: string
+  is_active: boolean
+  order_index: number
 }
 
-export default function CategoryManagement() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [newCategoryName, setNewCategoryName] = useState('')
+export default function AttendanceStatus() {
+  const [attendanceStatuses, setAttendanceStatuses] = useState<AttendanceStatusItem[]>([])
+  const [showAddStatus, setShowAddStatus] = useState(false)
+  const [newStatusName, setNewStatusName] = useState('')
+  const [newStatusColor, setNewStatusColor] = useState('#4ECDC4')
 
-  // カテゴリーを読み込む
-  const loadCategories = async () => {
+  const statusColorPresets = [
+    '#4CAF50', '#2196F3', '#FF9800', '#F44336', '#9C27B0',
+    '#00BCD4', '#8BC34A', '#FFC107', '#795548', '#607D8B'
+  ]
+
+  // 勤怠ステータスを読み込む
+  const loadAttendanceStatuses = async () => {
     try {
       const storeId = getCurrentStoreId()
       const { data, error } = await supabase
-        .from('product_categories')
+        .from('attendance_statuses')
         .select('*')
         .eq('store_id', storeId)
-        .order('display_order')
+        .order('order_index')
 
-      if (error) throw error
-      setCategories(data || [])
+      if (error) {
+        // テーブルが存在しない場合はデフォルトステータスを作成
+        if (error.code === '42P01') {
+          await createDefaultStatuses()
+          return
+        }
+        throw error
+      }
+      
+      if (!data || data.length === 0) {
+        await createDefaultStatuses()
+      } else {
+        setAttendanceStatuses(data)
+      }
     } catch (error) {
-      console.error('Error loading categories:', error)
+      console.error('Error loading attendance statuses:', error)
     }
   }
 
-  // カテゴリーを追加
-  const addCategory = async () => {
-    if (!newCategoryName.trim()) {
-      alert('カテゴリー名を入力してください')
+  // デフォルトステータスを作成
+  const createDefaultStatuses = async () => {
+    const storeId = getCurrentStoreId()
+    const defaultStatuses = [
+      { name: '出勤', color: '#4CAF50', is_active: true, order_index: 0 },
+      { name: '遅刻', color: '#FF9800', is_active: false, order_index: 1 },
+      { name: '早退', color: '#2196F3', is_active: false, order_index: 2 },
+      { name: '欠勤', color: '#F44336', is_active: false, order_index: 3 },
+      { name: '有給', color: '#9C27B0', is_active: false, order_index: 4 }
+    ]
+
+    const statusesToInsert = defaultStatuses.map(status => ({
+      ...status,
+      store_id: storeId
+    }))
+
+    const { error } = await supabase
+      .from('attendance_statuses')
+      .insert(statusesToInsert)
+
+    if (!error) {
+      loadAttendanceStatuses()
+    }
+  }
+
+  // 勤怠ステータスを追加
+  const addAttendanceStatus = async () => {
+    if (!newStatusName.trim()) {
+      alert('ステータス名を入力してください')
       return
     }
 
     try {
       const storeId = getCurrentStoreId()
-      console.log('Adding category with store_id:', storeId)
-      
-      const maxDisplayOrder = categories.length > 0 
-        ? Math.max(...categories.map(c => c.display_order)) 
-        : 0
+      console.log('Adding status with store_id:', storeId)
       
       const { data, error } = await supabase
-        .from('product_categories')
+        .from('attendance_statuses')
         .insert({
-          name: newCategoryName.trim(),
-          display_order: maxDisplayOrder + 1,
-          store_id: storeId,
-          show_oshi_first: false
+          name: newStatusName.trim(),
+          color: newStatusColor,
+          is_active: false,
+          order_index: attendanceStatuses.length,
+          store_id: storeId
         })
         .select()
 
@@ -69,268 +107,196 @@ export default function CategoryManagement() {
         throw error
       }
 
-      console.log('Category added:', data)
-      setNewCategoryName('')
-      loadCategories()
-    } catch (error: any) {
-      console.error('Error adding category:', error)
-      alert(`カテゴリーの追加に失敗しました: ${error.message || error}`)
+      console.log('Status added:', data)
+      setNewStatusName('')
+      setNewStatusColor('#4ECDC4')
+      setShowAddStatus(false)
+      loadAttendanceStatuses()
+      updateActiveStatusesInSettings()
+    } catch (error) {
+      console.error('Error adding status:', error)
+      if (error instanceof Error) {
+        alert(`ステータスの追加に失敗しました: ${error.message}`)
+      } else {
+        alert('ステータスの追加に失敗しました')
+      }
     }
   }
 
-  // カテゴリーを更新
-  const updateCategory = async () => {
-    if (!editingCategory || !newCategoryName) return
-
+  // ステータスの有効/無効を切り替え
+  const toggleStatusActive = async (statusId: string, currentActive: boolean) => {
     try {
       const { error } = await supabase
-        .from('product_categories')
-        .update({ name: newCategoryName })
-        .eq('id', editingCategory.id)
+        .from('attendance_statuses')
+        .update({ is_active: !currentActive })
+        .eq('id', statusId)
 
       if (error) throw error
 
-      setNewCategoryName('')
-      setShowEditModal(false)
-      setEditingCategory(null)
-      loadCategories()
+      loadAttendanceStatuses()
+      updateActiveStatusesInSettings()
     } catch (error) {
-      console.error('Error updating category:', error)
-      alert('カテゴリーの更新に失敗しました')
+      console.error('Error toggling status:', error)
     }
   }
 
-  // カテゴリーを削除
-  const deleteCategory = async (categoryId: number) => {
-    if (!confirm('このカテゴリーを削除しますか？\n※このカテゴリーに属する商品も全て削除されます')) return
+  // ステータスを削除
+  const deleteStatus = async (statusId: string) => {
+    if (!confirm('このステータスを削除しますか？')) return
 
     try {
       const { error } = await supabase
-        .from('product_categories')
+        .from('attendance_statuses')
         .delete()
-        .eq('id', categoryId)
+        .eq('id', statusId)
 
       if (error) throw error
-      loadCategories()
+
+      loadAttendanceStatuses()
+      updateActiveStatusesInSettings()
     } catch (error) {
-      console.error('Error deleting category:', error)
-      alert('カテゴリーの削除に失敗しました')
+      console.error('Error deleting status:', error)
+      alert('ステータスの削除に失敗しました')
     }
   }
 
-  // 推し優先表示を切り替え
-  const toggleOshiFirst = async (categoryId: number, currentValue: boolean) => {
+  // system_settingsのactive_attendance_statusesを更新
+  const updateActiveStatusesInSettings = async () => {
     try {
-      const { error } = await supabase
-        .from('product_categories')
-        .update({ show_oshi_first: !currentValue })
-        .eq('id', categoryId)
+      const storeId = getCurrentStoreId()
+      const { data } = await supabase
+        .from('attendance_statuses')
+        .select('name')
+        .eq('store_id', storeId)
+        .eq('is_active', true)
+        .order('order_index')
 
-      if (error) throw error
-      loadCategories()
+      if (data) {
+        const activeStatuses = data.map(s => s.name)
+        
+        // upsertのonConflictを修正
+        const { error } = await supabase
+          .from('system_settings')
+          .upsert({
+            setting_key: 'active_attendance_statuses',
+            setting_value: JSON.stringify(activeStatuses),
+            store_id: storeId
+          })
+
+        if (error) {
+          console.error('Error upserting system_settings:', error)
+        }
+      }
     } catch (error) {
-      console.error('Error toggling oshi first:', error)
+      console.error('Error updating active statuses in settings:', error)
     }
   }
 
   useEffect(() => {
-    loadCategories()
+    loadAttendanceStatuses()
   }, [])
 
   return (
     <div>
-      {/* ヘッダー部分 */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '30px'
+        marginBottom: '20px'
       }}>
-        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>新規カテゴリー追加</h2>
-      </div>
-
-      {/* カテゴリー追加フォーム */}
-      <div style={{
-        display: 'flex',
-        gap: '10px',
-        marginBottom: '30px'
-      }}>
-        <input
-          type="text"
-          placeholder="カテゴリー名"
-          value={newCategoryName}
-          onChange={(e) => setNewCategoryName(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && addCategory()}
-          style={{
-            flex: 1,
-            padding: '10px 15px',
-            fontSize: '16px',
-            border: '1px solid #ddd',
-            borderRadius: '5px'
-          }}
-        />
+        <h2 style={{ margin: 0, fontSize: '20px' }}>勤怠ステータス管理</h2>
         <button
-          onClick={addCategory}
+          onClick={() => setShowAddStatus(true)}
           style={{
-            padding: '10px 30px',
-            backgroundColor: '#4CAF50',
+            padding: '10px 20px',
+            backgroundColor: '#4A90E2',
             color: 'white',
             border: 'none',
             borderRadius: '5px',
             cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold'
+            fontSize: '14px'
           }}
         >
-          追加
+          + ステータス追加
         </button>
       </div>
 
-      {/* カテゴリー一覧 */}
-      <div>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '20px',
-          marginBottom: '15px'
-        }}>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>カテゴリー一覧</h2>
-          <button
-            style={{
-              padding: '5px 15px',
-              backgroundColor: '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px'
-            }}
-          >
-            ↑ 並び替え
-          </button>
-        </div>
-
-        {/* テーブルヘッダー */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 150px 120px',
-          padding: '10px 20px',
-          backgroundColor: '#f5f5f5',
-          borderRadius: '5px 5px 0 0',
-          fontWeight: 'bold',
-          fontSize: '14px',
-          color: '#666'
-        }}>
-          <div>カテゴリー名</div>
-          <div style={{ textAlign: 'center' }}>推し優先表示</div>
-          <div style={{ textAlign: 'center' }}>操作</div>
-        </div>
-
-        {/* カテゴリーリスト */}
-        <div style={{
-          backgroundColor: 'white',
-          border: '1px solid #e0e0e0',
-          borderRadius: '0 0 5px 5px'
-        }}>
-          {categories.map((category, index) => (
-            <div
-              key={category.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 150px 120px',
-                padding: '15px 20px',
-                borderBottom: index < categories.length - 1 ? '1px solid #e0e0e0' : 'none',
-                alignItems: 'center'
-              }}
-            >
-              <div style={{ fontSize: '16px' }}>{category.name}</div>
-              
-              <div style={{ textAlign: 'center' }}>
-                <button
-                  onClick={() => toggleOshiFirst(category.id, category.show_oshi_first || false)}
-                  style={{
-                    width: '50px',
-                    height: '25px',
-                    borderRadius: '15px',
-                    border: 'none',
-                    backgroundColor: category.show_oshi_first ? '#4CAF50' : '#ccc',
-                    position: 'relative',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.3s'
-                  }}
-                >
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    backgroundColor: 'white',
-                    position: 'absolute',
-                    top: '2.5px',
-                    left: category.show_oshi_first ? '27px' : '3px',
-                    transition: 'left 0.3s',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                  }} />
-                </button>
-              </div>
-              
-              <div style={{ 
-                display: 'flex', 
-                gap: '10px',
-                justifyContent: 'center'
-              }}>
-                <button
-                  onClick={() => {
-                    setEditingCategory(category)
-                    setNewCategoryName(category.name)
-                    setShowEditModal(true)
-                  }}
-                  style={{
-                    padding: '5px 15px',
-                    backgroundColor: '#2196F3',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  編集
-                </button>
-                <button
-                  onClick={() => deleteCategory(category.id)}
-                  style={{
-                    padding: '5px 15px',
-                    backgroundColor: '#f44336',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  削除
-                </button>
-              </div>
-            </div>
-          ))}
-          
-          {categories.length === 0 && (
-            <div style={{
-              padding: '40px',
-              textAlign: 'center',
-              color: '#999'
-            }}>
-              カテゴリーがありません
-            </div>
-          )}
-        </div>
+      <div style={{
+        backgroundColor: '#e8f5e9',
+        borderRadius: '10px',
+        padding: '15px',
+        marginBottom: '20px',
+        fontSize: '14px',
+        color: '#2e7d32'
+      }}>
+        <strong>💡 ヒント:</strong> 有効にしたステータスは業務日報の人数集計で「出勤」として扱われます
       </div>
 
-      {/* 編集モーダル */}
-      {showEditModal && (
+      <div style={{ backgroundColor: 'white', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+        {attendanceStatuses.map((status, index) => (
+          <div
+            key={status.id}
+            style={{
+              padding: '15px 20px',
+              borderBottom: index < attendanceStatuses.length - 1 ? '1px solid #eee' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '5px',
+                  backgroundColor: status.color
+                }}
+              />
+              <span style={{ fontSize: '16px', fontWeight: '500' }}>{status.name}</span>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                cursor: 'pointer'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={status.is_active}
+                  onChange={() => toggleStatusActive(status.id, status.is_active)}
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    cursor: 'pointer'
+                  }}
+                />
+                <span style={{ fontSize: '14px', color: status.is_active ? '#4CAF50' : '#666' }}>
+                  {status.is_active ? '有効' : '無効'}
+                </span>
+              </label>
+              <button
+                onClick={() => deleteStatus(status.id)}
+                style={{
+                  padding: '5px 15px',
+                  backgroundColor: '#ff4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                削除
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ステータス追加モーダル */}
+      {showAddStatus && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -350,28 +316,51 @@ export default function CategoryManagement() {
             width: '90%',
             maxWidth: '400px'
           }}>
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>カテゴリー編集</h3>
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>ステータス追加</h3>
             
             <input
               type="text"
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="ステータス名"
+              value={newStatusName}
+              onChange={(e) => setNewStatusName(e.target.value)}
               style={{
                 width: '100%',
                 padding: '12px',
                 fontSize: '16px',
                 border: '1px solid #ddd',
                 borderRadius: '5px',
-                marginBottom: '20px'
+                marginBottom: '15px'
               }}
             />
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '10px', fontSize: '14px', color: '#666' }}>
+                カラー選択
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {statusColorPresets.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => setNewStatusColor(color)}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '5px',
+                      backgroundColor: color,
+                      border: newStatusColor === color ? '3px solid #333' : '1px solid #ddd',
+                      cursor: 'pointer'
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => {
-                  setShowEditModal(false)
-                  setEditingCategory(null)
-                  setNewCategoryName('')
+                  setShowAddStatus(false)
+                  setNewStatusName('')
+                  setNewStatusColor('#4ECDC4')
                 }}
                 style={{
                   padding: '10px 20px',
@@ -386,10 +375,10 @@ export default function CategoryManagement() {
                 キャンセル
               </button>
               <button
-                onClick={updateCategory}
+                onClick={addAttendanceStatus}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: '#2196F3',
+                  backgroundColor: '#4A90E2',
                   color: 'white',
                   border: 'none',
                   borderRadius: '5px',
@@ -397,7 +386,7 @@ export default function CategoryManagement() {
                   fontSize: '16px'
                 }}
               >
-                更新
+                追加
               </button>
             </div>
           </div>
