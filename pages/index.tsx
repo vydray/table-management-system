@@ -822,7 +822,6 @@ export default function Home() {
 // テーブルコンポーネント（修正版）
 const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
   const [startPos, setStartPos] = useState({ x: 0, y: 0, time: 0 })
-  const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
   
   // 元の固定位置を取得して初期値として使用
   const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
@@ -830,6 +829,7 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
     if (!originalPosition) return { top: 0, left: 0 }
     return { top: originalPosition.top, left: originalPosition.left }
   })
+  const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
   
   // レスポンシブ対応：画面サイズに応じた位置計算（改善版）
   useEffect(() => {
