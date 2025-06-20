@@ -144,6 +144,42 @@ export default function Attendance() {
     }])
   }
 
+  // 行を削除
+  const deleteRow = async (index: number) => {
+    const row = attendanceRows[index]
+    
+    // 空の行または新規行の場合は単純に削除
+    if (!row.cast_name || row.id.startsWith('new-')) {
+      const newRows = attendanceRows.filter((_, i) => i !== index)
+      setAttendanceRows(newRows)
+      return
+    }
+
+    // 既存データの場合は確認
+    if (!confirm(`${row.cast_name}の勤怠データを削除しますか？`)) {
+      return
+    }
+
+    try {
+      const storeId = getCurrentStoreId()
+      const { error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('store_id', storeId)
+        .eq('date', selectedDate)
+        .eq('cast_name', row.cast_name)
+
+      if (error) throw error
+
+      const newRows = attendanceRows.filter((_, i) => i !== index)
+      setAttendanceRows(newRows)
+      alert('削除しました')
+    } catch (error) {
+      console.error('Error deleting attendance:', error)
+      alert('削除に失敗しました')
+    }
+  }
+
   // 行を更新（金額フォーマット対応）
   const updateRow = (index: number, field: keyof AttendanceRow, value: string | number) => {
     const newRows = [...attendanceRows]
@@ -563,6 +599,18 @@ useEffect(() => {
                     }}>
                       日払
                     </th>
+                    <th style={{ 
+                      padding: '12px 8px', 
+                      textAlign: 'center', 
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#333',
+                      borderBottom: '2px solid #e0e0e0',
+                      backgroundColor: '#f8f8f8',
+                      width: '50px'
+                    }}>
+                      削除
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -904,6 +952,36 @@ useEffect(() => {
                             e.currentTarget.style.backgroundColor = '#fff'
                           }}
                         />
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => deleteRow(index)}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            backgroundColor: '#ff4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s',
+                            margin: '0 auto'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#ff0000'
+                            e.currentTarget.style.transform = 'scale(1.1)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#ff4444'
+                            e.currentTarget.style.transform = 'scale(1)'
+                          }}
+                        >
+                          ×
+                        </button>
                       </td>
                     </tr>
                   ))}
