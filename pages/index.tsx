@@ -822,7 +822,13 @@ export default function Home() {
 // テーブルコンポーネント（修正版）
 const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
   const [startPos, setStartPos] = useState({ x: 0, y: 0, time: 0 })
-  const [tablePosition, setTablePosition] = useState({ top: 0, left: 0 })
+  
+  // 元の固定位置を取得して初期値として使用
+  const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
+  const [tablePosition, setTablePosition] = useState(() => {
+    if (!originalPosition) return { top: 0, left: 0 }
+    return { top: originalPosition.top, left: originalPosition.left }
+  })
   
   // レスポンシブ対応：画面サイズに応じた位置計算
   useEffect(() => {
@@ -830,17 +836,17 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
       const layout = document.getElementById('layout')
       if (!layout) return
       
-      const layoutRect = layout.getBoundingClientRect()
-      const baseWidth = 1024
-      const baseHeight = 768
-      
       // 元の固定位置を取得
       const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
       if (!originalPosition) return
       
+      const layoutRect = layout.getBoundingClientRect()
+      const baseWidth = 1024
+      const baseHeight = 768
+      
       // 現在のレイアウトサイズに応じて比率計算
-      const scaleX = layoutRect.width / baseWidth
-      const scaleY = layoutRect.height / baseHeight
+      const scaleX = Math.min(layoutRect.width / baseWidth, 1)
+      const scaleY = Math.min(layoutRect.height / baseHeight, 1)
       
       setTablePosition({
         top: originalPosition.top * scaleY,
@@ -848,10 +854,15 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
       })
     }
     
-    calculatePosition()
+    // 初回実行を少し遅らせる
+    const timer = setTimeout(calculatePosition, 100)
+    
     window.addEventListener('resize', calculatePosition)
     
-    return () => window.removeEventListener('resize', calculatePosition)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', calculatePosition)
+    }
   }, [tableId])
   
   const handleStart = (x: number, y: number) => {
@@ -912,7 +923,6 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
   }
   
   // positionが存在しない場合の対処
-  const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
   if (!originalPosition) {
     console.error(`Position not found for table: ${tableId}`)
     return null
@@ -928,11 +938,9 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
         moveMode && data.status === 'occupied' && tableId !== moveFromTable ? 'move-mode' : ''
       }`}
       style={{ 
+        position: 'absolute',
         top: `${tablePosition.top}px`, 
-        left: `${tablePosition.left}px`,
-        // レスポンシブ対応のためのサイズ調整
-        width: 'calc(130px * var(--scale-factor, 1))',
-        height: 'calc(123px * var(--scale-factor, 1))'
+        left: `${tablePosition.left}px`
       }}
       onTouchStart={(e) => {
         e.preventDefault()
