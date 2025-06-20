@@ -1281,3 +1281,217 @@ label {
     padding: 8px;
   }
 }
+/* Android端末用のモーダルレイアウト修正 */
+
+/* モーダルの基本設定を強化 */
+#modal.modal-edit {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Android/タブレット用の修正 */
+@media screen and (max-width: 1024px) {
+  /* モーダル内部のレイアウト修正 */
+  #modal.modal-edit {
+    width: 90% !important;
+    height: 90% !important;
+    max-width: 100% !important;
+    max-height: 90vh !important;
+    padding: 0 !important;
+  }
+  
+  /* 詳細エリアの修正 */
+  #modal.modal-edit #details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: auto !important;
+    height: 100% !important;
+  }
+  
+  /* 注文セクションの修正 */
+  #modal.modal-edit .order-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  
+  /* 入店日時エリアの修正 */
+  #modal.modal-edit .datetime-edit {
+    flex-shrink: 0;
+    padding: 15px 20px !important;
+    font-size: 16px !important;
+    background: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  
+  /* POSコンテナの修正 - 左右分割を維持 */
+  #modal.modal-edit .pos-container {
+    flex: 1;
+    display: flex !important;
+    flex-direction: row !important; /* 横並びを維持 */
+    gap: 15px !important;
+    padding: 15px !important;
+    overflow: auto !important;
+    transform: none !important; /* スケール解除 */
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  
+  /* 左側（商品選択）エリア */
+  #modal.modal-edit .left-section {
+    width: 50% !important;
+    height: auto !important;
+    min-height: 400px !important;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 15px !important;
+    overflow: hidden;
+  }
+  
+  /* 右側（注文リスト）エリア */
+  #modal.modal-edit .right-section {
+    width: 50% !important;
+    height: auto !important;
+    min-height: 400px !important;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 15px !important;
+    overflow: hidden;
+  }
+  
+  /* カテゴリーセクションのスクロール対応 */
+  #modal.modal-edit .category-section {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    overflow: hidden;
+    min-height: 0;
+  }
+  
+  /* 各カテゴリーリストのスクロール */
+  #modal.modal-edit .main-categories,
+  #modal.modal-edit .sub-categories,
+  #modal.modal-edit .cast-select-area {
+    flex: 1;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-height: 100%;
+  }
+  
+  /* 注文テーブルのスクロール対応 */
+  #modal.modal-edit .order-table {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 200px;
+  }
+  
+  #modal.modal-edit .order-table-body {
+    flex: 1;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    min-height: 0;
+  }
+  
+  /* ボタンエリアを下部に固定 */
+  #modal.modal-edit .action-buttons {
+    flex-shrink: 0;
+    display: flex;
+    gap: 10px;
+    padding-top: 10px;
+  }
+  
+  /* フォントサイズの調整 */
+  #modal.modal-edit .order-title {
+    font-size: 16px !important;
+  }
+  
+  #modal.modal-edit .category-title {
+    font-size: 13px !important;
+  }
+  
+  #modal.modal-edit .main-category-item,
+  #modal.modal-edit .sub-category-item,
+  #modal.modal-edit .cast-item {
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+  }
+  
+  #modal.modal-edit .order-table-header,
+  #modal.modal-edit .order-table-row {
+    font-size: 12px !important;
+  }
+  
+  #modal.modal-edit .btn-checkout,
+  #modal.modal-edit .btn-delete {
+    font-size: 14px !important;
+    padding: 10px !important;
+  }
+}
+
+/* より小さい画面（スマートフォン）では縦並びに */
+@media screen and (max-width: 600px) {
+  #modal.modal-edit .pos-container {
+    flex-direction: column !important;
+  }
+  
+  #modal.modal-edit .left-section,
+  #modal.modal-edit .right-section {
+    width: 100% !important;
+    margin-bottom: 15px !important;
+  }
+}
+
+/* Android特有の問題対応 */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (max-width: 1024px) {
+  /* Webkit系ブラウザ（Chrome等）での修正 */
+  #modal.modal-edit {
+    -webkit-transform: translate(-50%, -50%) !important;
+    transform: translate(-50%, -50%) !important;
+  }
+  
+  /* フレックスボックスの修正 */
+  #modal.modal-edit,
+  #modal.modal-edit #details,
+  #modal.modal-edit .order-section {
+    display: -webkit-flex !important;
+    display: flex !important;
+    -webkit-flex-direction: column !important;
+    flex-direction: column !important;
+  }
+  
+  #modal.modal-edit .pos-container {
+    display: -webkit-flex !important;
+    display: flex !important;
+    -webkit-flex-direction: row !important;
+    flex-direction: row !important;
+  }
+}
+
+/* タッチデバイス対応 */
+@media (pointer: coarse) and (max-width: 1024px) {
+  /* スクロール可能エリアのタッチ対応 */
+  #modal.modal-edit .category-section > *,
+  #modal.modal-edit .order-table-body {
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* ボタンのタッチターゲットを大きく */
+  #modal.modal-edit button {
+    min-height: 44px !important;
+  }
+}
