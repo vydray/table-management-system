@@ -31,10 +31,23 @@ export default function AttendanceStatus() {
   const loadAttendanceStatuses = async () => {
     try {
       const storeId = getCurrentStoreId()
+      
+      // storesテーブルから対応するUUIDを取得
+      const { data: storeData, error: storeError } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('id', storeId)
+        .single()
+      
+      if (storeError || !storeData) {
+        console.error('Store lookup error:', storeError)
+        return
+      }
+      
       const { data, error } = await supabase
         .from('attendance_statuses')
         .select('*')
-        .eq('store_id', storeId)
+        .eq('store_id', storeData.id)
         .order('order_index')
 
       if (error) {
@@ -92,44 +105,40 @@ export default function AttendanceStatus() {
       const storeId = getCurrentStoreId()
       console.log('Adding status with store_id:', storeId, 'type:', typeof storeId)
       
-      // store_idが数値の場合、対応するUUIDを取得
-      let storeUuid = storeId
-      if (typeof storeId === 'number' || typeof storeId === 'string') {
-        // storesテーブルから対応するUUIDを取得
-        const { data: storeData, error: storeError } = await supabase
-          .from('stores')
-          .select('id')
-          .eq('id', storeId)
-          .single()
-        
-        if (storeError || !storeData) {
-          throw new Error('店舗情報の取得に失敗しました')
-        }
-        storeUuid = storeData.id
+      // storesテーブルから対応するUUIDを取得
+      const { data: storeData, error: storeError } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('id', storeId)
+        .single()
+      
+      if (storeError || !storeData) {
+        console.error('Store lookup error:', storeError)
+        throw new Error('店舗情報の取得に失敗しました')
       }
       
-      const { data, error } = await supabase
+      console.log('Store UUID:', storeData.id)
+      
+      const { error } = await supabase
         .from('attendance_statuses')
         .insert({
           name: newStatusName.trim(),
           color: newStatusColor,
           is_active: false,
           order_index: attendanceStatuses.length,
-          store_id: storeUuid
+          store_id: storeData.id  // UUIDを使用
         })
-        .select()
 
       if (error) {
         console.error('Supabase error:', error)
         throw error
       }
 
-      console.log('Status added:', data)
       setNewStatusName('')
       setNewStatusColor('#4ECDC4')
       setShowAddStatus(false)
-      loadAttendanceStatuses()
-      updateActiveStatusesInSettings()
+      await loadAttendanceStatuses()
+      await updateActiveStatusesInSettings()
     } catch (error) {
       console.error('Error adding status:', error)
       if (error instanceof Error) {
