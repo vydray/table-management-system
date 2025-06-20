@@ -51,6 +51,10 @@ export default function Home() {
   const [isMoving, setIsMoving] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   
+  // レスポンシブ用のスケール状態を追加
+  const [layoutScale, setLayoutScale] = useState(1)
+  const [tableBaseSize, setTableBaseSize] = useState({ width: 130, height: 123 })
+  
   // POS機能用の状態
   const [productCategories, setProductCategories] = useState<ProductCategories>({})
   const [productCategoriesData, setProductCategoriesData] = useState<ProductCategory[]>([])
@@ -469,6 +473,50 @@ export default function Home() {
     }
   }, [])
 
+  // レイアウトのスケール計算（親コンポーネントで一度だけ）
+  useEffect(() => {
+    const calculateLayoutScale = () => {
+      const layout = document.getElementById('layout')
+      if (!layout) return
+      
+      const layoutRect = layout.getBoundingClientRect()
+      const baseWidth = 1024
+      const baseHeight = 768
+      const headerHeight = 72
+      
+      // 使用可能な高さ
+      const availableHeight = layoutRect.height - headerHeight
+      
+      // スケール計算
+      const scaleX = layoutRect.width / baseWidth
+      const scaleY = availableHeight / (baseHeight - headerHeight)
+      const scale = Math.min(scaleX, scaleY, 1)
+      
+      setLayoutScale(scale)
+      setTableBaseSize({
+        width: Math.round(130 * scale),
+        height: Math.round(123 * scale)
+      })
+    }
+    
+    // 初回計算
+    calculateLayoutScale()
+    
+    // リサイズ時の再計算
+    let resizeTimer: NodeJS.Timeout
+    const handleResize = () => {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(calculateLayoutScale, 300)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    
+    return () => {
+      clearTimeout(resizeTimer)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
   // フォームデータが変更されたら自動保存
   useEffect(() => {
     if (modalMode === 'edit' && currentTable && showModal) {
@@ -820,82 +868,28 @@ export default function Home() {
   }
 
 // テーブルコンポーネント（修正版）
-const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
+const Table = ({ tableId, data, scale, tableSize }: { 
+  tableId: string, 
+  data: TableData,
+  scale: number,
+  tableSize: { width: number, height: number }
+}) => {
   const [startPos, setStartPos] = useState({ x: 0, y: 0, time: 0 })
   
-  // 元の固定位置を取得して初期値として使用
+  // 元の固定位置を取得
   const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
-  const [tablePosition, setTablePosition] = useState(() => {
-    if (!originalPosition) return { top: 0, left: 0 }
-    return { top: originalPosition.top, left: originalPosition.left }
-  })
-  const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
+  if (!originalPosition) {
+    console.error(`Position not found for table: ${tableId}`)
+    return null
+  }
   
-  // レスポンシブ対応：画面サイズに応じた位置計算（改善版）
-  useEffect(() => {
-    let mounted = true
-    let calculationCount = 0
-    const maxCalculations = 3  // 最大3回まで
-    
-    const calculatePositionAndSize = () => {
-      if (!mounted || calculationCount >= maxCalculations) return
-      calculationCount++
-      
-      const layout = document.getElementById('layout')
-      if (!layout) return
-      
-      const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
-      if (!originalPosition) return
-      
-      const layoutRect = layout.getBoundingClientRect()
-      const baseWidth = 1024
-      const baseHeight = 768
-      const headerHeight = 72  // ヘッダーの高さ
-      
-      // 実際の使用可能な高さ（ヘッダーを除く）
-      const availableHeight = layoutRect.height - headerHeight
-      
-      // 画面サイズに応じたスケール計算
-      const scaleX = layoutRect.width / baseWidth
-      const scaleY = availableHeight / (baseHeight - headerHeight)
-      
-      // アスペクト比を維持するため、小さい方のスケールを使用
-      const scale = Math.min(scaleX, scaleY, 1)  // 最大1倍まで
-      
-      // 位置の計算（ヘッダーの高さを考慮）
-      setTablePosition({
-        top: Math.round((originalPosition.top - headerHeight) * scale + headerHeight),
-        left: Math.round(originalPosition.left * scale)
-      })
-      
-      // サイズの計算
-      setTableSize({
-        width: Math.round(130 * scale),
-        height: Math.round(123 * scale)
-      })
-    }
-    
-    // 初回実行
-    const timer = setTimeout(calculatePositionAndSize, 100)
-    
-    // リサイズ時の再計算（debounce付き）
-    let resizeTimer: NodeJS.Timeout
-    const handleResize = () => {
-      calculationCount = 0  // リサイズ時はカウントリセット
-      clearTimeout(resizeTimer)
-      resizeTimer = setTimeout(calculatePositionAndSize, 200)
-    }
-    
-    // イベントリスナーの設定（リサイズのみ）
-    window.addEventListener('resize', handleResize)
-    
-    return () => {
-      mounted = false
-      clearTimeout(timer)
-      clearTimeout(resizeTimer)
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [tableId])
+  // 位置を計算（ヘッダーの高さを考慮）
+  const headerHeight = 72
+  const tablePosition = {
+    top: Math.round((originalPosition.top - headerHeight) * scale + headerHeight),
+    left: Math.round(originalPosition.left * scale)
+  }
+  
   
   const handleStart = (x: number, y: number) => {
     // モーダルが開いている場合は長押し機能を無効化
@@ -969,7 +963,7 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
       } ${
         moveMode && data.status === 'occupied' && tableId !== moveFromTable ? 'move-mode' : ''
       }`}
-      style={{ 
+        style={{ 
         position: 'absolute',
         top: `${tablePosition.top}px`, 
         left: `${tablePosition.left}px`,
@@ -1121,7 +1115,13 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
         )}
         
         {Object.entries(tables).map(([tableId, data]) => (
-          <Table key={tableId} tableId={tableId} data={data} />
+          <Table 
+            key={tableId} 
+            tableId={tableId} 
+            data={data}
+            scale={layoutScale}
+            tableSize={tableBaseSize}
+          />
         ))}
       </div>
 
