@@ -65,8 +65,6 @@ body.modal-open {
 
 /* テーブルのレスポンシブ対応 */
 .table {
-  width: 130px;
-  height: 123px;
   background: #fff;
   border: 2px solid #707070;
   border-radius: 16px;
@@ -85,6 +83,25 @@ body.modal-open {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   will-change: transform;
+}
+
+/* フォントサイズもテーブルサイズに応じて調整 */
+@media screen and (max-width: 768px) {
+  .table {
+    font-size: calc(14px * 0.8);
+  }
+  
+  .table-name {
+    font-size: calc(16px * 0.8);
+  }
+  
+  .table-info {
+    font-size: calc(12px * 0.8);
+  }
+  
+  .table-elapsed {
+    font-size: calc(11px * 0.8);
+  }
 }
 
 .table:hover {
@@ -1137,4 +1154,23 @@ label {
   }
 }
 
-/* 横向き固定の推奨を削除（縦向きでも使えるように） */
+/* Android/モバイル用の追加調整 */
+@media screen and (max-width: 768px) {
+  /* レイアウトのオーバーフローを許可（念のため） */
+  #layout {
+    overflow: visible;
+    min-height: 100vh;
+  }
+  
+  /* ヘッダーも少し小さく */
+  .header {
+    height: 56px;
+    line-height: 56px;
+    font-size: 20px;
+  }
+  
+  .menu-button {
+    font-size: 24px;
+    padding: 8px;
+  }
+}

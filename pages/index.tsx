@@ -829,12 +829,49 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
     if (!originalPosition) return { top: 0, left: 0 }
     return { top: originalPosition.top, left: originalPosition.left }
   })
+  const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
   
-  // レスポンシブ対応：画面サイズに応じた位置計算
+  // レスポンシブ対応：画面サイズに応じた位置計算（改善版）
   useEffect(() => {
+    // Androidデバイスの検出
+    const isAndroid = /Android/i.test(navigator.userAgent)
+    const isMobile = window.innerWidth <= 768
+    
+    if (isAndroid || isMobile) {
+      // モバイルデバイスでは固定レイアウトを使用
+      const mobilePositions: Record<string, { top: number; left: number }> = {
+        // 3列レイアウトに再配置（重ならないように）
+        'A1': { top: 100, left: 10 },
+        'A2': { top: 100, left: 140 },
+        'A3': { top: 100, left: 270 },
+        'A4': { top: 230, left: 10 },
+        'A5': { top: 230, left: 140 },
+        'A6': { top: 230, left: 270 },
+        'A7': { top: 360, left: 10 },
+        'B1': { top: 360, left: 140 },
+        'B2': { top: 360, left: 270 },
+        'B3': { top: 490, left: 10 },
+        'B4': { top: 490, left: 140 },
+        'B5': { top: 490, left: 270 },
+        'B6': { top: 620, left: 10 },
+        'C1': { top: 620, left: 140 },
+        'C2': { top: 620, left: 270 },
+        'C3': { top: 750, left: 10 },
+        'C4': { top: 750, left: 140 },
+        'C5': { top: 750, left: 270 },
+        '臨時1': { top: 880, left: 70 },
+        '臨時2': { top: 880, left: 200 }
+      }
+      
+      const mobilePosition = mobilePositions[tableId as keyof typeof mobilePositions]
+      if (mobilePosition) {
+        setTablePosition(mobilePosition)
+      }
+      return // モバイルでは以降の処理をスキップ
+    }
+    
+    // PC版の処理（既存のコード）
     let isCalculating = false
-    let lastWidth = 0
-    let lastHeight = 0
     
     const calculatePosition = () => {
       if (isCalculating) return
@@ -846,68 +883,25 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
         return
       }
       
-      // 元の固定位置を取得
       const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
       if (!originalPosition) {
         isCalculating = false
         return
       }
       
-      const layoutRect = layout.getBoundingClientRect()
-      
-      // サイズが実質的に変わっていない場合はスキップ
-      if (Math.abs(layoutRect.width - lastWidth) < 1 && 
-          Math.abs(layoutRect.height - lastHeight) < 1) {
-        isCalculating = false
-        return
-      }
-      
-      lastWidth = layoutRect.width
-      lastHeight = layoutRect.height
-      
-      const baseWidth = 1024
-      const baseHeight = 768
-      
-      // 画面サイズに応じて位置を計算（ただし、元のサイズを超えない）
-      const scaleX = Math.min(layoutRect.width / baseWidth, 1)
-      const scaleY = Math.min(layoutRect.height / baseHeight, 1)
-      
-      // 最小スケールを設定してテーブルが小さくなりすぎないようにする
-      const minScale = 0.5
-      const finalScaleX = Math.max(scaleX, minScale)
-      const finalScaleY = Math.max(scaleY, minScale)
-      
+      // PC版はそのまま使用
       setTablePosition({
-        top: originalPosition.top * finalScaleY,
-        left: originalPosition.left * finalScaleX
+        top: originalPosition.top,
+        left: originalPosition.left
       })
       
       isCalculating = false
     }
     
-    // 初回実行を遅らせる
-    const initialTimer = setTimeout(calculatePosition, 200)
+    // PC版は初回のみ実行
+    calculatePosition()
     
-    // リサイズイベントにdebounceを適用
-    let resizeTimer: NodeJS.Timeout
-    const handleResize = () => {
-      clearTimeout(resizeTimer)
-      resizeTimer = setTimeout(calculatePosition, 100)
-    }
-    
-    window.addEventListener('resize', handleResize)
-    
-    // Androidのorientationchangeイベントも考慮
-    window.addEventListener('orientationchange', () => {
-      setTimeout(calculatePosition, 300)
-    })
-    
-    return () => {
-      clearTimeout(initialTimer)
-      clearTimeout(resizeTimer)
-      window.removeEventListener('resize', handleResize)
-      window.removeEventListener('orientationchange', calculatePosition)
-    }
+    return () => {}
   }, [tableId])
   
   const handleStart = (x: number, y: number) => {
@@ -985,7 +979,9 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
       style={{ 
         position: 'absolute',
         top: `${tablePosition.top}px`, 
-        left: `${tablePosition.left}px`
+        left: `${tablePosition.left}px`,
+        width: `${tableSize.width}px`,
+        height: `${tableSize.height}px`
       }}
       onTouchStart={(e) => {
         e.preventDefault()
