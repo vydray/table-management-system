@@ -833,75 +833,64 @@ const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
   
   // レスポンシブ対応：画面サイズに応じた位置計算（改善版）
   useEffect(() => {
-    // Androidデバイスの検出
-    const isAndroid = /Android/i.test(navigator.userAgent)
-    const isMobile = window.innerWidth <= 768
+    let mounted = true
     
-    if (isAndroid || isMobile) {
-      // モバイルデバイスでは固定レイアウトを使用
-      const mobilePositions: Record<string, { top: number; left: number }> = {
-        // 3列レイアウトに再配置（重ならないように）
-        'A1': { top: 100, left: 10 },
-        'A2': { top: 100, left: 140 },
-        'A3': { top: 100, left: 270 },
-        'A4': { top: 230, left: 10 },
-        'A5': { top: 230, left: 140 },
-        'A6': { top: 230, left: 270 },
-        'A7': { top: 360, left: 10 },
-        'B1': { top: 360, left: 140 },
-        'B2': { top: 360, left: 270 },
-        'B3': { top: 490, left: 10 },
-        'B4': { top: 490, left: 140 },
-        'B5': { top: 490, left: 270 },
-        'B6': { top: 620, left: 10 },
-        'C1': { top: 620, left: 140 },
-        'C2': { top: 620, left: 270 },
-        'C3': { top: 750, left: 10 },
-        'C4': { top: 750, left: 140 },
-        'C5': { top: 750, left: 270 },
-        '臨時1': { top: 880, left: 70 },
-        '臨時2': { top: 880, left: 200 }
-      }
-      
-      const mobilePosition = mobilePositions[tableId as keyof typeof mobilePositions]
-      if (mobilePosition) {
-        setTablePosition(mobilePosition)
-      }
-      return // モバイルでは以降の処理をスキップ
-    }
-    
-    // PC版の処理（既存のコード）
-    let isCalculating = false
-    
-    const calculatePosition = () => {
-      if (isCalculating) return
-      isCalculating = true
+    const calculatePositionAndSize = () => {
+      if (!mounted) return
       
       const layout = document.getElementById('layout')
-      if (!layout) {
-        isCalculating = false
-        return
-      }
+      if (!layout) return
       
       const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
-      if (!originalPosition) {
-        isCalculating = false
-        return
-      }
+      if (!originalPosition) return
       
-      // PC版はそのまま使用
+      const layoutRect = layout.getBoundingClientRect()
+      const baseWidth = 1024
+      const baseHeight = 768
+      
+      // 画面サイズに応じたスケール計算
+      const scaleX = layoutRect.width / baseWidth
+      const scaleY = layoutRect.height / baseHeight
+      
+      // アスペクト比を維持するため、小さい方のスケールを使用
+      const scale = Math.min(scaleX, scaleY)
+      
+      // 位置の計算
       setTablePosition({
-        top: originalPosition.top,
-        left: originalPosition.left
+        top: Math.round(originalPosition.top * scale),
+        left: Math.round(originalPosition.left * scale)
       })
       
-      isCalculating = false
+      // サイズの計算
+      setTableSize({
+        width: Math.round(130 * scale),
+        height: Math.round(123 * scale)
+      })
     }
     
-    // PC版は初回のみ実行
-    calculatePosition()
+    // 初回実行
+    const timer = setTimeout(calculatePositionAndSize, 100)
     
-    return () => {}
+    // リサイズ時の再計算（debounce付き）
+    let resizeTimer: NodeJS.Timeout
+    const handleResize = () => {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(calculatePositionAndSize, 150)
+    }
+    
+    // イベントリスナーの設定
+    window.addEventListener('resize', handleResize)
+    window.addEventListener('orientationchange', () => {
+      setTimeout(calculatePositionAndSize, 300)
+    })
+    
+    return () => {
+      mounted = false
+      clearTimeout(timer)
+      clearTimeout(resizeTimer)
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('orientationchange', calculatePositionAndSize)
+    }
   }, [tableId])
   
   const handleStart = (x: number, y: number) => {
