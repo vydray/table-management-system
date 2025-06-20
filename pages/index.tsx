@@ -12,7 +12,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// テーブルの位置情報
+// テーブルの位置情報（元の固定位置）
 const tablePositions = {
   'A1': { top: 607, left: 723 },
   'A2': { top: 607, left: 862 },
@@ -819,134 +819,171 @@ export default function Home() {
     setSelectedProduct(null)
   }
 
-  // テーブルコンポーネント
-  const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
-    const [startPos, setStartPos] = useState({ x: 0, y: 0, time: 0 })
-    
-    const handleStart = (x: number, y: number) => {
-  // モーダルが開いている場合は長押し機能を無効化
-  if (showModal) {
-    return;
-  }
+// テーブルコンポーネント（修正版）
+const Table = ({ tableId, data }: { tableId: string, data: TableData }) => {
+  const [startPos, setStartPos] = useState({ x: 0, y: 0, time: 0 })
+  const [tablePosition, setTablePosition] = useState({ top: 0, left: 0 })
   
-  // 振動フィードバック（Android対応）
-  if ('vibrate' in navigator) {
-    navigator.vibrate(10); // 10ms振動
-  }
-  
-  setStartPos({ x, y, time: Date.now() })
-  
-  if (data.status === 'occupied' && !moveMode) {
-    longPressTimer.current = setTimeout(() => {
-      if (!isLongPress.current) {
-        isLongPress.current = true
-        // 長押し成功時も振動
-        if ('vibrate' in navigator) {
-          navigator.vibrate(50); // 50ms振動
-        }
-        startMoveMode(tableId)
-      }
-    }, 800)
-  }
-}
-    
-    const handleMove = (x: number, y: number) => {
-      const moveX = Math.abs(x - startPos.x)
-      const moveY = Math.abs(y - startPos.y)
+  // レスポンシブ対応：画面サイズに応じた位置計算
+  useEffect(() => {
+    const calculatePosition = () => {
+      const layout = document.getElementById('layout')
+      if (!layout) return
       
-      if (moveX > 10 || moveY > 10) {
-        if (longPressTimer.current) {
-          clearTimeout(longPressTimer.current)
-          longPressTimer.current = null
-        }
-      }
+      const layoutRect = layout.getBoundingClientRect()
+      const baseWidth = 1024
+      const baseHeight = 768
+      
+      // 元の固定位置を取得
+      const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
+      if (!originalPosition) return
+      
+      // 現在のレイアウトサイズに応じて比率計算
+      const scaleX = layoutRect.width / baseWidth
+      const scaleY = layoutRect.height / baseHeight
+      
+      setTablePosition({
+        top: originalPosition.top * scaleY,
+        left: originalPosition.left * scaleX
+      })
     }
     
-    const handleEnd = () => {
-      const elapsed = Date.now() - startPos.time
-      
-      if (elapsed < 500 && !isLongPress.current) {
-        if (!moveMode && !showModal) {  // モーダルが開いていない時のみ
-          openModal(data)
-        } else if (data.status === 'empty' && !isMoving) {
-          executeMove(tableId)
+    calculatePosition()
+    window.addEventListener('resize', calculatePosition)
+    
+    return () => window.removeEventListener('resize', calculatePosition)
+  }, [tableId])
+  
+  const handleStart = (x: number, y: number) => {
+    // モーダルが開いている場合は長押し機能を無効化
+    if (showModal) {
+      return;
+    }
+    
+    // 振動フィードバック（Android対応）
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10); // 10ms振動
+    }
+    
+    setStartPos({ x, y, time: Date.now() })
+    
+    if (data.status === 'occupied' && !moveMode) {
+      longPressTimer.current = setTimeout(() => {
+        if (!isLongPress.current) {
+          isLongPress.current = true
+          // 長押し成功時も振動
+          if ('vibrate' in navigator) {
+            navigator.vibrate(50); // 50ms振動
+          }
+          startMoveMode(tableId)
         }
-      }
-      
+      }, 800)
+    }
+  }
+  
+  const handleMove = (x: number, y: number) => {
+    const moveX = Math.abs(x - startPos.x)
+    const moveY = Math.abs(y - startPos.y)
+    
+    if (moveX > 10 || moveY > 10) {
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current)
         longPressTimer.current = null
       }
-      isLongPress.current = false
     }
-    
-    // positionが存在しない場合の対処
-    const position = tablePositions[tableId as keyof typeof tablePositions]
-    if (!position) {
-      console.error(`Position not found for table: ${tableId}`)
-      return null
-    }
-    
-    return (
-      <div
-        className={`table ${data.status} ${
-          moveMode && moveFromTable === tableId ? 'lifting' : ''
-        } ${
-          moveMode && data.status === 'empty' ? 'move-target' : ''
-        } ${
-          moveMode && data.status === 'occupied' && tableId !== moveFromTable ? 'move-mode' : ''
-        }`}
-        style={{ top: position.top, left: position.left }}
-        onTouchStart={(e) => {
-          e.preventDefault()
-          const touch = e.touches[0]
-          handleStart(touch.clientX, touch.clientY)
-        }}
-        onTouchMove={(e) => {
-          const touch = e.touches[0]
-          handleMove(touch.clientX, touch.clientY)
-        }}
-        onTouchEnd={(e) => {
-          e.preventDefault()
-          handleEnd()
-        }}
-        onMouseDown={(e) => {
-          e.preventDefault()
-          handleStart(e.clientX, e.clientY)
-        }}
-        onMouseMove={(e) => {
-          if (longPressTimer.current) {
-            handleMove(e.clientX, e.clientY)
-          }
-        }}
-        onMouseUp={(e) => {
-          e.preventDefault()
-          handleEnd()
-        }}
-        onMouseLeave={() => {
-          if (longPressTimer.current) {
-            clearTimeout(longPressTimer.current)
-            longPressTimer.current = null
-          }
-        }}
-      >
-        <div className="table-name">
-          {tableId} {data.visit && data.status === 'occupied' ? data.visit : ''}
-        </div>
-        <div className="table-info">
-          {data.status === 'empty' ? (
-            <small>空席</small>
-          ) : (
-            <>
-              <strong>{data.name}</strong>
-              推し: {data.oshi}
-              <div className="table-elapsed">{data.elapsed}</div>
-            </>
-          )}
-        </div>
-      </div>
-    )
   }
+  
+  const handleEnd = () => {
+    const elapsed = Date.now() - startPos.time
+    
+    if (elapsed < 500 && !isLongPress.current) {
+      if (!moveMode && !showModal) {  // モーダルが開いていない時のみ
+        openModal(data)
+      } else if (data.status === 'empty' && !isMoving) {
+        executeMove(tableId)
+      }
+    }
+    
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+    isLongPress.current = false
+  }
+  
+  // positionが存在しない場合の対処
+  const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
+  if (!originalPosition) {
+    console.error(`Position not found for table: ${tableId}`)
+    return null
+  }
+  
+  return (
+    <div
+      className={`table ${data.status} ${
+        moveMode && moveFromTable === tableId ? 'lifting' : ''
+      } ${
+        moveMode && data.status === 'empty' ? 'move-target' : ''
+      } ${
+        moveMode && data.status === 'occupied' && tableId !== moveFromTable ? 'move-mode' : ''
+      }`}
+      style={{ 
+        top: `${tablePosition.top}px`, 
+        left: `${tablePosition.left}px`,
+        // レスポンシブ対応のためのサイズ調整
+        width: 'calc(130px * var(--scale-factor, 1))',
+        height: 'calc(123px * var(--scale-factor, 1))'
+      }}
+      onTouchStart={(e) => {
+        e.preventDefault()
+        const touch = e.touches[0]
+        handleStart(touch.clientX, touch.clientY)
+      }}
+      onTouchMove={(e) => {
+        const touch = e.touches[0]
+        handleMove(touch.clientX, touch.clientY)
+      }}
+      onTouchEnd={(e) => {
+        e.preventDefault()
+        handleEnd()
+      }}
+      onMouseDown={(e) => {
+        e.preventDefault()
+        handleStart(e.clientX, e.clientY)
+      }}
+      onMouseMove={(e) => {
+        if (longPressTimer.current) {
+          handleMove(e.clientX, e.clientY)
+        }
+      }}
+      onMouseUp={(e) => {
+        e.preventDefault()
+        handleEnd()
+      }}
+      onMouseLeave={() => {
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current)
+          longPressTimer.current = null
+        }
+      }}
+    >
+      <div className="table-name">
+        {tableId} {data.visit && data.status === 'occupied' ? data.visit : ''}
+      </div>
+      <div className="table-info">
+        {data.status === 'empty' ? (
+          <small>空席</small>
+        ) : (
+          <>
+            <strong>{data.name}</strong>
+            推し: {data.oshi}
+            <div className="table-elapsed">{data.elapsed}</div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
   // 現在のカテゴリーの推し優先表示設定を取得
   const getCurrentCategoryShowOshiFirst = () => {
@@ -961,10 +998,10 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div id="layout" onClick={(e) => {
-        if (moveMode && e.target === e.currentTarget) {
-          endMoveMode()
-        }
+      <div id="layout" className="responsive-layout" onClick={(e) => {
+      if (moveMode && e.target === e.currentTarget) {
+      endMoveMode()
+      }
       }}>
         <div className="header">
           {/* ハンバーガーメニューボタン */}

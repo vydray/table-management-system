@@ -124,8 +124,10 @@ export default function Receipts() {
       </Head>
 
       <div style={{ 
-        width: '1024px',
-        height: '768px',
+        width: '100%',
+        maxWidth: '1024px',
+        height: '100vh',
+        maxHeight: '768px',
         margin: '0 auto',
         backgroundColor: '#f5f5f5',
         overflow: 'hidden',

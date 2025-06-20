@@ -683,17 +683,17 @@ export default function Report() {
       </Head>
 
       <div style={{
-        width: '100%',
-        maxWidth: '1024px',
-        margin: '0 auto',
-        backgroundColor: '#f5f5f5',
-        padding: '20px',
-        paddingBottom: '100px',
-        position: 'relative',
-        height: 'auto',
-        minHeight: '100vh',
-        overflow: 'visible'
-      }}>
+  width: '100%',
+  maxWidth: '1024px',
+  margin: '0 auto',
+  backgroundColor: '#f5f5f5',
+  padding: '20px',
+  paddingBottom: '100px',
+  position: 'relative',
+  height: 'auto',
+  minHeight: '100vh',
+  overflow: 'visible'
+}}>
         {/* ヘッダー */}
         <div style={{
           backgroundColor: '#fff',

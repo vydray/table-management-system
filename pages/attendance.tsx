@@ -371,8 +371,10 @@ useEffect(() => {
       `}</style>
 
       <div className="attendance-page" style={{
-        width: '1024px',
-        height: '768px',
+        width: '100%',
+        maxWidth: '1024px',
+        height: '100vh',
+        maxHeight: '768px',
         margin: '0 auto',
         backgroundColor: '#f2f2f7',
         overflow: 'hidden',
