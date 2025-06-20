@@ -9,6 +9,7 @@ const supabase = createClient(
 
 interface AttendanceStatusItem {
   id: string
+  store_id: string  // uuid型に合わせる
   name: string
   color: string
   is_active: boolean
@@ -89,7 +90,23 @@ export default function AttendanceStatus() {
 
     try {
       const storeId = getCurrentStoreId()
-      console.log('Adding status with store_id:', storeId)
+      console.log('Adding status with store_id:', storeId, 'type:', typeof storeId)
+      
+      // store_idが数値の場合、対応するUUIDを取得
+      let storeUuid = storeId
+      if (typeof storeId === 'number' || typeof storeId === 'string') {
+        // storesテーブルから対応するUUIDを取得
+        const { data: storeData, error: storeError } = await supabase
+          .from('stores')
+          .select('id')
+          .eq('id', storeId)
+          .single()
+        
+        if (storeError || !storeData) {
+          throw new Error('店舗情報の取得に失敗しました')
+        }
+        storeUuid = storeData.id
+      }
       
       const { data, error } = await supabase
         .from('attendance_statuses')
@@ -98,7 +115,7 @@ export default function AttendanceStatus() {
           color: newStatusColor,
           is_active: false,
           order_index: attendanceStatuses.length,
-          store_id: storeId
+          store_id: storeUuid
         })
         .select()
 
