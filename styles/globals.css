@@ -392,61 +392,61 @@ body.modal-open {
   
   /* モーダル内の要素のサイズ調整 */
   #modal h3 {
-    font-size: 18px;
-    padding: 15px;
+    font-size: calc(18px * var(--scale-factor, 1));
+    padding: calc(15px * var(--scale-factor, 1));
   }
   
   .datetime-edit {
-    font-size: 14px;
-    padding: 10px 15px;
+    font-size: calc(14px * var(--scale-factor, 1));
+    padding: calc(10px * var(--scale-factor, 1)) calc(15px * var(--scale-factor, 1));
   }
   
   .date-select, .time-select {
-    font-size: 13px;
-    padding: 4px 6px;
+    font-size: calc(13px * var(--scale-factor, 1));
+    padding: calc(4px * var(--scale-factor, 1)) calc(6px * var(--scale-factor, 1));
   }
   
   /* POSコンテナの調整 */
   .pos-container {
-    padding: 15px;
-    gap: 15px;
+    padding: calc(15px * var(--scale-factor, 1));
+    gap: calc(15px * var(--scale-factor, 1));
   }
   
   .left-section {
     width: 50%;
-    padding: 15px;
-    height: 400px;
+    padding: calc(15px * var(--scale-factor, 1));
+    height: calc(400px * var(--scale-factor, 1));
   }
   
   .right-section {
     width: 50%;
-    padding: 15px;
-    min-height: 400px;
+    padding: calc(15px * var(--scale-factor, 1));
+    min-height: calc(400px * var(--scale-factor, 1));
   }
   
   /* カテゴリーと商品リストの文字サイズ */
   .category-title {
-    font-size: 13px;
+    font-size: calc(13px * var(--scale-factor, 1));
   }
   
   .main-category-item, .sub-category-item, .cast-item {
-    font-size: 13px;
-    padding: 8px 12px;
+    font-size: calc(13px * var(--scale-factor, 1));
+    padding: calc(8px * var(--scale-factor, 1)) calc(12px * var(--scale-factor, 1));
   }
   
   /* 注文テーブルの調整 */
   .order-table-header, .order-table-row {
-    font-size: 13px;
+    font-size: calc(13px * var(--scale-factor, 1));
   }
   
   .order-title {
-    font-size: 16px;
+    font-size: calc(16px * var(--scale-factor, 1));
   }
   
   /* ボタンの調整 */
   .btn-checkout, .btn-delete {
-    font-size: 14px;
-    padding: 10px;
+    font-size: calc(14px * var(--scale-factor, 1));
+    padding: calc(10px * var(--scale-factor, 1));
   }
 }
 
@@ -456,7 +456,7 @@ body.modal-open {
     width: 95%;
     max-width: 100%;
     height: 95vh;
-    padding: 10px;
+    padding: calc(10px * var(--scale-factor, 1));
   }
   
   .pos-container {
@@ -466,7 +466,7 @@ body.modal-open {
   .left-section,
   .right-section {
     width: 100% !important;
-    margin-bottom: 20px;
+    margin-bottom: calc(20px * var(--scale-factor, 1)) !important;
   }
 }
 
@@ -632,6 +632,14 @@ body.modal-open {
   overflow: hidden;
 }
 
+@media screen and (max-width: 768px) {
+  .left-section {
+    width: 100%;
+    height: auto;
+    padding: calc(15px * var(--scale-factor, 1));
+  }
+}
+
 .sub-categories {
   margin-top: 20px;
 }
@@ -642,12 +650,26 @@ body.modal-open {
   margin-bottom: 20px;
 }
 
+@media screen and (max-width: 768px) {
+  .search-section {
+    gap: calc(10px * var(--scale-factor, 1));
+    margin-bottom: calc(20px * var(--scale-factor, 1));
+  }
+}
+
 .search-input {
   flex: 1;
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 20px;
   font-size: 14px;
+}
+
+@media screen and (max-width: 768px) {
+  .search-input {
+    padding: calc(8px * var(--scale-factor, 1)) calc(12px * var(--scale-factor, 1));
+    font-size: calc(14px * var(--scale-factor, 1));
+  }
 }
 
 .search-button {
@@ -658,6 +680,13 @@ body.modal-open {
   border-radius: 20px;
   cursor: pointer;
   font-size: 14px;
+}
+
+@media screen and (max-width: 768px) {
+  .search-button {
+    padding: calc(8px * var(--scale-factor, 1)) calc(20px * var(--scale-factor, 1));
+    font-size: calc(14px * var(--scale-factor, 1));
+  }
 }
 
 .category-section {
@@ -773,6 +802,14 @@ body.modal-open {
   overflow: visible;
 }
 
+@media screen and (max-width: 768px) {
+  .right-section {
+    width: 100%;
+    padding: calc(15px * var(--scale-factor, 1));
+    min-height: calc(400px * var(--scale-factor, 1));
+  }
+}
+
 .order-title {
   text-align: center;
   font-size: 18px;
@@ -852,15 +889,74 @@ body.modal-open {
 
 .item-detail-content {
   background: white;
-  padding: 30px;
+  padding: calc(30px * var(--scale-factor, 1));
   border-radius: 10px;
-  width: 400px;
+  width: calc(400px * var(--scale-factor, 1));
   max-width: 90%;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   /* position と transform は JavaScript で動的に設定 */
   transition: top 0.3s ease-out;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+}
+
+.item-detail-content h3 {
+  margin: 0 0 calc(20px * var(--scale-factor, 1)) 0;
+  font-size: calc(1.5em * var(--scale-factor, 1));
+  color: #333;
+}
+
+.cast-info {
+  margin: 0 0 calc(20px * var(--scale-factor, 1)) 0;
+  color: #666;
+  font-size: calc(1.1em * var(--scale-factor, 1));
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: calc(15px * var(--scale-factor, 1));
+  padding: calc(10px * var(--scale-factor, 1)) 0;
+  border-bottom: 1px solid #eee;
+  font-size: calc(1em * var(--scale-factor, 1));
+}
+
+.detail-row label {
+  font-weight: bold;
+  color: #555;
+  font-size: calc(1em * var(--scale-factor, 1));
+}
+
+.detail-row.total {
+  border-bottom: 2px solid #333;
+  margin-top: calc(20px * var(--scale-factor, 1));
+  font-size: calc(1.2em * var(--scale-factor, 1));
+}
+
+.quantity-select {
+  padding: calc(5px * var(--scale-factor, 1)) calc(10px * var(--scale-factor, 1));
+  font-size: calc(1em * var(--scale-factor, 1));
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.button-group {
+  display: flex;
+  gap: calc(10px * var(--scale-factor, 1));
+  margin-top: calc(30px * var(--scale-factor, 1));
+}
+
+.delete-button,
+.close-button {
+  flex: 1;
+  padding: calc(10px * var(--scale-factor, 1));
+  font-size: calc(1em * var(--scale-factor, 1));
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
 }
 
 /* iPadでのタッチイベント対応 */
@@ -904,63 +1000,6 @@ body.modal-open {
   }
 }
 
-.item-detail-content h3 {
-  margin: 0 0 20px 0;
-  font-size: 1.5em;
-  color: #333;
-}
-
-.cast-info {
-  margin: 0 0 20px 0;
-  color: #666;
-  font-size: 1.1em;
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.detail-row label {
-  font-weight: bold;
-  color: #555;
-}
-
-.detail-row.total {
-  border-bottom: 2px solid #333;
-  margin-top: 20px;
-  font-size: 1.2em;
-}
-
-.quantity-select {
-  padding: 5px 10px;
-  font-size: 1em;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.button-group {
-  display: flex;
-  gap: 10px;
-  margin-top: 30px;
-}
-
-.delete-button,
-.close-button {
-  flex: 1;
-  padding: 10px;
-  font-size: 1em;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
 .delete-button {
   background-color: #ff4444;
   color: white;
@@ -990,15 +1029,15 @@ label {
 .order-total {
   padding: 0;
   background: transparent;
-  margin-bottom: 20px;
+  margin-bottom: calc(20px * var(--scale-factor, 1));
   flex-shrink: 0;
 }
 
 .total-row {
   display: flex;
   justify-content: space-between;
-  padding: 8px 15px;
-  font-size: 16px;
+  padding: calc(8px * var(--scale-factor, 1)) calc(15px * var(--scale-factor, 1));
+  font-size: calc(16px * var(--scale-factor, 1));
   background: white;
 }
 
@@ -1010,16 +1049,16 @@ label {
 
 .total-row.final {
   border-top: none;
-  padding-top: 8px;
+  padding-top: calc(8px * var(--scale-factor, 1));
   margin-top: 0;
-  font-size: 18px;
+  font-size: calc(18px * var(--scale-factor, 1));
   font-weight: bold;
   background: white;
 }
 
 .final-amount {
   color: #333;
-  font-size: 20px;
+  font-size: calc(20px * var(--scale-factor, 1));
 }
 
 .action-buttons {

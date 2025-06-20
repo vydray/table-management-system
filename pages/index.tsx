@@ -497,6 +497,9 @@ export default function Home() {
         width: Math.round(130 * scale),
         height: Math.round(123 * scale)
       })
+      
+      // CSS変数として設定
+      layout.style.setProperty('--scale-factor', scale.toString())
     }
     
     // 初回計算
@@ -1145,7 +1148,9 @@ const Table = ({ tableId, data, scale, tableSize }: {
 
       {/* メインモーダル */}
       {showModal && (
-        <div id="modal" className={modalMode === 'new' ? 'modal-new' : 'modal-edit'}>
+        <div id="modal" className={modalMode === 'new' ? 'modal-new' : 'modal-edit'} style={{
+          fontSize: `${16 * layoutScale}px`
+        }}>
           <button id="modal-close" onClick={() => {
             document.body.classList.remove('modal-open')  // iPad対応
             setShowModal(false)
@@ -1215,12 +1220,19 @@ const Table = ({ tableId, data, scale, tableSize }: {
           ) : (
             <div id="details">
               <div className="order-section">
-                <div className="datetime-edit">
-                  <span className="label-text">入店日時：</span>
+                <div className="datetime-edit" style={{
+                  fontSize: `${16 * layoutScale}px`,
+                  padding: `${15 * layoutScale}px ${20 * layoutScale}px`
+                }}>
+                  <span className="label-text" style={{ fontSize: `${16 * layoutScale}px` }}>入店日時：</span>
                   <select 
                     value={formData.editYear}
                     onChange={(e) => setFormData({ ...formData, editYear: parseInt(e.target.value) })}
                     className="date-select"
+                    style={{ 
+                      fontSize: `${14 * layoutScale}px`,
+                      padding: `${6 * layoutScale}px ${8 * layoutScale}px`
+                    }}
                   >
                     {[2024, 2025, 2026].map(year => (
                       <option key={year} value={year}>{year}年</option>
@@ -1230,6 +1242,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
                     value={formData.editMonth}
                     onChange={(e) => setFormData({ ...formData, editMonth: parseInt(e.target.value) })}
                     className="date-select"
+                    style={{ 
+                      fontSize: `${14 * layoutScale}px`,
+                      padding: `${6 * layoutScale}px ${8 * layoutScale}px`
+                    }}
                   >
                     {[...Array(12)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>{i + 1}月</option>
@@ -1239,6 +1255,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
                     value={formData.editDate}
                     onChange={(e) => setFormData({ ...formData, editDate: parseInt(e.target.value) })}
                     className="date-select"
+                    style={{ 
+                      fontSize: `${14 * layoutScale}px`,
+                      padding: `${6 * layoutScale}px ${8 * layoutScale}px`
+                    }}
                   >
                     {[...Array(31)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>{i + 1}日</option>
@@ -1248,6 +1268,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
                     value={formData.editHour}
                     onChange={(e) => setFormData({ ...formData, editHour: parseInt(e.target.value) })}
                     className="time-select"
+                    style={{ 
+                      fontSize: `${14 * layoutScale}px`,
+                      padding: `${6 * layoutScale}px ${8 * layoutScale}px`
+                    }}
                   >
                     {[...Array(24)].map((_, i) => (
                       <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
@@ -1258,6 +1282,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
                     value={formData.editMinute}
                     onChange={(e) => setFormData({ ...formData, editMinute: parseInt(e.target.value) })}
                     className="time-select"
+                    style={{ 
+                      fontSize: `${14 * layoutScale}px`,
+                      padding: `${6 * layoutScale}px ${8 * layoutScale}px`
+                    }}
                   >
                     {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(min => (
                       <option key={min} value={min}>{min.toString().padStart(2, '0')}</option>
@@ -1265,7 +1293,14 @@ const Table = ({ tableId, data, scale, tableSize }: {
                   </select>
                 </div>
 
-                <div className="pos-container">
+                <div className="pos-container" style={{
+                  transform: `scale(${layoutScale})`,
+                  transformOrigin: 'top left',
+                  width: `${100 / layoutScale}%`,
+                  height: 'auto',
+                  padding: `${20 * layoutScale}px`,
+                  gap: `${20 * layoutScale}px`
+                }}>
                   <ProductSection
                     productCategories={productCategories}
                     selectedCategory={selectedCategory}
@@ -1427,25 +1462,25 @@ const Table = ({ tableId, data, scale, tableSize }: {
               maxHeight: '90vh',
               display: 'flex',
               overflow: 'hidden',
-              fontSize: window.innerWidth > 900 ? '16px' : '14px'
+              fontSize: window.innerWidth > 900 ? '16px' : `${14 * layoutScale}px`
             }}
           >
             {/* 左側：支払い方法入力部分 */}
             <div style={{
               flex: 1,
-              padding: '30px',
+              padding: `${30 * layoutScale}px`,
               overflowY: 'auto'
             }}>
               <div style={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 alignItems: 'flex-start',
-                marginBottom: '20px'
+                marginBottom: `${20 * layoutScale}px`
               }}>
-                <h3 style={{ margin: 0 }}>会計処理 - {currentTable}</h3>
+                <h3 style={{ margin: 0, fontSize: `${20 * layoutScale}px` }}>会計処理 - {currentTable}</h3>
                 <div style={{
                   textAlign: 'right',
-                  fontSize: '14px',
+                  fontSize: `${14 * layoutScale}px`,
                   lineHeight: '1.6'
                 }}>
                  
@@ -1454,8 +1489,8 @@ const Table = ({ tableId, data, scale, tableSize }: {
               </div>
               
               <div style={{ 
-                marginBottom: '25px', 
-                padding: '15px',
+                marginBottom: `${25 * layoutScale}px`, 
+                padding: `${15 * layoutScale}px`,
                 backgroundColor: '#f5f5f5',
                 borderRadius: '5px'
               }}>
@@ -1463,17 +1498,17 @@ const Table = ({ tableId, data, scale, tableSize }: {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  marginBottom: '15px',
-  paddingBottom: '15px',
+  marginBottom: `${15 * layoutScale}px`,
+  paddingBottom: `${15 * layoutScale}px`,
   borderBottom: '2px solid #ccc'
 }}>
   <div>
-    <strong>小計：¥{getTotal().toLocaleString()}</strong>
+    <strong style={{ fontSize: `${16 * layoutScale}px` }}>小計：¥{getTotal().toLocaleString()}</strong>
   </div>
   <div style={{
     display: 'flex',
-    gap: '30px',
-    fontSize: '16px'
+    gap: `${30 * layoutScale}px`,
+    fontSize: `${16 * layoutScale}px`
   }}>
     <div><strong>推し：</strong>{formData.castName || ''}</div>
     <div><strong>お客様：</strong>{formData.guestName || ''}</div>
@@ -1481,31 +1516,32 @@ const Table = ({ tableId, data, scale, tableSize }: {
 </div>
                 {getRoundingAdjustment() !== 0 && (
                   <div style={{ 
-                    marginBottom: '10px', 
-                    color: getRoundingAdjustment() < 0 ? '#d32f2f' : '#388e3c' 
+                    marginBottom: `${10 * layoutScale}px`, 
+                    color: getRoundingAdjustment() < 0 ? '#d32f2f' : '#388e3c',
+                    fontSize: `${14 * layoutScale}px`
                   }}>
                     端数調整: {getRoundingAdjustment() < 0 ? '' : '+'}¥{getRoundingAdjustment().toLocaleString()}
                   </div>
                 )}
                 
                 <div style={{ 
-                  fontSize: '24px', 
+                  fontSize: `${24 * layoutScale}px`, 
                   fontWeight: 'bold',
                   borderTop: '1px solid #ccc',
-                  paddingTop: '10px',
+                  paddingTop: `${10 * layoutScale}px`,
                   textAlign: 'center'
                 }}>
                   合計金額: ¥{getRoundedTotal(getTotal()).toLocaleString()}
                 </div>
               </div>
               
-              <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ marginBottom: '15px' }}>支払い方法:</h4>
+              <div style={{ marginBottom: `${20 * layoutScale}px` }}>
+                <h4 style={{ marginBottom: `${15 * layoutScale}px`, fontSize: `${18 * layoutScale}px` }}>支払い方法:</h4>
                 
-                <div style={{ marginBottom: '15px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <label style={{ width: '80px' }}>現金</label>
-                    <span>¥</span>
+                <div style={{ marginBottom: `${15 * layoutScale}px` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: `${10 * layoutScale}px` }}>
+                    <label style={{ width: `${80 * layoutScale}px`, fontSize: `${14 * layoutScale}px` }}>現金</label>
+                    <span style={{ fontSize: `${16 * layoutScale}px` }}>¥</span>
                     <input
                       type="text"
                       value={paymentData.cash ? paymentData.cash.toLocaleString() : '0'}
@@ -1513,10 +1549,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
                       readOnly
                       style={{
                         flex: 1,
-                        padding: '8px',
+                        padding: `${8 * layoutScale}px`,
                         border: activePaymentInput === 'cash' ? '2px solid #ff9800' : '1px solid #ddd',
                         borderRadius: '4px',
-                        fontSize: '16px',
+                        fontSize: `${16 * layoutScale}px`,
                         cursor: 'pointer',
                         backgroundColor: activePaymentInput === 'cash' ? '#fff8e1' : 'white'
                       }}
@@ -1524,10 +1560,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
                   </div>
                 </div>
                 
-                <div style={{ marginBottom: '15px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <label style={{ width: '80px' }}>カード</label>
-                    <span>¥</span>
+                <div style={{ marginBottom: `${15 * layoutScale}px` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: `${10 * layoutScale}px` }}>
+                    <label style={{ width: `${80 * layoutScale}px`, fontSize: `${14 * layoutScale}px` }}>カード</label>
+                    <span style={{ fontSize: `${16 * layoutScale}px` }}>¥</span>
                     <input
                       type="text"
                       value={paymentData.card ? paymentData.card.toLocaleString() : '0'}
@@ -1535,10 +1571,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
                       readOnly
                       style={{
                         flex: 1,
-                        padding: '8px',
+                        padding: `${8 * layoutScale}px`,
                         border: activePaymentInput === 'card' ? '2px solid #ff9800' : '1px solid #ddd',
                         borderRadius: '4px',
-                        fontSize: '16px',
+                        fontSize: `${16 * layoutScale}px`,
                         cursor: 'pointer',
                         backgroundColor: activePaymentInput === 'card' ? '#fff8e1' : 'white'
                       }}
@@ -1546,10 +1582,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
                   </div>
                 </div>
                 
-                <div style={{ marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <label style={{ width: '80px' }}>その他</label>
-                    <span>¥</span>
+                <div style={{ marginBottom: `${10 * layoutScale}px` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: `${10 * layoutScale}px` }}>
+                    <label style={{ width: `${80 * layoutScale}px`, fontSize: `${14 * layoutScale}px` }}>その他</label>
+                    <span style={{ fontSize: `${16 * layoutScale}px` }}>¥</span>
                     <input
                       type="text"
                       value={paymentData.other ? paymentData.other.toLocaleString() : '0'}
@@ -1557,10 +1593,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
                       readOnly
                       style={{
                         flex: 1,
-                        padding: '8px',
+                        padding: `${8 * layoutScale}px`,
                         border: activePaymentInput === 'other' ? '2px solid #ff9800' : '1px solid #ddd',
                         borderRadius: '4px',
-                        fontSize: '16px',
+                        fontSize: `${16 * layoutScale}px`,
                         cursor: 'pointer',
                         backgroundColor: activePaymentInput === 'other' ? '#fff8e1' : 'white'
                       }}
@@ -1569,7 +1605,7 @@ const Table = ({ tableId, data, scale, tableSize }: {
                 </div>
                 
                 {paymentData.other > 0 && (
-                  <div style={{ marginLeft: '100px', marginBottom: '15px' }}>
+                  <div style={{ marginLeft: `${100 * layoutScale}px`, marginBottom: `${15 * layoutScale}px` }}>
                     <input
                       type="text"
                       value={paymentData.otherMethod}
@@ -1577,10 +1613,10 @@ const Table = ({ tableId, data, scale, tableSize }: {
                       placeholder="PayPay、LINE Pay等"
                       style={{
                         width: '100%',
-                        padding: '6px',
+                        padding: `${6 * layoutScale}px`,
                         border: '1px solid #ddd',
                         borderRadius: '4px',
-                        fontSize: '14px'
+                        fontSize: `${14 * layoutScale}px`
                       }}
                     />
                   </div>
@@ -1588,39 +1624,39 @@ const Table = ({ tableId, data, scale, tableSize }: {
               </div>
               
               <div style={{ 
-                marginBottom: '20px',
-                padding: '15px',
+                marginBottom: `${20 * layoutScale}px`,
+                padding: `${15 * layoutScale}px`,
                 backgroundColor: '#f0f8ff',
                 borderRadius: '5px',
                 textAlign: 'center'
               }}>
-                <div style={{ marginBottom: '10px' }}>
+                <div style={{ marginBottom: `${10 * layoutScale}px`, fontSize: `${16 * layoutScale}px` }}>
                   支払合計: ¥{(paymentData.cash + paymentData.card + paymentData.other).toLocaleString()}
                 </div>
                 {(paymentData.cash + paymentData.card + paymentData.other) >= getRoundedTotal(getTotal()) && (
-                  <div style={{ fontSize: '20px', color: '#4CAF50', fontWeight: 'bold' }}>
+                  <div style={{ fontSize: `${20 * layoutScale}px`, color: '#4CAF50', fontWeight: 'bold' }}>
                     おつり: ¥{((paymentData.cash + paymentData.card + paymentData.other) - getRoundedTotal(getTotal())).toLocaleString()}
                   </div>
                 )}
                 {(paymentData.cash + paymentData.card + paymentData.other) > 0 && 
                  (paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal()) && (
-                  <div style={{ color: '#f44336' }}>
+                  <div style={{ color: '#f44336', fontSize: `${16 * layoutScale}px` }}>
                     不足: ¥{(getRoundedTotal(getTotal()) - (paymentData.cash + paymentData.card + paymentData.other)).toLocaleString()}
                   </div>
                 )}
               </div>
               
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: `${10 * layoutScale}px` }}>
                 <button
                   onClick={completeCheckout}
                   style={{
                     flex: 1,
-                    padding: '12px',
+                    padding: `${12 * layoutScale}px`,
                     backgroundColor: '#ff9800',
                     color: 'white',
                     border: 'none',
                     borderRadius: '5px',
-                    fontSize: '16px',
+                    fontSize: `${16 * layoutScale}px`,
                     cursor: 'pointer',
                     fontWeight: 'bold',
                     opacity: (paymentData.cash + paymentData.card + paymentData.other) < getRoundedTotal(getTotal()) ? 0.6 : 1
@@ -1633,12 +1669,12 @@ const Table = ({ tableId, data, scale, tableSize }: {
                   onClick={() => setShowPaymentModal(false)}
                   style={{
                     flex: 1,
-                    padding: '12px',
+                    padding: `${12 * layoutScale}px`,
                     backgroundColor: '#ccc',
                     color: 'white',
                     border: 'none',
                     borderRadius: '5px',
-                    fontSize: '16px',
+                    fontSize: `${16 * layoutScale}px`,
                     cursor: 'pointer'
                   }}
                 >
@@ -1649,9 +1685,9 @@ const Table = ({ tableId, data, scale, tableSize }: {
 
             {/* 右側：数字パッド */}
             <div style={{
-              width: '350px',
+              width: `${350 * layoutScale}px`,
               backgroundColor: '#f5f5f5',
-              padding: '30px',
+              padding: `${30 * layoutScale}px`,
               borderLeft: '1px solid #ddd',
               display: 'flex',
               flexDirection: 'column'
@@ -1659,13 +1695,13 @@ const Table = ({ tableId, data, scale, tableSize }: {
               {/* 現在の入力値表示 */}
               <div style={{
                 backgroundColor: 'white',
-                padding: '20px',
+                padding: `${20 * layoutScale}px`,
                 borderRadius: '8px',
-                marginBottom: '20px',
+                marginBottom: `${20 * layoutScale}px`,
                 textAlign: 'right',
-                fontSize: '32px',
+                fontSize: `${32 * layoutScale}px`,
                 fontWeight: 'bold',
-                minHeight: '60px',
+                minHeight: `${60 * layoutScale}px`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end'
@@ -1682,17 +1718,17 @@ const Table = ({ tableId, data, scale, tableSize }: {
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '10px',
-                marginBottom: '20px'
+                gap: `${10 * layoutScale}px`,
+                marginBottom: `${20 * layoutScale}px`
               }}>
                 <button
                   onClick={() => handleQuickAmount(1000)}
                   style={{
-                    padding: '12px',
+                    padding: `${12 * layoutScale}px`,
                     backgroundColor: 'white',
                     border: '1px solid #ddd',
                     borderRadius: '8px',
-                    fontSize: '14px',
+                    fontSize: `${14 * layoutScale}px`,
                     cursor: 'pointer'
                   }}
                 >
@@ -1701,11 +1737,11 @@ const Table = ({ tableId, data, scale, tableSize }: {
                 <button
                   onClick={() => handleQuickAmount(5000)}
                   style={{
-                    padding: '12px',
+                    padding: `${12 * layoutScale}px`,
                     backgroundColor: 'white',
                     border: '1px solid #ddd',
                     borderRadius: '8px',
-                    fontSize: '14px',
+                    fontSize: `${14 * layoutScale}px`,
                     cursor: 'pointer'
                   }}
                 >
@@ -1714,11 +1750,11 @@ const Table = ({ tableId, data, scale, tableSize }: {
                 <button
                   onClick={() => handleQuickAmount(10000)}
                   style={{
-                    padding: '12px',
+                    padding: `${12 * layoutScale}px`,
                     backgroundColor: 'white',
                     border: '1px solid #ddd',
                     borderRadius: '8px',
-                    fontSize: '14px',
+                    fontSize: `${14 * layoutScale}px`,
                     cursor: 'pointer'
                   }}
                 >
@@ -1730,7 +1766,7 @@ const Table = ({ tableId, data, scale, tableSize }: {
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '10px',
+                gap: `${10 * layoutScale}px`,
                 flex: 1
               }}>
                 {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(num => (
@@ -1738,11 +1774,11 @@ const Table = ({ tableId, data, scale, tableSize }: {
                     key={num}
                     onClick={() => handleNumberClick(num.toString())}
                     style={{
-                      padding: '20px',
+                      padding: `${20 * layoutScale}px`,
                       backgroundColor: 'white',
                       border: '1px solid #ddd',
                       borderRadius: '8px',
-                      fontSize: '24px',
+                      fontSize: `${24 * layoutScale}px`,
                       fontWeight: 'bold',
                       cursor: 'pointer'
                     }}
@@ -1754,11 +1790,11 @@ const Table = ({ tableId, data, scale, tableSize }: {
                 <button
                   onClick={() => handleNumberClick('0')}
                   style={{
-                    padding: '20px',
+                    padding: `${20 * layoutScale}px`,
                     backgroundColor: 'white',
                     border: '1px solid #ddd',
                     borderRadius: '8px',
-                    fontSize: '24px',
+                    fontSize: `${24 * layoutScale}px`,
                     fontWeight: 'bold',
                     cursor: 'pointer'
                   }}
@@ -1769,11 +1805,11 @@ const Table = ({ tableId, data, scale, tableSize }: {
                 <button
                   onClick={() => handleNumberClick('00')}
                   style={{
-                    padding: '20px',
+                    padding: `${20 * layoutScale}px`,
                     backgroundColor: 'white',
                     border: '1px solid #ddd',
                     borderRadius: '8px',
-                    fontSize: '24px',
+                    fontSize: `${24 * layoutScale}px`,
                     fontWeight: 'bold',
                     cursor: 'pointer'
                   }}
@@ -1784,11 +1820,11 @@ const Table = ({ tableId, data, scale, tableSize }: {
                 <button
                   onClick={handleDeleteNumber}
                   style={{
-                    padding: '20px',
+                    padding: `${20 * layoutScale}px`,
                     backgroundColor: '#ffebee',
                     border: '1px solid #ffcdd2',
                     borderRadius: '8px',
-                    fontSize: '20px',
+                    fontSize: `${20 * layoutScale}px`,
                     cursor: 'pointer',
                     color: '#d32f2f'
                   }}
@@ -1801,12 +1837,12 @@ const Table = ({ tableId, data, scale, tableSize }: {
               <button
                 onClick={handleClearNumber}
                 style={{
-                  marginTop: '20px',
-                  padding: '15px',
+                  marginTop: `${20 * layoutScale}px`,
+                  padding: `${15 * layoutScale}px`,
                   backgroundColor: '#e0e0e0',
                   border: '1px solid #bdbdbd',
                   borderRadius: '8px',
-                  fontSize: '18px',
+                  fontSize: `${18 * layoutScale}px`,
                   cursor: 'pointer',
                   fontWeight: 'bold'
                 }}
