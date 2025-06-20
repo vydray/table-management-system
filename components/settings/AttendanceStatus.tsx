@@ -31,23 +31,10 @@ export default function AttendanceStatus() {
   const loadAttendanceStatuses = async () => {
     try {
       const storeId = getCurrentStoreId()
-      
-      // storesテーブルから対応するUUIDを取得
-      const { data: storeData, error: storeError } = await supabase
-        .from('stores')
-        .select('id')
-        .eq('id', storeId)
-        .single()
-      
-      if (storeError || !storeData) {
-        console.error('Store lookup error:', storeError)
-        return
-      }
-      
       const { data, error } = await supabase
         .from('attendance_statuses')
         .select('*')
-        .eq('store_id', storeData.id)
+        .eq('store_id', storeId)
         .order('order_index')
 
       if (error) {
@@ -103,21 +90,7 @@ export default function AttendanceStatus() {
 
     try {
       const storeId = getCurrentStoreId()
-      console.log('Adding status with store_id:', storeId, 'type:', typeof storeId)
-      
-      // storesテーブルから対応するUUIDを取得
-      const { data: storeData, error: storeError } = await supabase
-        .from('stores')
-        .select('id')
-        .eq('id', storeId)
-        .single()
-      
-      if (storeError || !storeData) {
-        console.error('Store lookup error:', storeError)
-        throw new Error('店舗情報の取得に失敗しました')
-      }
-      
-      console.log('Store UUID:', storeData.id)
+      console.log('Adding status with store_id:', storeId)
       
       const { error } = await supabase
         .from('attendance_statuses')
@@ -126,7 +99,7 @@ export default function AttendanceStatus() {
           color: newStatusColor,
           is_active: false,
           order_index: attendanceStatuses.length,
-          store_id: storeData.id  // UUIDを使用
+          store_id: storeId  // 数値のまま使用
         })
 
       if (error) {
