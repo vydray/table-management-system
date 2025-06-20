@@ -33,6 +33,7 @@ interface DailyReportData {
   otherSales: number
   notTransmittedReceipt: number
   notTransmittedAmount: number
+  unpaidAmount: number  // 未収額
   incomeAmount: number
   expenseAmount: number
   balance: number
@@ -42,7 +43,7 @@ interface DailyReportData {
   twitterFollowers: number
   instagramFollowers: number
   tiktokFollowers: number
-  dailyPaymentTotal: number  // 日払い合計を追加
+  dailyPaymentTotal: number
 }
 
 export default function Report() {
@@ -74,6 +75,7 @@ export default function Report() {
     otherSales: 0,
     notTransmittedReceipt: 0,
     notTransmittedAmount: 0,
+    unpaidAmount: 0,
     incomeAmount: 0,
     expenseAmount: 0,
     balance: 0,
@@ -87,6 +89,16 @@ export default function Report() {
   })
   const [activeAttendanceStatuses, setActiveAttendanceStatuses] = useState<string[]>(['出勤'])
 
+  // 現金回収を計算する関数
+  const calculateCashReceipt = () => {
+    return dailyReportData.cashReceipt - 
+           dailyReportData.notTransmittedReceipt - 
+           dailyReportData.notTransmittedAmount - 
+           dailyReportData.unpaidAmount - 
+           dailyReportData.expenseAmount - 
+           dailyReportData.dailyPaymentTotal
+  }
+
   // 出勤として扱うステータスを取得
   const loadActiveAttendanceStatuses = async () => {
     try {
@@ -99,30 +111,24 @@ export default function Report() {
         .single()
       
       if (data && data.setting_value) {
-        // JSON形式で保存されているステータス配列を取得
         const statuses = JSON.parse(data.setting_value)
         setActiveAttendanceStatuses(statuses)
       }
     } catch (error) {
       console.error('Error loading active attendance statuses:', error)
-      // デフォルト値を使用
       setActiveAttendanceStatuses(['出勤'])
     }
   }
 
   // 営業日の日付範囲を計算（営業日切り替え時間を考慮）
   const getBusinessDateRange = (dateStr: string) => {
-    // "12月25日" → 営業日としての日付範囲を計算
     const matches = dateStr.match(/(\d+)月(\d+)日/)
     if (!matches) return { startDate: '', endDate: '' }
     
     const month = parseInt(matches[1])
     const day = parseInt(matches[2])
     
-    // 営業日の開始日時（当日の切り替え時間）
     const startDate = new Date(selectedYear, month - 1, day, businessDayStartHour, 0, 0)
-    
-    // 営業日の終了日時（翌日の切り替え時間）
     const endDate = new Date(selectedYear, month - 1, day + 1, businessDayStartHour, 0, 0)
     
     return {
@@ -136,32 +142,27 @@ export default function Report() {
     try {
       const storeId = getCurrentStoreId()
       
-      // 営業日の日付範囲を取得
       const { startDate, endDate } = getBusinessDateRange(dateStr)
       if (!startDate || !endDate) return { staffCount: 0, castCount: 0, dailyPaymentTotal: 0 }
       
-      // 営業日の範囲内で出勤時間がある勤怠データを取得
       const { data: attendanceData } = await supabase
         .from('attendance')
         .select('cast_name, status, daily_payment, check_in_datetime')
         .eq('store_id', storeId)
         .gte('check_in_datetime', startDate)
         .lt('check_in_datetime', endDate)
-        .in('status', activeAttendanceStatuses)  // 設定されたステータスで絞り込み
+        .in('status', activeAttendanceStatuses)
       
       if (!attendanceData || attendanceData.length === 0) {
         return { staffCount: 0, castCount: 0, dailyPaymentTotal: 0 }
       }
       
-      // 日払い合計を計算
       const dailyPaymentTotal = attendanceData.reduce((sum, attendance) => {
         return sum + (attendance.daily_payment || 0)
       }, 0)
       
-      // キャスト名のリストを取得
       const castNames = attendanceData.map(a => a.cast_name)
       
-      // キャストの役職情報を取得
       const { data: castsData } = await supabase
         .from('casts')
         .select('name, attributes')
@@ -172,7 +173,6 @@ export default function Report() {
         return { staffCount: 0, castCount: castNames.length, dailyPaymentTotal }
       }
       
-      // 内勤とキャストを分類
       let staffCount = 0
       let castCount = 0
       
@@ -364,7 +364,6 @@ export default function Report() {
   const openDailyReport = async (day: DailyData) => {
     setSelectedDate(day.date)
     
-    // 勤怠データから内勤とキャストの人数、日払い合計を取得
     const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(day.date)
     
     setDailyReportData({
@@ -378,6 +377,7 @@ export default function Report() {
       otherSales: day.otherSales,
       notTransmittedReceipt: 0,
       notTransmittedAmount: 0,
+      unpaidAmount: 0,
       incomeAmount: 0,
       expenseAmount: 0,
       balance: day.totalSales,
@@ -387,7 +387,7 @@ export default function Report() {
       twitterFollowers: 0,
       instagramFollowers: 0,
       tiktokFollowers: 0,
-      dailyPaymentTotal: dailyPaymentTotal  // 日払い合計を設定
+      dailyPaymentTotal: dailyPaymentTotal
     })
     setShowDailyReportModal(true)
   }
@@ -406,13 +406,11 @@ export default function Report() {
   useEffect(() => {
     loadBusinessDayStartHour()
     loadActiveAttendanceStatuses()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     loadMonthlyData()
     loadMonthlyTargets()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedYear, selectedMonth, businessDayStartHour])
 
   // 月次集計
@@ -839,7 +837,7 @@ export default function Report() {
                           現金回収
                         </td>
                         <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold', fontSize: '16px' }}>
-                          ¥{dailyReportData.cashReceipt.toLocaleString()}-
+                          ¥{calculateCashReceipt().toLocaleString()}-
                         </td>
                       </tr>
                       <tr>
@@ -878,24 +876,72 @@ export default function Report() {
                         <td style={{ backgroundColor: '#e6e6e6', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
                           不明伝票
                         </td>
-                        <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold', fontSize: '16px' }}>
-                          ¥0-
+                        <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold' }}>
+                          <input
+                            type="number"
+                            value={dailyReportData.notTransmittedReceipt || ''}
+                            onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedReceipt: Number(e.target.value) || 0})}
+                            style={{ 
+                              width: '100%', 
+                              textAlign: 'right', 
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              fontSize: '16px', 
+                              fontWeight: 'bold',
+                              backgroundColor: '#f9f9f9',
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                            }}
+                            placeholder="0"
+                          />
                         </td>
                       </tr>
                       <tr>
                         <td style={{ backgroundColor: '#e6e6e6', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
                           不明金
                         </td>
-                        <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold', fontSize: '16px' }}>
-                          ¥0-
+                        <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold' }}>
+                          <input
+                            type="number"
+                            value={dailyReportData.notTransmittedAmount || ''}
+                            onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedAmount: Number(e.target.value) || 0})}
+                            style={{ 
+                              width: '100%', 
+                              textAlign: 'right', 
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              fontSize: '16px', 
+                              fontWeight: 'bold',
+                              backgroundColor: '#f9f9f9',
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                            }}
+                            placeholder="0"
+                          />
                         </td>
                       </tr>
                       <tr>
                         <td style={{ backgroundColor: '#e6e6e6', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
                           未収額
                         </td>
-                        <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold', fontSize: '16px' }}>
-                          ¥0-
+                        <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold' }}>
+                          <input
+                            type="number"
+                            value={dailyReportData.unpaidAmount || ''}
+                            onChange={(e) => setDailyReportData({...dailyReportData, unpaidAmount: Number(e.target.value) || 0})}
+                            style={{ 
+                              width: '100%', 
+                              textAlign: 'right', 
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              fontSize: '16px', 
+                              fontWeight: 'bold',
+                              backgroundColor: '#f9f9f9',
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                            }}
+                            placeholder="0"
+                          />
                         </td>
                       </tr>
                       <tr>
@@ -905,9 +951,20 @@ export default function Report() {
                         <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold' }}>
                           <input
                             type="number"
-                            value={dailyReportData.expenseAmount}
-                            onChange={(e) => setDailyReportData({...dailyReportData, expenseAmount: Number(e.target.value)})}
-                            style={{ width: '100%', textAlign: 'right', border: 'none', fontSize: '16px', fontWeight: 'bold' }}
+                            value={dailyReportData.expenseAmount || ''}
+                            onChange={(e) => setDailyReportData({...dailyReportData, expenseAmount: Number(e.target.value) || 0})}
+                            style={{ 
+                              width: '100%', 
+                              textAlign: 'right', 
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              fontSize: '16px', 
+                              fontWeight: 'bold',
+                              backgroundColor: '#f9f9f9',
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                            }}
+                            placeholder="0"
                           />
                         </td>
                       </tr>
@@ -915,8 +972,24 @@ export default function Report() {
                         <td style={{ backgroundColor: '#e8f5e8', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
                           日払い
                         </td>
-                        <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold', fontSize: '16px' }}>
-                          ¥{dailyReportData.dailyPaymentTotal.toLocaleString()}-
+                        <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold' }}>
+                          <input
+                            type="number"
+                            value={dailyReportData.dailyPaymentTotal || ''}
+                            onChange={(e) => setDailyReportData({...dailyReportData, dailyPaymentTotal: Number(e.target.value) || 0})}
+                            style={{ 
+                              width: '100%', 
+                              textAlign: 'right', 
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              fontSize: '16px', 
+                              fontWeight: 'bold',
+                              backgroundColor: '#f9f9f9',
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                            }}
+                            placeholder="0"
+                          />
                         </td>
                       </tr>
                     </tbody>
