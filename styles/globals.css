@@ -1698,3 +1698,40 @@ label {
     flex-direction: column !important;
   }
 }
+
+/* Androidスクロール修正 - 内部要素の高さ制限を解除 */
+@media screen and (max-width: 1024px) {
+  /* 詳細エリアを確実にスクロール可能に */
+  #modal.modal-edit #details {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: 0 !important; /* flexで自動調整させる */
+    min-height: 0 !important;
+  }
+  
+  /* POSコンテナの高さ制限を完全に解除 */
+  #modal.modal-edit .pos-container {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    flex: none !important;
+    overflow: visible !important;
+    padding-bottom: 50px !important; /* 余白を追加 */
+  }
+  
+  /* 左右のセクションも高さ自動に */
+  #modal.modal-edit .left-section,
+  #modal.modal-edit .right-section {
+    height: auto !important;
+    min-height: 300px !important;
+    max-height: none !important;
+  }
+  
+  /* アクションボタンの下に余白追加 */
+  #modal.modal-edit .action-buttons {
+    margin-bottom: 30px !important;
+    padding-bottom: 20px !important;
+  }
+}
