@@ -1365,33 +1365,6 @@ label {
   }
 }
 
-/* より具体的なAndroid対応 */
-@media screen and (max-width: 1024px) {
-  /* モーダルの位置修正 */
-  #modal.modal-edit {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    -webkit-transform: translate(-50%, -50%) !important;
-    
-    /* サイズ設定 */
-    width: calc(100% - 40px) !important;
-    height: calc(100% - 40px) !important;
-    max-width: 900px !important;
-    max-height: calc(100vh - 40px) !important;
-    
-    /* その他のスタイル */
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 10px !important;
-    overflow: hidden !important;
-    
-    /* スクロール設定 */
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  
   /* ヘッダー部分を固定 */
   #modal.modal-edit h3 {
     position: sticky !important;
@@ -1426,35 +1399,6 @@ label {
     overflow: visible !important;
     margin-bottom: 20px !important;
   }
-}
-
-/* transformが効かない場合の代替案 */
-@media screen and (max-width: 1024px) {
-  #modal.modal-edit {
-    /* transformを使わない中央配置 */
-    position: fixed !important;
-    top: 20px !important;
-    left: 20px !important;
-    right: 20px !important;
-    bottom: 20px !important;
-    width: auto !important;
-    height: auto !important;
-    max-width: 900px !important;
-    margin: auto !important;
-    transform: none !important;
-    -webkit-transform: none !important;
-  }
-  
-  /* 画面が小さい場合は余白を減らす */
-  @media screen and (max-width: 600px) {
-    #modal.modal-edit {
-      top: 10px !important;
-      left: 10px !important;
-      right: 10px !important;
-      bottom: 10px !important;
-    }
-  }
-}
 
 /* スクロール可能領域の明確化 */
 @media screen and (max-width: 1024px) {
@@ -1731,5 +1675,26 @@ label {
   /* ボタンのタッチターゲットを大きく */
   #modal.modal-edit button {
     min-height: 44px !important;
+  }
+}
+
+/* Android モーダル中央配置修正 */
+@media screen and (max-width: 1024px) {
+  #modal.modal-edit {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 90% !important;
+    height: 90% !important;
+    max-width: 900px !important;
+    max-height: 90vh !important;
+    transform: translate(-50%, -50%) !important;
+    -webkit-transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 }
