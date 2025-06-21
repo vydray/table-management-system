@@ -1704,7 +1704,7 @@ label {
   /* 詳細エリア - オーバーフローを隠す */
   #modal.modal-edit #details {
     flex: 1 !important;
-    overflow: hidden !important; /* スクロールを無効化 */
+    overflow: hidden !important;
     height: 100% !important;
     min-height: 0 !important;
     display: flex !important;
@@ -1713,8 +1713,8 @@ label {
   
   /* 入店日時の文字を大きく */
   #modal.modal-edit .datetime-edit {
-    font-size: 18px !important; /* 16px → 18px */
-    padding: 20px 25px !important; /* パディングも少し増やす */
+    font-size: 18px !important;
+    padding: 20px 25px !important;
   }
   
   #modal.modal-edit .datetime-edit .label-text {
@@ -1723,14 +1723,14 @@ label {
   }
   
   #modal.modal-edit .datetime-edit select {
-    font-size: 16px !important; /* セレクトボックスも大きく */
+    font-size: 16px !important;
     padding: 8px 10px !important;
   }
   
   /* POSコンテナ - フレックスで高さを埋める */
   #modal.modal-edit .pos-container {
     flex: 1 !important;
-    height: 0 !important; /* flexで自動調整 */
+    height: 0 !important;
     min-height: 0 !important;
     overflow: hidden !important;
     display: flex !important;
@@ -1738,35 +1738,53 @@ label {
     gap: 15px !important;
   }
   
-  /* 左側セクション - 独立したスクロール */
+  /* 左側セクション - 全体をスクロール可能に */
   #modal.modal-edit .left-section {
     width: 50% !important;
-    height: 100% !important; /* 親の高さいっぱい */
+    height: 100% !important;
     min-height: 0 !important;
     max-height: none !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  
-  /* 右側セクション - 独立したスクロール */
-  #modal.modal-edit .right-section {
-    width: 50% !important;
-    height: 100% !important; /* 親の高さいっぱい */
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow-y: auto !important; /* 右側全体をスクロール可能に */
+    overflow-y: auto !important; /* 左側全体をスクロール可能に */
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     display: flex !important;
     flex-direction: column !important;
   }
   
-  /* 左側のカテゴリーセクションはそのままスクロール可能 */
+  /* 検索セクションを固定しない */
+  #modal.modal-edit .search-section {
+    flex-shrink: 0 !important;
+    margin-bottom: 20px !important;
+  }
+  
+  /* カテゴリーセクションの高さを自動に */
   #modal.modal-edit .category-section {
-    flex: 1 !important;
-    overflow: hidden !important;
+    flex: none !important; /* 内容に応じて伸びる */
+    height: auto !important;
+    overflow: visible !important;
+    min-height: 400px !important; /* 最小高さを設定 */
+  }
+  
+  /* 各カテゴリーリストも高さ自動 */
+  #modal.modal-edit .main-categories,
+  #modal.modal-edit .sub-categories,
+  #modal.modal-edit .cast-select-area {
+    height: auto !important;
+    min-height: 300px !important;
+    overflow: visible !important; /* 個別のスクロールを無効 */
+  }
+  
+  /* 右側セクション - 独立したスクロール */
+  #modal.modal-edit .right-section {
+    width: 50% !important;
+    height: 100% !important;
     min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
   
   /* 注文テーブルは内容に応じて伸びる */
