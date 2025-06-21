@@ -1825,50 +1825,89 @@ label {
   }
 }
 
-/* 月次レポート画面のAndroid対応 */
+/* 月次レポート画面のAndroid対応 - 全体調整 */
 @media screen and (max-width: 1024px) {
-  /* レポートページのコンテナ幅調整 */
-  body > div[style*="max-width: 1024px"] {
-    max-width: 100% !important;
+  /* レポートページ全体の幅調整 */
+  div[style*="maxWidth: '1024px'"] {
+    max-width: 100vw !important;
+    width: 100% !important;
     padding: 10px !important;
+    box-sizing: border-box !important;
   }
   
-  /* テーブルをスクロール可能に */
-  table {
-    display: block !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    white-space: nowrap !important;
+  /* 各セクション（白いカード）の調整 */
+  div[style*="backgroundColor: '#fff'"] {
+    margin: 0 5px 15px 5px !important;
+    width: calc(100% - 10px) !important;
   }
   
-  /* テーブルのセルサイズ調整 */
-  table th,
-  table td {
-    padding: 8px 5px !important;
-    font-size: 12px !important;
-    min-width: 60px !important;
-  }
-  
-  /* グラフエリアの調整 */
+  /* グラフエリアをレスポンシブに */
   div[style*="height: '300px'"] {
+    width: 100% !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
   
-  /* カード型の集計エリア */
+  /* グラフの棒を細く */
+  div[style*="flex: 1"] {
+    min-width: 8px !important;
+    flex: 0 0 auto !important;
+  }
+  
+  /* 月次集計を2×2グリッドに */
   div[style*="gridTemplateColumns: 'repeat(4, 1fr)'"] {
-    grid-template-columns: repeat(2, 1fr) !important; /* 4列から2列に */
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px !important;
   }
   
-  /* フォントサイズの調整 */
+  /* 月次集計の文字サイズ調整 */
+  div[style*="fontSize: '24px'"] {
+    font-size: 20px !important;
+  }
+  
+  /* テーブル全体の調整 */
+  div[style*="overflowX: 'auto'"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+  }
+  
+  table {
+    font-size: 13px !important;
+    min-width: 600px !important; /* 最小幅を設定してスクロール可能に */
+  }
+  
+  table th,
+  table td {
+    padding: 8px 6px !important;
+    white-space: nowrap !important;
+  }
+  
+  /* ヘッダーの年月選択も調整 */
+  select {
+    font-size: 14px !important;
+    padding: 6px 10px !important;
+  }
+  
+  /* さらに小さい画面（スマホ）用 */
   @media screen and (max-width: 600px) {
-    div[style*="fontSize: '24px'"] {
+    /* 月次集計を1列に */
+    div[style*="gridTemplateColumns: 'repeat(2, 1fr)'"] {
+      grid-template-columns: 1fr !important;
+    }
+    
+    /* フォントサイズをさらに調整 */
+    div[style*="fontSize: '20px'"] {
+      font-size: 16px !important;
+    }
+    
+    h2 {
       font-size: 18px !important;
     }
     
-    div[style*="fontSize: '20px'"] {
-      font-size: 16px !important;
+    table {
+      font-size: 11px !important;
     }
   }
 }
