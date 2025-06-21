@@ -1824,3 +1824,51 @@ label {
     margin-right: 15px !important; /* 間隔を少し狭める */
   }
 }
+
+/* 月次レポート画面のAndroid対応 */
+@media screen and (max-width: 1024px) {
+  /* レポートページのコンテナ幅調整 */
+  body > div[style*="max-width: 1024px"] {
+    max-width: 100% !important;
+    padding: 10px !important;
+  }
+  
+  /* テーブルをスクロール可能に */
+  table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+  }
+  
+  /* テーブルのセルサイズ調整 */
+  table th,
+  table td {
+    padding: 8px 5px !important;
+    font-size: 12px !important;
+    min-width: 60px !important;
+  }
+  
+  /* グラフエリアの調整 */
+  div[style*="height: '300px'"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* カード型の集計エリア */
+  div[style*="gridTemplateColumns: 'repeat(4, 1fr)'"] {
+    grid-template-columns: repeat(2, 1fr) !important; /* 4列から2列に */
+    gap: 10px !important;
+  }
+  
+  /* フォントサイズの調整 */
+  @media screen and (max-width: 600px) {
+    div[style*="fontSize: '24px'"] {
+      font-size: 18px !important;
+    }
+    
+    div[style*="fontSize: '20px'"] {
+      font-size: 16px !important;
+    }
+  }
+}
