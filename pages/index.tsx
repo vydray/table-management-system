@@ -444,7 +444,7 @@ export default function Home() {
     }
   }
 
-  // 初期化
+ // 初期化
   useEffect(() => {
     loadSystemSettings()
     loadData()
@@ -472,6 +472,60 @@ export default function Home() {
       clearInterval(dataInterval)
     }
   }, [])
+
+  // ===== ここから新規追加 =====
+  // ビューポート高さの動的設定（Android対応）
+  useEffect(() => {
+    const setViewportHeight = () => {
+      // 実際のビューポート高さを取得
+      const vh = window.innerHeight * 0.01;
+      // CSS変数として設定
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    // 初回設定
+    setViewportHeight();
+
+    // リサイズ時に再計算
+    window.addEventListener('resize', setViewportHeight);
+    
+    // Android Chromeでのアドレスバー対応
+    window.addEventListener('orientationchange', () => {
+      setTimeout(setViewportHeight, 100);
+    });
+
+    // モーダルが開いた時の処理を追加
+    const modalObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        const target = mutation.target as HTMLElement;
+        if (target.id === 'modal' && target.style.display !== 'none') {
+          // モーダルが表示されたら高さを再計算
+          setTimeout(setViewportHeight, 0);
+          
+          // Androidでのスクロール位置リセット
+          const details = document.querySelector('#modal #details') as HTMLElement;
+          if (details) {
+            details.scrollTop = 0;
+          }
+        }
+      });
+    });
+
+    // モーダルの監視開始
+    const modal = document.getElementById('modal');
+    if (modal) {
+      modalObserver.observe(modal, { 
+        attributes: true, 
+        attributeFilter: ['style'] 
+      });
+    }
+
+    return () => {
+      window.removeEventListener('resize', setViewportHeight);
+      window.removeEventListener('orientationchange', setViewportHeight);
+      modalObserver.disconnect();
+    };
+  }, []);
 
   // レイアウトのスケール計算（親コンポーネントで一度だけ）
   useEffect(() => {
