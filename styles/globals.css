@@ -1735,3 +1735,82 @@ label {
     padding-bottom: 20px !important;
   }
 }
+
+/* Android モーダル中央配置修正 */
+@media screen and (max-width: 1024px) {
+  #modal.modal-edit {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 90% !important;
+    height: 90% !important;
+    max-width: 900px !important;
+    max-height: 90vh !important;
+    transform: translate(-50%, -50%) !important;
+    -webkit-transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+}
+
+/* Androidスクロール修正 - PC版と同じ動作に */
+@media screen and (max-width: 1024px) {
+  /* 詳細エリアをスクロール可能に（モーダル全体のスクロール） */
+  #modal.modal-edit #details {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: 0 !important;
+    min-height: 0 !important;
+  }
+  
+  /* POSコンテナは内容に応じて伸びる */
+  #modal.modal-edit .pos-container {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    flex: none !important;
+    overflow: visible !important;
+    padding-bottom: 50px !important;
+  }
+  
+  /* 左右のセクションも内容に応じて伸びる */
+  #modal.modal-edit .left-section,
+  #modal.modal-edit .right-section {
+    height: auto !important;
+    min-height: 400px !important;
+    max-height: none !important;
+    overflow: visible !important; /* スクロールを無効化 */
+  }
+  
+  /* 注文テーブルのスクロールを無効化 */
+  #modal.modal-edit .order-table {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  
+  #modal.modal-edit .order-table-body {
+    overflow: visible !important; /* スクロールを無効化 */
+    height: auto !important;
+    max-height: none !important;
+    -webkit-overflow-scrolling: auto !important;
+  }
+  
+  /* カテゴリーセクションは固定高さでスクロール可能（左側） */
+  #modal.modal-edit .category-section {
+    height: 350px !important; /* 固定高さ */
+    overflow: hidden !important;
+  }
+  
+  /* アクションボタンの下に余白追加 */
+  #modal.modal-edit .action-buttons {
+    margin-bottom: 30px !important;
+    padding-bottom: 20px !important;
+  }
+}
