@@ -1699,118 +1699,93 @@ label {
   }
 }
 
-/* Androidスクロール修正 - 内部要素の高さ制限を解除 */
+/* Androidスクロール修正 - 左右別々のスクロール */
 @media screen and (max-width: 1024px) {
-  /* 詳細エリアを確実にスクロール可能に */
+  /* 詳細エリア - オーバーフローを隠す */
   #modal.modal-edit #details {
     flex: 1 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    height: 0 !important; /* flexで自動調整させる */
+    overflow: hidden !important; /* スクロールを無効化 */
+    height: 100% !important;
     min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
   
-  /* POSコンテナの高さ制限を完全に解除 */
+  /* 入店日時の文字を大きく */
+  #modal.modal-edit .datetime-edit {
+    font-size: 18px !important; /* 16px → 18px */
+    padding: 20px 25px !important; /* パディングも少し増やす */
+  }
+  
+  #modal.modal-edit .datetime-edit .label-text {
+    font-size: 18px !important;
+    font-weight: bold !important;
+  }
+  
+  #modal.modal-edit .datetime-edit select {
+    font-size: 16px !important; /* セレクトボックスも大きく */
+    padding: 8px 10px !important;
+  }
+  
+  /* POSコンテナ - フレックスで高さを埋める */
   #modal.modal-edit .pos-container {
-    height: auto !important;
-    min-height: auto !important;
-    max-height: none !important;
-    flex: none !important;
-    overflow: visible !important;
-    padding-bottom: 50px !important; /* 余白を追加 */
+    flex: 1 !important;
+    height: 0 !important; /* flexで自動調整 */
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    padding: 15px !important;
+    gap: 15px !important;
   }
   
-  /* 左右のセクションも高さ自動に */
-  #modal.modal-edit .left-section,
-  #modal.modal-edit .right-section {
-    height: auto !important;
-    min-height: 300px !important;
+  /* 左側セクション - 独立したスクロール */
+  #modal.modal-edit .left-section {
+    width: 50% !important;
+    height: 100% !important; /* 親の高さいっぱい */
+    min-height: 0 !important;
     max-height: none !important;
-  }
-  
-  /* アクションボタンの下に余白追加 */
-  #modal.modal-edit .action-buttons {
-    margin-bottom: 30px !important;
-    padding-bottom: 20px !important;
-  }
-}
-
-/* Android モーダル中央配置修正 */
-@media screen and (max-width: 1024px) {
-  #modal.modal-edit {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    width: 90% !important;
-    height: 90% !important;
-    max-width: 900px !important;
-    max-height: 90vh !important;
-    transform: translate(-50%, -50%) !important;
-    -webkit-transform: translate(-50%, -50%) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 10px !important;
     overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
   }
-}
-
-/* Androidスクロール修正 - PC版と同じ動作に */
-@media screen and (max-width: 1024px) {
-  /* 詳細エリアをスクロール可能に（モーダル全体のスクロール） */
-  #modal.modal-edit #details {
-    flex: 1 !important;
-    overflow-y: auto !important;
+  
+  /* 右側セクション - 独立したスクロール */
+  #modal.modal-edit .right-section {
+    width: 50% !important;
+    height: 100% !important; /* 親の高さいっぱい */
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important; /* 右側全体をスクロール可能に */
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
-    height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  /* 左側のカテゴリーセクションはそのままスクロール可能 */
+  #modal.modal-edit .category-section {
+    flex: 1 !important;
+    overflow: hidden !important;
     min-height: 0 !important;
   }
   
-  /* POSコンテナは内容に応じて伸びる */
-  #modal.modal-edit .pos-container {
-    height: auto !important;
-    min-height: auto !important;
-    max-height: none !important;
-    flex: none !important;
-    overflow: visible !important;
-    padding-bottom: 50px !important;
-  }
-  
-  /* 左右のセクションも内容に応じて伸びる */
-  #modal.modal-edit .left-section,
-  #modal.modal-edit .right-section {
-    height: auto !important;
-    min-height: 400px !important;
-    max-height: none !important;
-    overflow: visible !important; /* スクロールを無効化 */
-  }
-  
-  /* 注文テーブルのスクロールを無効化 */
+  /* 注文テーブルは内容に応じて伸びる */
   #modal.modal-edit .order-table {
     overflow: visible !important;
     height: auto !important;
-    max-height: none !important;
+    flex: none !important;
   }
   
   #modal.modal-edit .order-table-body {
-    overflow: visible !important; /* スクロールを無効化 */
+    overflow: visible !important;
     height: auto !important;
     max-height: none !important;
-    -webkit-overflow-scrolling: auto !important;
   }
   
-  /* カテゴリーセクションは固定高さでスクロール可能（左側） */
-  #modal.modal-edit .category-section {
-    height: 350px !important; /* 固定高さ */
-    overflow: hidden !important;
-  }
-  
-  /* アクションボタンの下に余白追加 */
+  /* アクションボタンは下部に固定 */
   #modal.modal-edit .action-buttons {
-    margin-bottom: 30px !important;
-    padding-bottom: 20px !important;
+    flex-shrink: 0 !important;
+    margin-top: auto !important;
+    padding-top: 10px !important;
   }
 }
