@@ -1808,21 +1808,19 @@ label {
   }
 }
 
-/* Android端末でメニューを中央揃えに */
+/* Android端末でメニューアイテムの位置調整 */
 @media screen and (max-width: 1024px) {
   .menu-item {
-    flex-direction: column !important; /* 縦並びに */
-    text-align: center !important;
-    padding: 20px 30px !important;
-    gap: 8px !important;
-  }
-  
-  .menu-item .menu-icon {
-    margin-right: 0 !important; /* 右マージンを削除 */
-    font-size: 32px !important; /* アイコンを少し大きく */
+    padding-left: 50px !important; /* 左側の余白を大きく増やす */
+    justify-content: flex-start !important; /* 左寄せを維持 */
   }
   
   .menu-item:hover {
-    padding-left: 30px !important; /* ホバー時も中央を維持 */
+    padding-left: 55px !important; /* ホバー時も調整 */
+  }
+  
+  /* アイコンとテキストの間隔を調整 */
+  .menu-item .menu-icon {
+    margin-right: 15px !important; /* 間隔を少し狭める */
   }
 }
