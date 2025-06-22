@@ -41,54 +41,75 @@ export default function CategoryManagement() {
 
   // カテゴリーを追加
   const addCategory = async () => {
-    if (!newCategoryName) return
+  if (!newCategoryName) return
 
-    try {
-      const storeId = getCurrentStoreId()
-      const maxDisplayOrder = categories.length > 0 
-        ? Math.max(...categories.map(c => c.display_order)) 
-        : 0
-      
-      const { error } = await supabase
-        .from('product_categories')
-        .insert({
-          name: newCategoryName,
-          display_order: maxDisplayOrder + 1,
-          store_id: storeId,
-          show_oshi_first: false
-        })
-
-      if (error) throw error
-
-      setNewCategoryName('')
-      loadCategories()
-    } catch (error) {
-      console.error('Error adding category:', error)
-      alert('カテゴリーの追加に失敗しました')
+  try {
+    // 既に同じ名前のカテゴリーが存在するかチェック
+    const isDuplicate = categories.some(c => 
+      c.name.toLowerCase() === newCategoryName.toLowerCase()
+    )
+    
+    if (isDuplicate) {
+      alert(`「${newCategoryName}」は既に登録されています`)
+      return
     }
+    
+    const storeId = getCurrentStoreId()
+    const maxDisplayOrder = categories.length > 0 
+      ? Math.max(...categories.map(c => c.display_order)) 
+      : 0
+    
+    const { error } = await supabase
+      .from('product_categories')
+      .insert({
+        name: newCategoryName,
+        display_order: maxDisplayOrder + 1,
+        store_id: storeId,
+        show_oshi_first: false
+      })
+
+    if (error) throw error
+
+    setNewCategoryName('')
+    loadCategories()
+  } catch (error) {
+    console.error('Error adding category:', error)
+    alert('カテゴリーの追加に失敗しました')
   }
+}
 
   // カテゴリーを更新
   const updateCategory = async () => {
-    if (!editingCategory || !newCategoryName) return
+  if (!editingCategory || !newCategoryName) return
 
-    try {
-      const { error } = await supabase
-        .from('product_categories')
-        .update({ name: newCategoryName })
-        .eq('id', editingCategory.id)
-
-      if (error) throw error
-
-      setNewCategoryName('')
-      setShowEditModal(false)
-      setEditingCategory(null)
-      loadCategories()
-    } catch (error) {
-      console.error('Error updating category:', error)
-      alert('カテゴリーの更新に失敗しました')
+  try {
+    // 編集中のカテゴリー以外に同じ名前が存在するかチェック
+    const isDuplicate = categories.some(c => 
+      c.id !== editingCategory.id &&
+      c.name.toLowerCase() === newCategoryName.toLowerCase()
+    )
+    
+    if (isDuplicate) {
+      alert(`「${newCategoryName}」は既に登録されています`)
+      return
     }
+    
+    const { error } = await supabase
+      .from('product_categories')
+      .update({ name: newCategoryName })
+      .eq('id', editingCategory.id)
+
+    if (error) throw error
+
+    setNewCategoryName('')
+    setShowEditModal(false)
+    setEditingCategory(null)
+    loadCategories()
+  } catch (error) {
+    console.error('Error updating category:', error)
+    alert('カテゴリーの更新に失敗しました')
   }
+}
 
   // カテゴリーを削除
   const deleteCategory = async (categoryId: number) => {

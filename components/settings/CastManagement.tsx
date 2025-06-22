@@ -208,62 +208,73 @@ export default function CastManagement() {
 
   // 新規キャスト追加
   const addNewCast = async () => {
-    if (!editingCast) return
+  if (!editingCast) return
+  
+  try {
+    // 既に同じ名前のキャストが存在するかチェック
+    const isDuplicate = casts.some(c => 
+      c.name && 
+      c.name.toLowerCase() === (editingCast.name || '').toLowerCase()
+    )
     
-    try {
-      const storeId = getStoreIdAsNumber()
-      console.log('Current store_id:', storeId)
-      
-      if (!storeId || storeId === 0) {
-        alert('店舗情報が取得できません。ページを再読み込みしてください。')
-        return
-      }
-      
-      // 必須フィールドを含む新規キャストデータ
-      const newCast = {
-        name: editingCast.name || '新規キャスト',
-        store_id: storeId,
-        status: editingCast.status || '体験',
-        show_in_pos: editingCast.show_in_pos ?? false,
-        attributes: editingCast.attributes || null,
-        twitter: editingCast.twitter || null,
-        instagram: editingCast.instagram || null,
-        birthday: editingCast.birthday || null,
-        experience_date: editingCast.experience_date || null,
-        hire_date: editingCast.hire_date || null
-      }
-      
-      console.log('新規キャスト追加:', newCast)
-      
-      const { data, error } = await supabase
-        .from('casts')
-        .insert(newCast)
-        .select()
-        .single()
-      
-      if (error) {
-        console.error('Supabase insert error:', error)
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        })
-        throw error
-      }
-      
-      console.log('追加成功:', data)
-      
-      alert('新規キャストを追加しました')
-      await loadCasts()
-      setShowCastModal(false)
-      setEditingCast(null)
-      setIsNewCast(false)
-    } catch (error) {
-      console.error('Failed to add new cast:', error)
-      alert('キャストの追加に失敗しました: ' + (error as Error).message)
+    if (isDuplicate) {
+      alert(`「${editingCast.name}」は既に登録されています`)
+      return
     }
+    
+    const storeId = getStoreIdAsNumber()
+    console.log('Current store_id:', storeId)
+    
+    if (!storeId || storeId === 0) {
+      alert('店舗情報が取得できません。ページを再読み込みしてください。')
+      return
+    }
+    
+    // 必須フィールドを含む新規キャストデータ
+    const newCast = {
+      name: editingCast.name || '新規キャスト',
+      store_id: storeId,
+      status: editingCast.status || '体験',
+      show_in_pos: editingCast.show_in_pos ?? false,
+      attributes: editingCast.attributes || null,
+      twitter: editingCast.twitter || null,
+      instagram: editingCast.instagram || null,
+      birthday: editingCast.birthday || null,
+      experience_date: editingCast.experience_date || null,
+      hire_date: editingCast.hire_date || null
+    }
+    
+    console.log('新規キャスト追加:', newCast)
+    
+    const { data, error } = await supabase
+      .from('casts')
+      .insert(newCast)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Supabase insert error:', error)
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
+      throw error
+    }
+    
+    console.log('追加成功:', data)
+    
+    alert('新規キャストを追加しました')
+    await loadCasts()
+    setShowCastModal(false)
+    setEditingCast(null)
+    setIsNewCast(false)
+  } catch (error) {
+    console.error('Failed to add new cast:', error)
+    alert('キャストの追加に失敗しました: ' + (error as Error).message)
   }
+}
 
   // キャストを完全削除
   const deleteCast = async () => {
@@ -447,48 +458,60 @@ export default function CastManagement() {
 
   // キャスト情報を更新する関数
   const updateCast = async () => {
-    if (!editingCast) return
+  if (!editingCast) return
 
-    try {
-      const storeId = getStoreIdAsNumber()
-      
-      const updateData: Record<string, unknown> = {
-        name: editingCast.name || '',
-        twitter: editingCast.twitter || '',
-        instagram: editingCast.instagram || '',
-        attributes: editingCast.attributes || '',
-        status: editingCast.status || '',
-        show_in_pos: editingCast.show_in_pos ?? true,
-        birthday: editingCast.birthday || null,
-        resignation_date: editingCast.resignation_date,
-        attendance_certificate: editingCast.attendance_certificate || false,
-        residence_record: editingCast.residence_record || false,
-        contract_documents: editingCast.contract_documents || false,
-        submission_contract: editingCast.submission_contract || '',
-        employee_name: editingCast.employee_name || '',
-        experience_date: editingCast.experience_date || null,
-        hire_date: editingCast.hire_date || null,
-        sales_previous_day: editingCast.sales_previous_day || '無',
-        updated_at: new Date().toISOString()
-      }
-      
-      const { error } = await supabase
-        .from('casts')
-        .update(updateData)
-        .eq('id', editingCast.id)
-        .eq('store_id', storeId)
-
-      if (error) throw error
-      
-      alert('キャスト情報を更新しました')
-      await loadCasts()
-      setShowCastModal(false)
-      setEditingCast(null)
-    } catch (error) {
-      console.error('Failed to update cast:', error)
-      alert('更新に失敗しました')
+  try {
+    // 編集中のキャスト以外に同じ名前が存在するかチェック
+    const isDuplicate = casts.some(c => 
+      c.id !== editingCast.id &&
+      c.name && 
+      c.name.toLowerCase() === (editingCast.name || '').toLowerCase()
+    )
+    
+    if (isDuplicate) {
+      alert(`「${editingCast.name}」は既に登録されています`)
+      return
     }
+    
+    const storeId = getStoreIdAsNumber()
+    
+    const updateData: Record<string, unknown> = {
+      name: editingCast.name || '',
+      twitter: editingCast.twitter || '',
+      instagram: editingCast.instagram || '',
+      attributes: editingCast.attributes || '',
+      status: editingCast.status || '',
+      show_in_pos: editingCast.show_in_pos ?? true,
+      birthday: editingCast.birthday || null,
+      resignation_date: editingCast.resignation_date,
+      attendance_certificate: editingCast.attendance_certificate || false,
+      residence_record: editingCast.residence_record || false,
+      contract_documents: editingCast.contract_documents || false,
+      submission_contract: editingCast.submission_contract || '',
+      employee_name: editingCast.employee_name || '',
+      experience_date: editingCast.experience_date || null,
+      hire_date: editingCast.hire_date || null,
+      sales_previous_day: editingCast.sales_previous_day || '無',
+      updated_at: new Date().toISOString()
+    }
+    
+    const { error } = await supabase
+      .from('casts')
+      .update(updateData)
+      .eq('id', editingCast.id)
+      .eq('store_id', storeId)
+
+    if (error) throw error
+    
+    alert('キャスト情報を更新しました')
+    await loadCasts()
+    setShowCastModal(false)
+    setEditingCast(null)
+  } catch (error) {
+    console.error('Failed to update cast:', error)
+    alert('更新に失敗しました')
   }
+}
 
   // 初回読み込み
   useEffect(() => {

@@ -85,81 +85,103 @@ export default function AttendanceStatus() {
 
   // 勤怠ステータスを追加
   const addAttendanceStatus = async () => {
-    if (!newStatusName.trim()) {
-      alert('ステータス名を入力してください')
+  if (!newStatusName.trim()) {
+    alert('ステータス名を入力してください')
+    return
+  }
+
+  try {
+    // 既に同じ名前のステータスが存在するかチェック
+    const isDuplicate = attendanceStatuses.some(s => 
+      s.name.toLowerCase() === newStatusName.trim().toLowerCase()
+    )
+    
+    if (isDuplicate) {
+      alert(`「${newStatusName.trim()}」は既に登録されています`)
       return
     }
+    
+    const storeId = getCurrentStoreId()
+    console.log('Adding status with store_id:', storeId)
+    
+    const { error } = await supabase
+      .from('attendance_statuses')
+      .insert({
+        name: newStatusName.trim(),
+        color: newStatusColor,
+        is_active: false,
+        order_index: attendanceStatuses.length,
+        store_id: storeId  // 数値のまま使用
+      })
 
-    try {
-      const storeId = getCurrentStoreId()
-      console.log('Adding status with store_id:', storeId)
-      
-      const { error } = await supabase
-        .from('attendance_statuses')
-        .insert({
-          name: newStatusName.trim(),
-          color: newStatusColor,
-          is_active: false,
-          order_index: attendanceStatuses.length,
-          store_id: storeId  // 数値のまま使用
-        })
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
 
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-
-      setNewStatusName('')
-      setNewStatusColor('#4ECDC4')
-      setShowAddStatus(false)
-      await loadAttendanceStatuses()
-      await updateActiveStatusesInSettings()
-    } catch (error) {
-      console.error('Error adding status:', error)
-      if (error instanceof Error) {
-        alert(`ステータスの追加に失敗しました: ${error.message}`)
-      } else {
-        alert('ステータスの追加に失敗しました')
-      }
+    setNewStatusName('')
+    setNewStatusColor('#4ECDC4')
+    setShowAddStatus(false)
+    await loadAttendanceStatuses()
+    await updateActiveStatusesInSettings()
+  } catch (error) {
+    console.error('Error adding status:', error)
+    if (error instanceof Error) {
+      alert(`ステータスの追加に失敗しました: ${error.message}`)
+    } else {
+      alert('ステータスの追加に失敗しました')
     }
   }
+}
+
 
   // ステータスを更新
   const updateStatus = async () => {
-    if (!editingStatus || !newStatusName.trim()) {
-      alert('ステータス名を入力してください')
+  if (!editingStatus || !newStatusName.trim()) {
+    alert('ステータス名を入力してください')
+    return
+  }
+
+  try {
+    // 編集中のステータス以外に同じ名前が存在するかチェック
+    const isDuplicate = attendanceStatuses.some(s => 
+      s.id !== editingStatus.id &&
+      s.name.toLowerCase() === newStatusName.trim().toLowerCase()
+    )
+    
+    if (isDuplicate) {
+      alert(`「${newStatusName.trim()}」は既に登録されています`)
       return
     }
+    
+    const { error } = await supabase
+      .from('attendance_statuses')
+      .update({
+        name: newStatusName.trim(),
+        color: newStatusColor
+      })
+      .eq('id', editingStatus.id)
 
-    try {
-      const { error } = await supabase
-        .from('attendance_statuses')
-        .update({
-          name: newStatusName.trim(),
-          color: newStatusColor
-        })
-        .eq('id', editingStatus.id)
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
 
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-
-      setEditingStatus(null)
-      setNewStatusName('')
-      setNewStatusColor('#4ECDC4')
-      setShowEditStatus(false)
-      await loadAttendanceStatuses()
-      await updateActiveStatusesInSettings()
-    } catch (error) {
-      console.error('Error updating status:', error)
-      if (error instanceof Error) {
-        alert(`ステータスの更新に失敗しました: ${error.message}`)
-      } else {
-        alert('ステータスの更新に失敗しました')
-      }
+    setEditingStatus(null)
+    setNewStatusName('')
+    setNewStatusColor('#4ECDC4')
+    setShowEditStatus(false)
+    await loadAttendanceStatuses()
+    await updateActiveStatusesInSettings()
+  } catch (error) {
+    console.error('Error updating status:', error)
+    if (error instanceof Error) {
+      alert(`ステータスの更新に失敗しました: ${error.message}`)
+    } else {
+      alert('ステータスの更新に失敗しました')
     }
   }
+}
 
   // ステータスの有効/無効を切り替え
   const toggleStatusActive = async (statusId: string, currentActive: boolean) => {

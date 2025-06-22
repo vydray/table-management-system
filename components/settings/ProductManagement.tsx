@@ -73,68 +73,92 @@ export default function ProductManagement() {
 
   // 商品を追加
   const addProduct = async () => {
-    if (!newProductName || !newProductPrice || !newProductCategory) return
+  if (!newProductName || !newProductPrice || !newProductCategory) return
 
-    try {
-      const storeId = getCurrentStoreId()
-      const categoryProducts = products.filter(p => p.category_id === newProductCategory)
-      const maxDisplayOrder = categoryProducts.length > 0
-        ? Math.max(...categoryProducts.map(p => p.display_order))
-        : 0
-      
-      const { error } = await supabase
-        .from('products')
-        .insert({
-          name: newProductName,
-          price: parseInt(newProductPrice),
-          category_id: newProductCategory,
-          display_order: maxDisplayOrder + 1,
-          store_id: storeId,
-          is_active: true,
-          needs_cast: newProductNeedsCast,
-          discount_rate: 0
-        })
-
-      if (error) throw error
-
-      setNewProductName('')
-      setNewProductPrice('')
-      setNewProductCategory(null)
-      setNewProductNeedsCast(false)
-      loadProducts()
-    } catch (error) {
-      console.error('Error adding product:', error)
-      alert('商品の追加に失敗しました')
+  try {
+    const storeId = getCurrentStoreId()
+    
+    // 同じカテゴリー内で同じ名前の商品が既に存在するかチェック
+    const isDuplicate = products.some(p => 
+      p.category_id === newProductCategory && 
+      p.name.toLowerCase() === newProductName.toLowerCase()
+    )
+    
+    if (isDuplicate) {
+      alert(`「${newProductName}」は既に登録されています`)
+      return
     }
+    
+    const categoryProducts = products.filter(p => p.category_id === newProductCategory)
+    const maxDisplayOrder = categoryProducts.length > 0
+      ? Math.max(...categoryProducts.map(p => p.display_order))
+      : 0
+    
+    const { error } = await supabase
+      .from('products')
+      .insert({
+        name: newProductName,
+        price: parseInt(newProductPrice),
+        category_id: newProductCategory,
+        display_order: maxDisplayOrder + 1,
+        store_id: storeId,
+        is_active: true,
+        needs_cast: newProductNeedsCast,
+        discount_rate: 0
+      })
+
+    if (error) throw error
+
+    setNewProductName('')
+    setNewProductPrice('')
+    setNewProductCategory(null)
+    setNewProductNeedsCast(false)
+    loadProducts()
+  } catch (error) {
+    console.error('Error adding product:', error)
+    alert('商品の追加に失敗しました')
   }
+}
 
   // 商品を更新
   const updateProduct = async () => {
-    if (!editingProduct || !newProductName || !newProductPrice) return
+  if (!editingProduct || !newProductName || !newProductPrice) return
 
-    try {
-      const { error } = await supabase
-        .from('products')
-        .update({
-          name: newProductName,
-          price: parseInt(newProductPrice),
-          needs_cast: newProductNeedsCast
-        })
-        .eq('id', editingProduct.id)
-
-      if (error) throw error
-
-      setEditingProduct(null)
-      setNewProductName('')
-      setNewProductPrice('')
-      setNewProductNeedsCast(false)
-      setShowEditModal(false)
-      loadProducts()
-    } catch (error) {
-      console.error('Error updating product:', error)
-      alert('商品の更新に失敗しました')
+  try {
+    // 編集中の商品と同じカテゴリー内で、編集中の商品以外に同じ名前が存在するかチェック
+    const isDuplicate = products.some(p => 
+      p.id !== editingProduct.id &&
+      p.category_id === editingProduct.category_id && 
+      p.name.toLowerCase() === newProductName.toLowerCase()
+    )
+    
+    if (isDuplicate) {
+      alert(`「${newProductName}」は既に登録されています`)
+      return
     }
+    
+    const { error } = await supabase
+      .from('products')
+      .update({
+        name: newProductName,
+        price: parseInt(newProductPrice),
+        needs_cast: newProductNeedsCast
+      })
+      .eq('id', editingProduct.id)
+
+    if (error) throw error
+
+    setEditingProduct(null)
+    setNewProductName('')
+    setNewProductPrice('')
+    setNewProductNeedsCast(false)
+    setShowEditModal(false)
+    loadProducts()
+  } catch (error) {
+    console.error('Error updating product:', error)
+    alert('商品の更新に失敗しました')
   }
+}
 
   // 商品を削除
   const deleteProduct = async (productId: number) => {
