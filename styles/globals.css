@@ -1825,89 +1825,75 @@ label {
   }
 }
 
-/* 月次レポート画面のAndroid対応 - 全体調整 */
+/* 月次レポート画面のAndroidタブレット対応 */
 @media screen and (max-width: 1024px) {
   /* レポートページ全体の幅調整 */
   div[style*="maxWidth: '1024px'"] {
-    max-width: 100vw !important;
+    max-width: 100% !important;
     width: 100% !important;
-    padding: 10px !important;
+    padding: 15px !important;
     box-sizing: border-box !important;
   }
   
-  /* 各セクション（白いカード）の調整 */
-  div[style*="backgroundColor: '#fff'"] {
-    margin: 0 5px 15px 5px !important;
-    width: calc(100% - 10px) !important;
-  }
-  
-  /* グラフエリアをレスポンシブに */
+  /* グラフエリアの高さを維持 */
   div[style*="height: '300px'"] {
+    height: 300px !important; /* 高さを維持 */
     width: 100% !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    padding: 0 10px !important;
+    box-sizing: border-box !important;
   }
   
-  /* グラフの棒を細く */
+  /* グラフの棒を適切なサイズに */
   div[style*="flex: 1"] {
-    min-width: 8px !important;
-    flex: 0 0 auto !important;
+    flex: 1 !important; /* 元のflex設定を維持 */
+    min-width: 15px !important; /* タブレット用に少し太く */
+    margin: 0 1px !important;
   }
   
-  /* 月次集計を2×2グリッドに */
+  /* 月次集計は3列に（タブレット用） */
   div[style*="gridTemplateColumns: 'repeat(4, 1fr)'"] {
     display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 15px !important;
   }
   
-  /* 月次集計の文字サイズ調整 */
+  /* フォントサイズは少し小さく */
   div[style*="fontSize: '24px'"] {
-    font-size: 20px !important;
+    font-size: 22px !important;
   }
   
-  /* テーブル全体の調整 */
-  div[style*="overflowX: 'auto'"] {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    width: 100% !important;
-  }
-  
+  /* テーブルの調整 */
   table {
-    font-size: 13px !important;
-    min-width: 600px !important; /* 最小幅を設定してスクロール可能に */
+    font-size: 14px !important; /* タブレット用に読みやすく */
+    width: 100% !important;
   }
   
   table th,
   table td {
-    padding: 8px 6px !important;
-    white-space: nowrap !important;
+    padding: 10px 8px !important;
   }
   
-  /* ヘッダーの年月選択も調整 */
-  select {
-    font-size: 14px !important;
-    padding: 6px 10px !important;
-  }
-  
-  /* さらに小さい画面（スマホ）用 */
+  /* スマホ用の調整 */
   @media screen and (max-width: 600px) {
-    /* 月次集計を1列に */
-    div[style*="gridTemplateColumns: 'repeat(2, 1fr)'"] {
-      grid-template-columns: 1fr !important;
+    /* グラフの棒を細く */
+    div[style*="flex: 1"] {
+      min-width: 8px !important;
     }
     
-    /* フォントサイズをさらに調整 */
-    div[style*="fontSize: '20px'"] {
-      font-size: 16px !important;
+    /* 月次集計を2列に */
+    div[style*="gridTemplateColumns: 'repeat(3, 1fr)'"] {
+      grid-template-columns: repeat(2, 1fr) !important;
     }
     
-    h2 {
+    /* フォントサイズを小さく */
+    div[style*="fontSize: '22px'"] {
       font-size: 18px !important;
     }
     
     table {
-      font-size: 11px !important;
+      font-size: 12px !important;
     }
   }
 }
