@@ -1123,6 +1123,8 @@ export default function Report() {
                           ¥{dailyReportData.otherSales || 0}-
                         </td>
                       </tr>
+                      // pages/report.tsx の業務日報モーダル部分の修正（1700行目あたり）
+
                       <tr>
                         <td style={{ backgroundColor: '#e6e6e6', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
                           不明伝票
@@ -1133,7 +1135,8 @@ export default function Report() {
                             value={dailyReportData.notTransmittedReceipt || ''}
                             onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedReceipt: Number(e.target.value) || 0})}
                             style={{ 
-                              width: '100%', 
+                              width: 'calc(100% - 16px)', // パディング分を引く
+                              maxWidth: '120px', // 最大幅を設定
                               textAlign: 'right', 
                               border: '1px solid #e0e0e0',
                               borderRadius: '4px',
@@ -1141,7 +1144,8 @@ export default function Report() {
                               fontSize: '16px', 
                               fontWeight: 'bold',
                               backgroundColor: '#f9f9f9',
-                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                              boxSizing: 'border-box' // ボックスサイジングを追加
                             }}
                             placeholder="0"
                           />
@@ -1149,13 +1153,13 @@ export default function Report() {
                       </tr>
                       <tr>
                         <td style={{ backgroundColor: '#e6e6e6', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
-                          不明伝票
+                          不明金
                         </td>
                         <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold' }}>
                           <input
                             type="number"
-                            value={dailyReportData.notTransmittedReceipt || ''}
-                            onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedReceipt: Number(e.target.value) || 0})}
+                            value={dailyReportData.notTransmittedAmount || ''}
+                            onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedAmount: Number(e.target.value) || 0})}
                             style={{ 
                               width: 'calc(100% - 16px)', // パディング分を引く
                               maxWidth: '120px', // 最大幅を設定
