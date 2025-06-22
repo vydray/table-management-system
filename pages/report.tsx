@@ -1147,6 +1147,32 @@ export default function Report() {
                           />
                         </td>
                       </tr>
+                       <tr>
+                        <td style={{ backgroundColor: '#e6e6e6', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
+                          不明伝票
+                        </td>
+                        <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold' }}>
+                          <input
+                            type="number"
+                            value={dailyReportData.notTransmittedReceipt || ''}
+                            onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedReceipt: Number(e.target.value) || 0})}
+                            style={{ 
+                              width: 'calc(100% - 16px)', // パディング分を引く
+                              maxWidth: '120px', // 最大幅を設定
+                              textAlign: 'right', 
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              fontSize: '16px', 
+                              fontWeight: 'bold',
+                              backgroundColor: '#f9f9f9',
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                              boxSizing: 'border-box' // ボックスサイジングを追加
+                            }}
+                            placeholder="0"
+                          />
+                        </td>
+                      </tr>
                       <tr>
                         <td style={{ backgroundColor: '#e6e6e6', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
                           不明金
@@ -1157,7 +1183,8 @@ export default function Report() {
                             value={dailyReportData.notTransmittedAmount || ''}
                             onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedAmount: Number(e.target.value) || 0})}
                             style={{ 
-                              width: '100%', 
+                              width: 'calc(100% - 16px)', // パディング分を引く
+                              maxWidth: '120px', // 最大幅を設定
                               textAlign: 'right', 
                               border: '1px solid #e0e0e0',
                               borderRadius: '4px',
@@ -1165,7 +1192,8 @@ export default function Report() {
                               fontSize: '16px', 
                               fontWeight: 'bold',
                               backgroundColor: '#f9f9f9',
-                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                              boxSizing: 'border-box' // ボックスサイジングを追加
                             }}
                             placeholder="0"
                           />
@@ -1181,7 +1209,8 @@ export default function Report() {
                             value={dailyReportData.unpaidAmount || ''}
                             onChange={(e) => setDailyReportData({...dailyReportData, unpaidAmount: Number(e.target.value) || 0})}
                             style={{ 
-                              width: '100%', 
+                              width: 'calc(100% - 16px)', // パディング分を引く
+                              maxWidth: '120px', // 最大幅を設定
                               textAlign: 'right', 
                               border: '1px solid #e0e0e0',
                               borderRadius: '4px',
@@ -1189,7 +1218,8 @@ export default function Report() {
                               fontSize: '16px', 
                               fontWeight: 'bold',
                               backgroundColor: '#f9f9f9',
-                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                              boxSizing: 'border-box' // ボックスサイジングを追加
                             }}
                             placeholder="0"
                           />
@@ -1205,7 +1235,8 @@ export default function Report() {
                             value={dailyReportData.expenseAmount || ''}
                             onChange={(e) => setDailyReportData({...dailyReportData, expenseAmount: Number(e.target.value) || 0})}
                             style={{ 
-                              width: '100%', 
+                              width: 'calc(100% - 16px)', // パディング分を引く
+                              maxWidth: '120px', // 最大幅を設定
                               textAlign: 'right', 
                               border: '1px solid #e0e0e0',
                               borderRadius: '4px',
@@ -1213,7 +1244,8 @@ export default function Report() {
                               fontSize: '16px', 
                               fontWeight: 'bold',
                               backgroundColor: '#f9f9f9',
-                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                              boxSizing: 'border-box' // ボックスサイジングを追加
                             }}
                             placeholder="0"
                           />
@@ -1229,7 +1261,8 @@ export default function Report() {
                             value={dailyReportData.dailyPaymentTotal || ''}
                             onChange={(e) => setDailyReportData({...dailyReportData, dailyPaymentTotal: Number(e.target.value) || 0})}
                             style={{ 
-                              width: '100%', 
+                              width: 'calc(100% - 16px)', // パディング分を引く
+                              maxWidth: '120px', // 最大幅を設定
                               textAlign: 'right', 
                               border: '1px solid #e0e0e0',
                               borderRadius: '4px',
@@ -1237,7 +1270,8 @@ export default function Report() {
                               fontSize: '16px', 
                               fontWeight: 'bold',
                               backgroundColor: '#f9f9f9',
-                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                              boxSizing: 'border-box' // ボックスサイジングを追加
                             }}
                             placeholder="0"
                           />
@@ -1390,7 +1424,7 @@ export default function Report() {
                     </div>
                   </div>
 
-                  {/* SNSフォロワー数 */}
+                   {/* SNSフォロワー数 */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0' }}>
                     <div>
                       <div style={{ backgroundColor: '#ffcccc', padding: '12px', textAlign: 'center', border: '1px solid #999', borderBottom: 'none' }}>
@@ -1403,14 +1437,16 @@ export default function Report() {
                           value={dailyReportData.twitterFollowers || ''}
                           onChange={(e) => setDailyReportData({...dailyReportData, twitterFollowers: Number(e.target.value) || 0})}
                           style={{ 
-                            width: '90%',
+                            width: 'calc(100% - 8px)', // パディング分を引く
+                            maxWidth: '80px', // 最大幅を小さく
                             textAlign: 'center', 
                             border: '1px solid #e0e0e0',
                             borderRadius: '4px',
                             padding: '4px',
                             fontSize: '14px',
                             backgroundColor: '#f9f9f9',
-                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                            boxSizing: 'border-box' // ボックスサイジングを追加
                           }}
                           placeholder="0"
                         />
@@ -1427,14 +1463,16 @@ export default function Report() {
                           value={dailyReportData.instagramFollowers || ''}
                           onChange={(e) => setDailyReportData({...dailyReportData, instagramFollowers: Number(e.target.value) || 0})}
                           style={{ 
-                            width: '90%',
+                            width: 'calc(100% - 8px)', // パディング分を引く
+                            maxWidth: '80px', // 最大幅を小さく
                             textAlign: 'center', 
                             border: '1px solid #e0e0e0',
                             borderRadius: '4px',
                             padding: '4px',
                             fontSize: '14px',
                             backgroundColor: '#f9f9f9',
-                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                            boxSizing: 'border-box' // ボックスサイジングを追加
                           }}
                           placeholder="0"
                         />
@@ -1451,14 +1489,16 @@ export default function Report() {
                           value={dailyReportData.tiktokFollowers || ''}
                           onChange={(e) => setDailyReportData({...dailyReportData, tiktokFollowers: Number(e.target.value) || 0})}
                           style={{ 
-                            width: '90%',
+                            width: 'calc(100% - 8px)', // パディング分を引く
+                            maxWidth: '80px', // 最大幅を小さく
                             textAlign: 'center', 
                             border: '1px solid #e0e0e0',
                             borderRadius: '4px',
                             padding: '4px',
                             fontSize: '14px',
                             backgroundColor: '#f9f9f9',
-                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                            boxSizing: 'border-box' // ボックスサイジングを追加
                           }}
                           placeholder="0"
                         />
