@@ -1123,8 +1123,7 @@ export default function Report() {
                           ¥{dailyReportData.otherSales || 0}-
                         </td>
                       </tr>
-                      // pages/report.tsx の業務日報モーダル部分の修正（1700行目あたり）
-
+                      
                       <tr>
                         <td style={{ backgroundColor: '#e6e6e6', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
                           不明伝票
