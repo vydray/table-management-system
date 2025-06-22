@@ -149,17 +149,24 @@ export default function CategoryManagement() {
   }, [])
 
   return (
-    <div>
-      {/* ヘッダー部分 */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '30px'
-      }}>
-        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>新規カテゴリー追加</h2>
-      </div>
-
+  <div style={{
+    height: '100%',
+    overflowY: 'auto',
+    paddingBottom: '100px', // 下部に余裕を持たせる
+    WebkitOverflowScrolling: 'touch', // iOSスムーズスクロール
+    msOverflowStyle: '-ms-autohiding-scrollbar', // IE/Edge
+    position: 'relative' // Androidでの位置固定問題対策
+  }}>
+    {/* ヘッダー部分 */}
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '30px'
+    }}>
+      <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>新規カテゴリー追加</h2>
+    </div>
+    
       {/* カテゴリー追加フォーム */}
       <div style={{
         display: 'flex',

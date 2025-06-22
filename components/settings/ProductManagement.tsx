@@ -218,12 +218,15 @@ export default function ProductManagement() {
     : products // 全商品を表示
 
   return (
-    <div style={{ 
-      height: '100%',
-      overflowY: 'auto',
-      paddingBottom: '50px'
-    }}>
-      <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 'bold' }}>商品管理</h2>
+  <div style={{ 
+    height: '100%',
+    overflowY: 'auto',
+    paddingBottom: '100px', // 下部に余裕を持たせる
+    WebkitOverflowScrolling: 'touch', // iOSスムーズスクロール
+    msOverflowStyle: '-ms-autohiding-scrollbar', // IE/Edge
+    position: 'relative' // Androidでの位置固定問題対策
+  }}>
+    <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 'bold' }}>商品管理</h2>
 
       {/* カテゴリー選択 */}
       <div style={{ marginBottom: '30px' }}>

@@ -105,14 +105,20 @@ export default function SystemSettings() {
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: '30px' }}>
-        <label style={{ 
-          display: 'block',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          marginBottom: '10px'
-        }}>
+  <div style={{
+    height: '100%',
+    overflowY: 'auto',
+    paddingBottom: '50px',
+    WebkitOverflowScrolling: 'touch', // iOSスムーズスクロール
+    msOverflowStyle: '-ms-autohiding-scrollbar' // IE/Edge
+  }}>
+    <div style={{ marginBottom: '30px' }}>
+      <label style={{ 
+        display: 'block',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        marginBottom: '10px'
+      }}>
           消費税率
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

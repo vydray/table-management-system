@@ -541,13 +541,19 @@ export default function CastManagement() {
   }, [casts, searchTerm])
 
   return (
-    <div style={{
-      backgroundColor: '#fff',
-      borderRadius: '10px',
-      padding: '20px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+  <div style={{
+    backgroundColor: '#fff',
+    borderRadius: '10px',
+    padding: '20px',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+    height: '100%',
+    overflowY: 'auto',
+    paddingBottom: '100px', // 下部に余裕を持たせる
+    WebkitOverflowScrolling: 'touch', // iOSスムーズスクロール
+    msOverflowStyle: '-ms-autohiding-scrollbar', // IE/Edge
+    position: 'relative' // Androidでの位置固定問題対策
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>キャスト管理</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
@@ -637,19 +643,19 @@ export default function CastManagement() {
 
       {/* キャスト一覧テーブル */}
       <div style={{ 
-        backgroundColor: '#f8f8f8',
-        borderRadius: '8px',
-        padding: '1px'
+      backgroundColor: '#f8f8f8',
+      borderRadius: '8px',
+      padding: '1px'
+    }}>
+      <div style={{ 
+        // maxHeight: '600px', を削除
+        // overflowY: 'auto' を削除
       }}>
-        <div style={{ 
-          maxHeight: '600px',
-          overflowY: 'auto'
+        <table data-cast-table style={{ 
+          width: '100%',
+          borderCollapse: 'collapse',
+          backgroundColor: '#fff'
         }}>
-          <table data-cast-table style={{ 
-            width: '100%',
-            borderCollapse: 'collapse',
-            backgroundColor: '#fff'
-          }}>
             <thead style={{ 
               position: 'sticky',
               top: 0,

@@ -257,30 +257,37 @@ export default function AttendanceStatus() {
   }, [])
 
   return (
-    <div>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '20px'
-      }}>
-        <h2 style={{ margin: 0, fontSize: '20px' }}>勤怠ステータス管理</h2>
-        <button
-          onClick={() => setShowAddStatus(true)}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#4A90E2',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          + ステータス追加
-        </button>
-      </div>
-
+  <div style={{
+    height: '100%',
+    overflowY: 'auto',
+    paddingBottom: '100px', // 下部に余裕を持たせる
+    WebkitOverflowScrolling: 'touch', // iOSスムーズスクロール
+    msOverflowStyle: '-ms-autohiding-scrollbar', // IE/Edge
+    position: 'relative' // Androidでの位置固定問題対策
+  }}>
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '20px'
+    }}>
+      <h2 style={{ margin: 0, fontSize: '20px' }}>勤怠ステータス管理</h2>
+      <button
+        onClick={() => setShowAddStatus(true)}
+        style={{
+          padding: '10px 20px',
+          backgroundColor: '#4A90E2',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer',
+          fontSize: '14px'
+        }}
+      >
+        + ステータス追加
+      </button>
+    </div>
+    
       <div style={{
         backgroundColor: '#e8f5e9',
         borderRadius: '10px',

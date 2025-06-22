@@ -1,3 +1,5 @@
+// pages/settings.tsx の修正版
+
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
@@ -121,7 +123,10 @@ export default function Settings() {
             padding: '30px 40px',
             paddingBottom: '100px',
             overflowY: 'auto',
-            height: 'calc(100vh - 54px)'
+            height: 'calc(100vh - 54px)',
+            WebkitOverflowScrolling: 'touch',
+            msOverflowStyle: '-ms-autohiding-scrollbar',
+            position: 'relative'
           }}>
             <h2 style={{
               margin: '0 0 30px 0',
@@ -140,6 +145,15 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @media (max-width: 1024px) {
+          div[style*="padding: '30px 40px'"] {
+            padding: 20px !important;
+            padding-bottom: 120px !important;
+          }
+        }
+      `}</style>
     </>
   )
 }
