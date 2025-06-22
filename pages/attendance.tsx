@@ -180,7 +180,7 @@ export default function Attendance() {
     }
   }
 
-  // 行を更新（金額フォーマット対応）
+// 行を更新（金額フォーマット対応）
   const updateRow = (index: number, field: keyof AttendanceRow, value: string | number) => {
     const newRows = [...attendanceRows]
     
@@ -198,6 +198,23 @@ export default function Attendance() {
 
   // キャスト名の選択
   const selectCast = (index: number, castName: string) => {
+    // 空の選択の場合はそのまま許可
+    if (!castName) {
+      updateRow(index, 'cast_name', castName)
+      setShowDropdowns({ ...showDropdowns, [index]: false })
+      return
+    }
+    
+    // 同じ名前が既に選択されているかチェック
+    const isDuplicate = attendanceRows.some((row, i) => 
+      i !== index && row.cast_name === castName
+    )
+    
+    if (isDuplicate) {
+      alert(`${castName}さんは既に選択されています`)
+      return
+    }
+    
     updateRow(index, 'cast_name', castName)
     setShowDropdowns({ ...showDropdowns, [index]: false })
   }
@@ -219,6 +236,8 @@ export default function Attendance() {
     const numericValue = value.replace(/[¥,]/g, '')
     updateRow(index, 'daily_payment', numericValue)
   }
+
+  
 
   // 保存
   const saveAttendance = async () => {
@@ -684,7 +703,7 @@ useEffect(() => {
                               zIndex: 1000,
                               boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                             }}>
-                              {casts.length === 0 ? (
+{casts.length === 0 ? (
                                 <div style={{
                                   padding: '10px 12px',
                                   fontSize: '14px',
@@ -711,35 +730,47 @@ useEffect(() => {
                                   >
                                     -- 未選択 --
                                   </div>
-                                  {casts.map(cast => (
-                                    <div
-                                      key={cast.id}
-                                      onClick={() => selectCast(index, cast.name)}
-                                      style={{
-                                        padding: '10px 12px',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        borderBottom: '1px solid #f0f0f0',
-                                        transition: 'background-color 0.2s',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center'
-                                      }}
-                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
-                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                    >
-                                      <span>{cast.name}</span>
-                                      {cast.status === '体験' && (
+                                  {casts.map(cast => {
+                                    // 既に選択されているかチェック
+                                    const isAlreadySelected = attendanceRows.some((row, i) => 
+                                      i !== index && row.cast_name === cast.name
+                                    )
+                                    
+                                    return (
+                                      <div
+                                        key={cast.id}
+                                        onClick={() => selectCast(index, cast.name)}
+                                        style={{
+                                          padding: '10px 12px',
+                                          cursor: isAlreadySelected ? 'not-allowed' : 'pointer',
+                                          fontSize: '14px',
+                                          borderBottom: '1px solid #f0f0f0',
+                                          transition: 'background-color 0.2s',
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          alignItems: 'center',
+                                          opacity: isAlreadySelected ? 0.5 : 1,
+                                          backgroundColor: isAlreadySelected ? '#f5f5f5' : 'transparent'
+                                        }}
+                                        onMouseEnter={(e) => !isAlreadySelected && (e.currentTarget.style.backgroundColor = '#f0f8ff')}
+                                        onMouseLeave={(e) => !isAlreadySelected && (e.currentTarget.style.backgroundColor = 'transparent')}
+                                      >
+                                        <span style={{
+                                          textDecoration: isAlreadySelected ? 'line-through' : 'none'
+                                        }}>
+                                          {cast.name}
+                                        </span>
                                         <span style={{
                                           fontSize: '12px',
                                           color: '#888',
                                           marginLeft: '8px'
                                         }}>
-                                          (体験)
+                                          {cast.status === '体験' && '(体験)'}
+                                          {isAlreadySelected && '(選択済み)'}
                                         </span>
-                                      )}
-                                    </div>
-                                  ))}
+                                      </div>
+                                    )
+                                  })}
                                 </>
                               )}
                             </div>
