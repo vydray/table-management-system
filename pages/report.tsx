@@ -1122,8 +1122,7 @@ export default function Report() {
                         <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold', fontSize: '16px' }}>
                           ¥{dailyReportData.otherSales || 0}-
                         </td>
-                      </tr>
-                      
+                      </tr>                     
                       <tr>
                         <td style={{ backgroundColor: '#e6e6e6', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
                           不明伝票
