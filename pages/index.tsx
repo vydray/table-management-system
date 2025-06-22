@@ -691,16 +691,17 @@ export default function Home() {
       })
       
       if (!silent) {
-        setShowModal(false)
-      }
-      loadData()
-    } catch (error) {
-      console.error('Error updating table:', error)
-      if (!silent) {
-        alert('更新に失敗しました')
-      }
+      document.body.classList.remove('modal-open')  // 追加
+      setShowModal(false)
+    }
+    loadData()
+  } catch (error) {
+    console.error('Error updating table:', error)
+    if (!silent) {
+      alert('更新に失敗しました')
     }
   }
+}
 
   // 会計処理（修正版）
   const checkout = async () => {
@@ -774,43 +775,41 @@ export default function Home() {
       
       // モーダルを閉じる
       document.body.classList.remove('modal-open')
-      setShowPaymentModal(false)
-      setOrderItems([])
-      setShowModal(false)
-      
-      // データを再読み込み（これで卓が空席になるはず）
-      await loadData()
-    } catch (error) {
-      console.error('Error checkout:', error)
-      alert('会計処理に失敗しました')
-    }
+    setShowPaymentModal(false)
+    setOrderItems([])
+    setShowModal(false)
+    
+    await loadData()
+  } catch (error) {
+    console.error('Error checkout:', error)
+    alert('会計処理に失敗しました')
   }
+}
 
   // テーブルクリア（修正版）
   const clearTable = async () => {
-    if (!confirm(`${currentTable} の情報を削除しますか？`)) return
-    
-    try {
-      const storeId = getCurrentStoreId()
-      await fetch('/api/tables/clear', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          tableId: currentTable,
-          storeId: storeId
-        })
+  if (!confirm(`${currentTable} の情報を削除しますか？`)) return
+  
+  try {
+    const storeId = getCurrentStoreId()
+    await fetch('/api/tables/clear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        tableId: currentTable,
+        storeId: storeId
       })
-      
-      // 注文データをクリア
-      document.body.classList.remove('modal-open')  // iPad対応
-      setOrderItems([])
-      setShowModal(false)
-      loadData()
-    } catch (error) {
-      console.error('Error clearing table:', error)
-      alert('削除に失敗しました')
-    }
+    })
+    
+    document.body.classList.remove('modal-open')  // 追加
+    setOrderItems([])
+    setShowModal(false)
+    loadData()
+  } catch (error) {
+    console.error('Error clearing table:', error)
+    alert('削除に失敗しました')
   }
+}
 
   // 席移動
   const executeMove = async (toTable: string) => {
@@ -882,47 +881,46 @@ export default function Home() {
 
   // モーダルを開く（修正版）
   const openModal = (table: TableData) => {
-    setCurrentTable(table.table)
-    
-    if (table.status === 'empty') {
-      setModalMode('new')
-      const now = new Date()
-      setFormData({
-        guestName: '',
-        castName: '',
-        visitType: '',
-        editYear: now.getFullYear(),
-        editMonth: now.getMonth() + 1,
-        editDate: now.getDate(),
-        editHour: now.getHours(),
-        editMinute: Math.floor(now.getMinutes() / 5) * 5
-      })
-      setOrderItems([])  // 空席の場合は必ずクリア
-    } else {
-      setModalMode('edit')
-      const time = table.time ? new Date(table.time.replace(' ', 'T')) : new Date()
-      setFormData({
-        guestName: table.name,
-        castName: table.oshi,
-        visitType: table.visit,
-        editYear: time.getFullYear(),
-        editMonth: time.getMonth() + 1,
-        editDate: time.getDate(),
-        editHour: time.getHours(),
-        editMinute: time.getMinutes()
-      })
-      // 既存の注文データを読み込む
-      setOrderItems([])  // 一旦クリアしてから
-      loadOrderItems(table.table)  // 改めて読み込む
-    }
-    
-    // bodyにクラスを追加（iPad対応）
-    document.body.classList.add('modal-open')
-    
-    setShowModal(true)
-    setSelectedCategory('')
-    setSelectedProduct(null)
+  setCurrentTable(table.table)
+  
+  if (table.status === 'empty') {
+    setModalMode('new')
+    const now = new Date()
+    setFormData({
+      guestName: '',
+      castName: '',
+      visitType: '',
+      editYear: now.getFullYear(),
+      editMonth: now.getMonth() + 1,
+      editDate: now.getDate(),
+      editHour: now.getHours(),
+      editMinute: Math.floor(now.getMinutes() / 5) * 5
+    })
+    setOrderItems([])
+  } else {
+    setModalMode('edit')
+    const time = table.time ? new Date(table.time.replace(' ', 'T')) : new Date()
+    setFormData({
+      guestName: table.name,
+      castName: table.oshi,
+      visitType: table.visit,
+      editYear: time.getFullYear(),
+      editMonth: time.getMonth() + 1,
+      editDate: time.getDate(),
+      editHour: time.getHours(),
+      editMinute: time.getMinutes()
+    })
+    setOrderItems([])
+    loadOrderItems(table.table)
   }
+  
+  // bodyにクラスを追加
+  document.body.classList.add('modal-open')
+  
+  setShowModal(true)
+  setSelectedCategory('')
+  setSelectedProduct(null)
+}
 
 // テーブルコンポーネント（修正版）
 const Table = ({ tableId, data, scale, tableSize }: { 
@@ -1193,22 +1191,30 @@ const Table = ({ tableId, data, scale, tableSize }: {
 
       {/* モーダルオーバーレイ */}
       {(showModal || showMoveModal) && (
-        <div id="modal-overlay" onClick={() => {
-          document.body.classList.remove('modal-open')  // iPad対応
-          setShowModal(false)
-          setShowMoveModal(false)
-        }} />
-      )}
+  <div 
+    id="modal-overlay" 
+    onClick={() => {
+      document.body.classList.remove('modal-open')
+      setShowModal(false)
+      setShowMoveModal(false)
+    }} 
+  />
+)}
 
       {/* メインモーダル */}
       {showModal && (
         <div id="modal" className={modalMode === 'new' ? 'modal-new' : 'modal-edit'} style={{
           fontSize: `${16 * layoutScale}px`
         }}>
-          <button id="modal-close" onClick={() => {
-            document.body.classList.remove('modal-open')  // iPad対応
-            setShowModal(false)
-          }}>×</button>
+          <button 
+  id="modal-close" 
+  onClick={() => {
+    document.body.classList.remove('modal-open')
+    setShowModal(false)
+  }}
+>
+  ×
+</button>
           <h3>
             📌 {currentTable} の操作
             {modalMode === 'edit' && (
@@ -1720,20 +1726,23 @@ const Table = ({ tableId, data, scale, tableSize }: {
                   会計完了
                 </button>
                 <button
-                  onClick={() => setShowPaymentModal(false)}
-                  style={{
-                    flex: 1,
-                    padding: `${12 * layoutScale}px`,
-                    backgroundColor: '#ccc',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    fontSize: `${16 * layoutScale}px`,
-                    cursor: 'pointer'
-                  }}
-                >
-                  キャンセル
-                </button>
+  onClick={() => {
+    document.body.classList.remove('modal-open')  // 追加
+    setShowPaymentModal(false)
+  }}
+  style={{
+    flex: 1,
+    padding: `${12 * layoutScale}px`,
+    backgroundColor: '#ccc',
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    fontSize: `${16 * layoutScale}px`,
+    cursor: 'pointer'
+  }}
+>
+  キャンセル
+</button>
               </div>
             </div>
 

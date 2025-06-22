@@ -21,6 +21,8 @@ body:not(.modal-open) {
 /* モーダルが開いている時はタッチを許可 */
 body.modal-open {
   touch-action: auto !important;
+  overflow: hidden !important; /* スクロールは無効にする */
+  position: fixed !important; /* 位置は固定 */
 }
 
 /* レスポンシブ用のスケール変数 */
@@ -195,14 +197,14 @@ body.modal-open {
 /* サイドメニュー */
 .side-menu {
   position: absolute;
-  left: -340px;          /* 幅に合わせて調整 */
+  left: -340px;
   top: 72px;
-  width: 340px;          /* 300px → 340px に拡大 */
+  width: 340px;
   height: calc(100% - 72px);
   background: white;
   box-shadow: 4px 0 20px rgba(0,0,0,0.15);
   transition: left 0.3s ease;
-  z-index: 1001;
+  z-index: 1001; /* モーダルより上 */
   overflow-y: auto;
   visibility: hidden;
   opacity: 0;
@@ -291,13 +293,13 @@ body.modal-open {
 }
 
 .menu-overlay {
-  position: absolute;  /* fixed から absolute に変更 */
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  z-index: 1000; /* モーダルより上 */
   cursor: pointer;
 }
 
@@ -347,7 +349,7 @@ body.modal-open {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 998;
+  z-index: 998; /* メニューより下 */
 }
 
 /* モーダル全体をスクロール可能に */
