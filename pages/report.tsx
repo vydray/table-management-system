@@ -1149,13 +1149,13 @@ export default function Report() {
                       </tr>
                       <tr>
                         <td style={{ backgroundColor: '#e6e6e6', padding: '12px', textAlign: 'center', border: '1px solid #999', fontSize: '16px' }}>
-                          不明金
+                          不明伝票
                         </td>
                         <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold' }}>
                           <input
                             type="number"
-                            value={dailyReportData.notTransmittedAmount || ''}
-                            onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedAmount: Number(e.target.value) || 0})}
+                            value={dailyReportData.notTransmittedReceipt || ''}
+                            onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedReceipt: Number(e.target.value) || 0})}
                             style={{ 
                               width: 'calc(100% - 16px)', // パディング分を引く
                               maxWidth: '120px', // 最大幅を設定
