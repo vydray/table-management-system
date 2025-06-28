@@ -9,32 +9,11 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Bluetooth型定義
+// Bluetooth型定義（もう使わないが念のため残す）
 interface BluetoothDevice {
   id: string
   name?: string
   gatt?: unknown
-}
-
-interface BluetoothRequestDeviceOptions {
-  filters?: Array<{
-    services?: string[]
-    name?: string
-    namePrefix?: string
-  }>
-  optionalServices?: string[]
-  acceptAllDevices?: boolean
-}
-
-interface NavigatorBluetooth {
-  requestDevice(options: BluetoothRequestDeviceOptions): Promise<BluetoothDevice>
-}
-
-// navigator.bluetoothの型を拡張
-declare global {
-  interface Navigator {
-    bluetooth?: NavigatorBluetooth
-  }
 }
 
 interface ReceiptSettings {
@@ -45,8 +24,6 @@ interface ReceiptSettings {
   invoice_number: string
   show_tax_breakdown: boolean
   current_receipt_number: number
-  printer_device_id: string
-  printer_connected: boolean
 }
 
 export default function ReceiptSettings() {
@@ -57,9 +34,7 @@ export default function ReceiptSettings() {
     invoice_enabled: false,
     invoice_number: '',
     show_tax_breakdown: false,
-    current_receipt_number: 1,
-    printer_device_id: '',
-    printer_connected: false
+    current_receipt_number: 1
   })
   const [isLoading, setIsLoading] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -88,9 +63,7 @@ export default function ReceiptSettings() {
           invoice_enabled: receiptSettings.invoice_enabled || false,
           invoice_number: receiptSettings.invoice_number || '',
           show_tax_breakdown: receiptSettings.show_tax_breakdown || false,
-          current_receipt_number: receiptSettings.current_receipt_number || 1,
-          printer_device_id: receiptSettings.printer_device_id || '',
-          printer_connected: false
+          current_receipt_number: receiptSettings.current_receipt_number || 1
         })
         
         if (receiptSettings.logo_url) {
@@ -138,7 +111,6 @@ export default function ReceiptSettings() {
           invoice_number: settings.invoice_number,
           show_tax_breakdown: settings.show_tax_breakdown,
           current_receipt_number: settings.current_receipt_number,
-          printer_device_id: settings.printer_device_id,
           updated_at: new Date().toISOString()
         })
       
@@ -167,45 +139,8 @@ export default function ReceiptSettings() {
   }
 
   const connectPrinter = async () => {
-    try {
-      // Bluetoothがサポートされているかチェック
-      if (!navigator.bluetooth) {
-        alert('このブラウザはBluetoothをサポートしていません。ChromeまたはEdgeをご使用ください。')
-        return
-      }
-
-      // デバッグ用：すべてのBluetoothデバイスを表示
-      console.log('Bluetoothデバイスを検索中...')
-      
-      // Web Bluetooth APIを使用してMP-B20に接続
-      const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true
-      } as BluetoothRequestDeviceOptions)
-      
-      console.log('選択されたデバイス:', device.name, device.id)
-      
-      if (device) {
-        setSettings({
-          ...settings,
-          printer_device_id: device.id,
-          printer_connected: true
-        })
-        alert(`プリンター「${device.name || 'Unknown'}」に接続しました`)
-      }
-    } catch (error) {
-      console.error('Printer connection error:', error)
-      if (error instanceof Error) {
-        if (error.message.includes('User cancelled')) {
-          alert('プリンターの選択がキャンセルされました')
-        } else if (error.message.includes('Web Bluetooth API is not available')) {
-          alert('Web Bluetooth APIが利用できません。HTTPSで接続し、Chromeブラウザを使用してください。')
-        } else {
-          alert(`プリンターの接続に失敗しました: ${error.message}`)
-        }
-      } else {
-        alert('プリンターの接続に失敗しました。プリンターの電源が入っているか確認してください。')
-      }
-    }
+    // この関数は不要になったが、念のため残す
+    console.log('Android設定からプリンターを接続してください')
   }
 
   const testPrint = async () => {
@@ -430,62 +365,43 @@ export default function ReceiptSettings() {
         
         <div style={{ marginBottom: '20px' }}>
           <div style={{ 
-            display: 'flex',
-            alignItems: 'center',
-            gap: '15px',
+            backgroundColor: '#f0f8ff',
+            padding: '15px',
+            borderRadius: '5px',
+            border: '1px solid #2196F3',
             marginBottom: '15px'
           }}>
-            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>接続状態：</span>
-            <span style={{
-              padding: '5px 15px',
-              borderRadius: '20px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              backgroundColor: settings.printer_connected ? '#4CAF50' : '#f44336',
-              color: 'white'
+            <p style={{ fontSize: '14px', marginBottom: '10px' }}>
+              <strong>📱 プリンター接続方法：</strong>
+            </p>
+            <ol style={{ 
+              fontSize: '14px', 
+              marginLeft: '20px',
+              lineHeight: '1.8'
             }}>
-              {settings.printer_connected ? '接続済み' : '未接続'}
-            </span>
+              <li>Android端末の設定を開く</li>
+              <li>Bluetooth設定でMP-B20をペアリング</li>
+              <li>印刷時に自動的にMP-B20が選択可能になります</li>
+            </ol>
           </div>
           
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={connectPrinter}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#2196F3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                fontSize: '14px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              🔗 MP-B20を接続
-            </button>
-            
-            <button
-              onClick={testPrint}
-              disabled={!settings.printer_connected}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: settings.printer_connected ? '#4CAF50' : '#ccc',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                fontSize: '14px',
-                cursor: settings.printer_connected ? 'pointer' : 'not-allowed',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              🖨️ テスト印刷
-            </button>
-          </div>
+          <button
+            onClick={testPrint}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            🖨️ テスト印刷
+          </button>
         </div>
       </div>
 
