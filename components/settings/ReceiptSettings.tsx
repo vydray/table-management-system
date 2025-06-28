@@ -1,3 +1,5 @@
+// components/settings/ReceiptSettings.tsx
+
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../../utils/storeContext'
@@ -110,7 +112,7 @@ export default function ReceiptSettings() {
         const fileExt = logoFile.name.split('.').pop()
         const fileName = `${storeId}_${Date.now()}.${fileExt}`
         
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('receipts')
           .upload(`logos/${fileName}`, logoFile)
         
