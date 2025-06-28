@@ -9,13 +9,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Bluetooth型定義（もう使わないが念のため残す）
-interface BluetoothDevice {
-  id: string
-  name?: string
-  gatt?: unknown
-}
-
 interface ReceiptSettings {
   store_name: string
   logo_url: string
@@ -136,11 +129,6 @@ export default function ReceiptSettings() {
       }
       reader.readAsDataURL(file)
     }
-  }
-
-  const connectPrinter = async () => {
-    // この関数は不要になったが、念のため残す
-    console.log('Android設定からプリンターを接続してください')
   }
 
   const testPrint = async () => {
