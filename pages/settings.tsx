@@ -6,6 +6,7 @@ import CategoryManagement from '../components/settings/CategoryManagement'
 import ProductManagement from '../components/settings/ProductManagement'
 import SystemSettings from '../components/settings/SystemSettings'
 import AttendanceStatus from '../components/settings/AttendanceStatus'
+import ReceiptSettings from '../components/settings/ReceiptSettings'
 
 export default function Settings() {
   const router = useRouter()
@@ -16,7 +17,8 @@ export default function Settings() {
     { id: 'products', label: '商品管理', icon: '🛍️' },
     { id: 'categories', label: 'カテゴリー管理', icon: '📁' },
     { id: 'cast', label: 'キャスト管理', icon: '👥' },
-    { id: 'attendance', label: '勤怠ステータス', icon: '📊' }
+    { id: 'attendance', label: '勤怠ステータス', icon: '📊' },
+    { id: 'receipt', label: 'レシート設定', icon: '🧾' }
   ]
 
   return (
@@ -121,7 +123,10 @@ export default function Settings() {
             padding: '30px 40px',
             paddingBottom: '100px',
             overflowY: 'auto',
-            height: 'calc(100vh - 54px)'
+            height: 'calc(100vh - 54px)',
+            WebkitOverflowScrolling: 'touch',
+            msOverflowStyle: '-ms-autohiding-scrollbar',
+            position: 'relative'
           }}>
             <h2 style={{
               margin: '0 0 30px 0',
@@ -137,9 +142,19 @@ export default function Settings() {
             {activeMenu === 'categories' && <CategoryManagement />}
             {activeMenu === 'cast' && <CastManagement />}
             {activeMenu === 'attendance' && <AttendanceStatus />}
+            {activeMenu === 'receipt' && <ReceiptSettings />}
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @media (max-width: 1024px) {
+          div[style*="padding: '30px 40px'"] {
+            padding: 20px !important;
+            padding-bottom: 120px !important;
+          }
+        }
+      `}</style>
     </>
   )
 }
