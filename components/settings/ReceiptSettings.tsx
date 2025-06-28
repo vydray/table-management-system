@@ -23,6 +23,7 @@ interface BluetoothRequestDeviceOptions {
     namePrefix?: string
   }>
   optionalServices?: string[]
+  acceptAllDevices?: boolean
 }
 
 interface NavigatorBluetooth {
@@ -173,14 +174,15 @@ export default function ReceiptSettings() {
         return
       }
 
+      // デバッグ用：すべてのBluetoothデバイスを表示
+      console.log('Bluetoothデバイスを検索中...')
+      
       // Web Bluetooth APIを使用してMP-B20に接続
       const device = await navigator.bluetooth.requestDevice({
-        filters: [
-          { services: ['00001101-0000-1000-8000-00805f9b34fb'] }, // Serial Port Profile
-          { name: 'MP-B20' }
-        ],
-        optionalServices: ['00001101-0000-1000-8000-00805f9b34fb']
-      })
+        acceptAllDevices: true
+      } as BluetoothRequestDeviceOptions)
+      
+      console.log('選択されたデバイス:', device.name, device.id)
       
       if (device) {
         setSettings({
@@ -188,12 +190,18 @@ export default function ReceiptSettings() {
           printer_device_id: device.id,
           printer_connected: true
         })
-        alert('プリンターに接続しました')
+        alert(`プリンター「${device.name || 'Unknown'}」に接続しました`)
       }
     } catch (error) {
       console.error('Printer connection error:', error)
-      if (error instanceof Error && error.message.includes('User cancelled')) {
-        alert('プリンターの選択がキャンセルされました')
+      if (error instanceof Error) {
+        if (error.message.includes('User cancelled')) {
+          alert('プリンターの選択がキャンセルされました')
+        } else if (error.message.includes('Web Bluetooth API is not available')) {
+          alert('Web Bluetooth APIが利用できません。HTTPSで接続し、Chromeブラウザを使用してください。')
+        } else {
+          alert(`プリンターの接続に失敗しました: ${error.message}`)
+        }
       } else {
         alert('プリンターの接続に失敗しました。プリンターの電源が入っているか確認してください。')
       }
@@ -201,14 +209,10 @@ export default function ReceiptSettings() {
   }
 
   const testPrint = async () => {
-    if (!settings.printer_connected) {
-      alert('プリンターが接続されていません')
-      return
-    }
-    
     try {
-      // テスト印刷のロジックを実装
-      alert('テスト印刷機能は現在開発中です')
+      // ブラウザの印刷機能を使用
+      window.print()
+      alert('ブラウザの印刷ダイアログが表示されます')
     } catch (error) {
       console.error('Test print error:', error)
       alert('テスト印刷に失敗しました')
