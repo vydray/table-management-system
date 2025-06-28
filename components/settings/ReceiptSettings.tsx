@@ -152,14 +152,26 @@ ${settings.footer_message}
 
 `
 
-      // Web Share APIで共有
+      // Web Share APIで共有（ファイルとして共有も試す）
       if (navigator.share) {
         try {
-          await navigator.share({
-            title: 'レシート印刷',
-            text: receiptText
-          })
-          // ユーザーがESC POS Print Serviceを選択すれば印刷される
+          // テキストファイルとして共有する方法
+          const blob = new Blob([receiptText], { type: 'text/plain' })
+          const file = new File([blob], 'receipt.txt', { type: 'text/plain' })
+          
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: 'レシート印刷',
+              text: 'レシート'
+            })
+          } else {
+            // テキストのみで共有
+            await navigator.share({
+              title: 'レシート印刷',
+              text: receiptText
+            })
+          }
         } catch (err) {
           if (err instanceof Error && err.name !== 'AbortError') {
             console.error('Share error:', err)
