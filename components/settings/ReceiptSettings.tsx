@@ -13,7 +13,7 @@ const supabase = createClient(
 interface BluetoothDevice {
   id: string
   name?: string
-  gatt?: any
+  gatt?: unknown
 }
 
 interface BluetoothRequestDeviceOptions {
@@ -215,14 +215,18 @@ export default function ReceiptSettings() {
     }
   }
 
+  const containerStyle: React.CSSProperties = {
+    height: '100%',
+    overflowY: 'auto',
+    paddingBottom: '50px',
+    ...(typeof window !== 'undefined' && {
+      ['WebkitOverflowScrolling' as string]: 'touch',
+      ['msOverflowStyle' as string]: '-ms-autohiding-scrollbar'
+    })
+  }
+
   return (
-    <div style={{
-      height: '100%',
-      overflowY: 'auto',
-      paddingBottom: '50px',
-      WebkitOverflowScrolling: 'touch' as any,
-      msOverflowStyle: '-ms-autohiding-scrollbar' as any
-    }}>
+    <div style={containerStyle}>
       {/* 基本設定 */}
       <div style={{ marginBottom: '40px' }}>
         <h3 style={{ 
