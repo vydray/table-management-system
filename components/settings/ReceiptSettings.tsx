@@ -133,12 +133,52 @@ export default function ReceiptSettings() {
 
   const testPrint = async () => {
     try {
-      // ブラウザの印刷機能を使用
-      window.print()
-      alert('ブラウザの印刷ダイアログが表示されます')
+      // ESC POS Print Service用のテキスト形式レシート
+      const receiptText = `${settings.store_name || 'テスト店舗'}
+テストレシート
+
+日時: ${new Date().toLocaleString('ja-JP')}
+--------------------------------
+商品名              金額
+--------------------------------
+テスト商品 1        ¥500
+テスト商品 2        ¥300
+--------------------------------
+              合計  ¥800
+--------------------------------
+
+${settings.footer_message}
+
+
+`
+
+      // Web Share APIで共有
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'レシート印刷',
+            text: receiptText
+          })
+          // ユーザーがESC POS Print Serviceを選択すれば印刷される
+        } catch (err) {
+          if (err instanceof Error && err.name !== 'AbortError') {
+            console.error('Share error:', err)
+            alert('共有に失敗しました')
+          }
+        }
+      } else {
+        // Share APIが使えない場合、クリップボードにコピー
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(receiptText)
+          alert('レシート内容をコピーしました。印刷アプリに貼り付けてください。')
+        } else {
+          alert('このブラウザは共有機能に対応していません')
+        }
+      }
+      
     } catch (error) {
-      console.error('Test print error:', error)
-      alert('テスト印刷に失敗しました')
+      console.error('Print error:', error)
+      alert('印刷処理でエラーが発生しました')
     }
   }
 
@@ -353,43 +393,87 @@ export default function ReceiptSettings() {
         
         <div style={{ marginBottom: '20px' }}>
           <div style={{ 
-            backgroundColor: '#f0f8ff',
+            backgroundColor: '#e8f5e9',
             padding: '15px',
             borderRadius: '5px',
-            border: '1px solid #2196F3',
+            border: '1px solid #4CAF50',
             marginBottom: '15px'
           }}>
             <p style={{ fontSize: '14px', marginBottom: '10px' }}>
-              <strong>📱 プリンター接続方法：</strong>
+              <strong>✅ ESC POS Bluetooth Printの使い方：</strong>
             </p>
-            <ol style={{ 
-              fontSize: '14px', 
-              marginLeft: '20px',
-              lineHeight: '1.8'
-            }}>
-              <li>Android端末の設定を開く</li>
-              <li>Bluetooth設定でMP-B20をペアリング</li>
-              <li>印刷時に自動的にMP-B20が選択可能になります</li>
-            </ol>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <strong>初期設定：</strong>
+              <ol style={{ 
+                fontSize: '14px', 
+                marginLeft: '20px',
+                lineHeight: '1.8'
+              }}>
+                <li>アプリの設定でMP-B20を追加</li>
+                <li>Paper Width: 58mm</li>
+                <li>Character Set: Japanese</li>
+                <li>テスト印刷で動作確認</li>
+              </ol>
+            </div>
+            
+            <div>
+              <strong>印刷方法：</strong>
+              <ol style={{ 
+                fontSize: '14px', 
+                marginLeft: '20px',
+                lineHeight: '1.8'
+              }}>
+                <li>POSで印刷ボタンをタップ</li>
+                <li>共有先で「ESC POS」を選択</li>
+                <li>自動的に印刷されます</li>
+              </ol>
+            </div>
           </div>
           
-          <button
-            onClick={testPrint}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            🖨️ テスト印刷
-          </button>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              onClick={testPrint}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              📤 テスト印刷
+            </button>
+            
+            <button
+              onClick={async () => {
+                const text = `テスト印刷\n${new Date().toLocaleString('ja-JP')}\n${'='.repeat(20)}\nMP-B20接続テスト`
+                if (navigator.clipboard) {
+                  await navigator.clipboard.writeText(text)
+                  alert('テキストをコピーしました')
+                }
+              }}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#2196F3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              📋 テキストコピー
+            </button>
+          </div>
         </div>
       </div>
 
