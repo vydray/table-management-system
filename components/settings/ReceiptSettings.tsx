@@ -1,8 +1,10 @@
-// components/settings/ReceiptSettings.tsx
+const [isConnecting, setIsConnecting] = useState(false)
+  const [printerConnected, setPrinterConnected] = useState(false)// components/settings/ReceiptSettings.tsx
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../../utils/storeContext'
+import { printer } from '../../utils/bluetoothPrinter'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -128,6 +130,55 @@ export default function ReceiptSettings() {
         setLogoPreview(reader.result as string)
       }
       reader.readAsDataURL(file)
+    }
+  }
+
+  // Bluetoothプリンター接続
+  const connectBluetoothPrinter = async () => {
+    setIsConnecting(true)
+    try {
+      await printer.initialize()
+      const devices = await printer.scanForPrinters()
+      
+      if (devices.length > 0) {
+        await printer.connect(devices[0].deviceId)
+        setPrinterConnected(true)
+        alert('プリンターに接続しました')
+      } else {
+        alert('MP-B20が見つかりません。プリンターの電源を確認してください。')
+      }
+    } catch (error) {
+      console.error('Printer connection error:', error)
+      alert('プリンター接続エラー: ' + error)
+    } finally {
+      setIsConnecting(false)
+    }
+  }
+
+  // 直接印刷テスト
+  const testDirectPrint = async () => {
+    if (!printerConnected) {
+      alert('プリンターが接続されていません')
+      return
+    }
+
+    try {
+      await printer.printReceipt({
+        storeName: settings.store_name || 'テスト店舗',
+        items: [
+          { name: 'テスト商品1', price: 500, quantity: 1 },
+          { name: 'テスト商品2', price: 300, quantity: 1 }
+        ],
+        subtotal: 800,
+        tax: 80,
+        total: 880,
+        footerMessage: settings.footer_message
+      })
+      
+      alert('印刷完了')
+    } catch (error) {
+      console.error('Print error:', error)
+      alert('印刷エラー: ' + error)
     }
   }
 
@@ -460,6 +511,49 @@ ${settings.footer_message}
           </div>
           
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {/* ネイティブアプリの場合は直接印刷ボタンを表示 */}
+            {typeof window !== 'undefined' && window.hasOwnProperty('Capacitor') && (
+              <>
+                <button
+                  onClick={connectBluetoothPrinter}
+                  disabled={isConnecting || printerConnected}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: printerConnected ? '#4CAF50' : '#2196F3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    fontSize: '14px',
+                    cursor: isConnecting ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  {isConnecting ? '接続中...' : printerConnected ? '✓ 接続済み' : '🔗 MP-B20接続'}
+                </button>
+                
+                <button
+                  onClick={testDirectPrint}
+                  disabled={!printerConnected}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: printerConnected ? '#FF9800' : '#ccc',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    fontSize: '14px',
+                    cursor: printerConnected ? 'pointer' : 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  🖨️ 直接印刷テスト
+                </button>
+              </>
+            )}
+            
             <button
               onClick={testPrint}
               style={{
