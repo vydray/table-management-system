@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../../utils/storeContext'
+import { Capacitor } from '@capacitor/core'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -133,8 +134,29 @@ export default function ReceiptSettings() {
 
   const testPrint = async () => {
     try {
-      // ESC POS Print Service用のテキスト形式レシート
-      const receiptText = `${settings.store_name || 'テスト店舗'}
+      // ESC/POSコマンド形式で作成（一部のアプリはこれで自動印刷）
+      const ESC = '\x1B';
+      const GS = '\x1D';
+      
+      const receiptText = `${ESC}@${ESC}a1${settings.store_name || 'テスト店舗'}
+${ESC}a0テストレシート
+
+日時: ${new Date().toLocaleString('ja-JP')}
+--------------------------------
+商品名              金額
+--------------------------------
+テスト商品 1        ¥500
+テスト商品 2        ¥300
+--------------------------------
+              合計  ¥800
+--------------------------------
+
+${settings.footer_message}
+
+${GS}V0`
+
+      // プレーンテキスト版も用意
+      const plainText = `${settings.store_name || 'テスト店舗'}
 テストレシート
 
 日時: ${new Date().toLocaleString('ja-JP')}
@@ -152,30 +174,25 @@ ${settings.footer_message}
 
 `
 
-      // Web Share APIで共有（ファイルとして共有も試す）
       if (navigator.share) {
         try {
-          // テキストファイルとして共有する方法
-          const blob = new Blob([receiptText], { type: 'text/plain' })
-          const file = new File([blob], 'receipt.txt', { type: 'text/plain' })
-          
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: 'レシート印刷',
-              text: 'レシート'
-            })
-          } else {
-            // テキストのみで共有
-            await navigator.share({
-              title: 'レシート印刷',
-              text: receiptText
-            })
-          }
+          // まずプレーンテキストで試す
+          await navigator.share({
+            title: 'Print',  // 一部のアプリは"Print"というタイトルで自動印刷
+            text: plainText
+          })
         } catch (err) {
           if (err instanceof Error && err.name !== 'AbortError') {
             console.error('Share error:', err)
-            alert('共有に失敗しました')
+            // ESC/POS形式で再試行
+            try {
+              await navigator.share({
+                title: 'Print',
+                text: receiptText
+              })
+            } catch (err2) {
+              alert('共有に失敗しました。別の印刷アプリをお試しください。')
+            }
           }
         }
       } else {
