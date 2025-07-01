@@ -1,10 +1,24 @@
 // utils/bluetoothPrinter.ts
 
-import { BleClient, BleDevice } from '@capacitor-community/bluetooth-le'
+// Bluetooth Serialプラグインの型定義
+interface BluetoothDevice {
+  name: string
+  address: string
+  id: string
+  class?: number
+}
 
-// MP-B20のサービスとキャラクタリスティックUUID
-const PRINTER_SERVICE_UUID = '49535343-fe7d-4ae5-8fa9-9fafd205e455'
-const PRINTER_WRITE_UUID = '49535343-8841-43f4-a8d4-ecbe34729bb3'
+interface BluetoothSerialPlugin {
+  enable(): Promise<void>
+  getBondedDevices(): Promise<{ devices: BluetoothDevice[] }>
+  connect(options: { address: string }): Promise<void>
+  isConnected(): Promise<{ isConnected: boolean }>
+  disconnect(): Promise<void>
+  write(options: { value: string }): Promise<void>
+}
+
+// @ts-ignore - プラグインは実行時に利用可能
+const BluetoothSerial: BluetoothSerialPlugin = (window as any).Capacitor?.Plugins?.BluetoothSerial || {}
 
 // ESC/POSコマンド
 const ESC = '\x1B'
@@ -17,92 +31,74 @@ const BOLD_ON = `${ESC}E\x01`
 const BOLD_OFF = `${ESC}E\x00`
 
 export class BluetoothPrinter {
-  private deviceId: string | null = null
   private isConnected: boolean = false
 
-  // 初期化
-  async initialize() {
+  // Bluetooth有効化
+  async enable() {
     try {
-      await BleClient.initialize()
-      console.log('Bluetooth initialized')
+      await BluetoothSerial.enable()
+      console.log('Bluetooth enabled')
     } catch (error) {
-      console.error('Bluetooth initialization error:', error)
+      console.error('Bluetooth enable error:', error)
       throw error
     }
   }
 
-  // デバイススキャン
-  async scanForPrinters(): Promise<BleDevice[]> {
-    const devices: BleDevice[] = []
-    
+  // ペアリング済みデバイスを取得
+  async getPairedDevices() {
     try {
-      await BleClient.requestLEScan(
-        { name: 'MP-B20' },
-        (result) => {
-          console.log('Found device:', result.device)
-          devices.push(result.device)
-        }
-      )
-
-      // 5秒間スキャン
-      await new Promise(resolve => setTimeout(resolve, 5000))
-      await BleClient.stopLEScan()
-      
-      return devices
+      const result = await BluetoothSerial.getBondedDevices()
+      console.log('Paired devices:', result.devices)
+      return result.devices
     } catch (error) {
-      console.error('Scan error:', error)
+      console.error('Get paired devices error:', error)
       throw error
     }
   }
 
-  // プリンターに接続
-  async connect(deviceId: string) {
+  // プリンターに接続（MACアドレスで接続）
+  async connect(address: string) {
     try {
-      await BleClient.connect(deviceId, () => {
-        console.log('Disconnected from printer')
-        this.isConnected = false
-      })
-      
-      this.deviceId = deviceId
+      await BluetoothSerial.connect({ address })
       this.isConnected = true
-      console.log('Connected to printer')
+      console.log('Connected to printer:', address)
     } catch (error) {
       console.error('Connection error:', error)
       throw error
     }
   }
 
-  // 切断
-  async disconnect() {
-    if (this.deviceId) {
-      try {
-        await BleClient.disconnect(this.deviceId)
-        this.isConnected = false
-        this.deviceId = null
-      } catch (error) {
-        console.error('Disconnect error:', error)
-      }
+  // 接続状態を確認
+  async checkConnection() {
+    try {
+      const result = await BluetoothSerial.isConnected()
+      this.isConnected = result.isConnected
+      return result.isConnected
+    } catch (error) {
+      console.error('Check connection error:', error)
+      return false
     }
   }
 
-  // データ送信
+  // 切断
+  async disconnect() {
+    try {
+      await BluetoothSerial.disconnect()
+      this.isConnected = false
+      console.log('Disconnected from printer')
+    } catch (error) {
+      console.error('Disconnect error:', error)
+    }
+  }
+
+  // データ送信（文字列を直接送信）
   private async write(data: string) {
-    if (!this.deviceId || !this.isConnected) {
+    if (!this.isConnected) {
       throw new Error('Printer not connected')
     }
 
     try {
-      // 文字列をバイト配列に変換
-      const encoder = new TextEncoder()
-      const bytes = encoder.encode(data)
-      
-      // Bluetoothで送信
-      await BleClient.write(
-        this.deviceId,
-        PRINTER_SERVICE_UUID,
-        PRINTER_WRITE_UUID,
-        new DataView(bytes.buffer)
-      )
+      await BluetoothSerial.write({ value: data })
     } catch (error) {
       console.error('Write error:', error)
       throw error
@@ -125,6 +121,12 @@ export class BluetoothPrinter {
     footerMessage: string
   }) {
     try {
+      // 接続確認
+      const connected = await this.checkConnection()
+      if (!connected) {
+        throw new Error('Printer not connected')
+      }
+
       // 初期化
       await this.write(INIT)
       
