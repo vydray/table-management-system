@@ -1,25 +1,5 @@
 // utils/bluetoothPrinter.ts
 
-// Bluetooth Serialプラグインの型定義
-interface BluetoothDevice {
-  name: string
-  address: string
-  id: string
-  class?: number
-}
-
-interface BluetoothSerialPlugin {
-  enable(): Promise<void>
-  getBondedDevices(): Promise<{ devices: BluetoothDevice[] }>
-  connect(options: { address: string }): Promise<void>
-  isConnected(): Promise<{ isConnected: boolean }>
-  disconnect(): Promise<void>
-  write(options: { value: string }): Promise<void>
-}
-
-// @ts-ignore - プラグインは実行時に利用可能
-const BluetoothSerial: BluetoothSerialPlugin = (typeof window !== 'undefined' && (window as any).Capacitor?.Plugins?.BluetoothSerial) || {}
-
 // ESC/POSコマンド
 const ESC = '\x1B'
 const GS = '\x1D'
@@ -30,16 +10,38 @@ const LEFT = `${ESC}a\x00`
 const BOLD_ON = `${ESC}E\x01`
 const BOLD_OFF = `${ESC}E\x00`
 
+// Bluetooth Serialプラグインの型定義
+interface BluetoothDevice {
+  name: string
+  address: string
+  id: string
+  class?: number
+}
+
 export class BluetoothPrinter {
   private isConnected: boolean = false
+  private BluetoothSerial: any = null
+
+  // プラグインを動的に取得
+  private async getPlugin() {
+    if (typeof window === 'undefined') {
+      throw new Error('Window is not defined')
+    }
+    
+    if (!this.BluetoothSerial) {
+      // @ts-ignore
+      const { BluetoothSerial } = await import('@capacitor-community/bluetooth-serial')
+      this.BluetoothSerial = BluetoothSerial
+    }
+    
+    return this.BluetoothSerial
+  }
 
   // Bluetooth有効化
   async enable() {
-    if (typeof window === 'undefined' || !BluetoothSerial.enable) {
-      throw new Error('Bluetooth Serial not available')
-    }
     try {
-      await BluetoothSerial.enable()
+      const plugin = await this.getPlugin()
+      await plugin.enable()
       console.log('Bluetooth enabled')
     } catch (error) {
       console.error('Bluetooth enable error:', error)
@@ -48,9 +50,10 @@ export class BluetoothPrinter {
   }
 
   // ペアリング済みデバイスを取得
-  async getPairedDevices() {
+  async getPairedDevices(): Promise<BluetoothDevice[]> {
     try {
-      const result = await BluetoothSerial.getBondedDevices()
+      const plugin = await this.getPlugin()
+      const result = await plugin.getBondedDevices()
       console.log('Paired devices:', result.devices)
       return result.devices
     } catch (error) {
@@ -62,7 +65,8 @@ export class BluetoothPrinter {
   // プリンターに接続（MACアドレスで接続）
   async connect(address: string) {
     try {
-      await BluetoothSerial.connect({ address })
+      const plugin = await this.getPlugin()
+      await plugin.connect({ address })
       this.isConnected = true
       console.log('Connected to printer:', address)
     } catch (error) {
@@ -74,7 +78,8 @@ export class BluetoothPrinter {
   // 接続状態を確認
   async checkConnection() {
     try {
-      const result = await BluetoothSerial.isConnected()
+      const plugin = await this.getPlugin()
+      const result = await plugin.isConnected()
       this.isConnected = result.isConnected
       return result.isConnected
     } catch (error) {
@@ -86,7 +91,8 @@ export class BluetoothPrinter {
   // 切断
   async disconnect() {
     try {
-      await BluetoothSerial.disconnect()
+      const plugin = await this.getPlugin()
+      await plugin.disconnect()
       this.isConnected = false
       console.log('Disconnected from printer')
     } catch (error) {
@@ -101,7 +107,8 @@ export class BluetoothPrinter {
     }
 
     try {
-      await BluetoothSerial.write({ value: data })
+      const plugin = await this.getPlugin()
+      await plugin.write({ value: data })
     } catch (error) {
       console.error('Write error:', error)
       throw error
