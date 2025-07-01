@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../../utils/storeContext'
-import { Capacitor } from '@capacitor/core'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
