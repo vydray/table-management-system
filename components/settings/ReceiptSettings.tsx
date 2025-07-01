@@ -1,3 +1,6 @@
+const [isConnecting, setIsConnecting] = useState(false)
+  const [printerConnected, setPrinterConnected] = useState(false)// components/settings/ReceiptSettings.tsx
+
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../../utils/storeContext'
@@ -31,8 +34,6 @@ export default function ReceiptSettings() {
   const [isLoading, setIsLoading] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string>('')
-  const [isConnecting, setIsConnecting] = useState(false) 
-  const [printerConnected, setPrinterConnected] = useState(false) 
 
   useEffect(() => {
     loadSettings()
@@ -136,15 +137,26 @@ export default function ReceiptSettings() {
   const connectBluetoothPrinter = async () => {
     setIsConnecting(true)
     try {
-      await printer.initialize()
-      const devices = await printer.scanForPrinters()
+      // Bluetoothを有効化
+      await printer.enable()
       
-      if (devices.length > 0) {
-        await printer.connect(devices[0].deviceId)
+      // ペアリング済みデバイスを取得
+      const devices = await printer.getPairedDevices()
+      console.log('Paired devices:', devices)
+      
+      // MP-B20を探す
+      const mp20 = devices.find(device => 
+        device.name.includes('MP-B20') || 
+        device.name.includes('MP-') ||
+        device.name.includes('MPB20')
+      )
+      
+      if (mp20) {
+        await printer.connect(mp20.address)
         setPrinterConnected(true)
-        alert('プリンターに接続しました')
+        alert('MP-B20に接続しました')
       } else {
-        alert('MP-B20が見つかりません。プリンターの電源を確認してください。')
+        alert('MP-B20が見つかりません。\nAndroid設定でペアリングされているか確認してください。')
       }
     } catch (error) {
       console.error('Printer connection error:', error)
@@ -178,85 +190,6 @@ export default function ReceiptSettings() {
     } catch (error) {
       console.error('Print error:', error)
       alert('印刷エラー: ' + error)
-    }
-  }
-
-  const testPrint = async () => {
-    try {
-      // ESC/POSコマンド形式で作成（一部のアプリはこれで自動印刷）
-      const ESC = '\x1B';
-      const GS = '\x1D';
-      
-      const receiptText = `${ESC}@${ESC}a1${settings.store_name || 'テスト店舗'}
-${ESC}a0テストレシート
-
-日時: ${new Date().toLocaleString('ja-JP')}
---------------------------------
-商品名              金額
---------------------------------
-テスト商品 1        ¥500
-テスト商品 2        ¥300
---------------------------------
-              合計  ¥800
---------------------------------
-
-${settings.footer_message}
-
-${GS}V0`
-
-      // プレーンテキスト版も用意
-      const plainText = `${settings.store_name || 'テスト店舗'}
-テストレシート
-
-日時: ${new Date().toLocaleString('ja-JP')}
---------------------------------
-商品名              金額
---------------------------------
-テスト商品 1        ¥500
-テスト商品 2        ¥300
---------------------------------
-              合計  ¥800
---------------------------------
-
-${settings.footer_message}
-
-
-`
-
-      if (navigator.share) {
-        try {
-          // まずプレーンテキストで試す
-          await navigator.share({
-            title: 'Print',  // 一部のアプリは"Print"というタイトルで自動印刷
-            text: plainText
-          })
-        } catch (err) {
-          if (err instanceof Error && err.name !== 'AbortError') {
-            console.error('Share error:', err)
-            // ESC/POS形式で再試行
-            try {
-              await navigator.share({
-                title: 'Print',
-                text: receiptText
-              })
-            } catch {
-              alert('共有に失敗しました。別の印刷アプリをお試しください。')
-            }
-          }
-        }
-      } else {
-        // Share APIが使えない場合、クリップボードにコピー
-        if (navigator.clipboard) {
-          await navigator.clipboard.writeText(receiptText)
-          alert('レシート内容をコピーしました。印刷アプリに貼り付けてください。')
-        } else {
-          alert('このブラウザは共有機能に対応していません')
-        }
-      }
-      
-    } catch (error) {
-      console.error('Print error:', error)
-      alert('印刷処理でエラーが発生しました')
     }
   }
 
@@ -470,129 +403,43 @@ ${settings.footer_message}
         </h3>
         
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ 
-            backgroundColor: '#e8f5e9',
-            padding: '15px',
-            borderRadius: '5px',
-            border: '1px solid #4CAF50',
-            marginBottom: '15px'
-          }}>
-            <p style={{ fontSize: '14px', marginBottom: '10px' }}>
-              <strong>✅ ESC POS Bluetooth Printの使い方：</strong>
-            </p>
-            
-            <div style={{ marginBottom: '15px' }}>
-              <strong>初期設定：</strong>
-              <ol style={{ 
-                fontSize: '14px', 
-                marginLeft: '20px',
-                lineHeight: '1.8'
-              }}>
-                <li>アプリの設定でMP-B20を追加</li>
-                <li>Paper Width: 58mm</li>
-                <li>Character Set: Japanese</li>
-                <li>テスト印刷で動作確認</li>
-              </ol>
-            </div>
-            
-            <div>
-              <strong>印刷方法：</strong>
-              <ol style={{ 
-                fontSize: '14px', 
-                marginLeft: '20px',
-                lineHeight: '1.8'
-              }}>
-                <li>POSで印刷ボタンをタップ</li>
-                <li>共有先で「ESC POS」を選択</li>
-                <li>自動的に印刷されます</li>
-              </ol>
-            </div>
-          </div>
-          
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {/* ネイティブアプリの場合は直接印刷ボタンを表示 */}
-            {typeof window !== 'undefined' && window.hasOwnProperty('Capacitor') && (
-              <>
-                <button
-                  onClick={connectBluetoothPrinter}
-                  disabled={isConnecting || printerConnected}
-                  style={{
-                    padding: '10px 20px',
-                    backgroundColor: printerConnected ? '#4CAF50' : '#2196F3',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    fontSize: '14px',
-                    cursor: isConnecting ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  {isConnecting ? '接続中...' : printerConnected ? '✓ 接続済み' : '🔗 MP-B20接続'}
-                </button>
-                
-                <button
-                  onClick={testDirectPrint}
-                  disabled={!printerConnected}
-                  style={{
-                    padding: '10px 20px',
-                    backgroundColor: printerConnected ? '#FF9800' : '#ccc',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    fontSize: '14px',
-                    cursor: printerConnected ? 'pointer' : 'not-allowed',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  🖨️ 直接印刷テスト
-                </button>
-              </>
-            )}
-            
             <button
-              onClick={testPrint}
+              onClick={connectBluetoothPrinter}
+              disabled={isConnecting || printerConnected}
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#4CAF50',
+                backgroundColor: printerConnected ? '#4CAF50' : '#2196F3',
                 color: 'white',
                 border: 'none',
                 borderRadius: '5px',
                 fontSize: '14px',
-                cursor: 'pointer',
+                cursor: isConnecting ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}
             >
-              📤 テスト印刷
+              {isConnecting ? '接続中...' : printerConnected ? '✓ 接続済み' : '🔗 MP-B20接続'}
             </button>
             
             <button
-              onClick={async () => {
-                const text = `テスト印刷\n${new Date().toLocaleString('ja-JP')}\n${'='.repeat(20)}\nMP-B20接続テスト`
-                if (navigator.clipboard) {
-                  await navigator.clipboard.writeText(text)
-                  alert('テキストをコピーしました')
-                }
-              }}
+              onClick={testDirectPrint}
+              disabled={!printerConnected}
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#2196F3',
+                backgroundColor: printerConnected ? '#FF9800' : '#ccc',
                 color: 'white',
                 border: 'none',
                 borderRadius: '5px',
                 fontSize: '14px',
-                cursor: 'pointer',
+                cursor: printerConnected ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}
             >
-              📋 テキストコピー
+              🖨️ 直接印刷テスト
             </button>
           </div>
         </div>
