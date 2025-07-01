@@ -1,6 +1,3 @@
-const [isConnecting, setIsConnecting] = useState(false)
-  const [printerConnected, setPrinterConnected] = useState(false)// components/settings/ReceiptSettings.tsx
-
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../../utils/storeContext'
@@ -34,6 +31,8 @@ export default function ReceiptSettings() {
   const [isLoading, setIsLoading] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string>('')
+  const [isConnecting, setIsConnecting] = useState(false) 
+  const [printerConnected, setPrinterConnected] = useState(false) 
 
   useEffect(() => {
     loadSettings()
