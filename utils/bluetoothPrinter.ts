@@ -20,27 +20,25 @@ interface BluetoothDevice {
 
 export class BluetoothPrinter {
   private isConnected: boolean = false
-  private BluetoothSerial: any = null
 
-  // プラグインを動的に取得
-  private async getPlugin() {
+  // プラグインを取得（実行時のみ）
+  private getPlugin() {
     if (typeof window === 'undefined') {
-      throw new Error('Window is not defined')
+      return null
     }
     
-    if (!this.BluetoothSerial) {
-      // @ts-ignore
-      const { BluetoothSerial } = await import('@capacitor-community/bluetooth-serial')
-      this.BluetoothSerial = BluetoothSerial
-    }
-    
-    return this.BluetoothSerial
+    // @ts-ignore
+    return window.Capacitor?.Plugins?.BluetoothSerial || null
   }
 
   // Bluetooth有効化
   async enable() {
+    const plugin = this.getPlugin()
+    if (!plugin) {
+      throw new Error('Bluetooth Serial plugin not available')
+    }
+    
     try {
-      const plugin = await this.getPlugin()
       await plugin.enable()
       console.log('Bluetooth enabled')
     } catch (error) {
@@ -51,11 +49,15 @@ export class BluetoothPrinter {
 
   // ペアリング済みデバイスを取得
   async getPairedDevices(): Promise<BluetoothDevice[]> {
+    const plugin = this.getPlugin()
+    if (!plugin) {
+      throw new Error('Bluetooth Serial plugin not available')
+    }
+    
     try {
-      const plugin = await this.getPlugin()
       const result = await plugin.getBondedDevices()
       console.log('Paired devices:', result.devices)
-      return result.devices
+      return result.devices || []
     } catch (error) {
       console.error('Get paired devices error:', error)
       throw error
@@ -64,8 +66,12 @@ export class BluetoothPrinter {
 
   // プリンターに接続（MACアドレスで接続）
   async connect(address: string) {
+    const plugin = this.getPlugin()
+    if (!plugin) {
+      throw new Error('Bluetooth Serial plugin not available')
+    }
+    
     try {
-      const plugin = await this.getPlugin()
       await plugin.connect({ address })
       this.isConnected = true
       console.log('Connected to printer:', address)
@@ -77,8 +83,12 @@ export class BluetoothPrinter {
 
   // 接続状態を確認
   async checkConnection() {
+    const plugin = this.getPlugin()
+    if (!plugin) {
+      return false
+    }
+    
     try {
-      const plugin = await this.getPlugin()
       const result = await plugin.isConnected()
       this.isConnected = result.isConnected
       return result.isConnected
@@ -90,8 +100,12 @@ export class BluetoothPrinter {
 
   // 切断
   async disconnect() {
+    const plugin = this.getPlugin()
+    if (!plugin) {
+      return
+    }
+    
     try {
-      const plugin = await this.getPlugin()
       await plugin.disconnect()
       this.isConnected = false
       console.log('Disconnected from printer')
@@ -102,12 +116,16 @@ export class BluetoothPrinter {
 
   // データ送信（文字列を直接送信）
   private async write(data: string) {
+    const plugin = this.getPlugin()
+    if (!plugin) {
+      throw new Error('Bluetooth Serial plugin not available')
+    }
+    
     if (!this.isConnected) {
       throw new Error('Printer not connected')
     }
 
     try {
-      const plugin = await this.getPlugin()
       await plugin.write({ value: data })
     } catch (error) {
       console.error('Write error:', error)
