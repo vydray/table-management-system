@@ -189,7 +189,7 @@ ${settings.footer_message}
                 title: 'Print',
                 text: receiptText
               })
-            } catch (err2) {
+            } catch {
               alert('共有に失敗しました。別の印刷アプリをお試しください。')
             }
           }
