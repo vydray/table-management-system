@@ -1,5 +1,8 @@
 // utils/bluetoothPrinter.ts
 
+// Cordova Bluetooth Serialのグローバル変数
+declare let bluetoothSerial: any;
+
 // ESC/POSコマンド
 const ESC = '\x1B'
 const GS = '\x1D'
@@ -10,127 +13,136 @@ const LEFT = `${ESC}a\x00`
 const BOLD_ON = `${ESC}E\x01`
 const BOLD_OFF = `${ESC}E\x00`
 
-// Bluetooth Serialプラグインの型定義
-interface BluetoothDevice {
-  name: string
-  address: string
-  id: string
-  class?: number
-}
-
 export class BluetoothPrinter {
   private isConnected: boolean = false
 
-  // プラグインを取得（実行時のみ）
-  private getPlugin() {
-    if (typeof window === 'undefined') {
-      return null
-    }
-    
-    // @ts-ignore
-    return window.Capacitor?.Plugins?.BluetoothSerial || null
+  // プラグインが利用可能か確認
+  private isAvailable(): boolean {
+    return typeof window !== 'undefined' && 
+           typeof bluetoothSerial !== 'undefined'
   }
 
   // Bluetooth有効化
-  async enable() {
-    const plugin = this.getPlugin()
-    if (!plugin) {
-      throw new Error('Bluetooth Serial plugin not available')
+  async enable(): Promise<void> {
+    if (!this.isAvailable()) {
+      throw new Error('Bluetooth Serial not available')
     }
-    
-    try {
-      await plugin.enable()
-      console.log('Bluetooth enabled')
-    } catch (error) {
-      console.error('Bluetooth enable error:', error)
-      throw error
-    }
+
+    return new Promise((resolve, reject) => {
+      bluetoothSerial.enable(
+        () => {
+          console.log('Bluetooth enabled')
+          resolve()
+        },
+        (error: any) => {
+          console.error('Enable error:', error)
+          reject(error)
+        }
+      )
+    })
   }
 
   // ペアリング済みデバイスを取得
-  async getPairedDevices(): Promise<BluetoothDevice[]> {
-    const plugin = this.getPlugin()
-    if (!plugin) {
-      throw new Error('Bluetooth Serial plugin not available')
+  async getPairedDevices(): Promise<any[]> {
+    if (!this.isAvailable()) {
+      throw new Error('Bluetooth Serial not available')
     }
-    
-    try {
-      const result = await plugin.getBondedDevices()
-      console.log('Paired devices:', result.devices)
-      return result.devices || []
-    } catch (error) {
-      console.error('Get paired devices error:', error)
-      throw error
-    }
+
+    return new Promise((resolve, reject) => {
+      bluetoothSerial.list(
+        (devices: any[]) => {
+          console.log('Paired devices:', devices)
+          // Cordovaプラグインはnameとaddressプロパティを持つ
+          resolve(devices)
+        },
+        (error: any) => {
+          console.error('List error:', error)
+          reject(error)
+        }
+      )
+    })
   }
 
-  // プリンターに接続（MACアドレスで接続）
-  async connect(address: string) {
-    const plugin = this.getPlugin()
-    if (!plugin) {
-      throw new Error('Bluetooth Serial plugin not available')
+  // プリンターに接続
+  async connect(address: string): Promise<void> {
+    if (!this.isAvailable()) {
+      throw new Error('Bluetooth Serial not available')
     }
-    
-    try {
-      await plugin.connect({ address })
-      this.isConnected = true
-      console.log('Connected to printer:', address)
-    } catch (error) {
-      console.error('Connection error:', error)
-      throw error
-    }
+
+    return new Promise((resolve, reject) => {
+      bluetoothSerial.connect(
+        address,
+        () => {
+          this.isConnected = true
+          console.log('Connected to:', address)
+          resolve()
+        },
+        (error: any) => {
+          console.error('Connection error:', error)
+          reject(error)
+        }
+      )
+    })
   }
 
   // 接続状態を確認
-  async checkConnection() {
-    const plugin = this.getPlugin()
-    if (!plugin) {
+  async checkConnection(): Promise<boolean> {
+    if (!this.isAvailable()) {
       return false
     }
-    
-    try {
-      const result = await plugin.isConnected()
-      this.isConnected = result.isConnected
-      return result.isConnected
-    } catch (error) {
-      console.error('Check connection error:', error)
-      return false
-    }
+
+    return new Promise((resolve) => {
+      bluetoothSerial.isConnected(
+        () => {
+          this.isConnected = true
+          resolve(true)
+        },
+        () => {
+          this.isConnected = false
+          resolve(false)
+        }
+      )
+    })
   }
 
   // 切断
-  async disconnect() {
-    const plugin = this.getPlugin()
-    if (!plugin) {
+  async disconnect(): Promise<void> {
+    if (!this.isAvailable()) {
       return
     }
-    
-    try {
-      await plugin.disconnect()
-      this.isConnected = false
-      console.log('Disconnected from printer')
-    } catch (error) {
-      console.error('Disconnect error:', error)
-    }
+
+    return new Promise((resolve) => {
+      bluetoothSerial.disconnect(
+        () => {
+          this.isConnected = false
+          console.log('Disconnected')
+          resolve()
+        },
+        () => resolve()
+      )
+    })
   }
 
-  // データ送信（文字列を直接送信）
-  private async write(data: string) {
-    const plugin = this.getPlugin()
-    if (!plugin) {
-      throw new Error('Bluetooth Serial plugin not available')
-    }
-    
-    if (!this.isConnected) {
-      throw new Error('Printer not connected')
+  // データ送信
+  private async write(data: string): Promise<void> {
+    if (!this.isAvailable()) {
+      throw new Error('Bluetooth Serial not available')
     }
 
-    try {
-      await plugin.write({ value: data })
-    } catch (error) {
-      console.error('Write error:', error)
-      throw error
+    if (!this.isConnected) {
+      throw new Error('Not connected')
     }
+
+    return new Promise((resolve, reject) => {
+      bluetoothSerial.write(
+        data,
+        () => resolve(),
+        (error: any) => {
+          console.error('Write error:', error)
+          reject(error)
+        }
+      )
+    })
   }
 
   // レシート印刷
@@ -147,7 +159,7 @@ export class BluetoothPrinter {
     tax: number
     total: number
     footerMessage: string
-  }) {
+  }): Promise<void> {
     try {
       // 接続確認
       const connected = await this.checkConnection()

@@ -132,8 +132,9 @@ export default function ReceiptSettings() {
     }
   }
 
-  // Bluetoothプリンター接続
-  const connectBluetoothPrinter = async () => {
+  const connectPrinter = async () => {
+    if (!isNativeApp()) return
+    
     setIsConnecting(true)
     try {
       // Bluetoothを有効化
@@ -143,35 +144,32 @@ export default function ReceiptSettings() {
       const devices = await printer.getPairedDevices()
       console.log('Paired devices:', devices)
       
-      // MP-B20を探す
-      const mp20 = devices.find(device => 
-        device.name.includes('MP-B20') || 
-        device.name.includes('MP-') ||
-        device.name.includes('MPB20')
+      // MP-B20を探す（Cordovaプラグインの場合、デバイス構造が異なる）
+      const mp20 = devices.find(d => 
+        d.name?.includes('MP-B20') || 
+        d.name?.includes('MP-20') ||
+        d.name?.includes('MP B20')
       )
       
       if (mp20) {
+        // 接続（Cordovaはaddressプロパティを使用）
         await printer.connect(mp20.address)
         setPrinterConnected(true)
-        alert('MP-B20に接続しました')
+        
+        // テスト印刷
+        await printer.printTest()
+        alert('MP-B20に接続してテスト印刷しました')
       } else {
-        alert('MP-B20が見つかりません。\nAndroid設定でペアリングされているか確認してください。')
+        alert('MP-B20が見つかりません。\nペアリング済みデバイス: ' + 
+              devices.map(d => d.name).join(', '))
       }
     } catch (error) {
       console.error('Printer connection error:', error)
-      alert('プリンター接続エラー: ' + error)
+      alert(`プリンター接続エラー: ${error}`)
     } finally {
       setIsConnecting(false)
     }
   }
-
-  // 直接印刷テスト
-  const testDirectPrint = async () => {
-    if (!printerConnected) {
-      alert('プリンターが接続されていません')
-      return
-    }
-
     try {
       await printer.printReceipt({
         storeName: settings.store_name || 'テスト店舗',
