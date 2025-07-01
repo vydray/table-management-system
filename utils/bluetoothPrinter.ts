@@ -18,7 +18,7 @@ interface BluetoothSerialPlugin {
 }
 
 // @ts-ignore - プラグインは実行時に利用可能
-const BluetoothSerial: BluetoothSerialPlugin = (window as any).Capacitor?.Plugins?.BluetoothSerial || {}
+const BluetoothSerial: BluetoothSerialPlugin = (typeof window !== 'undefined' && (window as any).Capacitor?.Plugins?.BluetoothSerial) || {}
 
 // ESC/POSコマンド
 const ESC = '\x1B'
@@ -35,6 +35,9 @@ export class BluetoothPrinter {
 
   // Bluetooth有効化
   async enable() {
+    if (typeof window === 'undefined' || !BluetoothSerial.enable) {
+      throw new Error('Bluetooth Serial not available')
+    }
     try {
       await BluetoothSerial.enable()
       console.log('Bluetooth enabled')
