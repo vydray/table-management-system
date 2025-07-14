@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@awesome-cordova-plugins/bluetooth-serial": "^8.0.2",
-    "@capacitor/android": "^7.4.0",
-    "@capacitor/cli": "^7.4.0",
-    "@capacitor/core": "^7.4.0",
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/cli": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
     "@supabase/supabase-js": "^2.49.8",
     "bcryptjs": "^3.0.2",
     "chart.js": "^4.4.9",
