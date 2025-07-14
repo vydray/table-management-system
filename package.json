@@ -9,9 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@awesome-cordova-plugins/bluetooth-serial": "^8.0.2",
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/cli": "^7.4.0",
+    "@capacitor/core": "^7.4.0",
     "@supabase/supabase-js": "^2.49.8",
     "bcryptjs": "^3.0.2",
     "chart.js": "^4.4.9",
+    "cordova-plugin-bluetooth-serial": "^0.4.7",
     "date-fns-tz": "^3.2.0",
     "next": "15.3.2",
     "react": "^19.0.0",

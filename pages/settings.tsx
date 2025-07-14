@@ -8,6 +8,7 @@ import CategoryManagement from '../components/settings/CategoryManagement'
 import ProductManagement from '../components/settings/ProductManagement'
 import SystemSettings from '../components/settings/SystemSettings'
 import AttendanceStatus from '../components/settings/AttendanceStatus'
+import ReceiptSettings from '../components/settings/ReceiptSettings'
 
 export default function Settings() {
   const router = useRouter()
@@ -18,7 +19,8 @@ export default function Settings() {
     { id: 'products', label: '商品管理', icon: '🛍️' },
     { id: 'categories', label: 'カテゴリー管理', icon: '📁' },
     { id: 'cast', label: 'キャスト管理', icon: '👥' },
-    { id: 'attendance', label: '勤怠ステータス', icon: '📊' }
+    { id: 'attendance', label: '勤怠ステータス', icon: '📊' },
+    { id: 'receipt', label: 'レシート設定', icon: '🧾' }
   ]
 
   return (
@@ -142,6 +144,7 @@ export default function Settings() {
             {activeMenu === 'categories' && <CategoryManagement />}
             {activeMenu === 'cast' && <CastManagement />}
             {activeMenu === 'attendance' && <AttendanceStatus />}
+            {activeMenu === 'receipt' && <ReceiptSettings />}
           </div>
         </div>
       </div>
