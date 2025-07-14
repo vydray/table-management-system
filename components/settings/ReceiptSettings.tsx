@@ -170,31 +170,52 @@ export default function ReceiptSettings() {
   }
 
   // 直接印刷テスト
-  const testDirectPrint = async () => {
-    if (!printerConnected) {
-      alert('プリンターが接続されていません')
-      return
-    }
-
-    try {
-      await printer.printReceipt({
-        storeName: settings.store_name || 'テスト店舗',
-        items: [
-          { name: 'テスト商品1', price: 500, quantity: 1 },
-          { name: 'テスト商品2', price: 300, quantity: 1 }
-        ],
-        subtotal: 800,
-        tax: 80,
-        total: 880,
-        footerMessage: settings.footer_message
-      })
-      
-      alert('印刷完了')
-    } catch (error) {
-      console.error('Print error:', error)
-      alert('印刷エラー: ' + error)
-    }
+const testDirectPrint = async () => {
+  if (!printerConnected) {
+    alert('プリンターが接続されていません')
+    return
   }
+
+  try {
+    await printer.printReceipt({
+      storeName: settings.store_name || 'テスト店舗',
+      storeAddress: '東京都渋谷区テスト1-2-3',
+      storePhone: 'TEL: 03-1234-5678',
+      receiptNumber: `R${Date.now()}`,
+      tableName: 'テスト',
+      guestName: 'テストユーザー',
+      castName: 'テストキャスト',
+      timestamp: new Date().toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }),
+      orderItems: [
+        { name: 'テスト商品1', price: 500, quantity: 1 },
+        { name: 'テスト商品2', price: 300, quantity: 1 }
+      ],
+      subtotal: 800,
+      serviceTax: 120,
+      consumptionTax: 80,
+      roundingAdjustment: 0,
+      roundedTotal: 1000,
+      paymentCash: 1000,
+      paymentCard: 0,
+      paymentOther: 0,
+      paymentOtherMethod: '',
+      change: 0
+      // footerMessage を削除（型定義に存在しない）
+    })
+    
+    alert('印刷完了')
+  } catch (error) {
+    console.error('Print error:', error)
+    alert('印刷エラー: ' + error)
+  }
+}
 
   const containerStyle: React.CSSProperties = {
     height: '100%',
