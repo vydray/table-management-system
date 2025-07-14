@@ -1,8 +1,5 @@
 // utils/bluetoothPrinter.ts
 
-// Cordova Bluetooth Serialのグローバル変数
-declare let bluetoothSerial: any;
-
 // ESC/POSコマンド
 const ESC = '\x1B'
 const GS = '\x1D'
@@ -14,135 +11,87 @@ const BOLD_ON = `${ESC}E\x01`
 const BOLD_OFF = `${ESC}E\x00`
 
 export class BluetoothPrinter {
-  private isConnected: boolean = false
+  private isConnected: boolean = false;
 
-  // プラグインが利用可能か確認
-  private isAvailable(): boolean {
-    return typeof window !== 'undefined' && 
-           typeof bluetoothSerial !== 'undefined'
+  // プラグインを取得
+  private getPlugin() {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    
+    // @ts-ignore
+    return window.Capacitor?.Plugins?.SiiPrinter || null;
   }
 
   // Bluetooth有効化
   async enable(): Promise<void> {
-    if (!this.isAvailable()) {
-      throw new Error('Bluetooth Serial not available')
+    const plugin = this.getPlugin();
+    if (!plugin) {
+      throw new Error('SiiPrinter plugin not available');
     }
-
-    return new Promise((resolve, reject) => {
-      bluetoothSerial.enable(
-        () => {
-          console.log('Bluetooth enabled')
-          resolve()
-        },
-        (error: any) => {
-          console.error('Enable error:', error)
-          reject(error)
-        }
-      )
-    })
+    
+    try {
+      await plugin.enable();
+      console.log('Bluetooth enabled');
+    } catch (error) {
+      console.error('Enable error:', error);
+      throw error;
+    }
   }
 
   // ペアリング済みデバイスを取得
   async getPairedDevices(): Promise<any[]> {
-    if (!this.isAvailable()) {
-      throw new Error('Bluetooth Serial not available')
+    const plugin = this.getPlugin();
+    if (!plugin) {
+      throw new Error('SiiPrinter plugin not available');
     }
-
-    return new Promise((resolve, reject) => {
-      bluetoothSerial.list(
-        (devices: any[]) => {
-          console.log('Paired devices:', devices)
-          // Cordovaプラグインはnameとaddressプロパティを持つ
-          resolve(devices)
-        },
-        (error: any) => {
-          console.error('List error:', error)
-          reject(error)
-        }
-      )
-    })
+    
+    try {
+      const result = await plugin.getPairedDevices();
+      console.log('Paired devices:', result.devices);
+      return result.devices || [];
+    } catch (error) {
+      console.error('Get paired devices error:', error);
+      throw error;
+    }
   }
 
   // プリンターに接続
   async connect(address: string): Promise<void> {
-    if (!this.isAvailable()) {
-      throw new Error('Bluetooth Serial not available')
+    const plugin = this.getPlugin();
+    if (!plugin) {
+      throw new Error('SiiPrinter plugin not available');
     }
-
-    return new Promise((resolve, reject) => {
-      bluetoothSerial.connect(
-        address,
-        () => {
-          this.isConnected = true
-          console.log('Connected to:', address)
-          resolve()
-        },
-        (error: any) => {
-          console.error('Connection error:', error)
-          reject(error)
-        }
-      )
-    })
+    
+    try {
+      await plugin.connect({ address });
+      this.isConnected = true;
+      console.log('Connected to printer:', address);
+    } catch (error) {
+      console.error('Connection error:', error);
+      throw error;
+    }
   }
 
   // 接続状態を確認
   async checkConnection(): Promise<boolean> {
-    if (!this.isAvailable()) {
-      return false
-    }
-
-    return new Promise((resolve) => {
-      bluetoothSerial.isConnected(
-        () => {
-          this.isConnected = true
-          resolve(true)
-        },
-        () => {
-          this.isConnected = false
-          resolve(false)
-        }
-      )
-    })
+    return this.isConnected;
   }
 
   // 切断
   async disconnect(): Promise<void> {
-    if (!this.isAvailable()) {
-      return
+    const plugin = this.getPlugin();
+    if (!plugin) {
+      return;
     }
-
-    return new Promise((resolve) => {
-      bluetoothSerial.disconnect(
-        () => {
-          this.isConnected = false
-          console.log('Disconnected')
-          resolve()
-        },
-        () => resolve()
-      )
-    })
-  }
-
-  // データ送信
-  private async write(data: string): Promise<void> {
-    if (!this.isAvailable()) {
-      throw new Error('Bluetooth Serial not available')
+    
+    try {
+      await plugin.disconnect();
+      this.isConnected = false;
+      console.log('Disconnected from printer');
+    } catch (error) {
+      console.error('Disconnect error:', error);
     }
-
-    if (!this.isConnected) {
-      throw new Error('Not connected')
-    }
-
-    return new Promise((resolve, reject) => {
-      bluetoothSerial.write(
-        data,
-        () => resolve(),
-        (error: any) => {
-          console.error('Write error:', error)
-          reject(error)
-        }
-      )
-    })
   }
 
   // レシート印刷
@@ -160,71 +109,38 @@ export class BluetoothPrinter {
     total: number
     footerMessage: string
   }): Promise<void> {
+    const plugin = this.getPlugin();
+    if (!plugin) {
+      throw new Error('SiiPrinter plugin not available');
+    }
+    
     try {
-      // 接続確認
-      const connected = await this.checkConnection()
-      if (!connected) {
-        throw new Error('Printer not connected')
-      }
-
-      // 初期化
-      await this.write(INIT)
-      
-      // 店舗名（中央揃え、太字）
-      await this.write(CENTER + BOLD_ON)
-      await this.write(receiptData.storeName + '\n')
-      await this.write(BOLD_OFF + LEFT)
-      
-      // 日時
-      await this.write('\n')
-      await this.write(`日時: ${new Date().toLocaleString('ja-JP')}\n`)
-      
-      // テーブル・スタッフ
-      if (receiptData.tableNumber) {
-        await this.write(`テーブル: ${receiptData.tableNumber}\n`)
-      }
-      if (receiptData.staffName) {
-        await this.write(`担当: ${receiptData.staffName}\n`)
-      }
-      
-      // 区切り線
-      await this.write('-'.repeat(32) + '\n')
-      
-      // 商品リスト
-      for (const item of receiptData.items) {
-        const itemTotal = item.price * item.quantity
-        await this.write(`${item.name}\n`)
-        await this.write(`  ${item.quantity}個 × ¥${item.price} = ¥${itemTotal}\n`)
-      }
-      
-      // 区切り線
-      await this.write('-'.repeat(32) + '\n')
-      
-      // 合計
-      await this.write(`小計: ¥${receiptData.subtotal}\n`)
-      await this.write(`消費税: ¥${receiptData.tax}\n`)
-      await this.write('-'.repeat(32) + '\n')
-      await this.write(BOLD_ON)
-      await this.write(`合計: ¥${receiptData.total}\n`)
-      await this.write(BOLD_OFF)
-      
-      // フッター
-      await this.write('\n')
-      await this.write(CENTER)
-      await this.write(receiptData.footerMessage + '\n')
-      await this.write(LEFT)
-      
-      // カット
-      await this.write('\n\n\n')
-      await this.write(CUT)
-      
-      console.log('Receipt printed successfully')
+      await plugin.printReceipt({
+        storeName: receiptData.storeName,
+        footerMessage: receiptData.footerMessage
+      });
+      console.log('Receipt printed successfully');
     } catch (error) {
-      console.error('Print error:', error)
-      throw error
+      console.error('Print error:', error);
+      throw error;
+    }
+  }
+
+  // テスト印刷
+  async printTest(): Promise<void> {
+    const plugin = this.getPlugin();
+    if (!plugin) {
+      throw new Error('SiiPrinter plugin not available');
+    }
+    
+    try {
+      await plugin.printText({ text: 'MP-B20 テスト印刷\n\n接続成功!\n\n\n' });
+    } catch (error) {
+      console.error('Test print error:', error);
+      throw error;
     }
   }
 }
 
 // シングルトンインスタンス
-export const printer = new BluetoothPrinter()
+export const printer = new BluetoothPrinter();

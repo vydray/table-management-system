@@ -137,47 +137,15 @@ public class SiiPrinterPlugin extends Plugin {
             printerManager.setCodePage(PrinterManager.CODE_PAGE_KATAKANA);
             printerManager.setInternationalCharacter(PrinterManager.COUNTRY_JAPAN);
             
-            // 店舗名（中央揃え、太字）
-            printerManager.sendTextEx(
-                storeName + "\n",
-                CharacterBold.BOLD_ON,
-                CharacterUnderline.UNDERLINE_CANCEL,
-                CharacterReverse.REVERSE_CANCEL,
-                CharacterFont.FONT_A,
-                CharacterScale.VERTICAL_1_HORIZONTAL_1,
-                PrintAlignment.ALIGNMENT_CENTER
-            );
-            
-            // 日時
-            printerManager.sendTextEx(
-                "\n日時: " + new java.util.Date().toString() + "\n",
-                CharacterBold.BOLD_CANCEL,
-                CharacterUnderline.UNDERLINE_CANCEL,
-                CharacterReverse.REVERSE_CANCEL,
-                CharacterFont.FONT_A,
-                CharacterScale.VERTICAL_1_HORIZONTAL_1,
-                PrintAlignment.ALIGNMENT_LEFT
-            );
-            
-            // 区切り線
+            // シンプルな実装に変更
+            printerManager.sendText(storeName + "\n");
+            printerManager.sendText("\n日時: " + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()) + "\n");
             printerManager.sendText("--------------------------------\n");
-            
-            // 商品リスト（簡易版）
             printerManager.sendText("テスト商品1         ¥500\n");
             printerManager.sendText("テスト商品2         ¥300\n");
             printerManager.sendText("--------------------------------\n");
             printerManager.sendText("合計:              ¥800\n");
-            
-            // フッター
-            printerManager.sendTextEx(
-                "\n" + footerMessage + "\n\n",
-                CharacterBold.BOLD_CANCEL,
-                CharacterUnderline.UNDERLINE_CANCEL,
-                CharacterReverse.REVERSE_CANCEL,
-                CharacterFont.FONT_A,
-                CharacterScale.VERTICAL_1_HORIZONTAL_1,
-                PrintAlignment.ALIGNMENT_CENTER
-            );
+            printerManager.sendText("\n" + footerMessage + "\n\n");
             
             // カット
             printerManager.cutPaper(CuttingMethod.CUT_PARTIAL);
