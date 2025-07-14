@@ -767,22 +767,26 @@ export default function Home() {
   }
 
   // 会計完了処理（修正版）
-  const completeCheckout = async () => {
-    const totalPaid = paymentData.cash + paymentData.card + paymentData.other
-    const roundedTotal = getRoundedTotal(getTotal())
+const completeCheckout = async () => {
+  const totalPaid = paymentData.cash + paymentData.card + paymentData.other
+  const roundedTotal = getRoundedTotal(getTotal())
+  
+  if (totalPaid < roundedTotal) {
+    alert('支払金額が不足しています')
+    return
+  }
+  
+  if (!confirm(`${currentTable} を会計完了にしますか？`)) return
+  
+  try {
+    const checkoutTime = getJapanTimeString(new Date())
+    const storeId = getCurrentStoreId()
     
-    if (totalPaid < roundedTotal) {
-      alert('支払金額が不足しています')
-      return
-    }
-    
-    if (!confirm(`${currentTable} を会計完了にしますか？`)) return
-    
-    try {
-      const checkoutTime = getJapanTimeString(new Date())
-      const storeId = getCurrentStoreId()
-      
-      console.log('送信データ:', { 
+    // まずAPIで会計処理を実行
+    const response = await fetch('/api/tables/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
         tableId: currentTable,
         checkoutTime,
         orderItems: orderItems,
@@ -793,38 +797,92 @@ export default function Home() {
         paymentCard: paymentData.card,
         paymentOther: paymentData.other,
         paymentOtherMethod: paymentData.otherMethod,
-        totalAmount: roundedTotal,
+        totalAmount: getRoundedTotal(getTotal()),
         storeId: storeId
       })
-      
-      const response = await fetch('/api/tables/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          tableId: currentTable,
-          checkoutTime,
-          orderItems: orderItems,
-          guestName: formData.guestName,
-          castName: formData.castName,
-          visitType: formData.visitType,
-          paymentCash: paymentData.cash,
-          paymentCard: paymentData.card,
-          paymentOther: paymentData.other,
-          paymentOtherMethod: paymentData.otherMethod,
-          totalAmount: getRoundedTotal(getTotal()),
-          storeId: storeId  // 店舗IDを追加
-        })
-      })
-      
-      const result = await response.json()
-      console.log('API応答:', result)
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Checkout failed')
+    })
+    
+    const result = await response.json()
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Checkout failed')
+    }
+    
+    // ★領収書印刷（都度接続方式）★
+    if (confirm('領収書を印刷しますか？')) {
+      try {
+        // 新しく接続を確立
+        await printer.enable();
+        
+        // ペアリング済みデバイスを取得
+        const devices = await printer.getPairedDevices();
+        const mpb20 = devices.find(device => 
+          device.name && device.name.toUpperCase().includes('MP-B20')
+        );
+        
+        if (mpb20) {
+          // 接続
+          await printer.connect(mpb20.address);
+          
+          // 少し待機
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // 印刷データを準備
+          const now = new Date();
+          const timestamp = now.toLocaleString('ja-JP', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          });
+          
+          const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+          const serviceTax = Math.floor(subtotal * systemSettings.serviceChargeRate);
+          const consumptionTax = Math.floor((subtotal + serviceTax) * systemSettings.consumptionTaxRate);
+          
+          // 領収書印刷
+          await printer.printReceipt({
+            storeName: '店舗名',
+            storeAddress: '東京都渋谷区...',
+            storePhone: 'TEL: 03-xxxx-xxxx',
+            receiptNumber: result.receiptNumber || `R${Date.now()}`,
+            tableName: currentTable,
+            guestName: formData.guestName || '（未入力）',
+            castName: formData.castName || '（未選択）',
+            timestamp: timestamp,
+            orderItems: orderItems,
+            subtotal: subtotal,
+            serviceTax: serviceTax,
+            consumptionTax: consumptionTax,
+            roundingAdjustment: getRoundingAdjustment(),
+            roundedTotal: roundedTotal,
+            paymentCash: paymentData.cash,
+            paymentCard: paymentData.card,
+            paymentOther: paymentData.other,
+            paymentOtherMethod: paymentData.otherMethod,
+            change: totalPaid - roundedTotal
+          });
+          
+          // 印刷後に切断
+          await printer.disconnect();
+          
+        } else {
+          alert('MP-B20が見つかりません。');
+        }
+      } catch (printError) {
+        console.error('領収書印刷エラー:', printError);
+        // エラーメッセージの取得を型安全に
+        const errorMessage = printError instanceof Error 
+          ? printError.message 
+          : '不明なエラーが発生しました';
+        alert('領収書印刷に失敗しました。\n' + errorMessage);
       }
-      
-      // モーダルを閉じる
-      document.body.classList.remove('modal-open')
+    }
+    
+    // モーダルを閉じる
+    document.body.classList.remove('modal-open')
     setShowPaymentModal(false)
     setOrderItems([])
     setShowModal(false)

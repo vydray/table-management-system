@@ -150,24 +150,219 @@ public class SiiPrinterPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void printOrderSlip(PluginCall call) {
+    try {
+        // パラメータを取得
+        String tableName = call.getString("tableName", "");
+        String guestName = call.getString("guestName", "");
+        String castName = call.getString("castName", "");
+        String elapsedTime = call.getString("elapsedTime", "");
+        String timestamp = call.getString("timestamp", "");
+        
+        int subtotal = call.getInt("subtotal", 0);
+        int serviceTax = call.getInt("serviceTax", 0);
+        int roundedTotal = call.getInt("roundedTotal", 0);
+        int roundingAdjustment = call.getInt("roundingAdjustment", 0);
+        
+        JSArray orderItems = call.getArray("orderItems");
+        
+        // 日本語対応
+        printerManager.setCodePage(PrinterManager.CODE_PAGE_KATAKANA);
+        printerManager.setInternationalCharacter(PrinterManager.COUNTRY_JAPAN);
+        
+        // レシート内容を構築
+        StringBuilder receipt = new StringBuilder();
+        
+        // ヘッダー
+        receipt.append("        会計伝票\n");  // スペースで中央寄せを模擬
+        receipt.append("================================\n");
+        
+        // 基本情報
+        receipt.append("卓番号: ").append(tableName).append("\n");
+        receipt.append("お客様: ").append(guestName).append("\n");
+        receipt.append("推し: ").append(castName).append("\n");
+        receipt.append("滞在時間: ").append(elapsedTime).append("\n");
+        receipt.append("印刷時刻: ").append(timestamp).append("\n");
+        receipt.append("================================\n");
+        
+        // 注文明細
+        receipt.append("【注文明細】\n");
+        if (orderItems != null) {
+            try {
+                // orderItemsをJSONArrayとして処理
+                org.json.JSONArray jsonArray = new org.json.JSONArray(orderItems.toString());
+                
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    org.json.JSONObject item = jsonArray.getJSONObject(i);
+                    String name = item.optString("name", "");
+                    String cast = item.optString("cast", "");
+                    int quantity = item.optInt("quantity", 1);
+                    int price = item.optInt("price", 0);
+                    int total = quantity * price;
+                    
+                    // 商品名
+                    receipt.append(name).append("\n");
+                    
+                    // キャスト名がある場合
+                    if (!cast.isEmpty()) {
+                        receipt.append("  (").append(cast).append(")\n");
+                    }
+                    
+                    // 数量と金額
+                    receipt.append(String.format("  %d × ¥%,d = ¥%,d\n", quantity, price, total));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to parse order items", e);
+            }
+        }
+        
+        receipt.append("--------------------------------\n");
+        
+        // 合計
+        receipt.append(String.format("小計:              ¥%,d\n", subtotal));
+        receipt.append(String.format("サービス料:        ¥%,d\n", serviceTax));
+        
+        if (roundingAdjustment != 0) {
+            String sign = roundingAdjustment < 0 ? "-" : "+";
+            receipt.append(String.format("端数調整:         %s¥%,d\n", sign, Math.abs(roundingAdjustment)));
+        }
+        
+        receipt.append("================================\n");
+        
+        // 合計金額
+        receipt.append(String.format("合計金額:          ¥%,d\n", roundedTotal));
+        
+        receipt.append("================================\n");
+        
+        // 一括で印刷
+        printerManager.sendText(receipt.toString());
+        
+        // カット
+        printerManager.cutPaper(CuttingMethod.CUT_PARTIAL);
+        
+        call.resolve();
+    } catch (Exception e) {
+        call.reject("Failed to print order slip: " + e.getMessage(), e);
+    }
+}
+
+    @PluginMethod
     public void printReceipt(PluginCall call) {
         try {
+            // パラメータを取得
             String storeName = call.getString("storeName", "");
-            String footerMessage = call.getString("footerMessage", "");
+            String storeAddress = call.getString("storeAddress", "");
+            String storePhone = call.getString("storePhone", "");
+            String receiptNumber = call.getString("receiptNumber", "");
+            String tableName = call.getString("tableName", "");
+            String guestName = call.getString("guestName", "");
+            String castName = call.getString("castName", "");
+            String timestamp = call.getString("timestamp", "");
+            
+            int subtotal = call.getInt("subtotal", 0);
+            int serviceTax = call.getInt("serviceTax", 0);
+            int consumptionTax = call.getInt("consumptionTax", 0);
+            int roundingAdjustment = call.getInt("roundingAdjustment", 0);
+            int roundedTotal = call.getInt("roundedTotal", 0);
+            int paymentCash = call.getInt("paymentCash", 0);
+            int paymentCard = call.getInt("paymentCard", 0);
+            int paymentOther = call.getInt("paymentOther", 0);
+            String paymentOtherMethod = call.getString("paymentOtherMethod", "");
+            int change = call.getInt("change", 0);
+            
+            JSArray orderItems = call.getArray("orderItems");
             
             // 日本語対応
             printerManager.setCodePage(PrinterManager.CODE_PAGE_KATAKANA);
             printerManager.setInternationalCharacter(PrinterManager.COUNTRY_JAPAN);
             
-            // シンプルな実装に変更
-            printerManager.sendText(storeName + "\n");
-            printerManager.sendText("\n日時: " + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()) + "\n");
-            printerManager.sendText("--------------------------------\n");
-            printerManager.sendText("テスト商品1         ¥500\n");
-            printerManager.sendText("テスト商品2         ¥300\n");
-            printerManager.sendText("--------------------------------\n");
-            printerManager.sendText("合計:              ¥800\n");
-            printerManager.sendText("\n" + footerMessage + "\n\n");
+            // レシート内容を構築
+            StringBuilder receipt = new StringBuilder();
+            
+            // ヘッダー
+            receipt.append("         領収書\n");
+            receipt.append("================================\n");
+            receipt.append("       ").append(storeName).append("\n");
+            if (!storeAddress.isEmpty()) {
+                receipt.append(storeAddress).append("\n");
+            }
+            if (!storePhone.isEmpty()) {
+                receipt.append(storePhone).append("\n");
+            }
+            receipt.append("================================\n");
+            receipt.append("領収書No: ").append(receiptNumber).append("\n");
+            receipt.append("日時: ").append(timestamp).append("\n");
+            receipt.append("卓番号: ").append(tableName).append("\n");
+            receipt.append("--------------------------------\n");
+            
+            // 注文明細
+            if (orderItems != null) {
+                try {
+                    org.json.JSONArray jsonArray = new org.json.JSONArray(orderItems.toString());
+                    
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        org.json.JSONObject item = jsonArray.getJSONObject(i);
+                        String name = item.optString("name", "");
+                        String cast = item.optString("cast", "");
+                        int quantity = item.optInt("quantity", 1);
+                        int price = item.optInt("price", 0);
+                        int total = quantity * price;
+                        
+                        receipt.append(name).append("\n");
+                        if (!cast.isEmpty()) {
+                            receipt.append("  (").append(cast).append(")\n");
+                        }
+                        receipt.append(String.format("  %d × ¥%,d = ¥%,d\n", quantity, price, total));
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to parse order items", e);
+                }
+            }
+            
+            receipt.append("--------------------------------\n");
+            
+            // 小計・税金
+            receipt.append(String.format("小計:              ¥%,d\n", subtotal));
+            receipt.append(String.format("サービス料(15%%):   ¥%,d\n", serviceTax));
+            receipt.append(String.format("消費税(10%%):       ¥%,d\n", consumptionTax));
+            
+            if (roundingAdjustment != 0) {
+                String sign = roundingAdjustment < 0 ? "-" : "+";
+                receipt.append(String.format("端数調整:         %s¥%,d\n", sign, Math.abs(roundingAdjustment)));
+            }
+            
+            receipt.append("================================\n");
+            receipt.append(String.format("合計金額:          ¥%,d\n", roundedTotal));
+            receipt.append("================================\n");
+            
+            // 支払い内訳
+            receipt.append("【お預かり】\n");
+            if (paymentCash > 0) {
+                receipt.append(String.format("現金:              ¥%,d\n", paymentCash));
+            }
+            if (paymentCard > 0) {
+                receipt.append(String.format("カード:            ¥%,d\n", paymentCard));
+            }
+            if (paymentOther > 0) {
+                receipt.append(String.format("その他(%s):  ¥%,d\n", 
+                    paymentOtherMethod.isEmpty() ? "その他" : paymentOtherMethod, paymentOther));
+            }
+            
+            receipt.append("--------------------------------\n");
+            receipt.append(String.format("お預かり計:        ¥%,d\n", paymentCash + paymentCard + paymentOther));
+            
+            if (change > 0) {
+                receipt.append(String.format("お釣り:            ¥%,d\n", change));
+            }
+            
+            receipt.append("================================\n");
+            
+            // フッター
+            receipt.append("\nご利用ありがとうございました\n");
+            receipt.append("またのご来店をお待ちしております\n\n\n");
+            
+            // 印刷
+            printerManager.sendText(receipt.toString());
             
             // カット
             printerManager.cutPaper(CuttingMethod.CUT_PARTIAL);
@@ -177,119 +372,5 @@ public class SiiPrinterPlugin extends Plugin {
             call.reject("Failed to print receipt: " + e.getMessage(), e);
         }
     }
-    @PluginMethod
-    public void printOrderSlip(PluginCall call) {
-        try {
-            // パラメータを取得
-            String tableName = call.getString("tableName", "");
-            String guestName = call.getString("guestName", "");
-            String castName = call.getString("castName", "");
-            String elapsedTime = call.getString("elapsedTime", "");
-            String timestamp = call.getString("timestamp", "");
-            
-            int subtotal = call.getInt("subtotal", 0);
-            int serviceTax = call.getInt("serviceTax", 0);
-            int roundedTotal = call.getInt("roundedTotal", 0);
-            int roundingAdjustment = call.getInt("roundingAdjustment", 0);
-            
-            JSArray orderItems = call.getArray("orderItems");
-            
-            // 日本語対応
-            printerManager.setCodePage(PrinterManager.CODE_PAGE_KATAKANA);
-            printerManager.setInternationalCharacter(PrinterManager.COUNTRY_JAPAN);
-            
-            // ヘッダー
-            printerManager.setAlignment(PrintAlignment.CENTER);
-            printerManager.sendText("会計伝票\n");
-            printerManager.sendText("================================\n");
-            
-            // 基本情報
-            printerManager.setAlignment(PrintAlignment.LEFT);
-            printerManager.sendText("卓番号: " + tableName + "\n");
-            printerManager.sendText("お客様: " + guestName + "\n");
-            printerManager.sendText("推し: " + castName + "\n");
-            printerManager.sendText("滞在時間: " + elapsedTime + "\n");
-            printerManager.sendText("印刷時刻: " + timestamp + "\n");
-            printerManager.sendText("================================\n");
-            
-            // 注文明細
-            printerManager.sendText("【注文明細】\n");
-            if (orderItems != null) {
-                for (int i = 0; i < orderItems.length(); i++) {
-                    try {
-                        JSObject item = orderItems.getJSObject(i);
-                        String name = item.getString("name");
-                        String cast = item.getString("cast", "");
-                        int quantity = item.getInt("quantity");
-                        int price = item.getInt("price");
-                        int total = quantity * price;
-                        
-                        // 商品名
-                        printerManager.sendText(name + "\n");
-                        
-                        // キャスト名がある場合
-                        if (!cast.isEmpty()) {
-                            printerManager.sendText("  (" + cast + ")\n");
-                        }
-                        
-                        // 数量と金額
-                        String quantityStr = String.format("  %d × ¥%,d", quantity, price);
-                        String totalStr = String.format("¥%,d", total);
-                        
-                        // 右寄せのために空白を計算
-                        int lineLength = 32; // 32文字幅を想定
-                        int spacesNeeded = lineLength - quantityStr.length() - totalStr.length();
-                        if (spacesNeeded < 1) spacesNeeded = 1;
-                        
-                        String spaces = new String(new char[spacesNeeded]).replace('\0', ' ');
-                        printerManager.sendText(quantityStr + spaces + totalStr + "\n");
-                        
-                    } catch (Exception e) {
-                        Log.e(TAG, "Failed to print order item", e);
-                    }
-                }
-            }
-            
-            printerManager.sendText("--------------------------------\n");
-            
-            // 合計
-            String subtotalLine = String.format("小計:%26s", String.format("¥%,d", subtotal));
-            printerManager.sendText(subtotalLine + "\n");
-            
-            String serviceLine = String.format("サービス料:%19s", String.format("¥%,d", serviceTax));
-            printerManager.sendText(serviceLine + "\n");
-            
-            if (roundingAdjustment != 0) {
-                String adjustLine = String.format("端数調整:%22s", String.format("%s¥%,d", 
-                    roundingAdjustment < 0 ? "-" : "+", 
-                    Math.abs(roundingAdjustment)));
-                printerManager.sendText(adjustLine + "\n");
-            }
-            
-            printerManager.sendText("================================\n");
-            
-            // 合計金額（太字）
-            printerManager.setCharacterBold(CharacterBold.BOLD_CANCEL);
-            String totalLine = String.format("合計金額:%22s", String.format("¥%,d", roundedTotal));
-            printerManager.sendText(totalLine + "\n");
-            printerManager.setCharacterBold(CharacterBold.BOLD_CANCEL);
-            
-            printerManager.sendText("================================\n");
-            
-            // フッター
-            printerManager.setAlignment(PrintAlignment.CENTER);
-            printerManager.sendText("\n※この伝票は会計時にご提示ください\n\n\n");
-            
-            // カット
-            printerManager.cutPaper(CuttingMethod.CUT_PARTIAL);
-            
-            call.resolve();
-        } catch (Exception e) {
-            call.reject("Failed to print order slip: " + e.getMessage(), e);
-        }
-    }
-
-
-
 
 }
