@@ -44,19 +44,40 @@ public class SiiPrinterPlugin extends Plugin {
                 return;
             }
 
+            // Android 12以降の権限チェック
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                if (getContext().checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) 
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    call.reject("Bluetooth permission not granted. Please enable in device settings.");
+                    return;
+                }
+            }
+
             if (!bluetoothAdapter.isEnabled()) {
-                bluetoothAdapter.enable();
+                // 権限エラーを回避するため、すでに有効な場合はスキップ
+                call.resolve();
+                return;
             }
 
             call.resolve();
         } catch (Exception e) {
-            call.reject("Failed to enable Bluetooth", e);
+            call.reject("Enable error: " + e.getMessage(), e);
         }
     }
 
     @PluginMethod
     public void getPairedDevices(PluginCall call) {
         try {
+            // Android 12以降の権限チェック
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                if (getContext().checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) 
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    Log.e(TAG, "BLUETOOTH_CONNECT permission not granted");
+                    call.reject("Bluetooth permission not granted");
+                    return;
+                }
+            }
+            
             Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
             JSArray devices = new JSArray();
             
@@ -71,6 +92,7 @@ public class SiiPrinterPlugin extends Plugin {
             result.put("devices", devices);
             call.resolve(result);
         } catch (Exception e) {
+            Log.e(TAG, "Failed to get paired devices", e);
             call.reject("Failed to get paired devices", e);
         }
     }
@@ -155,4 +177,119 @@ public class SiiPrinterPlugin extends Plugin {
             call.reject("Failed to print receipt: " + e.getMessage(), e);
         }
     }
+    @PluginMethod
+    public void printOrderSlip(PluginCall call) {
+        try {
+            // パラメータを取得
+            String tableName = call.getString("tableName", "");
+            String guestName = call.getString("guestName", "");
+            String castName = call.getString("castName", "");
+            String elapsedTime = call.getString("elapsedTime", "");
+            String timestamp = call.getString("timestamp", "");
+            
+            int subtotal = call.getInt("subtotal", 0);
+            int serviceTax = call.getInt("serviceTax", 0);
+            int roundedTotal = call.getInt("roundedTotal", 0);
+            int roundingAdjustment = call.getInt("roundingAdjustment", 0);
+            
+            JSArray orderItems = call.getArray("orderItems");
+            
+            // 日本語対応
+            printerManager.setCodePage(PrinterManager.CODE_PAGE_KATAKANA);
+            printerManager.setInternationalCharacter(PrinterManager.COUNTRY_JAPAN);
+            
+            // ヘッダー
+            printerManager.setAlignment(PrintAlignment.CENTER);
+            printerManager.sendText("会計伝票\n");
+            printerManager.sendText("================================\n");
+            
+            // 基本情報
+            printerManager.setAlignment(PrintAlignment.LEFT);
+            printerManager.sendText("卓番号: " + tableName + "\n");
+            printerManager.sendText("お客様: " + guestName + "\n");
+            printerManager.sendText("推し: " + castName + "\n");
+            printerManager.sendText("滞在時間: " + elapsedTime + "\n");
+            printerManager.sendText("印刷時刻: " + timestamp + "\n");
+            printerManager.sendText("================================\n");
+            
+            // 注文明細
+            printerManager.sendText("【注文明細】\n");
+            if (orderItems != null) {
+                for (int i = 0; i < orderItems.length(); i++) {
+                    try {
+                        JSObject item = orderItems.getJSObject(i);
+                        String name = item.getString("name");
+                        String cast = item.getString("cast", "");
+                        int quantity = item.getInt("quantity");
+                        int price = item.getInt("price");
+                        int total = quantity * price;
+                        
+                        // 商品名
+                        printerManager.sendText(name + "\n");
+                        
+                        // キャスト名がある場合
+                        if (!cast.isEmpty()) {
+                            printerManager.sendText("  (" + cast + ")\n");
+                        }
+                        
+                        // 数量と金額
+                        String quantityStr = String.format("  %d × ¥%,d", quantity, price);
+                        String totalStr = String.format("¥%,d", total);
+                        
+                        // 右寄せのために空白を計算
+                        int lineLength = 32; // 32文字幅を想定
+                        int spacesNeeded = lineLength - quantityStr.length() - totalStr.length();
+                        if (spacesNeeded < 1) spacesNeeded = 1;
+                        
+                        String spaces = new String(new char[spacesNeeded]).replace('\0', ' ');
+                        printerManager.sendText(quantityStr + spaces + totalStr + "\n");
+                        
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to print order item", e);
+                    }
+                }
+            }
+            
+            printerManager.sendText("--------------------------------\n");
+            
+            // 合計
+            String subtotalLine = String.format("小計:%26s", String.format("¥%,d", subtotal));
+            printerManager.sendText(subtotalLine + "\n");
+            
+            String serviceLine = String.format("サービス料:%19s", String.format("¥%,d", serviceTax));
+            printerManager.sendText(serviceLine + "\n");
+            
+            if (roundingAdjustment != 0) {
+                String adjustLine = String.format("端数調整:%22s", String.format("%s¥%,d", 
+                    roundingAdjustment < 0 ? "-" : "+", 
+                    Math.abs(roundingAdjustment)));
+                printerManager.sendText(adjustLine + "\n");
+            }
+            
+            printerManager.sendText("================================\n");
+            
+            // 合計金額（太字）
+            printerManager.setCharacterBold(CharacterBold.BOLD_CANCEL);
+            String totalLine = String.format("合計金額:%22s", String.format("¥%,d", roundedTotal));
+            printerManager.sendText(totalLine + "\n");
+            printerManager.setCharacterBold(CharacterBold.BOLD_CANCEL);
+            
+            printerManager.sendText("================================\n");
+            
+            // フッター
+            printerManager.setAlignment(PrintAlignment.CENTER);
+            printerManager.sendText("\n※この伝票は会計時にご提示ください\n\n\n");
+            
+            // カット
+            printerManager.cutPaper(CuttingMethod.CUT_PARTIAL);
+            
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Failed to print order slip: " + e.getMessage(), e);
+        }
+    }
+
+
+
+
 }

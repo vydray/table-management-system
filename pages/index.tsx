@@ -6,6 +6,7 @@ import { OrderSection } from '../components/OrderSection'
 import { TableData, OrderItem, ProductCategories, ProductCategory, Product } from '../types'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../utils/storeContext'
+import { printer } from '../utils/bluetoothPrinter'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -139,6 +140,49 @@ export default function Home() {
     const roundedTotal = getRoundedTotal(originalTotal)
     return roundedTotal - originalTotal
   }
+
+  const printOrderSlip = async () => {
+    try {
+      // プリンター接続を確認
+      const isConnected = await printer.checkConnection();
+      if (!isConnected) {
+        alert('プリンターが接続されていません。設定画面で接続してください。');
+        return;
+      }
+
+      // 現在の時刻を取得
+      const now = new Date();
+      const timestamp = now.toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+
+      // 印刷データを準備
+      const orderData = {
+        tableName: currentTable,
+        guestName: formData.guestName || '（未入力）',
+        castName: formData.castName || '（未選択）',
+        elapsedTime: tables[currentTable]?.elapsed || '0分',
+        orderItems: orderItems,
+        subtotal: orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+        serviceTax: Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * systemSettings.serviceChargeRate),
+        roundedTotal: getRoundedTotal(getTotal()),
+        roundingAdjustment: getRoundingAdjustment(),
+        timestamp: timestamp
+      };
+
+      // 印刷実行
+      await printer.printOrderSlip(orderData);
+      alert('会計伝票を印刷しました');
+    } catch (error: any) {  // ← ここを修正
+      console.error('Print error:', error);
+      alert('印刷に失敗しました: ' + (error?.message || 'Unknown error'));  // ← ここを修正
+    }
+  };
 
   // 数字パッド用の関数
   const handleNumberClick = (num: string) => {
@@ -1215,17 +1259,37 @@ const Table = ({ tableId, data, scale, tableSize }: {
 >
   ×
 </button>
-          <h3>
-            📌 {currentTable} の操作
-            {modalMode === 'edit' && (
-              <span style={{
-                marginLeft: '20px',
-                fontSize: '18px',     // 16pxから18pxに変更
-                fontWeight: 'bold',   // normalからboldに変更
-                color: '#000'         // #666から#000（黒）に変更
-              }}>
-                滞在時間: {tables[currentTable]?.elapsed || '0分'}
-              </span>
+          <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              📌 {currentTable} の操作
+              {modalMode === 'edit' && (
+                <span style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: '#000'
+                }}>
+                  滞在時間: {tables[currentTable]?.elapsed || '0分'}
+                </span>
+              )}
+            </div>
+            {modalMode === 'edit' && orderItems.length > 0 && (
+              <button
+                onClick={printOrderSlip}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#2196f3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                🖨️ 会計伝票印刷
+              </button>
             )}
           </h3>
 

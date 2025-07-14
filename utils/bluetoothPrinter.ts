@@ -126,6 +126,49 @@ export class BluetoothPrinter {
     }
   }
 
+  // 会計伝票印刷（新規追加）
+  async printOrderSlip(orderData: {
+    tableName: string
+    guestName: string
+    castName: string
+    elapsedTime: string
+    orderItems: Array<{
+      name: string
+      cast?: string
+      quantity: number
+      price: number
+    }>
+    subtotal: number
+    serviceTax: number
+    roundedTotal: number
+    roundingAdjustment: number
+    timestamp: string
+  }): Promise<void> {
+    const plugin = this.getPlugin();
+    if (!plugin) {
+      throw new Error('SiiPrinter plugin not available');
+    }
+    
+    try {
+      await plugin.printOrderSlip({
+        tableName: orderData.tableName,
+        guestName: orderData.guestName,
+        castName: orderData.castName,
+        elapsedTime: orderData.elapsedTime,
+        orderItems: orderData.orderItems,
+        subtotal: orderData.subtotal,
+        serviceTax: orderData.serviceTax,
+        roundedTotal: orderData.roundedTotal,
+        roundingAdjustment: orderData.roundingAdjustment,
+        timestamp: orderData.timestamp
+      });
+      console.log('Order slip printed successfully');
+    } catch (error) {
+      console.error('Print order slip error:', error);
+      throw error;
+    }
+  }
+
   // テスト印刷
   async printTest(): Promise<void> {
     const plugin = this.getPlugin();
