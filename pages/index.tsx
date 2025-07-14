@@ -141,7 +141,8 @@ export default function Home() {
     return roundedTotal - originalTotal
   }
 
-  const printOrderSlip = async () => {
+ 
+    const printOrderSlip = async () => {
     try {
       // プリンター接続を確認
       const isConnected = await printer.checkConnection();
@@ -178,9 +179,14 @@ export default function Home() {
       // 印刷実行
       await printer.printOrderSlip(orderData);
       alert('会計伝票を印刷しました');
-    } catch (error: any) {  // ← ここを修正
+    } catch (error) {
       console.error('Print error:', error);
-      alert('印刷に失敗しました: ' + (error?.message || 'Unknown error'));  // ← ここを修正
+      // エラーオブジェクトの型チェック
+      if (error instanceof Error) {
+        alert('印刷に失敗しました: ' + error.message);
+      } else {
+        alert('印刷に失敗しました: Unknown error');
+      }
     }
   };
 
