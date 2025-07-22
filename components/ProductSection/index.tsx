@@ -28,7 +28,8 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   const [localSelectedProduct, setLocalSelectedProduct] = useState<{ name: string; price: number; needsCast: boolean } | null>(null)
   const [castOffset, setCastOffset] = useState(0)
   
-  // キャスト選択カラムのrefを作成
+  // 各カラムのrefを作成
+  const productColumnRef = useRef<HTMLDivElement>(null)
   const castColumnRef = useRef<HTMLDivElement>(null)
   
   // カテゴリーが変更されたらキャスト選択をリセット
@@ -45,17 +46,15 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   
   // 商品選択時にキャスト選択の位置を調整
   useEffect(() => {
-    if (localSelectedProduct && localSelectedProduct.needsCast && castColumnRef.current) {
-      // 現在のスクロール位置を取得
-      const scrollTop = castColumnRef.current.scrollTop
+    if (localSelectedProduct && localSelectedProduct.needsCast && productColumnRef.current && castColumnRef.current) {
+      // 商品選択カラムの現在のスクロール位置を取得
+      const productScrollTop = productColumnRef.current.scrollTop
       
-      // スクロールしていない場合は上部に表示
-      if (scrollTop < 50) {
-        setCastOffset(0)
-      } else {
-        // スクロールしている場合は、現在の位置の少し下に表示
-        setCastOffset(scrollTop + 50)
-      }
+      // キャスト選択カラムをその位置までスクロール
+      castColumnRef.current.scrollTop = productScrollTop
+      
+      // オフセットも同じ位置に設定
+      setCastOffset(productScrollTop)
     }
   }, [localSelectedProduct])
 
@@ -106,7 +105,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           />
         </div>
         
-        <div className="product-column">
+        <div className="product-column" ref={productColumnRef}>
           {selectedCategory && (
             <ProductList
               products={productCategories[selectedCategory]}
