@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { CategoryList } from './CategoryList'
 import { ProductList } from './ProductList'
 import { CastSelector } from './CastSelector'
@@ -26,6 +26,12 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   onAddProduct
 }) => {
   const [localSelectedProduct, setLocalSelectedProduct] = useState<{ name: string; price: number; needsCast: boolean } | null>(null)
+  const [productOffset, setProductOffset] = useState(0)
+  const [castOffset, setCastOffset] = useState(0)
+  
+  // 各カラムのrefを作成
+  const productColumnRef = useRef<HTMLDivElement>(null)
+  const castColumnRef = useRef<HTMLDivElement>(null)
   
   // カテゴリーが変更されたらキャスト選択をリセット
   useEffect(() => {
@@ -38,6 +44,36 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
       setLocalSelectedProduct(selectedProduct)
     }
   }, [selectedProduct])
+  
+  // カテゴリー選択時に商品リストの位置を調整
+  useEffect(() => {
+    if (selectedCategory && productColumnRef.current) {
+      // 現在のスクロール位置を取得
+      const scrollTop = productColumnRef.current.scrollTop
+      // ビューポートの高さを取得
+      const viewportHeight = productColumnRef.current.clientHeight
+      
+      // 見えている範囲の上から20%の位置に表示
+      const targetOffset = scrollTop + (viewportHeight * 0.2)
+      
+      setProductOffset(Math.max(0, targetOffset))
+    }
+  }, [selectedCategory])
+  
+  // 商品選択時にキャスト選択の位置を調整
+  useEffect(() => {
+    if (localSelectedProduct && localSelectedProduct.needsCast && castColumnRef.current) {
+      // 現在のスクロール位置を取得
+      const scrollTop = castColumnRef.current.scrollTop
+      // ビューポートの高さを取得
+      const viewportHeight = castColumnRef.current.clientHeight
+      
+      // 見えている範囲の上から20%の位置に表示
+      const targetOffset = scrollTop + (viewportHeight * 0.2)
+      
+      setCastOffset(Math.max(0, targetOffset))
+    }
+  }, [localSelectedProduct])
 
   const handleProductSelect = (productName: string, productData: ProductItem) => {
     if (productData.needsCast) {
@@ -65,24 +101,6 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
 
     return castList
   }
-  
-  // 選択されたカテゴリーのインデックスを取得
-  const getCategoryOffset = () => {
-    const categories = Object.keys(productCategories)
-    const index = categories.indexOf(selectedCategory)
-    // カテゴリータイトル（40px）+ アイテムの高さ（50px）× インデックス
-    return index >= 0 ? 40 + (index * 50) : 0
-  }
-  
-  // 選択された商品のインデックスを取得
-  const getProductOffset = () => {
-    if (!selectedCategory || !localSelectedProduct) return 0
-    
-    const products = Object.keys(productCategories[selectedCategory])
-    const index = products.findIndex(name => name === localSelectedProduct.name)
-    // カテゴリーのオフセット + 商品タイトル（40px）+ アイテムの高さ（50px）× インデックス
-    return index >= 0 ? getCategoryOffset() + 40 + (index * 50) : getCategoryOffset()
-  }
 
   return (
     <div className="left-section">
@@ -104,10 +122,10 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           />
         </div>
         
-        <div className="product-column">
+        <div className="product-column" ref={productColumnRef}>
           {selectedCategory && (
             <div style={{ 
-              marginTop: `${getCategoryOffset()}px`,
+              marginTop: `${productOffset}px`,
               transition: 'margin-top 0.3s ease'
             }}>
               <ProductList
@@ -119,10 +137,10 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           )}
         </div>
         
-        <div className="cast-column">
+        <div className="cast-column" ref={castColumnRef}>
           {localSelectedProduct && localSelectedProduct.needsCast && (
             <div style={{ 
-              marginTop: `${getProductOffset()}px`,
+              marginTop: `${castOffset}px`,
               transition: 'margin-top 0.3s ease'
             }}>
               <CastSelector
@@ -165,6 +183,28 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           min-height: 100%;
           /* スクロールバーを常に表示（位置確認のため） */
           overflow-y: scroll;
+        }
+        
+        /* スクロールバーのスタイル */
+        .product-column::-webkit-scrollbar,
+        .cast-column::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        .product-column::-webkit-scrollbar-track,
+        .cast-column::-webkit-scrollbar-track {
+          background: #f1f1f1;
+        }
+        
+        .product-column::-webkit-scrollbar-thumb,
+        .cast-column::-webkit-scrollbar-thumb {
+          background: #888;
+          border-radius: 4px;
+        }
+        
+        .product-column::-webkit-scrollbar-thumb:hover,
+        .cast-column::-webkit-scrollbar-thumb:hover {
+          background: #555;
         }
         
         /* Androidタブレット用の調整 */
