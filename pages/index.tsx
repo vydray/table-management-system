@@ -24,6 +24,7 @@ const supabase = createClient(
 // チェックアウト結果の型定義
 interface CheckoutResult {
   receiptNumber?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
