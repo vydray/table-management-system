@@ -13,6 +13,7 @@ export default function SystemSettings() {
   const [serviceFeeRate, setServiceFeeRate] = useState(15)
   const [roundingType, setRoundingType] = useState('切り上げ')
   const [roundingUnit, setRoundingUnit] = useState(100)
+  const [registerAmount, setRegisterAmount] = useState(50000) // レジ金追加
   const [loading, setLoading] = useState(true)
 
   // すべての設定を読み込む
@@ -31,7 +32,8 @@ export default function SystemSettings() {
           'tax_rate',
           'service_fee_rate',
           'rounding_type',
-          'rounding_unit'
+          'rounding_unit',
+          'register_amount' // レジ金追加
         ])
 
       if (data) {
@@ -51,6 +53,9 @@ export default function SystemSettings() {
               break
             case 'rounding_unit':
               setRoundingUnit(Number(setting.setting_value))
+              break
+            case 'register_amount':
+              setRegisterAmount(Number(setting.setting_value))
               break
           }
         })
@@ -72,7 +77,8 @@ export default function SystemSettings() {
         { setting_key: 'tax_rate', setting_value: taxRate.toString() },
         { setting_key: 'service_fee_rate', setting_value: serviceFeeRate.toString() },
         { setting_key: 'rounding_type', setting_value: roundingType },
-        { setting_key: 'rounding_unit', setting_value: roundingUnit.toString() }
+        { setting_key: 'rounding_unit', setting_value: roundingUnit.toString() },
+        { setting_key: 'register_amount', setting_value: registerAmount.toString() } // レジ金追加
       ]
 
       // 各設定を個別にupsert
@@ -105,20 +111,20 @@ export default function SystemSettings() {
   }
 
   return (
-  <div style={{
-    height: '100%',
-    overflowY: 'auto',
-    paddingBottom: '50px',
-    WebkitOverflowScrolling: 'touch', // iOSスムーズスクロール
-    msOverflowStyle: '-ms-autohiding-scrollbar' // IE/Edge
-  }}>
-    <div style={{ marginBottom: '30px' }}>
-      <label style={{ 
-        display: 'block',
-        fontSize: '16px',
-        fontWeight: 'bold',
-        marginBottom: '10px'
-      }}>
+    <div style={{
+      height: '100%',
+      overflowY: 'auto',
+      paddingBottom: '50px',
+      WebkitOverflowScrolling: 'touch',
+      msOverflowStyle: '-ms-autohiding-scrollbar'
+    }}>
+      <div style={{ marginBottom: '30px' }}>
+        <label style={{ 
+          display: 'block',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          marginBottom: '10px'
+        }}>
           消費税率
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -261,6 +267,40 @@ export default function SystemSettings() {
           margin: '5px 0'
         }}>
           例：5時設定の場合、朝4:59までは前日、5:00以降は当日として集計されます
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <label style={{ 
+          display: 'block',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          marginBottom: '10px'
+        }}>
+          レジ金
+        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <input
+            type="number"
+            value={registerAmount}
+            onChange={(e) => setRegisterAmount(Number(e.target.value))}
+            step="1000"
+            style={{
+              padding: '10px',
+              fontSize: '16px',
+              border: '1px solid #ddd',
+              borderRadius: '5px',
+              width: '150px'
+            }}
+          />
+          <span style={{ fontSize: '16px' }}>円</span>
+        </div>
+        <p style={{ 
+          color: '#666',
+          fontSize: '13px',
+          margin: '5px 0'
+        }}>
+          レジに常時保管する釣り銭準備金の金額
         </p>
       </div>
 
