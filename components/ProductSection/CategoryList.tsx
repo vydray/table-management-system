@@ -1,26 +1,28 @@
 import React from 'react'
+import { ProductItem } from '../../types'
 
-interface CategoryListProps {
-  categories: string[]
-  selectedCategory: string
-  onSelectCategory: (category: string) => void
+interface ProductListProps {
+  products: { [subcategory: string]: ProductItem }
+  selectedProduct: { name: string; price: number; needsCast: boolean } | null
+  onSelectProduct: (productName: string, productData: ProductItem) => void
 }
 
-export const CategoryList: React.FC<CategoryListProps> = ({
-  categories,
-  selectedCategory,
-  onSelectCategory
+export const ProductList: React.FC<ProductListProps> = ({
+  products,
+  selectedProduct,
+  onSelectProduct
 }) => {
   return (
-    <div className="main-categories">
-      <div className="category-title">カテゴリー</div>
-      {categories.map(category => (
+    <div className="sub-categories">
+      <div className="category-title">商品を選択</div>
+      {Object.entries(products).map(([productName, productData]) => (
         <div
-          key={category}
-          className={`main-category-item ${selectedCategory === category ? 'selected' : ''}`}
-          onClick={() => onSelectCategory(category)}
+          key={productName}
+          className={`sub-category-item ${selectedProduct?.name === productName ? 'selected' : ''}`}
+          onClick={() => onSelectProduct(productName, productData)}
         >
-          {category}
+          <span>{productName}</span>
+          <span className="price">¥{productData.price.toLocaleString()}</span>
         </div>
       ))}
     </div>
