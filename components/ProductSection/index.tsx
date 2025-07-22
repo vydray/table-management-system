@@ -26,11 +26,9 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   onAddProduct
 }) => {
   const [localSelectedProduct, setLocalSelectedProduct] = useState<{ name: string; price: number; needsCast: boolean } | null>(null)
-  const [productOffset, setProductOffset] = useState(0)
   const [castOffset, setCastOffset] = useState(0)
   
-  // 各カラムのrefを作成
-  const productColumnRef = useRef<HTMLDivElement>(null)
+  // キャスト選択カラムのrefを作成
   const castColumnRef = useRef<HTMLDivElement>(null)
   
   // カテゴリーが変更されたらキャスト選択をリセット
@@ -45,33 +43,19 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
     }
   }, [selectedProduct])
   
-  // カテゴリー選択時に商品リストの位置を調整
-  useEffect(() => {
-    if (selectedCategory && productColumnRef.current) {
-      // 現在のスクロール位置を取得
-      const scrollTop = productColumnRef.current.scrollTop
-      // ビューポートの高さを取得
-      const viewportHeight = productColumnRef.current.clientHeight
-      
-      // 見えている範囲の上から20%の位置に表示
-      const targetOffset = scrollTop + (viewportHeight * 0.2)
-      
-      setProductOffset(Math.max(0, targetOffset))
-    }
-  }, [selectedCategory])
-  
   // 商品選択時にキャスト選択の位置を調整
   useEffect(() => {
     if (localSelectedProduct && localSelectedProduct.needsCast && castColumnRef.current) {
       // 現在のスクロール位置を取得
       const scrollTop = castColumnRef.current.scrollTop
-      // ビューポートの高さを取得
-      const viewportHeight = castColumnRef.current.clientHeight
       
-      // 見えている範囲の上から20%の位置に表示
-      const targetOffset = scrollTop + (viewportHeight * 0.2)
-      
-      setCastOffset(Math.max(0, targetOffset))
+      // スクロールしていない場合は上部に表示
+      if (scrollTop < 50) {
+        setCastOffset(0)
+      } else {
+        // スクロールしている場合は、現在の位置の少し下に表示
+        setCastOffset(scrollTop + 50)
+      }
     }
   }, [localSelectedProduct])
 
@@ -122,18 +106,13 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           />
         </div>
         
-        <div className="product-column" ref={productColumnRef}>
+        <div className="product-column">
           {selectedCategory && (
-            <div style={{ 
-              marginTop: `${productOffset}px`,
-              transition: 'margin-top 0.3s ease'
-            }}>
-              <ProductList
-                products={productCategories[selectedCategory]}
-                selectedProduct={localSelectedProduct}
-                onSelectProduct={handleProductSelect}
-              />
-            </div>
+            <ProductList
+              products={productCategories[selectedCategory]}
+              selectedProduct={localSelectedProduct}
+              onSelectProduct={handleProductSelect}
+            />
           )}
         </div>
         
