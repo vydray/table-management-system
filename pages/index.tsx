@@ -106,7 +106,6 @@ export default function Home() {
   })
 
   // 長押し用のref
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const isLongPress = useRef(false)
 
   // ローディングと領収書確認用の状態
