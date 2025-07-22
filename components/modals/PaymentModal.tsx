@@ -69,7 +69,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
           width: '100%',
           height: '100%',
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 10000
+          zIndex: 9998 
         }}
         onClick={onClose}
       />
