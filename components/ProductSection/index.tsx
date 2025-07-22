@@ -137,27 +137,31 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
         .product-column,
         .cast-column {
           min-height: 100%;
-          /* スクロールバーを常に表示（位置確認のため） */
-          overflow-y: scroll;
+          /* スクロールバーは必要な時のみ表示 */
+          overflow-y: auto;
         }
         
         /* スクロールバーのスタイル */
+        .category-column::-webkit-scrollbar,
         .product-column::-webkit-scrollbar,
         .cast-column::-webkit-scrollbar {
-          width: 8px;
+          width: 6px;
         }
         
+        .category-column::-webkit-scrollbar-track,
         .product-column::-webkit-scrollbar-track,
         .cast-column::-webkit-scrollbar-track {
           background: #f1f1f1;
         }
         
+        .category-column::-webkit-scrollbar-thumb,
         .product-column::-webkit-scrollbar-thumb,
         .cast-column::-webkit-scrollbar-thumb {
           background: #888;
           border-radius: 4px;
         }
         
+        .category-column::-webkit-scrollbar-thumb:hover,
         .product-column::-webkit-scrollbar-thumb:hover,
         .cast-column::-webkit-scrollbar-thumb:hover {
           background: #555;
