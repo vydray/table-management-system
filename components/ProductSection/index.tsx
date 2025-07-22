@@ -166,6 +166,13 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           max-height: none !important;
         }
         
+        /* cast-listのスクロールも無効化 */
+        :global(.cast-list) {
+          max-height: none !important;
+          overflow: visible !important;
+          height: auto !important;
+        }
+        
         /* スクロールバーのスタイル（左セクション全体用） */
         .left-section::-webkit-scrollbar {
           width: 8px;
