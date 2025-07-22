@@ -27,7 +27,8 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
 }) => {
   const [localSelectedProduct, setLocalSelectedProduct] = useState<{ name: string; price: number; needsCast: boolean } | null>(null)
   
-  // キャスト選択カラムのrefを作成
+  // 左セクション全体のrefを作成
+  const leftSectionRef = useRef<HTMLDivElement>(null)
   const castColumnRef = useRef<HTMLDivElement>(null)
   
   // カテゴリーが変更されたらキャスト選択をリセット
@@ -47,12 +48,32 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
     if (productData.needsCast) {
       setLocalSelectedProduct({ name: productName, price: productData.price, needsCast: true })
       
-      // キャスト選択エリアを一番上にスクロール
+      // キャスト選択エリアを見やすい位置にスクロール
       setTimeout(() => {
-        if (castColumnRef.current) {
-          castColumnRef.current.scrollTop = 0
+        if (castColumnRef.current && leftSectionRef.current) {
+          // キャスト選択エリアの位置を取得
+          const castRect = castColumnRef.current.getBoundingClientRect()
+          const leftSectionRect = leftSectionRef.current.getBoundingClientRect()
+          
+          // キャスト選択エリアの相対位置を計算
+          const castOffsetTop = castColumnRef.current.offsetTop
+          
+          // 現在のスクロール位置を取得
+          const currentScroll = leftSectionRef.current.scrollTop
+          
+          // ビューポートの高さを取得
+          const viewportHeight = leftSectionRef.current.clientHeight
+          
+          // キャスト選択を画面の上から30%の位置に表示
+          const targetScroll = castOffsetTop - (viewportHeight * 0.3)
+          
+          // スムーズにスクロール
+          leftSectionRef.current.scrollTo({
+            top: Math.max(0, targetScroll),
+            behavior: 'smooth'
+          })
         }
-      }, 0)
+      }, 100) // DOMが更新されるのを待つ
     } else {
       onAddProduct(productName, productData.price, false)
     }
@@ -78,7 +99,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   }
 
   return (
-    <div className="left-section">
+    <div className="left-section" ref={leftSectionRef}>
       <div className="category-section-wrapper">
         <div className="category-section">
           <div className="category-column">
