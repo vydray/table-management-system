@@ -169,29 +169,61 @@ export default function ReceiptDetail({ selectedReceipt, orderItems, onDelete }:
 
   const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0)
 
+  // 伝票印刷（ブラウザ印刷）
+  const printSlip = async () => {
+    if (!selectedReceipt) return
+
+    try {
+      // プリンター接続を確認
+      const isConnected = await printer.checkConnection()
+      if (!isConnected) {
+        if (confirm('プリンターが接続されていません。設定画面で接続しますか？')) {
+          router.push('/settings?tab=receipt')
+        }
+        return
+      }
+
+      // 印刷データを準備
+      const orderData = {
+        tableName: selectedReceipt.table_number,
+        guestName: selectedReceipt.guest_name || '（未入力）',
+        castName: '', // 伝票にはキャスト情報がない場合
+        elapsedTime: '',
+        orderItems: orderItems.map(item => ({
+          name: item.product_name,
+          cast: item.cast_name,
+          quantity: item.quantity,
+          price: item.unit_price
+        })),
+        subtotal: orderItems.reduce((sum, item) => sum + item.subtotal, 0),
+        serviceTax: 0, // 計算が必要な場合は追加
+        roundedTotal: selectedReceipt.total_incl_tax,
+        roundingAdjustment: 0,
+        timestamp: new Date(selectedReceipt.checkout_datetime).toLocaleString('ja-JP', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        })
+      }
+
+      // 印刷実行
+      await printer.printOrderSlip(orderData)
+      alert('会計伝票を印刷しました')
+    } catch (error) {
+      console.error('Print error:', error)
+      if (error instanceof Error) {
+        alert('印刷に失敗しました: ' + error.message)
+      } else {
+        alert('印刷に失敗しました')
+      }
+    }
+  }
+
   return (
     <>
-      <style jsx>{`
-        @media print {
-          * {
-            visibility: hidden;
-          }
-          .receipt-content, .receipt-content * {
-            visibility: visible;
-          }
-          .receipt-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 80mm;
-            padding: 10mm;
-            background: white;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
 
       <div style={{ 
         height: '100%',
@@ -306,7 +338,7 @@ export default function ReceiptDetail({ selectedReceipt, orderItems, onDelete }:
           {!selectedReceipt.deleted_at && (
             <>
               <button
-                onClick={() => window.print()}
+                onClick={printSlip}
                 style={{
                   padding: '12px 32px',
                   backgroundColor: '#2196F3',
