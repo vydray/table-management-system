@@ -821,14 +821,18 @@ const completeCheckout = async () => {
         .single();
       
       // デフォルトの但し書きを取得
-      let defaultReceiptNote = 'お品代として';
-      if (receiptSettings?.receipt_templates) {
-        const defaultTemplate = receiptSettings.receipt_templates.find((t: any) => t.is_default);
-        if (defaultTemplate) {
-          defaultReceiptNote = defaultTemplate.text;
-        }
-      }
-      
+let defaultReceiptNote = 'お品代として';
+if (receiptSettings?.receipt_templates) {
+  const templates = receiptSettings.receipt_templates as Array<{
+    name: string;
+    text: string;
+    is_default: boolean;
+  }>;
+  const defaultTemplate = templates.find((t) => t.is_default);
+  if (defaultTemplate) {
+    defaultReceiptNote = defaultTemplate.text;
+  }
+}
       const receiptNote = prompt('但し書きを入力してください:', defaultReceiptNote) || defaultReceiptNote;
       
       try {
