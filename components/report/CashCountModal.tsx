@@ -81,6 +81,7 @@ export default function CashCountModal({
     if (isOpen && businessDate) {
       loadCashCount()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, businessDate])
 
   // 計算結果

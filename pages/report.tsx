@@ -309,7 +309,7 @@ export default function Report() {
   const loadMonthlyTargets = async () => {
     try {
       const storeId = getCurrentStoreId()
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('monthly_targets')
         .select('*')
         .eq('year', selectedYear)
