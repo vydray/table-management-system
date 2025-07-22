@@ -19,14 +19,52 @@ export default function Receipts() {
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null)
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [businessDayStartHour, setBusinessDayStartHour] = useState(5) // デフォルト5時
+
+  // 営業日切り替え時間を取得
+  const loadBusinessDayStartHour = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+      const { data } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('setting_key', 'business_day_start_hour')
+        .eq('store_id', storeId)
+        .single()
+      
+      if (data) {
+        setBusinessDayStartHour(parseInt(data.setting_value))
+      }
+    } catch (error) {
+      console.error('Error loading business day start hour:', error)
+    }
+  }
+
+  // 営業日の開始・終了時刻を計算
+  const getBusinessDayRange = (date: string) => {
+    const targetDate = new Date(date)
+    
+    // 開始時刻（当日の営業開始時間）
+    const start = new Date(targetDate)
+    start.setHours(businessDayStartHour, 0, 0, 0)
+    
+    // 終了時刻（翌日の営業開始時間）
+    const end = new Date(targetDate)
+    end.setDate(end.getDate() + 1)
+    end.setHours(businessDayStartHour, 0, 0, 0)
+    
+    return { 
+      start: start.toISOString(), 
+      end: end.toISOString() 
+    }
+  }
 
   // 伝票一覧を読み込む
   const loadReceipts = async () => {
     setLoading(true)
     try {
       const storeId = getCurrentStoreId()
-      const startOfDay = `${selectedDate} 00:00:00`
-      const endOfDay = `${selectedDate} 23:59:59`
+      const { start, end } = getBusinessDayRange(selectedDate)
 
       const { data, error } = await supabase
         .from('orders')
@@ -43,8 +81,8 @@ export default function Receipts() {
         `)
         .eq('store_id', storeId)
         .not('checkout_datetime', 'is', null)
-        .gte('checkout_datetime', startOfDay)
-        .lte('checkout_datetime', endOfDay)
+        .gte('checkout_datetime', start)
+        .lt('checkout_datetime', end)
         .order('checkout_datetime', { ascending: false })
 
       if (error) throw error
@@ -102,12 +140,19 @@ export default function Receipts() {
     }
   }
 
+  // 初期読み込み
+  useEffect(() => {
+    loadBusinessDayStartHour()
+  }, [])
+
   // 日付変更時
   useEffect(() => {
-    loadReceipts()
-  }, [selectedDate])
+    if (businessDayStartHour !== null) {
+      loadReceipts()
+    }
+  }, [selectedDate, businessDayStartHour])
 
-// 伝票選択時
+  // 伝票選択時
   useEffect(() => {
     if (selectedReceipt) {
       loadOrderItems(selectedReceipt.id)
@@ -130,108 +175,91 @@ export default function Receipts() {
         backgroundColor: '#f5f5f5',
         overflow: 'hidden',
         position: 'relative'
-     }}>
+      }}>
         <div style={{
           display: 'flex',
           width: '100%',
           height: '100%'
         }}>
-          {/* 左サイドバー */}
-          <div style={{
-            width: '350px',
-            backgroundColor: '#fff',
+          {/* 左側：伝票一覧 */}
+          <div style={{ 
+            width: '400px',
             borderRight: '1px solid #e0e0e0',
+            backgroundColor: '#fff',
             display: 'flex',
-            flexDirection: 'column',
-            height: '100%'
+            flexDirection: 'column'
           }}>
-            {/* ヘッダー */}
-            <div style={{
+            <div style={{ 
               padding: '20px',
               borderBottom: '1px solid #e0e0e0',
-              background: 'linear-gradient(to bottom, #ffffff, #f8f8f8)'
+              backgroundColor: '#f9f9f9'
             }}>
+              <h2 style={{ margin: 0, marginBottom: '15px', fontSize: '20px' }}>
+                📋 伝票履歴
+              </h2>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  fontSize: '16px',
+                  border: '1px solid #ddd',
+                  borderRadius: '5px',
+                  backgroundColor: 'white'
+                }}
+              />
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '20px'
+                marginTop: '5px',
+                fontSize: '12px',
+                color: '#666'
               }}>
-                <button
-                  onClick={() => router.push('/')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '24px',
-                    cursor: 'pointer',
-                    marginRight: '15px',
-                    padding: '8px',
-                    borderRadius: '8px',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  ←
-                </button>
-                <h1 style={{ 
-                  margin: 0, 
-                  fontSize: '24px',
-                  fontWeight: '600',
-                  color: '#333'
-                }}>
-                  📋 伝票管理
-                </h1>
-              </div>
-
-              {/* 日付選択 */}
-              <div>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    fontSize: '16px',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '10px',
-                    outline: 'none',
-                    transition: 'border-color 0.2s',
-                    backgroundColor: '#fff',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#ff9800'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
-                />
+                ※ 営業日（{businessDayStartHour}時〜翌{businessDayStartHour}時）の伝票を表示
               </div>
             </div>
-
-            {/* 伝票リスト */}
-            <ReceiptList 
+            
+            <ReceiptList
               receipts={receipts}
               selectedReceipt={selectedReceipt}
-              loading={loading}
               onSelectReceipt={setSelectedReceipt}
+              loading={loading}
             />
           </div>
 
-          {/* 右側詳細 */}
-          <div style={{
+          {/* 右側：伝票詳細 */}
+          <div style={{ 
             flex: 1,
             backgroundColor: '#fff',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
             overflow: 'hidden'
           }}>
-            <ReceiptDetail 
+            <ReceiptDetail
               selectedReceipt={selectedReceipt}
               orderItems={orderItems}
               onDelete={deleteReceipt}
             />
           </div>
         </div>
+
+        {/* 戻るボタン */}
+        <button
+          onClick={() => router.push('/')}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            padding: '10px 20px',
+            backgroundColor: '#666',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            zIndex: 1000
+          }}
+        >
+          ホームに戻る
+        </button>
       </div>
     </>
   )
