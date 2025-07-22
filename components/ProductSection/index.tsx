@@ -26,10 +26,8 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   onAddProduct
 }) => {
   const [localSelectedProduct, setLocalSelectedProduct] = useState<{ name: string; price: number; needsCast: boolean } | null>(null)
-  const [castOffset, setCastOffset] = useState(0)
   
-  // 各カラムのrefを作成
-  const productColumnRef = useRef<HTMLDivElement>(null)
+  // キャスト選択カラムのrefを作成
   const castColumnRef = useRef<HTMLDivElement>(null)
   
   // カテゴリーが変更されたらキャスト選択をリセット
@@ -43,24 +41,18 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
       setLocalSelectedProduct(selectedProduct)
     }
   }, [selectedProduct])
-  
-  // 商品選択時にキャスト選択の位置を調整
-  useEffect(() => {
-    if (localSelectedProduct && localSelectedProduct.needsCast && productColumnRef.current && castColumnRef.current) {
-      // 商品選択カラムの現在のスクロール位置を取得
-      const productScrollTop = productColumnRef.current.scrollTop
-      
-      // キャスト選択カラムをその位置までスクロール
-      castColumnRef.current.scrollTop = productScrollTop
-      
-      // オフセットも同じ位置に設定
-      setCastOffset(productScrollTop)
-    }
-  }, [localSelectedProduct])
 
+  // 商品選択時にキャスト選択の位置を調整
   const handleProductSelect = (productName: string, productData: ProductItem) => {
     if (productData.needsCast) {
       setLocalSelectedProduct({ name: productName, price: productData.price, needsCast: true })
+      
+      // キャスト選択エリアを一番上にスクロール
+      setTimeout(() => {
+        if (castColumnRef.current) {
+          castColumnRef.current.scrollTop = 0
+        }
+      }, 0)
     } else {
       onAddProduct(productName, productData.price, false)
     }
@@ -87,15 +79,6 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
 
   return (
     <div className="left-section">
-      <div className="search-section">
-        <input
-          type="text"
-          placeholder="商品検索..."
-          className="search-input"
-        />
-        <button className="search-button">検索</button>
-      </div>
-      
       <div className="category-section">
         <div className="category-column">
           <CategoryList
@@ -105,7 +88,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           />
         </div>
         
-        <div className="product-column" ref={productColumnRef}>
+        <div className="product-column">
           {selectedCategory && (
             <ProductList
               products={productCategories[selectedCategory]}
@@ -117,17 +100,12 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
         
         <div className="cast-column" ref={castColumnRef}>
           {localSelectedProduct && localSelectedProduct.needsCast && (
-            <div style={{ 
-              marginTop: `${castOffset}px`,
-              transition: 'margin-top 0.3s ease'
-            }}>
-              <CastSelector
-                castList={getSortedCastList()}
-                selectedProduct={localSelectedProduct}
-                onSelectCast={handleCastSelect}
-                currentOshi={currentOshi}
-              />
-            </div>
+            <CastSelector
+              castList={getSortedCastList()}
+              selectedProduct={localSelectedProduct}
+              onSelectCast={handleCastSelect}
+              currentOshi={currentOshi}
+            />
           )}
         </div>
       </div>
