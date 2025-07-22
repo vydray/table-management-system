@@ -799,7 +799,7 @@ const completeCheckout = async () => {
     
     // 結果を保存して領収書確認モーダルを表示
     setCheckoutResult(result)
-    setIsProcessingCheckout(false)
+    // ローディングは消さない（領収書確認中も継続）
     setShowReceiptConfirm(true)
     
   } catch (error) {
@@ -812,13 +812,19 @@ const completeCheckout = async () => {
 // 領収書印刷処理（別関数として定義）
 const handleReceiptPrint = async () => {
   setShowReceiptConfirm(false)
-  setIsProcessingCheckout(true)
+  // ローディングは既に表示されているはず
   
   try {
     const storeId = getCurrentStoreId()
     
     // 宛名と但し書きの入力
     const receiptTo = prompt('宛名を入力してください（空欄可）:', formData.guestName || '') || ''
+    
+    // キャンセルされた場合
+    if (receiptTo === null) {
+      finishCheckout()
+      return
+    }
     
     // 設定から但し書きテンプレートを取得
     const { data: receiptSettings } = await supabase
@@ -925,13 +931,16 @@ const handleReceiptPrint = async () => {
 
 // 会計処理の完了（共通処理）
 const finishCheckout = () => {
+  // ローディングを終了
+  setIsProcessingCheckout(false)
+  
   // モーダルを閉じる
   document.body.classList.remove('modal-open')
   setShowPaymentModal(false)
   setOrderItems([])
   setShowModal(false)
-  setIsProcessingCheckout(false)
   setCheckoutResult(null)
+  setShowReceiptConfirm(false)
   
   loadData()
 }
