@@ -111,7 +111,12 @@ export default function Home() {
   // ローディングと領収書確認用の状態
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false)
   const [showReceiptConfirm, setShowReceiptConfirm] = useState(false)
-  const [checkoutResult, setCheckoutResult] = useState<any>(null)
+  interface CheckoutResult {
+  receiptNumber?: string;
+  [key: string]: any;
+}
+
+const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null)
 
   // 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
   const getJapanTimeString = (date: Date): string => {
