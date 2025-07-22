@@ -21,6 +21,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// チェックアウト結果の型定義
+interface CheckoutResult {
+  receiptNumber?: string;
+  [key: string]: any;
+}
+
 // テーブルの位置情報（元の固定位置）
 const tablePositions = {
   'A1': { top: 607, left: 723 },
@@ -51,7 +57,6 @@ export default function Home() {
   const [castList, setCastList] = useState<string[]>([])
   const [currentTable, setCurrentTable] = useState('')
   const [showModal, setShowModal] = useState(false)
-  const [showMoveModal, setShowMoveModal] = useState(false)
   const [modalMode, setModalMode] = useState<'new' | 'edit'>('new')
   const [moveMode, setMoveMode] = useState(false)
   const [moveFromTable, setMoveFromTable] = useState('')
@@ -111,12 +116,7 @@ export default function Home() {
   // ローディングと領収書確認用の状態
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false)
   const [showReceiptConfirm, setShowReceiptConfirm] = useState(false)
-  interface CheckoutResult {
-  receiptNumber?: string;
-  [key: string]: any;
-}
-
-const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null)
+  const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null)
 
   // 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
   const getJapanTimeString = (date: Date): string => {
@@ -167,7 +167,9 @@ const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null
       // プリンター接続を確認
       const isConnected = await printer.checkConnection();
       if (!isConnected) {
-        alert('プリンターが接続されていません。設定画面で接続してください。');
+        if (confirm('プリンターが接続されていません。設定画面で接続しますか？')) {
+          router.push('/settings?tab=receipt');
+        }
         return;
       }
 
@@ -498,6 +500,7 @@ const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null
       clearInterval(timeInterval)
       clearInterval(dataInterval)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ビューポート高さの動的設定（Android対応）
@@ -532,6 +535,12 @@ const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null
           const details = document.querySelector('#modal #details') as HTMLElement;
           if (details) {
             details.scrollTop = 0;
+          }
+          
+          // モーダル内のフォーカス管理
+          const firstInput = target.querySelector('input, select') as HTMLElement;
+          if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
           }
         }
       });
@@ -1145,13 +1154,12 @@ const finishCheckout = () => {
       </div>
 
       {/* モーダルオーバーレイ */}
-      {(showModal || showMoveModal) && (
+      {showModal && (
   <div 
     id="modal-overlay" 
     onClick={() => {
       document.body.classList.remove('modal-open')
       setShowModal(false)
-      setShowMoveModal(false)
     }} 
   />
 )}
@@ -1370,13 +1378,6 @@ const finishCheckout = () => {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* 席移動モーダル（既存のまま） */}
-      {showMoveModal && (
-        <div id="move-modal">
-          {/* 既存の内容をそのまま */}
         </div>
       )}
 
