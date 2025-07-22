@@ -52,14 +52,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
       setTimeout(() => {
         if (castColumnRef.current && leftSectionRef.current) {
           // キャスト選択エリアの位置を取得
-          const castRect = castColumnRef.current.getBoundingClientRect()
-          const leftSectionRect = leftSectionRef.current.getBoundingClientRect()
-          
-          // キャスト選択エリアの相対位置を計算
           const castOffsetTop = castColumnRef.current.offsetTop
-          
-          // 現在のスクロール位置を取得
-          const currentScroll = leftSectionRef.current.scrollTop
           
           // ビューポートの高さを取得
           const viewportHeight = leftSectionRef.current.clientHeight
