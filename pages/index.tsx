@@ -23,9 +23,12 @@ const supabase = createClient(
 
 // チェックアウト結果の型定義
 interface CheckoutResult {
-  receiptNumber?: string;
+  receiptNumber?: string
+  orderId?: number
+  status?: string
+  message?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
+  data?: Record<string, any>
 }
 
 // テーブルの位置情報（元の固定位置）
@@ -495,7 +498,7 @@ export default function Home() {
     }
   }
 
-  // 初期化
+  // 初期化（統合版）
   useEffect(() => {
     // ログインチェック
     const isLoggedIn = localStorage.getItem('isLoggedIn')
