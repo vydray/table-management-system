@@ -69,139 +69,116 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
 
   return (
     <div className="left-section">
-      <div className="category-section-wrapper">
-        <div className="category-section">
-          <div className="category-column">
-            <CategoryList
-              categories={Object.keys(productCategories)}
-              selectedCategory={selectedCategory}
-              onSelectCategory={onSelectCategory}
+      <div className="category-section">
+        <div className="category-column">
+          <CategoryList
+            categories={Object.keys(productCategories)}
+            selectedCategory={selectedCategory}
+            onSelectCategory={onSelectCategory}
+          />
+        </div>
+        
+        <div className="product-column">
+          {selectedCategory && (
+            <ProductList
+              products={productCategories[selectedCategory]}
+              selectedProduct={localSelectedProduct}
+              onSelectProduct={handleProductSelect}
             />
-          </div>
-          
-          <div className="product-column">
-            {selectedCategory && (
-              <ProductList
-                products={productCategories[selectedCategory]}
-                selectedProduct={localSelectedProduct}
-                onSelectProduct={handleProductSelect}
-              />
-            )}
-          </div>
-          
-          <div className="cast-column">
-            {localSelectedProduct && localSelectedProduct.needsCast && (
-              <div className="cast-highlight">
-                <CastSelector
-                  castList={getSortedCastList()}
-                  selectedProduct={localSelectedProduct}
-                  onSelectCast={handleCastSelect}
-                  currentOshi={currentOshi}
-                />
-              </div>
-            )}
-          </div>
+          )}
+        </div>
+        
+        <div className="cast-column">
+          {localSelectedProduct && localSelectedProduct.needsCast && (
+            <CastSelector
+              castList={getSortedCastList()}
+              selectedProduct={localSelectedProduct}
+              onSelectCast={handleCastSelect}
+              currentOshi={currentOshi}
+            />
+          )}
         </div>
       </div>
       
       <style jsx>{`
         .left-section {
-          /* 全体のコンテナはスクロール可能 */
-          overflow-y: auto !important;
-          overflow-x: hidden !important;
-          -webkit-overflow-scrolling: touch !important;
+          /* 全体のスクロールを無効化 */
+          overflow: hidden !important;
           height: 100%;
           display: flex;
           flex-direction: column;
         }
         
-        .category-section-wrapper {
-          /* 内容に応じて高さが変わる */
-          flex: 0 0 auto;
-          min-height: 100%;
-        }
-        
         .category-section {
           display: flex;
           gap: 10px;
-          min-height: 100%;
-          padding-bottom: 20px; /* 下部に余白 */
+          flex: 1;
+          overflow: hidden;
         }
         
         .category-column,
         .product-column,
         .cast-column {
           flex: 1;
-          /* 個別のスクロールを無効化 */
-          overflow: visible !important;
-          position: relative;
-          /* 内容に応じて高さが伸びる */
-          height: auto !important;
-          min-height: 300px;
+          /* 各カラムで独立したスクロール */
+          overflow-y: auto;
+          overflow-x: hidden;
+          -webkit-overflow-scrolling: touch;
+          height: 100%;
         }
         
-        /* キャスト選択を目立たせる */
-        .cast-highlight {
-          background-color: #fff3cd;
-          border: 2px solid #ffc107;
-          border-radius: 8px;
-          padding: 10px;
-          margin-top: 10px;
-          box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
-          animation: highlight 0.3s ease-out;
-        }
-        
-        @keyframes highlight {
-          from {
-            transform: scale(0.95);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        
-        /* グローバルCSSを上書き */
+        /* グローバルCSSを上書き - 各カラムのスクロールを有効化 */
         :global(#modal.modal-edit) .left-section {
-          overflow-y: auto !important;
+          overflow: hidden !important;
         }
         
         :global(#modal.modal-edit) .category-section {
-          overflow: visible !important;
-          height: auto !important;
+          overflow: hidden !important;
+          height: 100% !important;
         }
         
         :global(#modal.modal-edit) .main-categories,
         :global(#modal.modal-edit) .sub-categories,
         :global(#modal.modal-edit) .cast-select-area {
-          overflow: visible !important;
-          height: auto !important;
-          max-height: none !important;
+          overflow-y: auto !important;
+          height: 100% !important;
+          max-height: 100% !important;
         }
         
-        /* cast-listのスクロールも無効化 */
+        /* cast-listのスクロールを有効化 */
         :global(.cast-list) {
-          max-height: none !important;
-          overflow: visible !important;
+          max-height: calc(100% - 40px) !important; /* タイトル分を引く */
+          overflow-y: auto !important;
           height: auto !important;
         }
         
-        /* スクロールバーのスタイル（左セクション全体用） */
-        .left-section::-webkit-scrollbar {
-          width: 8px;
+        /* スクロールバーのスタイル */
+        .category-column::-webkit-scrollbar,
+        .product-column::-webkit-scrollbar,
+        .cast-column::-webkit-scrollbar,
+        :global(.cast-list)::-webkit-scrollbar {
+          width: 6px;
         }
         
-        .left-section::-webkit-scrollbar-track {
+        .category-column::-webkit-scrollbar-track,
+        .product-column::-webkit-scrollbar-track,
+        .cast-column::-webkit-scrollbar-track,
+        :global(.cast-list)::-webkit-scrollbar-track {
           background: #f1f1f1;
         }
         
-        .left-section::-webkit-scrollbar-thumb {
+        .category-column::-webkit-scrollbar-thumb,
+        .product-column::-webkit-scrollbar-thumb,
+        .cast-column::-webkit-scrollbar-thumb,
+        :global(.cast-list)::-webkit-scrollbar-thumb {
           background: #888;
           border-radius: 4px;
         }
         
-        .left-section::-webkit-scrollbar-thumb:hover {
+        .category-column::-webkit-scrollbar-thumb:hover,
+        .product-column::-webkit-scrollbar-thumb:hover,
+        .cast-column::-webkit-scrollbar-thumb:hover,
+        :global(.cast-list)::-webkit-scrollbar-thumb:hover {
           background: #555;
         }
         
