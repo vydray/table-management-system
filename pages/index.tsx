@@ -601,11 +601,24 @@ export default function Home() {
     // 初回計算
     calculateLayoutScale()
     
-    // リサイズ時の再計算
+    // リサイズ時の再計算（ただしフォーカスイベントを除外）
     let resizeTimer: NodeJS.Timeout
+    let lastHeight = window.innerHeight
+    
     const handleResize = () => {
+      // キーボード表示によるリサイズを無視（高さが大きく変わった場合）
+      const heightDiff = Math.abs(window.innerHeight - lastHeight)
+      if (heightDiff > 100) {
+        // キーボードの表示/非表示と判断
+        lastHeight = window.innerHeight
+        return
+      }
+      
       clearTimeout(resizeTimer)
-      resizeTimer = setTimeout(calculateLayoutScale, 300)
+      resizeTimer = setTimeout(() => {
+        calculateLayoutScale()
+        lastHeight = window.innerHeight
+      }, 300)
     }
     
     window.addEventListener('resize', handleResize)
@@ -1250,6 +1263,14 @@ const finishCheckout = () => {
                   value={formData.guestName}
                   onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
                   placeholder="お客様名を入力"
+                  onFocus={(e) => {
+                    // Androidでキーボード表示時のスクロール位置調整
+                    if (window.innerWidth <= 1024) {
+                      setTimeout(() => {
+                        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      }, 300)
+                    }
+                  }}
                 />
               </label>
               
