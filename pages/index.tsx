@@ -797,10 +797,20 @@ const completeCheckout = async () => {
       throw new Error(result.error || 'Checkout failed')
     }
     
-    // 結果を保存して領収書確認モーダルを表示
+    // 結果を保存
     setCheckoutResult(result)
-    // ローディングは消さない（領収書確認中も継続）
-    setShowReceiptConfirm(true)
+    
+    // 会計モーダルを先に閉じる
+    document.body.classList.remove('modal-open')
+    setShowPaymentModal(false)
+    
+    // ローディングを一旦終了してから領収書確認モーダルを表示
+    setIsProcessingCheckout(false)
+    
+    // 少し遅延を入れて領収書確認モーダルを表示
+    setTimeout(() => {
+      setShowReceiptConfirm(true)
+    }, 100)
     
   } catch (error) {
     console.error('Error checkout:', error)
@@ -812,7 +822,9 @@ const completeCheckout = async () => {
 // 領収書印刷処理（別関数として定義）
 const handleReceiptPrint = async () => {
   setShowReceiptConfirm(false)
-  // ローディングは既に表示されているはず
+  
+  // 印刷処理開始時にローディングを表示
+  setIsProcessingCheckout(true)
   
   try {
     const storeId = getCurrentStoreId()
@@ -822,6 +834,7 @@ const handleReceiptPrint = async () => {
     
     // キャンセルされた場合
     if (receiptTo === null) {
+      setIsProcessingCheckout(false)
       finishCheckout()
       return
     }
@@ -934,14 +947,13 @@ const finishCheckout = () => {
   // ローディングを終了
   setIsProcessingCheckout(false)
   
-  // モーダルを閉じる
-  document.body.classList.remove('modal-open')
-  setShowPaymentModal(false)
+  // 各種状態をリセット
   setOrderItems([])
   setShowModal(false)
   setCheckoutResult(null)
   setShowReceiptConfirm(false)
   
+  // データを再読み込み
   loadData()
 }
 
