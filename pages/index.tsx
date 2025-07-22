@@ -1351,62 +1351,123 @@ const finishCheckout = () => {
               </div>
             </div>
           ) : (
-            <div id="details">
+                      <div id="details">
               <div className="order-section">
+                {/* 顧客情報ヘッダー - 新しいレイアウト */}
+                <div className="customer-header" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '20px',
+                  padding: '15px 20px',
+                  backgroundColor: '#f5f5f5',
+                  borderBottom: '1px solid #ddd',
+                  marginBottom: 0,
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="label-text">お客様:</span>
+                    <span style={{ fontWeight: 'normal', fontSize: '16px' }}>{tables[currentTable].name}</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="label-text">推し:</span>
+                    <div className="oshi-edit">
+                      <select 
+                        className="cast-select"
+                        value={formData.castName}
+                        onChange={(e) => {
+                          setFormData({ ...formData, castName: e.target.value })
+                          updateTableInfo(true)
+                        }}
+                        style={{
+                          fontSize: '14px',
+                          padding: '4px 8px',
+                          minWidth: '120px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          backgroundColor: 'white'
+                        }}
+                      >
+                        <option value="">-- 未選択 --</option>
+                        {castList.map(cast => (
+                          <option key={cast} value={cast}>{cast}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="label-text">来店種別:</span>
+                    <div className="visit-edit">
+                      <select
+                        className="visit-select"
+                        value={formData.visitType}
+                        onChange={(e) => {
+                          setFormData({ ...formData, visitType: e.target.value })
+                          updateTableInfo(true)
+                        }}
+                        style={{
+                          fontSize: '14px',
+                          padding: '4px 8px',
+                          minWidth: '100px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          backgroundColor: 'white'
+                        }}
+                      >
+                        <option value="">-- 未選択 --</option>
+                        <option value="初回">初回</option>
+                        <option value="再訪">再訪</option>
+                        <option value="常連">常連</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 入店日時エリア - 元のまま */}
                 <div className="datetime-edit" style={{
                   fontSize: window.innerWidth <= 1024 ? '14px' : `${16 * layoutScale}px`,
-                  padding: window.innerWidth <= 1024 ? '10px 15px' : `${15 * layoutScale}px ${20 * layoutScale}px`
+                  padding: window.innerWidth <= 1024 ? '10px 15px' : `${15 * layoutScale}px ${20 * layoutScale}px`,
+                  justifyContent: 'center',
+                  borderBottom: '1px solid #ddd',
+                  marginBottom: 0
                 }}>
                   <span className="label-text" style={{ 
                     fontSize: window.innerWidth <= 1024 ? '14px' : `${16 * layoutScale}px` 
-                  }}>入店日時：</span>
-                  <select 
-                    value={formData.editYear}
-                    onChange={(e) => setFormData({ ...formData, editYear: parseInt(e.target.value) })}
-                    className="date-select"
-                    style={{ 
-                      fontSize: `${14 * layoutScale}px`,
-                      padding: `${6 * layoutScale}px ${8 * layoutScale}px`
-                    }}
-                  >
-                    {[2024, 2025, 2026].map(year => (
+                  }}>
+                    入店日時：
+                  </span>
+                  <select className="date-select" value={formData.editYear} onChange={(e) => {
+                    setFormData({ ...formData, editYear: parseInt(e.target.value) })
+                    updateTableInfo(true)
+                  }}>
+                    {[2024, 2025].map(year => (
                       <option key={year} value={year}>{year}年</option>
                     ))}
                   </select>
-                  <select 
-                    value={formData.editMonth}
-                    onChange={(e) => setFormData({ ...formData, editMonth: parseInt(e.target.value) })}
-                    className="date-select"
-                    style={{ 
-                      fontSize: `${14 * layoutScale}px`,
-                      padding: `${6 * layoutScale}px ${8 * layoutScale}px`
-                    }}
-                  >
+                  <select className="date-select" value={formData.editMonth} onChange={(e) => {
+                    setFormData({ ...formData, editMonth: parseInt(e.target.value) })
+                    updateTableInfo(true)
+                  }}>
                     {[...Array(12)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>{i + 1}月</option>
                     ))}
                   </select>
-                  <select 
-                    value={formData.editDate}
-                    onChange={(e) => setFormData({ ...formData, editDate: parseInt(e.target.value) })}
-                    className="date-select"
-                    style={{ 
-                      fontSize: `${14 * layoutScale}px`,
-                      padding: `${6 * layoutScale}px ${8 * layoutScale}px`
-                    }}
-                  >
+                  <select className="date-select" value={formData.editDate} onChange={(e) => {
+                    setFormData({ ...formData, editDate: parseInt(e.target.value) })
+                    updateTableInfo(true)
+                  }}>
                     {[...Array(31)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>{i + 1}日</option>
                     ))}
                   </select>
                   <select 
                     value={formData.editHour}
-                    onChange={(e) => setFormData({ ...formData, editHour: parseInt(e.target.value) })}
-                    className="time-select"
-                    style={{ 
-                      fontSize: `${14 * layoutScale}px`,
-                      padding: `${6 * layoutScale}px ${8 * layoutScale}px`
+                    onChange={(e) => {
+                      setFormData({ ...formData, editHour: parseInt(e.target.value) })
+                      updateTableInfo(true)
                     }}
+                    className="time-select"
                   >
                     {[...Array(24)].map((_, i) => (
                       <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
@@ -1415,12 +1476,11 @@ const finishCheckout = () => {
                   <span>:</span>
                   <select 
                     value={formData.editMinute}
-                    onChange={(e) => setFormData({ ...formData, editMinute: parseInt(e.target.value) })}
-                    className="time-select"
-                    style={{ 
-                      fontSize: `${14 * layoutScale}px`,
-                      padding: `${6 * layoutScale}px ${8 * layoutScale}px`
+                    onChange={(e) => {
+                      setFormData({ ...formData, editMinute: parseInt(e.target.value) })
+                      updateTableInfo(true)
                     }}
+                    className="time-select"
                   >
                     {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(min => (
                       <option key={min} value={min}>{min.toString().padStart(2, '0')}</option>
