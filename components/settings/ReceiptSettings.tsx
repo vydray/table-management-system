@@ -65,9 +65,11 @@ export default function ReceiptSettings() {
   const [logoPreview, setLogoPreview] = useState<string>('')
   const [isConnecting, setIsConnecting] = useState(false)
   const [printerConnected, setPrinterConnected] = useState(false)
+  const [printerAddress, setPrinterAddress] = useState<string>('') // 接続中のプリンターアドレスを保持
 
   useEffect(() => {
     loadSettings()
+    checkPrinterConnection() // プリンター接続状態を確認
   }, [])
 
   const loadSettings = async () => {
@@ -113,6 +115,36 @@ export default function ReceiptSettings() {
       }
     } catch (error) {
       console.error('Error loading settings:', error)
+    }
+  }
+
+  // プリンター接続状態を確認する関数
+  const checkPrinterConnection = async () => {
+    try {
+      // Bluetoothが有効か確認
+      await printer.enable()
+      
+      // 現在の接続状態を確認
+      const isConnected = await printer.checkConnection()
+      setPrinterConnected(isConnected)
+      
+      if (isConnected) {
+        // 接続されている場合、デバイス情報を取得
+        const devices = await printer.getPairedDevices()
+        const mp20 = devices.find((device: any) => 
+          device.name && (
+            device.name.includes('MP-B20') || 
+            device.name.includes('MP-') ||
+            device.name.includes('MPB20')
+          )
+        )
+        if (mp20) {
+          setPrinterAddress(mp20.address)
+        }
+      }
+    } catch (error) {
+      console.error('接続状態確認エラー:', error)
+      setPrinterConnected(false)
     }
   }
 
@@ -220,8 +252,13 @@ export default function ReceiptSettings() {
     setSettings({ ...settings, receipt_templates: newTemplates })
   }
 
-  // Bluetoothプリンター接続
+  // Bluetoothプリンター接続（修正版）
   const connectBluetoothPrinter = async () => {
+    if (printerConnected) {
+      // すでに接続されている場合は何もしない
+      return
+    }
+    
     setIsConnecting(true)
     try {
       // Bluetoothを有効化
@@ -243,6 +280,7 @@ export default function ReceiptSettings() {
       if (mp20) {
         await printer.connect(mp20.address)
         setPrinterConnected(true)
+        setPrinterAddress(mp20.address)
         alert('MP-B20に接続しました')
       } else {
         alert('MP-B20が見つかりません。\nAndroid設定でペアリングされているか確認してください。')
@@ -250,73 +288,86 @@ export default function ReceiptSettings() {
     } catch (error) {
       console.error('Printer connection error:', error)
       alert('プリンター接続エラー: ' + error)
+      setPrinterConnected(false)
     } finally {
       setIsConnecting(false)
     }
   }
 
-  // 直接印刷テスト
-const testDirectPrint = async () => {
-  if (!printerConnected) {
-    alert('プリンターが接続されていません')
-    return
+  // プリンター切断機能を追加
+  const disconnectPrinter = async () => {
+    try {
+      await printer.disconnect()
+      setPrinterConnected(false)
+      setPrinterAddress('')
+      alert('プリンターを切断しました')
+    } catch (error) {
+      console.error('切断エラー:', error)
+    }
   }
 
-  try {
-    // 現在の設定値を使用
-    await printer.printReceipt({
-      // 店舗情報（現在の設定値を使用）
-      storeName: settings.store_name || 'テスト店舗',
-      storeAddress: settings.store_address || '',
-      storePhone: settings.store_phone || '',
-      storePostalCode: settings.store_postal_code || '',
-      storeRegistrationNumber: settings.store_registration_number || '',
+  // 直接印刷テスト
+  const testDirectPrint = async () => {
+    if (!printerConnected) {
+      alert('プリンターが接続されていません')
+      return
+    }
+
+    try {
+      // 現在の設定値を使用
+      await printer.printReceipt({
+        // 店舗情報（現在の設定値を使用）
+        storeName: settings.store_name || 'テスト店舗',
+        storeAddress: settings.store_address || '',
+        storePhone: settings.store_phone || '',
+        storePostalCode: settings.store_postal_code || '',
+        storeRegistrationNumber: settings.store_registration_number || '',
+        
+        // テスト用の固定値
+        receiptNumber: `TEST-${Date.now()}`,
+        tableName: 'テスト',
+        guestName: 'テストユーザー',
+        castName: 'テストキャスト',
+        timestamp: new Date().toLocaleString('ja-JP', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }),
+        
+        // 宛名と但し書き
+        receiptTo: 'テスト印刷',
+        receiptNote: 'テスト印刷のため',
+        
+        // 収入印紙設定（現在の設定値を使用）
+        showRevenueStamp: settings.show_revenue_stamp,
+        revenueStampThreshold: settings.revenue_stamp_threshold,
+        
+        // テスト商品
+        orderItems: [
+          { name: 'テスト商品1', price: 500, quantity: 1 },
+          { name: 'テスト商品2', price: 300, quantity: 1 }
+        ],
+        subtotal: 800,
+        serviceTax: 120,
+        consumptionTax: 92,
+        roundingAdjustment: -12,
+        roundedTotal: 1000,
+        paymentCash: 1000,
+        paymentCard: 0,
+        paymentOther: 0,
+        paymentOtherMethod: '',
+        change: 0
+      })
       
-      // テスト用の固定値
-      receiptNumber: `TEST-${Date.now()}`,
-      tableName: 'テスト',
-      guestName: 'テストユーザー',
-      castName: 'テストキャスト',
-      timestamp: new Date().toLocaleString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      }),
-      
-      // 宛名と但し書き
-      receiptTo: 'テスト印刷',
-      receiptNote: 'テスト印刷のため',
-      
-      // 収入印紙設定（現在の設定値を使用）
-      showRevenueStamp: settings.show_revenue_stamp,
-      revenueStampThreshold: settings.revenue_stamp_threshold,
-      
-      // テスト商品
-      orderItems: [
-        { name: 'テスト商品1', price: 500, quantity: 1 },
-        { name: 'テスト商品2', price: 300, quantity: 1 }
-      ],
-      subtotal: 800,
-      serviceTax: 120,
-      consumptionTax: 92,
-      roundingAdjustment: -12,
-      roundedTotal: 1000,
-      paymentCash: 1000,
-      paymentCard: 0,
-      paymentOther: 0,
-      paymentOtherMethod: '',
-      change: 0
-    })
-    
-    alert('テスト印刷完了')
-  } catch (error) {
-    console.error('Print error:', error)
-    alert('印刷エラー: ' + error)
+      alert('テスト印刷完了')
+    } catch (error) {
+      console.error('Print error:', error)
+      alert('印刷エラー: ' + error)
+    }
   }
-}
 
   return (
     <div style={{
@@ -910,25 +961,62 @@ const testDirectPrint = async () => {
             Bluetooth対応のレシートプリンター（MP-B20）と接続します
           </p>
           
+          {/* 接続状態の表示 */}
+          {printerConnected && (
+            <div style={{
+              padding: '10px',
+              backgroundColor: '#e8f5e9',
+              borderRadius: '5px',
+              marginBottom: '15px',
+              fontSize: '14px',
+              color: '#2e7d32'
+            }}>
+              ✓ MP-B20に接続済み
+              {printerAddress && <span style={{ marginLeft: '10px', fontSize: '12px', color: '#666' }}>({printerAddress})</span>}
+            </div>
+          )}
+          
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={connectBluetoothPrinter}
-              disabled={isConnecting || printerConnected}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: printerConnected ? '#4CAF50' : '#2196F3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                fontSize: '14px',
-                cursor: isConnecting || printerConnected ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              {isConnecting ? '接続中...' : printerConnected ? '✓ 接続済み' : '🔗 MP-B20接続'}
-            </button>
+            {!printerConnected ? (
+              // 未接続時：接続ボタンを表示
+              <button
+                onClick={connectBluetoothPrinter}
+                disabled={isConnecting}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: isConnecting ? '#ccc' : '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '14px',
+                  cursor: isConnecting ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isConnecting ? '接続中...' : '🔗 MP-B20接続'}
+              </button>
+            ) : (
+              // 接続済み時：切断ボタンを表示
+              <button
+                onClick={disconnectPrinter}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                🔌 接続を切断
+              </button>
+            )}
             
             <button
               onClick={testDirectPrint}
@@ -947,6 +1035,26 @@ const testDirectPrint = async () => {
               }}
             >
               🖨️ 直接印刷テスト
+            </button>
+            
+            {/* 再確認ボタン（デバッグ用） */}
+            <button
+              onClick={checkPrinterConnection}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#9E9E9E',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              title="接続状態を再確認"
+            >
+              🔄 状態確認
             </button>
           </div>
         </div>

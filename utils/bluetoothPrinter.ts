@@ -88,7 +88,7 @@ export class BluetoothPrinter {
     }
   }
 
-  // 接続状態を確認（修正版）
+  // 接続状態を確認（改善版）
   async checkConnection(): Promise<boolean> {
     // プラグインがない場合はfalse
     const plugin = this.getPlugin();
@@ -97,8 +97,49 @@ export class BluetoothPrinter {
       return false;
     }
     
-    // 内部の接続状態を返す
-    return this.isConnected;
+    // 実際にプリンターと通信して接続を確認する方法
+    // （簡易的な実装：内部状態を返す）
+    // より確実にしたい場合は、実際にプリンターにpingを送るなどの実装が必要
+    
+    try {
+      // Bluetoothが有効か確認
+      await plugin.enable();
+      
+      // 現在のアドレスが設定されていて、接続フラグがtrueの場合
+      if (this.currentAddress && this.isConnected) {
+        // ペアリング済みデバイスを確認
+        const result = await plugin.getPairedDevices();
+        const devices = result.devices || [];
+        
+        // 現在のアドレスがペアリング済みデバイスに存在するか確認
+        const deviceExists = devices.some((device: any) => 
+          device.address === this.currentAddress
+        );
+        
+        if (!deviceExists) {
+          // デバイスが見つからない場合は切断されたとみなす
+          this.isConnected = false;
+          this.currentAddress = '';
+        }
+      }
+      
+      return this.isConnected;
+    } catch (error) {
+      console.error('接続確認エラー:', error);
+      this.isConnected = false;
+      return false;
+    }
+  }
+
+  // 現在接続中のアドレスを取得
+  getCurrentAddress(): string {
+    return this.currentAddress;
+  }
+
+  // 接続状態をリセット（アプリ起動時など）
+  resetConnectionState(): void {
+    this.isConnected = false;
+    this.currentAddress = '';
   }
 
   // 切断（修正版）
@@ -172,51 +213,51 @@ export class BluetoothPrinter {
   }
 
   // 領収書兼レシート印刷
-async printReceipt(receiptData: {
-  storeName: string
-  storeAddress?: string
-  storePhone?: string
-  storePostalCode?: string  // 追加
-  storeRegistrationNumber?: string  // 追加
-  receiptNumber: string
-  tableName: string
-  guestName: string
-  castName: string
-  timestamp: string
-  receiptTo?: string  // 追加（宛名）
-  receiptNote?: string  // 追加（但し書き）
-  showRevenueStamp?: boolean  // 追加（収入印紙表示）
-  revenueStampThreshold?: number  // 追加（収入印紙閾値）
-  orderItems: Array<{
-    name: string
-    cast?: string
-    quantity: number
-    price: number
-  }>
-  subtotal: number
-  serviceTax: number
-  consumptionTax: number
-  roundingAdjustment: number
-  roundedTotal: number
-  paymentCash: number
-  paymentCard: number
-  paymentOther: number
-  paymentOtherMethod?: string
-  change: number
-}): Promise<void> {
-  const plugin = this.getPlugin();
-  if (!plugin) {
-    throw new Error('SiiPrinter plugin not available');
+  async printReceipt(receiptData: {
+    storeName: string
+    storeAddress?: string
+    storePhone?: string
+    storePostalCode?: string  // 追加
+    storeRegistrationNumber?: string  // 追加
+    receiptNumber: string
+    tableName: string
+    guestName: string
+    castName: string
+    timestamp: string
+    receiptTo?: string  // 追加（宛名）
+    receiptNote?: string  // 追加（但し書き）
+    showRevenueStamp?: boolean  // 追加（収入印紙表示）
+    revenueStampThreshold?: number  // 追加（収入印紙閾値）
+    orderItems: Array<{
+      name: string
+      cast?: string
+      quantity: number
+      price: number
+    }>
+    subtotal: number
+    serviceTax: number
+    consumptionTax: number
+    roundingAdjustment: number
+    roundedTotal: number
+    paymentCash: number
+    paymentCard: number
+    paymentOther: number
+    paymentOtherMethod?: string
+    change: number
+  }): Promise<void> {
+    const plugin = this.getPlugin();
+    if (!plugin) {
+      throw new Error('SiiPrinter plugin not available');
+    }
+    
+    try {
+      await plugin.printReceipt(receiptData);
+      console.log('Receipt printed successfully');
+    } catch (error) {
+      console.error('Print receipt error:', error);
+      throw error;
+    }
   }
-  
-  try {
-    await plugin.printReceipt(receiptData);
-    console.log('Receipt printed successfully');
-  } catch (error) {
-    console.error('Print receipt error:', error);
-    throw error;
-  }
-}
 
   // テスト印刷
   async printTest(): Promise<void> {
