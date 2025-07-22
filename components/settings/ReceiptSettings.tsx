@@ -18,6 +18,21 @@ interface ReceiptSettings {
   invoice_number: string
   show_tax_breakdown: boolean
   current_receipt_number: number
+  // 新規追加フィールド
+  store_postal_code: string
+  store_address: string
+  store_phone: string
+  store_email: string
+  business_hours: string
+  closed_days: string
+  store_registration_number: string
+  show_revenue_stamp: boolean
+  revenue_stamp_threshold: number
+  receipt_templates: Array<{
+    name: string
+    text: string
+    is_default: boolean
+  }>
 }
 
 export default function ReceiptSettings() {
@@ -28,7 +43,22 @@ export default function ReceiptSettings() {
     invoice_enabled: false,
     invoice_number: '',
     show_tax_breakdown: false,
-    current_receipt_number: 1
+    current_receipt_number: 1,
+    // 新規追加フィールドのデフォルト値
+    store_postal_code: '',
+    store_address: '',
+    store_phone: '',
+    store_email: '',
+    business_hours: '',
+    closed_days: '',
+    store_registration_number: '',
+    show_revenue_stamp: true,
+    revenue_stamp_threshold: 50000,
+    receipt_templates: [
+      { name: 'お品代', text: 'お品代として', is_default: true },
+      { name: '飲食代', text: '飲食代として', is_default: false },
+      { name: 'サービス料', text: 'サービス料として', is_default: false }
+    ]
   })
   const [isLoading, setIsLoading] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -59,7 +89,22 @@ export default function ReceiptSettings() {
           invoice_enabled: receiptSettings.invoice_enabled || false,
           invoice_number: receiptSettings.invoice_number || '',
           show_tax_breakdown: receiptSettings.show_tax_breakdown || false,
-          current_receipt_number: receiptSettings.current_receipt_number || 1
+          current_receipt_number: receiptSettings.current_receipt_number || 1,
+          // 新規フィールド
+          store_postal_code: receiptSettings.store_postal_code || '',
+          store_address: receiptSettings.store_address || '',
+          store_phone: receiptSettings.store_phone || '',
+          store_email: receiptSettings.store_email || '',
+          business_hours: receiptSettings.business_hours || '',
+          closed_days: receiptSettings.closed_days || '',
+          store_registration_number: receiptSettings.store_registration_number || '',
+          show_revenue_stamp: receiptSettings.show_revenue_stamp ?? true,
+          revenue_stamp_threshold: receiptSettings.revenue_stamp_threshold || 50000,
+          receipt_templates: receiptSettings.receipt_templates || [
+            { name: 'お品代', text: 'お品代として', is_default: true },
+            { name: '飲食代', text: '飲食代として', is_default: false },
+            { name: 'サービス料', text: 'サービス料として', is_default: false }
+          ]
         })
         
         if (receiptSettings.logo_url) {
@@ -107,6 +152,17 @@ export default function ReceiptSettings() {
           invoice_number: settings.invoice_number,
           show_tax_breakdown: settings.show_tax_breakdown,
           current_receipt_number: settings.current_receipt_number,
+          // 新規フィールド
+          store_postal_code: settings.store_postal_code,
+          store_address: settings.store_address,
+          store_phone: settings.store_phone,
+          store_email: settings.store_email,
+          business_hours: settings.business_hours,
+          closed_days: settings.closed_days,
+          store_registration_number: settings.store_registration_number,
+          show_revenue_stamp: settings.show_revenue_stamp,
+          revenue_stamp_threshold: settings.revenue_stamp_threshold,
+          receipt_templates: settings.receipt_templates,
           updated_at: new Date().toISOString()
         })
       
@@ -132,6 +188,36 @@ export default function ReceiptSettings() {
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  // 但し書きテンプレートの追加
+  const addTemplate = () => {
+    setSettings({
+      ...settings,
+      receipt_templates: [
+        ...settings.receipt_templates,
+        { name: '', text: '', is_default: false }
+      ]
+    })
+  }
+
+  // 但し書きテンプレートの削除
+  const removeTemplate = (index: number) => {
+    const newTemplates = settings.receipt_templates.filter((_, i) => i !== index)
+    setSettings({ ...settings, receipt_templates: newTemplates })
+  }
+
+  // 但し書きテンプレートの更新
+  const updateTemplate = (index: number, field: 'name' | 'text' | 'is_default', value: string | boolean) => {
+    const newTemplates = [...settings.receipt_templates]
+    if (field === 'is_default' && value === true) {
+      // 他のデフォルトを解除
+      newTemplates.forEach((t, i) => {
+        if (i !== index) t.is_default = false
+      })
+    }
+    newTemplates[index] = { ...newTemplates[index], [field]: value }
+    setSettings({ ...settings, receipt_templates: newTemplates })
   }
 
   // Bluetoothプリンター接続
@@ -170,62 +256,428 @@ export default function ReceiptSettings() {
   }
 
   // 直接印刷テスト
-const testDirectPrint = async () => {
-  if (!printerConnected) {
-    alert('プリンターが接続されていません')
-    return
-  }
+  const testDirectPrint = async () => {
+    if (!printerConnected) {
+      alert('プリンターが接続されていません')
+      return
+    }
 
-  try {
-    await printer.printReceipt({
-      storeName: settings.store_name || 'テスト店舗',
-      storeAddress: '東京都渋谷区テスト1-2-3',
-      storePhone: 'TEL: 03-1234-5678',
-      receiptNumber: `R${Date.now()}`,
-      tableName: 'テスト',
-      guestName: 'テストユーザー',
-      castName: 'テストキャスト',
-      timestamp: new Date().toLocaleString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      }),
-      orderItems: [
-        { name: 'テスト商品1', price: 500, quantity: 1 },
-        { name: 'テスト商品2', price: 300, quantity: 1 }
-      ],
-      subtotal: 800,
-      serviceTax: 120,
-      consumptionTax: 80,
-      roundingAdjustment: 0,
-      roundedTotal: 1000,
-      paymentCash: 1000,
-      paymentCard: 0,
-      paymentOther: 0,
-      paymentOtherMethod: '',
-      change: 0
-      // footerMessage を削除（型定義に存在しない）
-    })
-    
-    alert('印刷完了')
-  } catch (error) {
-    console.error('Print error:', error)
-    alert('印刷エラー: ' + error)
-  }
-}
-
-  const containerStyle: React.CSSProperties = {
-    height: '100%',
-    overflowY: 'auto',
-    paddingBottom: '50px'
+    try {
+      await printer.printReceipt({
+        storeName: settings.store_name || 'テスト店舗',
+        storeAddress: settings.store_address || '東京都渋谷区テスト1-2-3',
+        storePhone: settings.store_phone || 'TEL: 03-1234-5678',
+        receiptNumber: `R${Date.now()}`,
+        tableName: 'テスト',
+        guestName: 'テストユーザー',
+        castName: 'テストキャスト',
+        timestamp: new Date().toLocaleString('ja-JP', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }),
+        orderItems: [
+          { name: 'テスト商品1', price: 500, quantity: 1 },
+          { name: 'テスト商品2', price: 300, quantity: 1 }
+        ],
+        subtotal: 800,
+        serviceTax: 120,
+        consumptionTax: 80,
+        roundingAdjustment: 0,
+        roundedTotal: 1000,
+        paymentCash: 1000,
+        paymentCard: 0,
+        paymentOther: 0,
+        paymentOtherMethod: '',
+        change: 0
+      })
+      
+      alert('印刷完了')
+    } catch (error) {
+      console.error('Print error:', error)
+      alert('印刷エラー: ' + error)
+    }
   }
 
   return (
-    <div style={containerStyle}>
-      {/* 基本設定 */}
+    <div style={{
+      backgroundColor: 'white',
+      borderRadius: '10px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      padding: '30px',
+      maxWidth: '800px',
+      margin: '0 auto'
+    }}>
+      <h2 style={{ 
+        marginTop: 0,
+        marginBottom: '30px',
+        fontSize: '24px',
+        fontWeight: 'bold'
+      }}>
+        レシート設定
+      </h2>
+
+      {/* 店舗情報 */}
+      <div style={{ marginBottom: '40px' }}>
+        <h3 style={{ 
+          fontSize: '18px',
+          fontWeight: 'bold',
+          marginBottom: '20px',
+          paddingBottom: '10px',
+          borderBottom: '2px solid #f0f0f0'
+        }}>
+          店舗情報
+        </h3>
+        
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '20px',
+          marginBottom: '20px'
+        }}>
+          <div>
+            <label style={{ 
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              店舗名 <span style={{ color: 'red' }}>*</span>
+            </label>
+            <input
+              type="text"
+              value={settings.store_name}
+              onChange={(e) => setSettings({ ...settings, store_name: e.target.value })}
+              placeholder="例：○○店"
+              style={{
+                width: '100%',
+                padding: '10px',
+                fontSize: '14px',
+                border: '1px solid #ddd',
+                borderRadius: '5px'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              郵便番号 <span style={{ color: 'red' }}>*</span>
+            </label>
+            <input
+              type="text"
+              value={settings.store_postal_code}
+              onChange={(e) => setSettings({ ...settings, store_postal_code: e.target.value })}
+              placeholder="例：123-4567"
+              style={{
+                width: '100%',
+                padding: '10px',
+                fontSize: '14px',
+                border: '1px solid #ddd',
+                borderRadius: '5px'
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ 
+            display: 'block',
+            marginBottom: '8px',
+            fontWeight: 'bold',
+            fontSize: '14px'
+          }}>
+            住所 <span style={{ color: 'red' }}>*</span>
+          </label>
+          <input
+            type="text"
+            value={settings.store_address}
+            onChange={(e) => setSettings({ ...settings, store_address: e.target.value })}
+            placeholder="例：東京都渋谷区○○1-2-3 ○○ビル4F"
+            style={{
+              width: '100%',
+              padding: '10px',
+              fontSize: '14px',
+              border: '1px solid #ddd',
+              borderRadius: '5px'
+            }}
+          />
+        </div>
+
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '20px',
+          marginBottom: '20px'
+        }}>
+          <div>
+            <label style={{ 
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              電話番号 <span style={{ color: 'red' }}>*</span>
+            </label>
+            <input
+              type="text"
+              value={settings.store_phone}
+              onChange={(e) => setSettings({ ...settings, store_phone: e.target.value })}
+              placeholder="例：03-1234-5678"
+              style={{
+                width: '100%',
+                padding: '10px',
+                fontSize: '14px',
+                border: '1px solid #ddd',
+                borderRadius: '5px'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              メールアドレス
+            </label>
+            <input
+              type="email"
+              value={settings.store_email}
+              onChange={(e) => setSettings({ ...settings, store_email: e.target.value })}
+              placeholder="例：info@example.com"
+              style={{
+                width: '100%',
+                padding: '10px',
+                fontSize: '14px',
+                border: '1px solid #ddd',
+                borderRadius: '5px'
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '20px',
+          marginBottom: '20px'
+        }}>
+          <div>
+            <label style={{ 
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              営業時間
+            </label>
+            <input
+              type="text"
+              value={settings.business_hours}
+              onChange={(e) => setSettings({ ...settings, business_hours: e.target.value })}
+              placeholder="例：18:00-24:00"
+              style={{
+                width: '100%',
+                padding: '10px',
+                fontSize: '14px',
+                border: '1px solid #ddd',
+                borderRadius: '5px'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              定休日
+            </label>
+            <input
+              type="text"
+              value={settings.closed_days}
+              onChange={(e) => setSettings({ ...settings, closed_days: e.target.value })}
+              placeholder="例：日曜日・祝日"
+              style={{
+                width: '100%',
+                padding: '10px',
+                fontSize: '14px',
+                border: '1px solid #ddd',
+                borderRadius: '5px'
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 但し書きテンプレート */}
+      <div style={{ marginBottom: '40px' }}>
+        <h3 style={{ 
+          fontSize: '18px',
+          fontWeight: 'bold',
+          marginBottom: '20px',
+          paddingBottom: '10px',
+          borderBottom: '2px solid #f0f0f0'
+        }}>
+          但し書きテンプレート
+        </h3>
+        
+        {settings.receipt_templates.map((template, index) => (
+          <div key={index} style={{ 
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center',
+            marginBottom: '10px'
+          }}>
+            <input
+              type="text"
+              value={template.name}
+              onChange={(e) => updateTemplate(index, 'name', e.target.value)}
+              placeholder="表示名"
+              style={{
+                width: '150px',
+                padding: '8px',
+                fontSize: '14px',
+                border: '1px solid #ddd',
+                borderRadius: '5px'
+              }}
+            />
+            <input
+              type="text"
+              value={template.text}
+              onChange={(e) => updateTemplate(index, 'text', e.target.value)}
+              placeholder="但し書き内容"
+              style={{
+                flex: 1,
+                padding: '8px',
+                fontSize: '14px',
+                border: '1px solid #ddd',
+                borderRadius: '5px'
+              }}
+            />
+            <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <input
+                type="radio"
+                name="default_template"
+                checked={template.is_default}
+                onChange={() => updateTemplate(index, 'is_default', true)}
+              />
+              デフォルト
+            </label>
+            <button
+              onClick={() => removeTemplate(index)}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              削除
+            </button>
+          </div>
+        ))}
+        
+        <button
+          onClick={addTemplate}
+          style={{
+            marginTop: '10px',
+            padding: '8px 16px',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          + テンプレート追加
+        </button>
+      </div>
+
+      {/* 収入印紙設定 */}
+      <div style={{ marginBottom: '40px' }}>
+        <h3 style={{ 
+          fontSize: '18px',
+          fontWeight: 'bold',
+          marginBottom: '20px',
+          paddingBottom: '10px',
+          borderBottom: '2px solid #f0f0f0'
+        }}>
+          収入印紙設定
+        </h3>
+        
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}>
+            <input
+              type="checkbox"
+              checked={settings.show_revenue_stamp}
+              onChange={(e) => setSettings({ ...settings, show_revenue_stamp: e.target.checked })}
+              style={{
+                width: '18px',
+                height: '18px',
+                cursor: 'pointer'
+              }}
+            />
+            <span style={{ fontWeight: 'bold' }}>収入印紙欄を表示する</span>
+          </label>
+        </div>
+
+        {settings.show_revenue_stamp && (
+          <div>
+            <label style={{ 
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              収入印紙が必要な金額（円以上）
+            </label>
+            <input
+              type="number"
+              value={settings.revenue_stamp_threshold}
+              onChange={(e) => setSettings({ ...settings, revenue_stamp_threshold: parseInt(e.target.value) || 50000 })}
+              style={{
+                width: '200px',
+                padding: '10px',
+                fontSize: '14px',
+                border: '1px solid #ddd',
+                borderRadius: '5px'
+              }}
+            />
+            <p style={{ 
+              marginTop: '5px',
+              fontSize: '12px',
+              color: '#666'
+            }}>
+              設定金額以上の場合、領収書に収入印紙欄が表示されます
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* 基本設定（既存の部分） */}
       <div style={{ marginBottom: '40px' }}>
         <h3 style={{ 
           fontSize: '18px',
@@ -244,46 +696,24 @@ const testDirectPrint = async () => {
             fontWeight: 'bold',
             fontSize: '14px'
           }}>
-            店舗名
+            店舗ロゴ
           </label>
-          <input
-            type="text"
-            value={settings.store_name}
-            onChange={(e) => setSettings({ ...settings, store_name: e.target.value })}
-            placeholder="例：○○カフェ"
-            style={{
-              width: '100%',
-              maxWidth: '400px',
-              padding: '10px',
-              fontSize: '14px',
-              border: '1px solid #ddd',
-              borderRadius: '5px'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ 
-            display: 'block',
-            marginBottom: '8px',
-            fontWeight: 'bold',
-            fontSize: '14px'
+          <div style={{
+            display: 'flex',
+            gap: '20px',
+            alignItems: 'flex-start'
           }}>
-            ロゴ画像
-          </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             {logoPreview && (
               <img 
                 src={logoPreview} 
-                alt="ロゴプレビュー"
+                alt="店舗ロゴ"
                 style={{
                   width: '100px',
                   height: '100px',
                   objectFit: 'contain',
                   border: '1px solid #ddd',
                   borderRadius: '5px',
-                  padding: '10px',
-                  backgroundColor: '#f9f9f9'
+                  padding: '5px'
                 }}
               />
             )}
@@ -387,27 +817,60 @@ const testDirectPrint = async () => {
 
             <div style={{ marginBottom: '20px' }}>
               <label style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                fontSize: '14px',
-                cursor: 'pointer'
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: 'bold',
+                fontSize: '14px'
               }}>
-                <input
-                  type="checkbox"
-                  checked={settings.show_tax_breakdown}
-                  onChange={(e) => setSettings({ ...settings, show_tax_breakdown: e.target.checked })}
-                  style={{
-                    width: '18px',
-                    height: '18px',
-                    cursor: 'pointer'
-                  }}
-                />
-                <span style={{ fontWeight: 'bold' }}>税率ごとの内訳を表示する</span>
+                登録番号
               </label>
+              <input
+                type="text"
+                value={settings.store_registration_number}
+                onChange={(e) => setSettings({ ...settings, store_registration_number: e.target.value })}
+                placeholder="例：T1234567890123"
+                style={{
+                  width: '100%',
+                  maxWidth: '300px',
+                  padding: '10px',
+                  fontSize: '14px',
+                  border: '1px solid #ddd',
+                  borderRadius: '5px'
+                }}
+              />
             </div>
           </>
         )}
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}>
+            <input
+              type="checkbox"
+              checked={settings.show_tax_breakdown}
+              onChange={(e) => setSettings({ ...settings, show_tax_breakdown: e.target.checked })}
+              style={{
+                width: '18px',
+                height: '18px',
+                cursor: 'pointer'
+              }}
+            />
+            <span style={{ fontWeight: 'bold' }}>税率ごとの内訳を表示</span>
+          </label>
+          <p style={{ 
+            marginLeft: '28px',
+            marginTop: '5px',
+            fontSize: '12px',
+            color: '#666'
+          }}>
+            8%（軽減税率）と10%（標準税率）の内訳を表示します
+          </p>
+        </div>
       </div>
 
       {/* プリンター設定 */}
@@ -423,7 +886,15 @@ const testDirectPrint = async () => {
         </h3>
         
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <p style={{ 
+            marginBottom: '15px',
+            fontSize: '14px',
+            color: '#666'
+          }}>
+            Bluetooth対応のレシートプリンター（MP-B20）と接続します
+          </p>
+          
+          <div style={{ display: 'flex', gap: '10px' }}>
             <button
               onClick={connectBluetoothPrinter}
               disabled={isConnecting || printerConnected}
@@ -434,7 +905,7 @@ const testDirectPrint = async () => {
                 border: 'none',
                 borderRadius: '5px',
                 fontSize: '14px',
-                cursor: isConnecting ? 'not-allowed' : 'pointer',
+                cursor: isConnecting || printerConnected ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'

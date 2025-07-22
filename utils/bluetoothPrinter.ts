@@ -172,45 +172,51 @@ export class BluetoothPrinter {
   }
 
   // 領収書兼レシート印刷
-  async printReceipt(receiptData: {
-    storeName: string
-    storeAddress?: string
-    storePhone?: string
-    receiptNumber: string
-    tableName: string
-    guestName: string
-    castName: string
-    timestamp: string
-    orderItems: Array<{
-      name: string
-      cast?: string
-      quantity: number
-      price: number
-    }>
-    subtotal: number
-    serviceTax: number
-    consumptionTax: number
-    roundingAdjustment: number
-    roundedTotal: number
-    paymentCash: number
-    paymentCard: number
-    paymentOther: number
-    paymentOtherMethod?: string
-    change: number
-  }): Promise<void> {
-    const plugin = this.getPlugin();
-    if (!plugin) {
-      throw new Error('SiiPrinter plugin not available');
-    }
-    
-    try {
-      await plugin.printReceipt(receiptData);
-      console.log('Receipt printed successfully');
-    } catch (error) {
-      console.error('Print receipt error:', error);
-      throw error;
-    }
+async printReceipt(receiptData: {
+  storeName: string
+  storeAddress?: string
+  storePhone?: string
+  storePostalCode?: string  // 追加
+  storeRegistrationNumber?: string  // 追加
+  receiptNumber: string
+  tableName: string
+  guestName: string
+  castName: string
+  timestamp: string
+  receiptTo?: string  // 追加（宛名）
+  receiptNote?: string  // 追加（但し書き）
+  showRevenueStamp?: boolean  // 追加（収入印紙表示）
+  revenueStampThreshold?: number  // 追加（収入印紙閾値）
+  orderItems: Array<{
+    name: string
+    cast?: string
+    quantity: number
+    price: number
+  }>
+  subtotal: number
+  serviceTax: number
+  consumptionTax: number
+  roundingAdjustment: number
+  roundedTotal: number
+  paymentCash: number
+  paymentCard: number
+  paymentOther: number
+  paymentOtherMethod?: string
+  change: number
+}): Promise<void> {
+  const plugin = this.getPlugin();
+  if (!plugin) {
+    throw new Error('SiiPrinter plugin not available');
   }
+  
+  try {
+    await plugin.printReceipt(receiptData);
+    console.log('Receipt printed successfully');
+  } catch (error) {
+    console.error('Print receipt error:', error);
+    throw error;
+  }
+}
 
   // テスト印刷
   async printTest(): Promise<void> {
