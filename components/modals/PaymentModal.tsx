@@ -12,8 +12,8 @@ interface PaymentModalProps {
     otherMethod: string
   }
   activePaymentInput: 'cash' | 'card' | 'other'
-  // subtotal: number  // 削除
-  // serviceTax: number  // 削除
+  subtotal: number
+  serviceTax: number
   total: number
   roundedTotal: number
   roundingAdjustment: number
