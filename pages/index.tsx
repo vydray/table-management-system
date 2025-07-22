@@ -1220,7 +1220,16 @@ const finishCheckout = () => {
 >
   ×
 </button>
-          <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            margin: 0,
+            padding: window.innerWidth <= 1024 ? '12px 15px' : '20px',
+            background: '#ff9800',
+            color: 'white',
+            fontSize: window.innerWidth <= 1024 ? '16px' : '20px'
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
               📌 {currentTable} の操作
               {modalMode === 'edit' && (
@@ -1314,10 +1323,12 @@ const finishCheckout = () => {
             <div id="details">
               <div className="order-section">
                 <div className="datetime-edit" style={{
-                  fontSize: `${16 * layoutScale}px`,
-                  padding: `${15 * layoutScale}px ${20 * layoutScale}px`
+                  fontSize: window.innerWidth <= 1024 ? '14px' : `${16 * layoutScale}px`,
+                  padding: window.innerWidth <= 1024 ? '10px 15px' : `${15 * layoutScale}px ${20 * layoutScale}px`
                 }}>
-                  <span className="label-text" style={{ fontSize: `${16 * layoutScale}px` }}>入店日時：</span>
+                  <span className="label-text" style={{ 
+                    fontSize: window.innerWidth <= 1024 ? '14px' : `${16 * layoutScale}px` 
+                  }}>入店日時：</span>
                   <select 
                     value={formData.editYear}
                     onChange={(e) => setFormData({ ...formData, editYear: parseInt(e.target.value) })}
@@ -1480,6 +1491,62 @@ const finishCheckout = () => {
         .label-text {
           font-weight: bold;
           margin-right: 10px;
+        }
+        
+        /* Androidタブレット用のモーダル修正 */
+        @media screen and (max-width: 1024px) {
+          /* 1. ヘッダー（操作 滞在時間）の縦幅を狭く */
+          #modal.modal-edit h3 {
+            padding: 12px 15px !important;
+            font-size: 16px !important;
+          }
+          
+          /* 2. 入店日時エリアの縦幅を狭く */
+          #modal.modal-edit .datetime-edit {
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            min-height: auto !important;
+          }
+          
+          #modal.modal-edit .datetime-edit .label-text {
+            font-size: 14px !important;
+          }
+          
+          #modal.modal-edit .datetime-edit select {
+            font-size: 13px !important;
+            padding: 4px 6px !important;
+          }
+          
+          /* 3. POSコンテナのレイアウト調整 */
+          #modal.modal-edit .pos-container {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 10px !important;
+            padding: 10px !important;
+            height: calc(100% - 100px) !important;
+          }
+          
+          /* 左側（商品選択）を少し狭く */
+          #modal.modal-edit .left-section {
+            width: 45% !important;
+            padding: 12px !important;
+          }
+          
+          /* 右側（注文・会計）を少し広く */
+          #modal.modal-edit .right-section {
+            width: 55% !important;
+            padding: 12px !important;
+          }
+          
+          /* モーダル全体の高さ調整 */
+          #modal.modal-edit {
+            height: 92% !important;
+            max-height: 92vh !important;
+          }
+          
+          #modal.modal-edit #details {
+            height: calc(100% - 50px) !important;
+          }
         }
       `}</style>
     </>
