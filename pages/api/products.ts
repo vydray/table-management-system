@@ -13,34 +13,48 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { storeId } = req.query
-  
-  // storeIdが指定されていない場合はデフォルト値を使用
-  const targetStoreId = storeId || 1
-
   try {
+    // storeIdをクエリパラメータから取得（ない場合はデフォルト値1）
+    const storeId = req.query.storeId ? parseInt(req.query.storeId as string) : 1
+    
+    console.log('商品API呼び出し - 店舗ID:', storeId)
+
     // カテゴリー取得（推し優先表示フラグも含む）
     const { data: categories, error: catError } = await supabase
       .from('product_categories')
       .select('*')
-      .eq('store_id', targetStoreId)
+      .eq('store_id', storeId)
       .order('display_order')
 
-    if (catError) throw catError
+    if (catError) {
+      console.error('カテゴリー取得エラー:', catError)
+      throw catError
+    }
 
     // 商品取得
     const { data: products, error: prodError } = await supabase
       .from('products')
       .select('*')
       .eq('is_active', true)
-      .eq('store_id', targetStoreId)
+      .eq('store_id', storeId)
       .order('display_order')
 
-    if (prodError) throw prodError
+    if (prodError) {
+      console.error('商品取得エラー:', prodError)
+      throw prodError
+    }
 
-    res.status(200).json({ categories, products })
+    console.log(`取得結果 - カテゴリー: ${categories?.length || 0}件, 商品: ${products?.length || 0}件`)
+
+    res.status(200).json({ 
+      categories: categories || [], 
+      products: products || [] 
+    })
   } catch (error) {
-    console.error('Error fetching products:', error)
-    res.status(500).json({ error: 'Failed to fetch products' })
+    console.error('商品データ取得エラー:', error)
+    res.status(500).json({ 
+      error: 'Failed to fetch products',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
   }
 }

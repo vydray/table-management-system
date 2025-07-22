@@ -232,13 +232,24 @@ export default function Home() {
     }
   }
 
-  // 商品データをAPIから取得
+// 商品データをAPIから取得
   const loadProducts = async () => {
     try {
       console.log('商品データ読み込み開始...')
       
+      // ログインチェック
+      const isLoggedIn = localStorage.getItem('isLoggedIn')
+      if (!isLoggedIn) {
+        console.log('未ログインのため商品データ読み込みをスキップ')
+        return
+      }
+      
       // 店舗IDを取得
       const storeId = getCurrentStoreId()
+      if (!storeId) {
+        console.log('店舗IDが取得できないため商品データ読み込みをスキップ')
+        return
+      }
       
       // APIに店舗IDを渡す
       const res = await fetch(`/api/products?storeId=${storeId}`)
@@ -276,7 +287,11 @@ export default function Home() {
       setProductCategories(productData)
     } catch (error) {
       console.error('Error loading products:', error)
-      alert('商品データの読み込みに失敗しました')
+      // ログイン前は警告を表示しない
+      const isLoggedIn = localStorage.getItem('isLoggedIn')
+      if (isLoggedIn) {
+        alert('商品データの読み込みに失敗しました')
+      }
     }
   }
 
@@ -482,10 +497,16 @@ export default function Home() {
 
   // 初期化
   useEffect(() => {
-    loadSystemSettings()
-    loadData()
-    loadCastList()
-    loadProducts()
+    // ログインチェック
+    const isLoggedIn = localStorage.getItem('isLoggedIn')
+    
+    if (isLoggedIn) {
+      // ログイン済みの場合のみデータを読み込む
+      loadSystemSettings()
+      loadData()
+      loadCastList()
+      loadProducts()
+    }
     
     const updateTime = () => {
       const now = new Date()
@@ -501,11 +522,18 @@ export default function Home() {
     updateTime()
     
     const timeInterval = setInterval(updateTime, 1000)
-    const dataInterval = setInterval(loadData, 10000)
+    
+    // ログイン済みの場合のみデータ更新間隔を設定
+    let dataInterval: NodeJS.Timeout | undefined
+    if (isLoggedIn) {
+      dataInterval = setInterval(loadData, 10000)
+    }
     
     return () => {
       clearInterval(timeInterval)
-      clearInterval(dataInterval)
+      if (dataInterval) {
+        clearInterval(dataInterval)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

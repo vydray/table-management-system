@@ -2,23 +2,40 @@
 
 // 現在の店舗IDを取得
 export const getCurrentStoreId = (): number => {
+  // サーバーサイドレンダリング対応
+  if (typeof window === 'undefined') {
+    return 0
+  }
+  
   // localStorageから店舗IDを取得
   const storeId = localStorage.getItem('currentStoreId')
   
   if (storeId) {
-    return parseInt(storeId, 10)
+    const id = parseInt(storeId, 10)
+    if (!isNaN(id) && id > 0) {
+      return id
+    }
   }
   
-  // 未ログインまたは店舗IDが設定されていない場合
-  console.warn('店舗IDが設定されていません。ログインが必要です。')
+  // 店舗IDが設定されていない場合
+  console.warn('店舗IDが設定されていません')
   
-  // ログインページにリダイレクト（ブラウザ環境の場合）
-  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+  // ログインページ以外でログインしていない場合はリダイレクト
+  const isLoggedIn = localStorage.getItem('isLoggedIn')
+  if (!isLoggedIn && window.location.pathname !== '/login') {
+    console.log('未ログインのためログインページへリダイレクト')
     window.location.href = '/login'
   }
   
-  // デフォルト値として1を返す（エラー回避のため）
-  return 1
+  // エラー判定用に0を返す
+  return 0
+}
+
+// 店舗IDを設定する関数
+export const setCurrentStoreId = (storeId: number): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('currentStoreId', storeId.toString())
+  }
 }
 
 // ログインチェック
@@ -30,17 +47,17 @@ export const checkAuth = (): boolean => {
   const isLoggedIn = localStorage.getItem('isLoggedIn')
   const storeId = localStorage.getItem('currentStoreId')
   
-  return isLoggedIn === 'true' && !!storeId
+  return isLoggedIn === 'true' && !!storeId && parseInt(storeId) > 0
 }
 
 // ログアウト処理
 export const logout = () => {
-  localStorage.removeItem('isLoggedIn')
-  localStorage.removeItem('username')
-  localStorage.removeItem('currentStoreId')
-  localStorage.removeItem('userRole')
-  
   if (typeof window !== 'undefined') {
+    localStorage.removeItem('isLoggedIn')
+    localStorage.removeItem('username')
+    localStorage.removeItem('currentStoreId')
+    localStorage.removeItem('userRole')
+    
     window.location.href = '/login'
   }
 }
