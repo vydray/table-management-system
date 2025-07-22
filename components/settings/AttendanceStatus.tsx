@@ -254,6 +254,7 @@ export default function AttendanceStatus() {
 
   useEffect(() => {
     loadAttendanceStatuses()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

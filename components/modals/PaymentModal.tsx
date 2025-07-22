@@ -37,8 +37,8 @@ export const PaymentModal: FC<PaymentModalProps> = ({
   layoutScale,
   paymentData,
   activePaymentInput,
-  subtotal,
-  serviceTax,
+  subtotal,  // eslint-disable-line @typescript-eslint/no-unused-vars
+  serviceTax,  // eslint-disable-line @typescript-eslint/no-unused-vars
   total,
   roundedTotal,
   roundingAdjustment,
