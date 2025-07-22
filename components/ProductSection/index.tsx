@@ -111,12 +111,20 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
       </div>
       
       <style jsx>{`
+        .left-section {
+          /* グローバルCSSのスクロール設定を上書き */
+          overflow: hidden !important;
+        }
+        
         .category-section {
           display: flex;
           gap: 10px;
           flex: 1;
           position: relative;
           overflow: hidden;
+          /* グローバルCSSの高さ設定を上書き */
+          height: 100% !important;
+          min-height: auto !important;
         }
         
         .category-column,
@@ -127,18 +135,10 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           overflow-x: hidden;
           -webkit-overflow-scrolling: touch;
           position: relative;
-        }
-        
-        /* 各カラムの最小高さを確保 */
-        .category-column {
-          min-height: 100%;
-        }
-        
-        .product-column,
-        .cast-column {
-          min-height: 100%;
-          /* スクロールバーは必要な時のみ表示 */
-          overflow-y: auto;
+          /* グローバルCSSのmax-heightを上書き */
+          max-height: 100% !important;
+          height: 100% !important;
+          min-height: auto !important;
         }
         
         /* スクロールバーのスタイル */
@@ -177,12 +177,6 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           .product-column,
           .cast-column {
             padding: 0 5px;
-          }
-          
-          /* タブレットではスクロールバーを自動に */
-          .product-column,
-          .cast-column {
-            overflow-y: auto;
           }
         }
       `}</style>
