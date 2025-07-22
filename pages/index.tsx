@@ -358,8 +358,14 @@ export default function Home() {
         }
       })
       
-      // 取得したデータで更新
+      // 取得したデータで更新（tablePositionsに存在するテーブルのみ）
       data.forEach(item => {
+        // tablePositionsに定義されているテーブルのみ処理
+        if (!(item.table in tablePositions)) {
+          console.warn(`未定義のテーブル「${item.table}」をスキップしました`)
+          return
+        }
+        
         if (item.time && item.status === 'occupied') {
           const entryTime = new Date(item.time.replace(' ', 'T'))
           const now = new Date()
@@ -1408,18 +1414,18 @@ const finishCheckout = () => {
         }}
       />
       
-      {/* ローディングオーバーレイ */}
-      <LoadingOverlay 
-        isLoading={isProcessingCheckout} 
-        message="会計処理中..." 
-      />
-      
-      {/* 領収書確認モーダル */}
+      {/* 領収書確認モーダル - 他のモーダルより後に配置 */}
       <ConfirmModal
         isOpen={showReceiptConfirm}
         message="領収書を印刷しますか？"
         onConfirm={handleReceiptPrint}
         onCancel={finishCheckout}
+      />
+      
+      {/* ローディングオーバーレイ - 最後に配置で最前面 */}
+      <LoadingOverlay 
+        isLoading={isProcessingCheckout} 
+        message="会計処理中..." 
       />
 
       <style jsx>{`
