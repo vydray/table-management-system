@@ -1353,76 +1353,6 @@ const finishCheckout = () => {
           ) : (
                       <div id="details">
               <div className="order-section">
-                {/* 顧客情報ヘッダー - 新しいレイアウト */}
-                <div className="customer-header" style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '20px',
-                  padding: '15px 20px',
-                  backgroundColor: '#f5f5f5',
-                  borderBottom: '1px solid #ddd',
-                  marginBottom: 0,
-                  flexWrap: 'wrap'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span className="label-text">お客様:</span>
-                    <span style={{ fontWeight: 'normal', fontSize: '16px' }}>{tables[currentTable].name}</span>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span className="label-text">推し:</span>
-                    <div className="oshi-edit">
-                      <select 
-                        className="cast-select"
-                        value={formData.castName}
-                        onChange={(e) => {
-                          setFormData({ ...formData, castName: e.target.value })
-                          updateTableInfo(true)
-                        }}
-                        style={{
-                          fontSize: '14px',
-                          padding: '4px 8px',
-                          minWidth: '120px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        <option value="">-- 未選択 --</option>
-                        {castList.map(cast => (
-                          <option key={cast} value={cast}>{cast}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span className="label-text">来店種別:</span>
-                    <div className="visit-edit">
-                      <select
-                        className="visit-select"
-                        value={formData.visitType}
-                        onChange={(e) => {
-                          setFormData({ ...formData, visitType: e.target.value })
-                          updateTableInfo(true)
-                        }}
-                        style={{
-                          fontSize: '14px',
-                          padding: '4px 8px',
-                          minWidth: '100px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        <option value="">-- 未選択 --</option>
-                        <option value="初回">初回</option>
-                        <option value="再訪">再訪</option>
-                        <option value="常連">常連</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
 
                 {/* 入店日時エリア - 元のまま */}
                 <div className="datetime-edit" style={{
@@ -1518,10 +1448,13 @@ const finishCheckout = () => {
                     onUpdateOrderItem={updateOrderItemQuantity}
                     onDeleteOrderItem={deleteOrderItem}
                     onUpdateOrderItemPrice={updateOrderItemPrice}
-                    castName={formData.castName}
-                    guestName={formData.guestName}
-                    onUpdateCast={(value) => setFormData({ ...formData, castName: value })}
-                    onUpdateGuest={(value) => setFormData({ ...formData, guestName: value })}
+                    /* 変更部分: castName, guestNameを削除して、formDataとonUpdateFormDataを追加 */
+                    formData={formData}
+                    onUpdateFormData={(updates) => {
+                      setFormData({ ...formData, ...updates })
+                      updateTableInfo(true)
+                    }}
+                    /* ここまで変更 */
                     castList={castList}
                     subtotal={orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
                     serviceTax={Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * systemSettings.serviceChargeRate)}
