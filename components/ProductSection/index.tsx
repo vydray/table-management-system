@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { CategoryList } from './CategoryList'
 import { ProductList } from './ProductList'
 import { CastSelector } from './CastSelector'
@@ -26,12 +26,10 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   onAddProduct
 }) => {
   const [localSelectedProduct, setLocalSelectedProduct] = useState<{ name: string; price: number; needsCast: boolean } | null>(null)
-  const [showCastAtBottom, setShowCastAtBottom] = useState(false)
   
   // カテゴリーが変更されたらキャスト選択をリセット
   useEffect(() => {
     setLocalSelectedProduct(null)
-    setShowCastAtBottom(false)
   }, [selectedCategory])
   
   // 外部からの selectedProduct の変更を反映
@@ -45,8 +43,6 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   const handleProductSelect = (productName: string, productData: ProductItem) => {
     if (productData.needsCast) {
       setLocalSelectedProduct({ name: productName, price: productData.price, needsCast: true })
-      // キャスト選択を下部に表示
-      setShowCastAtBottom(true)
     } else {
       onAddProduct(productName, productData.price, false)
     }
@@ -55,9 +51,6 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   const handleCastSelect = (castName: string) => {
     if (localSelectedProduct) {
       onAddProduct(localSelectedProduct.name, localSelectedProduct.price, true, castName)
-      // キャスト選択後にリセット
-      setLocalSelectedProduct(null)
-      setShowCastAtBottom(false)
     }
   }
 
@@ -97,92 +90,81 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           </div>
           
           <div className="cast-column">
-            {/* キャスト選択エリアを通常表示（スクロール内） */}
-            {localSelectedProduct && localSelectedProduct.needsCast && !showCastAtBottom && (
-              <CastSelector
-                castList={getSortedCastList()}
-                selectedProduct={localSelectedProduct}
-                onSelectCast={handleCastSelect}
-                currentOshi={currentOshi}
-              />
+            {localSelectedProduct && localSelectedProduct.needsCast && (
+              <div className="cast-highlight">
+                <CastSelector
+                  castList={getSortedCastList()}
+                  selectedProduct={localSelectedProduct}
+                  onSelectCast={handleCastSelect}
+                  currentOshi={currentOshi}
+                />
+              </div>
             )}
           </div>
         </div>
       </div>
       
-      {/* キャスト選択を下部固定表示 */}
-      {showCastAtBottom && localSelectedProduct && localSelectedProduct.needsCast && (
-        <div className="cast-selector-bottom">
-          <CastSelector
-            castList={getSortedCastList()}
-            selectedProduct={localSelectedProduct}
-            onSelectCast={handleCastSelect}
-            currentOshi={currentOshi}
-          />
-        </div>
-      )}
-      
       <style jsx>{`
         .left-section {
-          /* 全体のコンテナ */
+          /* 全体のコンテナはスクロール可能 */
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+          -webkit-overflow-scrolling: touch !important;
           height: 100%;
           display: flex;
           flex-direction: column;
-          position: relative;
         }
         
         .category-section-wrapper {
-          /* スクロール可能エリア */
-          flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-          -webkit-overflow-scrolling: touch;
+          /* 内容に応じて高さが変わる */
+          flex: 0 0 auto;
+          min-height: 100%;
         }
         
         .category-section {
           display: flex;
           gap: 10px;
           min-height: 100%;
-          padding-bottom: 20px;
+          padding-bottom: 20px; /* 下部に余白 */
         }
         
         .category-column,
         .product-column,
         .cast-column {
           flex: 1;
-          overflow: visible;
+          /* 個別のスクロールを無効化 */
+          overflow: visible !important;
           position: relative;
-          height: auto;
+          /* 内容に応じて高さが伸びる */
+          height: auto !important;
           min-height: 300px;
         }
         
-        /* 下部固定のキャスト選択エリア */
-        .cast-selector-bottom {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: white;
-          border-top: 2px solid #ddd;
-          box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-          max-height: 40%;
-          overflow-y: auto;
-          z-index: 10;
-          animation: slideUp 0.3s ease-out;
+        /* キャスト選択を目立たせる */
+        .cast-highlight {
+          background-color: #fff3cd;
+          border: 2px solid #ffc107;
+          border-radius: 8px;
+          padding: 10px;
+          margin-top: 10px;
+          box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+          animation: highlight 0.3s ease-out;
         }
         
-        @keyframes slideUp {
+        @keyframes highlight {
           from {
-            transform: translateY(100%);
+            transform: scale(0.95);
+            opacity: 0;
           }
           to {
-            transform: translateY(0);
+            transform: scale(1);
+            opacity: 1;
           }
         }
         
         /* グローバルCSSを上書き */
         :global(#modal.modal-edit) .left-section {
-          overflow: hidden !important;
+          overflow-y: auto !important;
         }
         
         :global(#modal.modal-edit) .category-section {
@@ -198,38 +180,29 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           max-height: none !important;
         }
         
+        /* cast-listのスクロールも無効化 */
         :global(.cast-list) {
           max-height: none !important;
           overflow: visible !important;
           height: auto !important;
         }
         
-        /* スクロールバーのスタイル */
-        .category-section-wrapper::-webkit-scrollbar {
+        /* スクロールバーのスタイル（左セクション全体用） */
+        .left-section::-webkit-scrollbar {
           width: 8px;
         }
         
-        .category-section-wrapper::-webkit-scrollbar-track {
+        .left-section::-webkit-scrollbar-track {
           background: #f1f1f1;
         }
         
-        .category-section-wrapper::-webkit-scrollbar-thumb {
+        .left-section::-webkit-scrollbar-thumb {
           background: #888;
           border-radius: 4px;
         }
         
-        .category-section-wrapper::-webkit-scrollbar-thumb:hover {
+        .left-section::-webkit-scrollbar-thumb:hover {
           background: #555;
-        }
-        
-        /* 下部キャスト選択のスクロールバー */
-        .cast-selector-bottom::-webkit-scrollbar {
-          width: 6px;
-        }
-        
-        .cast-selector-bottom::-webkit-scrollbar-thumb {
-          background: #666;
-          border-radius: 3px;
         }
         
         /* Androidタブレット用の調整 */
@@ -242,10 +215,6 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           .product-column,
           .cast-column {
             padding: 0 5px;
-          }
-          
-          .cast-selector-bottom {
-            max-height: 50%;
           }
         }
       `}</style>
