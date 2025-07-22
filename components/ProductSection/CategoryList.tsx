@@ -13,9 +13,9 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 }) => {
   return (
     <div className="main-categories">
-      <div className="category-title">商品カテゴリー</div>
+      <div className="category-title">カテゴリー</div>
       {categories.map(category => (
-        <div 
+        <div
           key={category}
           className={`main-category-item ${selectedCategory === category ? 'selected' : ''}`}
           onClick={() => onSelectCategory(category)}

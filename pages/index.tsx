@@ -1412,7 +1412,11 @@ const finishCheckout = () => {
                     castList={castList}
                     currentOshi={formData.castName}
                     showOshiFirst={getCurrentCategoryShowOshiFirst()}
-                    onSelectCategory={setSelectedCategory}
+                    onSelectCategory={(category) => {
+                      setSelectedCategory(category)
+                      // カテゴリー変更時に商品選択をクリア
+                      setSelectedProduct(null)
+                    }}
                     onAddProduct={addProductToOrder}
                   />
                   

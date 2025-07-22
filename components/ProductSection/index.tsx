@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { CategoryList } from './CategoryList'
 import { ProductList } from './ProductList'
 import { CastSelector } from './CastSelector'
@@ -10,7 +10,7 @@ interface ProductSectionProps {
   selectedProduct: { name: string; price: number; needsCast: boolean } | null
   castList: string[]
   currentOshi?: string
-  showOshiFirst?: boolean  // 追加：現在のカテゴリーの推し優先表示設定
+  showOshiFirst?: boolean
   onSelectCategory: (category: string) => void
   onAddProduct: (productName: string, price: number, needsCast: boolean, castName?: string) => void
 }
@@ -21,16 +21,18 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   selectedProduct,
   castList,
   currentOshi,
-  showOshiFirst = false,  // デフォルト値を設定
+  showOshiFirst = false,
   onSelectCategory,
   onAddProduct
 }) => {
-  // ローカルで選択中の商品を管理
   const [localSelectedProduct, setLocalSelectedProduct] = useState<{ name: string; price: number; needsCast: boolean } | null>(null)
+  
+  const mainCategoriesRef = useRef<HTMLDivElement>(null)
+  const subCategoriesRef = useRef<HTMLDivElement>(null)
+  const castSelectorRef = useRef<HTMLDivElement>(null)
   
   // カテゴリーが変更されたらキャスト選択をリセット
   useEffect(() => {
-    // カテゴリーが変更された時にキャスト選択をクリア
     setLocalSelectedProduct(null)
   }, [selectedCategory])
   
@@ -41,12 +43,44 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
     }
   }, [selectedProduct])
   
+  // カテゴリー選択時のスクロール調整
+  useEffect(() => {
+    if (selectedCategory && mainCategoriesRef.current && subCategoriesRef.current) {
+      // 選択されたカテゴリー要素を探す
+      const selectedElement = mainCategoriesRef.current.querySelector('.main-category-item.selected')
+      
+      if (selectedElement) {
+        const elementRect = selectedElement.getBoundingClientRect()
+        const containerRect = mainCategoriesRef.current.getBoundingClientRect()
+        const relativeTop = elementRect.top - containerRect.top + mainCategoriesRef.current.scrollTop
+        
+        // 商品リストのスクロール位置を調整
+        subCategoriesRef.current.scrollTop = relativeTop - 50
+      }
+    }
+  }, [selectedCategory])
+  
+  // 商品選択時のスクロール調整
+  useEffect(() => {
+    if (localSelectedProduct && localSelectedProduct.needsCast && subCategoriesRef.current && castSelectorRef.current) {
+      // 選択された商品要素を探す
+      const selectedElement = subCategoriesRef.current.querySelector('.sub-category-item.selected')
+      
+      if (selectedElement) {
+        const elementRect = selectedElement.getBoundingClientRect()
+        const containerRect = subCategoriesRef.current.getBoundingClientRect()
+        const relativeTop = elementRect.top - containerRect.top + subCategoriesRef.current.scrollTop
+        
+        // キャスト選択エリアのスクロール位置を調整
+        castSelectorRef.current.scrollTop = relativeTop - 50
+      }
+    }
+  }, [localSelectedProduct])
+
   const handleProductSelect = (productName: string, productData: ProductItem) => {
     if (productData.needsCast) {
-      // キャストが必要な商品を選択したらローカルに保持
       setLocalSelectedProduct({ name: productName, price: productData.price, needsCast: true })
     } else {
-      // キャストが不要な商品は直接追加
       onAddProduct(productName, productData.price, false)
     }
   }
@@ -54,7 +88,6 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   const handleCastSelect = (castName: string) => {
     if (localSelectedProduct) {
       onAddProduct(localSelectedProduct.name, localSelectedProduct.price, true, castName)
-      // キャストを選択したら状態を維持（同じカテゴリー内なら残す）
     }
   }
 
@@ -64,7 +97,6 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
       return castList
     }
 
-    // showOshiFirstがtrueの場合、推しを先頭に
     if (showOshiFirst) {
       return [currentOshi, ...castList.filter(name => name !== currentOshi)]
     }
@@ -84,27 +116,57 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
       </div>
       
       <div className="category-section">
-        <CategoryList
-          categories={Object.keys(productCategories)}
-          selectedCategory={selectedCategory}
-          onSelectCategory={onSelectCategory}
-        />
-        
-        {selectedCategory && (
-          <ProductList
-            products={productCategories[selectedCategory]}
-            selectedProduct={localSelectedProduct}
-            onSelectProduct={handleProductSelect}
+        <div ref={mainCategoriesRef} className="main-categories-wrapper">
+          <CategoryList
+            categories={Object.keys(productCategories)}
+            selectedCategory={selectedCategory}
+            onSelectCategory={onSelectCategory}
           />
-        )}
+        </div>
         
-        <CastSelector
-          castList={getSortedCastList()}
-          selectedProduct={localSelectedProduct}
-          onSelectCast={handleCastSelect}
-          currentOshi={currentOshi}
-        />
+        <div ref={subCategoriesRef} className="sub-categories-wrapper">
+          {selectedCategory && (
+            <ProductList
+              products={productCategories[selectedCategory]}
+              selectedProduct={localSelectedProduct}
+              onSelectProduct={handleProductSelect}
+            />
+          )}
+        </div>
+        
+        <div ref={castSelectorRef} className="cast-selector-wrapper">
+          <CastSelector
+            castList={getSortedCastList()}
+            selectedProduct={localSelectedProduct}
+            onSelectCast={handleCastSelect}
+            currentOshi={currentOshi}
+          />
+        </div>
       </div>
+      
+      <style jsx>{`
+        .main-categories-wrapper,
+        .sub-categories-wrapper,
+        .cast-selector-wrapper {
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+          -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+          position: relative;
+        }
+        
+        /* Androidタブレット用の追加スタイル */
+        @media screen and (max-width: 1024px) {
+          .category-section {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+          }
+        }
+      `}</style>
     </div>
   )
 }

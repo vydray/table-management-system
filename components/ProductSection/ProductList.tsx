@@ -2,7 +2,7 @@ import React from 'react'
 import { ProductItem } from '../../types'
 
 interface ProductListProps {
-  products: { [subcategory: string]: ProductItem }  // 型を修正
+  products: { [subcategory: string]: ProductItem }
   selectedProduct: { name: string; price: number; needsCast: boolean } | null
   onSelectProduct: (productName: string, productData: ProductItem) => void
 }
