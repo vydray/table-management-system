@@ -256,51 +256,67 @@ export default function ReceiptSettings() {
   }
 
   // 直接印刷テスト
-  const testDirectPrint = async () => {
-    if (!printerConnected) {
-      alert('プリンターが接続されていません')
-      return
-    }
-
-    try {
-      await printer.printReceipt({
-        storeName: settings.store_name || 'テスト店舗',
-        storeAddress: settings.store_address || '東京都渋谷区テスト1-2-3',
-        storePhone: settings.store_phone || 'TEL: 03-1234-5678',
-        receiptNumber: `R${Date.now()}`,
-        tableName: 'テスト',
-        guestName: 'テストユーザー',
-        castName: 'テストキャスト',
-        timestamp: new Date().toLocaleString('ja-JP', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        }),
-        orderItems: [
-          { name: 'テスト商品1', price: 500, quantity: 1 },
-          { name: 'テスト商品2', price: 300, quantity: 1 }
-        ],
-        subtotal: 800,
-        serviceTax: 120,
-        consumptionTax: 80,
-        roundingAdjustment: 0,
-        roundedTotal: 1000,
-        paymentCash: 1000,
-        paymentCard: 0,
-        paymentOther: 0,
-        paymentOtherMethod: '',
-        change: 0
-      })
-      
-      alert('印刷完了')
-    } catch (error) {
-      console.error('Print error:', error)
-      alert('印刷エラー: ' + error)
-    }
+const testDirectPrint = async () => {
+  if (!printerConnected) {
+    alert('プリンターが接続されていません')
+    return
   }
+
+  try {
+    // 現在の設定値を使用
+    await printer.printReceipt({
+      // 店舗情報（現在の設定値を使用）
+      storeName: settings.store_name || 'テスト店舗',
+      storeAddress: settings.store_address || '',
+      storePhone: settings.store_phone || '',
+      storePostalCode: settings.store_postal_code || '',
+      storeRegistrationNumber: settings.store_registration_number || '',
+      
+      // テスト用の固定値
+      receiptNumber: `TEST-${Date.now()}`,
+      tableName: 'テスト',
+      guestName: 'テストユーザー',
+      castName: 'テストキャスト',
+      timestamp: new Date().toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }),
+      
+      // 宛名と但し書き
+      receiptTo: 'テスト印刷',
+      receiptNote: 'テスト印刷のため',
+      
+      // 収入印紙設定（現在の設定値を使用）
+      showRevenueStamp: settings.show_revenue_stamp,
+      revenueStampThreshold: settings.revenue_stamp_threshold,
+      
+      // テスト商品
+      orderItems: [
+        { name: 'テスト商品1', price: 500, quantity: 1 },
+        { name: 'テスト商品2', price: 300, quantity: 1 }
+      ],
+      subtotal: 800,
+      serviceTax: 120,
+      consumptionTax: 92,
+      roundingAdjustment: -12,
+      roundedTotal: 1000,
+      paymentCash: 1000,
+      paymentCard: 0,
+      paymentOther: 0,
+      paymentOtherMethod: '',
+      change: 0
+    })
+    
+    alert('テスト印刷完了')
+  } catch (error) {
+    console.error('Print error:', error)
+    alert('印刷エラー: ' + error)
+  }
+}
 
   return (
     <div style={{

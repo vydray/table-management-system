@@ -766,7 +766,7 @@ export default function Home() {
     setShowPaymentModal(true)
   }
 
-  // 会計完了処理（修正版）
+// 会計完了処理（修正版）
 const completeCheckout = async () => {
   const totalPaid = paymentData.cash + paymentData.card + paymentData.other
   const roundedTotal = getRoundedTotal(getTotal())
@@ -808,8 +808,29 @@ const completeCheckout = async () => {
       throw new Error(result.error || 'Checkout failed')
     }
     
-    // ★領収書印刷（都度接続方式）★
+    // 領収書印刷（都度接続方式）
     if (confirm('領収書を印刷しますか？')) {
+      // 宛名と但し書きの入力
+      const receiptTo = prompt('宛名を入力してください（空欄可）:', formData.guestName || '') || ''
+      
+      // 設定から但し書きテンプレートを取得
+      const { data: receiptSettings } = await supabase
+        .from('receipt_settings')
+        .select('*')
+        .eq('store_id', storeId)
+        .single();
+      
+      // デフォルトの但し書きを取得
+      let defaultReceiptNote = 'お品代として';
+      if (receiptSettings?.receipt_templates) {
+        const defaultTemplate = receiptSettings.receipt_templates.find((t: any) => t.is_default);
+        if (defaultTemplate) {
+          defaultReceiptNote = defaultTemplate.text;
+        }
+      }
+      
+      const receiptNote = prompt('但し書きを入力してください:', defaultReceiptNote) || defaultReceiptNote;
+      
       try {
         // 新しく接続を確立
         await printer.enable();
@@ -842,12 +863,25 @@ const completeCheckout = async () => {
           const serviceTax = Math.floor(subtotal * systemSettings.serviceChargeRate);
           const consumptionTax = Math.floor((subtotal + serviceTax) * systemSettings.consumptionTaxRate);
           
-          // 領収書印刷
+          // 領収書印刷（設定値を使用）
           await printer.printReceipt({
-            storeName: '店舗名',
-            storeAddress: '東京都渋谷区...',
-            storePhone: 'TEL: 03-xxxx-xxxx',
+            // 店舗情報（設定から取得）
+            storeName: receiptSettings?.store_name || '店舗名',
+            storeAddress: receiptSettings?.store_address || '',
+            storePhone: receiptSettings?.store_phone || '',
+            storePostalCode: receiptSettings?.store_postal_code || '',
+            storeRegistrationNumber: receiptSettings?.store_registration_number || '',
+            
+            // 領収書情報
             receiptNumber: result.receiptNumber || `R${Date.now()}`,
+            receiptTo: receiptTo,  // 宛名
+            receiptNote: receiptNote,  // 但し書き
+            
+            // 収入印紙設定（設定から取得）
+            showRevenueStamp: receiptSettings?.show_revenue_stamp ?? true,
+            revenueStampThreshold: receiptSettings?.revenue_stamp_threshold || 50000,
+            
+            // 会計情報
             tableName: currentTable,
             guestName: formData.guestName || '（未入力）',
             castName: formData.castName || '（未選択）',
@@ -873,7 +907,6 @@ const completeCheckout = async () => {
         }
       } catch (printError) {
         console.error('領収書印刷エラー:', printError);
-        // エラーメッセージの取得を型安全に
         const errorMessage = printError instanceof Error 
           ? printError.message 
           : '不明なエラーが発生しました';
