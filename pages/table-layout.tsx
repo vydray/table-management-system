@@ -17,12 +17,19 @@ interface TableLayout {
   table_height: number
   is_visible: boolean
   display_name: string | null
+  current_guest?: string | null
+  created_at?: string
+  created_by?: string
 }
 
 interface ScreenRatio {
   label: string
   width: number
   height: number
+}
+
+interface User {
+  id: string
 }
 
 const presetRatios: ScreenRatio[] = [
@@ -42,6 +49,7 @@ export default function TableLayoutEdit() {
   const [selectedTable, setSelectedTable] = useState<TableLayout | null>(null)
   const [newTableName, setNewTableName] = useState('')
   const [windowWidth, setWindowWidth] = useState(1280)
+  const [user, setUser] = useState<User | null>(null)
   
   // 画面比率関連の状態
   const [selectedRatio, setSelectedRatio] = useState('1280×800（PC）')
@@ -58,191 +66,89 @@ export default function TableLayoutEdit() {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const canvasRef = useRef<HTMLDivElement>(null)
   const isPanning = useRef(false)
-  const lastPanPosition = useRef({ x: 0, y: 0 })
-  const pinchStartDistance = useRef(0)
-  const startZoom = useRef(1)
+  const lastPanPoint = useRef({ x: 0, y: 0 })
+  
+  // 配置禁止ゾーンの定義
+  const forbiddenZones = {
+    top: 80,     // ヘッダーの高さ + 余白
+    bottom: 60,  // Androidナビゲーションバーの高さ
+    left: 0,
+    right: 0
+  }
 
+  // ウィンドウサイズの監視
   useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth)
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth)
+    }
+    
     handleResize()
     window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
   }, [])
 
+  // 初期化処理
   useEffect(() => {
-    fetchTables()
-    
-    // 保存された画面比率を読み込む
-    const savedRatio = localStorage.getItem('tableLayoutRatio')
-    const savedCustomWidth = localStorage.getItem('tableLayoutCustomWidth')
-    const savedCustomHeight = localStorage.getItem('tableLayoutCustomHeight')
-    
-    if (savedRatio) {
-      setSelectedRatio(savedRatio)
-      if (savedRatio === 'カスタム...' && savedCustomWidth && savedCustomHeight) {
-        setCustomWidth(savedCustomWidth)
-        setCustomHeight(savedCustomHeight)
-        setCanvasSize({ 
-          width: parseInt(savedCustomWidth), 
-          height: parseInt(savedCustomHeight) 
-        })
-      } else {
-        const preset = presetRatios.find(r => r.label === savedRatio)
-        if (preset) {
-          setCanvasSize({ width: preset.width, height: preset.height })
-        }
-      }
-    }
-    
-    // 保存されたテーブルサイズを読み込む
-    const savedTableWidth = localStorage.getItem('tableWidth')
-    const savedTableHeight = localStorage.getItem('tableHeight')
-    if (savedTableWidth && savedTableHeight) {
-      setTableSize({
-        width: parseInt(savedTableWidth),
-        height: parseInt(savedTableHeight)
-      })
-    }
+    loadTables()
+    checkUser()
   }, [])
 
-  // ピンチズーム処理
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      // ピンチ開始
-      const touch1 = e.touches[0]
-      const touch2 = e.touches[1]
-      const distance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
-      )
-      pinchStartDistance.current = distance
-      startZoom.current = zoom
-    } else if (e.touches.length === 1 && !draggedTable) {
-      // パン開始
-      isPanning.current = true
-      lastPanPosition.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY
-      }
-    }
+  // ユーザー確認
+  const checkUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    setUser(user)
   }
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      // ピンチ中
-      e.preventDefault()
-      const touch1 = e.touches[0]
-      const touch2 = e.touches[1]
-      const distance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
-      )
-      
-      if (pinchStartDistance.current > 0) {
-        const scale = distance / pinchStartDistance.current
-        const newZoom = Math.max(0.5, Math.min(3, startZoom.current * scale))
-        setZoom(newZoom)
-      }
-    } else if (e.touches.length === 1 && isPanning.current && !draggedTable) {
-      // パン中
-      const deltaX = e.touches[0].clientX - lastPanPosition.current.x
-      const deltaY = e.touches[0].clientY - lastPanPosition.current.y
-      
-      setPanOffset(prev => ({
-        x: prev.x + deltaX,
-        y: prev.y + deltaY
-      }))
-      
-      lastPanPosition.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY
-      }
-    }
-  }
-
-  const handleTouchEnd = () => {
-    isPanning.current = false
-    pinchStartDistance.current = 0
-  }
-
-  // マウスホイールでのズーム
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault()
-    const delta = e.deltaY > 0 ? 0.9 : 1.1
-    const newZoom = Math.max(0.5, Math.min(3, zoom * delta))
-    setZoom(newZoom)
-  }
-
-  // 画面比率の変更処理
-  const handleRatioChange = (value: string) => {
-    setSelectedRatio(value)
-    localStorage.setItem('tableLayoutRatio', value)
-    
-    if (value !== 'カスタム...') {
-      const preset = presetRatios.find(r => r.label === value)
-      if (preset) {
-        setCanvasSize({ width: preset.width, height: preset.height })
-      }
-    }
-  }
-
-  // カスタムサイズの適用
-  const applyCustomSize = () => {
-    const width = parseInt(customWidth)
-    const height = parseInt(customHeight)
-    
-    if (!isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
-      setCanvasSize({ width, height })
-      localStorage.setItem('tableLayoutCustomWidth', customWidth)
-      localStorage.setItem('tableLayoutCustomHeight', customHeight)
-    }
-  }
-
-  // テーブル一覧の取得
-  const fetchTables = useCallback(async () => {
+  // テーブル情報を読み込む
+  const loadTables = async () => {
     setLoading(true)
-    try {
-      const savedStoreId = localStorage.getItem('currentStoreId') || '1'
-      const { data, error } = await supabase
-        .from('table_status')
-        .select('*')
-        .eq('store_id', savedStoreId)
-        .order('table_name')
+    const { data, error } = await supabase
+      .from('table_layouts')
+      .select('*')
+      .order('table_name')
 
-      if (!error && data) {
-        setTables(data)
-      }
-    } catch (error) {
-      console.error('Error fetching tables:', error)
-    } finally {
-      setLoading(false)
+    if (!error && data) {
+      setTables(data)
     }
-  }, [])
+    setLoading(false)
+  }
 
-  // テーブルの位置を更新
-  const updateTablePosition = async (tableName: string, top: number, left: number) => {
-    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
+  // テーブル名を更新
+  const updateTableName = async (tableName: string, displayName: string) => {
     const { error } = await supabase
-      .from('table_status')
-      .update({ position_top: top, position_left: left })
+      .from('table_layouts')
+      .update({ display_name: displayName })
       .eq('table_name', tableName)
-      .eq('store_id', savedStoreId)
 
     if (!error) {
       setTables(prev => prev.map(t => 
-        t.table_name === tableName ? { ...t, position_top: top, position_left: left } : t
+        t.table_name === tableName ? { ...t, display_name: displayName } : t
       ))
+      setSelectedTable(null)
+    }
+  }
+
+  // テーブル位置を更新
+  const updateTablePosition = async (tableName: string, top: number, left: number) => {
+    const { error } = await supabase
+      .from('table_layouts')
+      .update({ position_top: top, position_left: left })
+      .eq('table_name', tableName)
+
+    if (error) {
+      console.error('位置更新エラー:', error)
     }
   }
 
   // テーブルの表示/非表示を切り替え
   const toggleTableVisibility = async (tableName: string, isVisible: boolean) => {
-    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
     const { error } = await supabase
-      .from('table_status')
+      .from('table_layouts')
       .update({ is_visible: isVisible })
       .eq('table_name', tableName)
-      .eq('store_id', savedStoreId)
 
     if (!error) {
       setTables(prev => prev.map(t => 
@@ -251,114 +157,140 @@ export default function TableLayoutEdit() {
     }
   }
 
-  // テーブル名を更新
-  const updateTableName = async (tableName: string, displayName: string) => {
-    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
-    
-    const { error } = await supabase
-      .from('table_status')
-      .update({ display_name: displayName || null })
-      .eq('table_name', tableName)
-      .eq('store_id', savedStoreId)
-
-    if (!error) {
-      setTables(prev => prev.map(t => 
-        t.table_name === tableName ? { ...t, display_name: displayName || null } : t
-      ))
-      setSelectedTable(null)
-    }
-  }
-
-  // 新しいテーブルを追加
+  // 新規テーブル追加
   const addNewTable = async () => {
-    if (!newTableName.trim()) return
+    if (!newTableName.trim() || !user) return
 
-    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
-    
-    const isDuplicate = tables.some(t => t.table_name === newTableName.trim())
-    if (isDuplicate) {
-      alert('このテーブル名は既に存在します')
-      return
+    const newTable: TableLayout = {
+      table_name: newTableName.trim(),
+      display_name: newTableName.trim(),
+      position_top: forbiddenZones.top + 50,  // 配置禁止ゾーンを避けた初期位置
+      position_left: forbiddenZones.left + 50,
+      table_width: tableSize.width,
+      table_height: tableSize.height,
+      is_visible: true,
+      current_guest: null,
+      created_at: new Date().toISOString(),
+      created_by: user.id
     }
 
     const { error } = await supabase
-      .from('table_status')
-      .insert({
-        table_name: newTableName,
-        store_id: savedStoreId,
-        position_top: 300,
-        position_left: 400,
-        table_width: tableSize.width,
-        table_height: tableSize.height,
-        is_visible: true
-      })
+      .from('table_layouts')
+      .insert([newTable])
 
     if (!error) {
-      fetchTables()
+      setTables(prev => [...prev, newTable])
       setNewTableName('')
     }
   }
 
-  // テーブルサイズの一括更新
-  const updateAllTableSizes = async () => {
-    setIsUpdatingSize(true)
-    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
-    
-    try {
-      // 各テーブルのサイズを更新
-      const updatePromises = tables.map(table => 
-        supabase
-          .from('table_status')
-          .update({ 
-            table_width: tableSize.width, 
-            table_height: tableSize.height 
-          })
-          .eq('table_name', table.table_name)
-          .eq('store_id', savedStoreId)
-      )
-      
-      await Promise.all(updatePromises)
-      
-      // ローカルの状態も更新
-      setTables(prev => prev.map(t => ({
-        ...t,
-        table_width: tableSize.width,
-        table_height: tableSize.height
-      })))
-      
-      // 設定を保存
-      localStorage.setItem('tableWidth', tableSize.width.toString())
-      localStorage.setItem('tableHeight', tableSize.height.toString())
-      
-      alert('全テーブルのサイズを更新しました')
-    } catch (error) {
-      console.error('Error updating table sizes:', error)
-      alert('サイズの更新に失敗しました')
-    } finally {
-      setIsUpdatingSize(false)
-    }
-  }
-
-  // テーブルを削除
+  // テーブル削除
   const deleteTable = async (tableName: string) => {
-    if (!confirm('このテーブルを削除しますか？')) return
+    if (!confirm(`テーブル「${tableName}」を削除しますか？`)) return
 
-    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
-    
     const { error } = await supabase
-      .from('table_status')
+      .from('table_layouts')
       .delete()
       .eq('table_name', tableName)
-      .eq('store_id', savedStoreId)
 
     if (!error) {
       setTables(prev => prev.filter(t => t.table_name !== tableName))
-      setSelectedTable(null)
     }
+  }
+
+  // 画面比率の処理
+  const handleRatioChange = (ratio: string) => {
+    setSelectedRatio(ratio)
+    const preset = presetRatios.find(r => r.label === ratio)
+    
+    if (preset && preset.width > 0) {
+      setCanvasSize({ width: preset.width, height: preset.height })
+      setCustomWidth('')
+      setCustomHeight('')
+    }
+  }
+
+  // カスタムサイズ適用
+  const applyCustomSize = () => {
+    const width = parseInt(customWidth)
+    const height = parseInt(customHeight)
+    
+    if (width > 0 && height > 0) {
+      setCanvasSize({ width, height })
+    }
+  }
+
+  // 全テーブルのサイズを更新
+  const updateAllTableSizes = async () => {
+    setIsUpdatingSize(true)
+
+    // 各テーブルのサイズを更新
+    for (const table of tables) {
+      await supabase
+        .from('table_layouts')
+        .update({ 
+          table_width: tableSize.width,
+          table_height: tableSize.height
+        })
+        .eq('table_name', table.table_name)
+    }
+
+    // ローカルステートも更新
+    setTables(prev => prev.map(t => ({
+      ...t,
+      table_width: tableSize.width,
+      table_height: tableSize.height
+    })))
+
+    setIsUpdatingSize(false)
+  }
+
+  // キャンバスのパン操作
+  const handleCanvasMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    if (draggedTable) return
+
+    const target = e.target as HTMLElement
+    if (target.id === 'canvas-area') {
+      isPanning.current = true
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+      lastPanPoint.current = { x: clientX, y: clientY }
+    }
+  }
+
+  const handleCanvasMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isPanning.current) {
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+      
+      const deltaX = clientX - lastPanPoint.current.x
+      const deltaY = clientY - lastPanPoint.current.y
+      
+      setPanOffset(prev => ({
+        x: prev.x + deltaX,
+        y: prev.y + deltaY
+      }))
+      
+      lastPanPoint.current = { x: clientX, y: clientY }
+    }
+  }
+
+  const handleCanvasMouseUp = () => {
+    isPanning.current = false
+  }
+
+  // ズーム操作
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? 0.9 : 1.1
+    const newZoom = Math.max(0.5, Math.min(2, zoom * delta))
+    setZoom(newZoom)
   }
 
   // ドラッグ開始
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent, table: TableLayout) => {
+    e.stopPropagation()
+    
     const canvas = document.getElementById('canvas-area')
     if (!canvas) return
     
@@ -396,8 +328,14 @@ export default function TableLayoutEdit() {
     
     const table = tables.find(t => t.table_name === draggedTable)
     if (table) {
-      const newLeft = Math.max(0, Math.min(actualX - dragOffset.x, canvasSize.width - table.table_width))
-      const newTop = Math.max(0, Math.min(actualY - dragOffset.y, canvasSize.height - table.table_height))
+      // 配置禁止ゾーンを考慮した制限
+      const minX = forbiddenZones.left
+      const maxX = canvasSize.width - table.table_width - forbiddenZones.right
+      const minY = forbiddenZones.top
+      const maxY = canvasSize.height - table.table_height - forbiddenZones.bottom
+      
+      const newLeft = Math.max(minX, Math.min(actualX - dragOffset.x, maxX))
+      const newTop = Math.max(minY, Math.min(actualY - dragOffset.y, maxY))
 
       setTables(prev => prev.map(t => 
         t.table_name === draggedTable 
@@ -416,6 +354,11 @@ export default function TableLayoutEdit() {
       }
       setDraggedTable(null)
     }
+  }
+
+  // ダブルクリックで編集
+  const handleDoubleClick = (table: TableLayout) => {
+    setSelectedTable(table)
   }
 
   return (
@@ -541,44 +484,47 @@ export default function TableLayoutEdit() {
               </select>
               
               {selectedRatio === 'カスタム...' && (
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input
-                    type="number"
-                    placeholder="幅"
-                    value={customWidth}
-                    onChange={(e) => setCustomWidth(e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: '6px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '13px'
-                    }}
-                  />
-                  <span>×</span>
-                  <input
-                    type="number"
-                    placeholder="高さ"
-                    value={customHeight}
-                    onChange={(e) => setCustomHeight(e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: '6px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '13px'
-                    }}
-                  />
+                <div>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      type="number"
+                      placeholder="幅"
+                      value={customWidth}
+                      onChange={(e) => setCustomWidth(e.target.value)}
+                      style={{
+                        flex: 1,
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                      }}
+                    />
+                    <span style={{ alignSelf: 'center' }}>×</span>
+                    <input
+                      type="number"
+                      placeholder="高さ"
+                      value={customHeight}
+                      onChange={(e) => setCustomHeight(e.target.value)}
+                      style={{
+                        flex: 1,
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                      }}
+                    />
+                  </div>
                   <button
                     onClick={applyCustomSize}
                     style={{
-                      padding: '6px 12px',
+                      width: '100%',
+                      padding: '8px',
                       backgroundColor: '#2196F3',
                       color: 'white',
                       border: 'none',
                       borderRadius: '4px',
                       cursor: 'pointer',
-                      fontSize: '13px'
+                      fontSize: '14px'
                     }}
                   >
                     適用
@@ -587,7 +533,7 @@ export default function TableLayoutEdit() {
               )}
             </div>
 
-            {/* テーブルサイズ（全体） */}
+            {/* テーブルサイズ設定 */}
             <div style={{ marginBottom: '20px' }}>
               <h3 style={{ margin: '0 0 10px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>
                 テーブルサイズ（全体）
@@ -640,6 +586,60 @@ export default function TableLayoutEdit() {
               >
                 {isUpdatingSize ? '更新中...' : '全テーブルに適用'}
               </button>
+            </div>
+
+            {/* ズームコントロール */}
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>
+                ズーム: {Math.round(zoom * 100)}%
+              </h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    backgroundColor: '#757575',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  ー
+                </button>
+                <button
+                  onClick={() => setZoom(1)}
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    backgroundColor: '#616161',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  100%
+                </button>
+                <button
+                  onClick={() => setZoom(Math.min(2, zoom + 0.1))}
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    backgroundColor: '#757575',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  ＋
+                </button>
+              </div>
             </div>
 
             {/* テーブル一覧 */}
@@ -717,107 +717,99 @@ export default function TableLayoutEdit() {
               cursor: isPanning.current ? 'grabbing' : 'grab'
             }}
             onWheel={handleWheel}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
           >
-            {/* ズームコントロール */}
-            <div style={{
-              position: 'absolute',
-              top: '10px',
-              right: '10px',
-              backgroundColor: 'white',
-              borderRadius: '8px',
-              padding: '10px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              zIndex: 100
-            }}>
-              <div style={{ fontSize: '14px', marginBottom: '5px' }}>
-                ズーム: {Math.round(zoom * 100)}%
-              </div>
-              <div style={{ display: 'flex', gap: '5px' }}>
-                <button
-                  onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
-                  style={{
-                    padding: '5px 10px',
-                    backgroundColor: '#f0f0f0',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  −
-                </button>
-                <button
-                  onClick={() => setZoom(1)}
-                  style={{
-                    padding: '5px 10px',
-                    backgroundColor: '#f0f0f0',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  100%
-                </button>
-                <button
-                  onClick={() => setZoom(Math.min(3, zoom + 0.1))}
-                  style={{
-                    padding: '5px 10px',
-                    backgroundColor: '#f0f0f0',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
             <div
               id="canvas-area"
               style={{
-                position: 'relative',
                 width: `${canvasSize.width}px`,
                 height: `${canvasSize.height}px`,
-                backgroundColor: 'white',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                border: '2px solid #333',
-                margin: 'auto',
-                transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`,
+                backgroundColor: '#f0f0f0',
+                position: 'relative',
+                cursor: draggedTable ? 'grabbing' : isPanning.current ? 'grabbing' : 'grab',
+                touchAction: 'none',
                 transformOrigin: '0 0',
-                transition: draggedTable ? 'none' : 'transform 0.1s ease-out'
+                transform: `scale(${zoom})`,
+                transition: 'none',
+                userSelect: 'none'
               }}
-              onMouseMove={handleDragMove}
-              onMouseUp={handleDragEnd}
-              onMouseLeave={handleDragEnd}
-              onTouchMove={handleDragMove}
-              onTouchEnd={handleDragEnd}
+              onMouseDown={handleCanvasMouseDown}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onMouseLeave={handleCanvasMouseUp}
+              onTouchStart={handleCanvasMouseDown}
+              onTouchMove={handleCanvasMouseMove}
+              onTouchEnd={handleCanvasMouseUp}
             >
-              {/* サイズ表示 */}
-              <div style={{
-                position: 'absolute',
-                top: '-30px',
-                left: '0',
-                fontSize: '14px',
-                color: '#666',
-                fontWeight: 'bold'
-              }}>
-                {canvasSize.width} × {canvasSize.height}px
+              {/* 配置禁止ゾーンの表示 */}
+              {/* 上部禁止ゾーン（ヘッダー領域） */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: `${forbiddenZones.top}px`,
+                  backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                  borderBottom: '2px dashed #ff6b6b',
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <span style={{ 
+                  color: '#ff6b6b', 
+                  fontSize: '14px', 
+                  fontWeight: 'bold',
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  padding: '4px 12px',
+                  borderRadius: '4px'
+                }}>
+                  ヘッダー領域（配置不可）
+                </span>
               </div>
               
-              {tables.filter(t => t.is_visible).map(table => (
+              {/* 下部禁止ゾーン（Androidナビゲーションバー領域） */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: `${forbiddenZones.bottom}px`,
+                  backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                  borderTop: '2px dashed #ff6b6b',
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <span style={{ 
+                  color: '#ff6b6b', 
+                  fontSize: '14px', 
+                  fontWeight: 'bold',
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  padding: '4px 12px',
+                  borderRadius: '4px'
+                }}>
+                  ナビゲーションバー領域（配置不可）
+                </span>
+              </div>
+
+              {/* 既存のテーブル描画 */}
+              {tables.filter(t => t.is_visible).map((table) => (
                 <div
                   key={table.table_name}
+                  onDoubleClick={() => handleDoubleClick(table)}
                   style={{
                     position: 'absolute',
                     top: `${table.position_top}px`,
                     left: `${table.position_left}px`,
                     width: `${table.table_width}px`,
                     height: `${table.table_height}px`,
-                    backgroundColor: 'white',
-                    border: `2px solid ${draggedTable === table.table_name ? '#FF9800' : '#ccc'}`,
+                    backgroundColor: table.current_guest ? '#FF9800' : '#ccc',
+                    border: `3px solid ${table.current_guest ? '#FF9800' : '#ccc'}`,
                     borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
@@ -910,6 +902,16 @@ export default function TableLayoutEdit() {
           </div>
         )}
       </div>
+
+      {/* グローバルイベントリスナー */}
+      <div
+        style={{ display: 'none' }}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+        onTouchMove={handleDragMove}
+        onTouchEnd={handleDragEnd}
+      />
     </>
   )
 }
