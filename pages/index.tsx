@@ -405,11 +405,13 @@ export default function Home() {
     }, 30000)
     
     return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // テーブル数が変わった時に再計算
   useEffect(() => {
     updateOccupiedTablesCount()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tables])
 
   // チェックアウト処理
