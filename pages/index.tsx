@@ -1270,7 +1270,7 @@ const finishCheckout = () => {
   {/* 差分の数字を左側に配置 */}
   <span style={{
     position: 'absolute',
-    left: '120px',
+    left: '170px',
     fontSize: '24px',
     fontWeight: 'bold',
     color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
