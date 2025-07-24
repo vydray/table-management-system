@@ -27,9 +27,7 @@ export default function TableLayoutEdit() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [selectedTable, setSelectedTable] = useState<TableLayout | null>(null)
   const [newTableName, setNewTableName] = useState('')
-  const [storeId, setStoreId] = useState<string>('')
   const [windowWidth, setWindowWidth] = useState(1280)
-  const [previewScale, setPreviewScale] = useState(0.3) // プレビューの縮小率
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth)
@@ -39,37 +37,42 @@ export default function TableLayoutEdit() {
   }, [])
 
   useEffect(() => {
-    const savedStoreId = localStorage.getItem('storeId')
-    if (savedStoreId) {
-      setStoreId(savedStoreId)
-      fetchTables()
-    }
+    fetchTables()
   }, [])
 
   // テーブル情報を取得
   const fetchTables = async () => {
     setLoading(true)
-    const savedStoreId = localStorage.getItem('storeId')
+    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
     
-    const { data, error } = await supabase
-      .from('table_status')
-      .select('*')
-      .eq('store_id', savedStoreId)
-      .order('table_name')
+    try {
+      const { data, error } = await supabase
+        .from('table_status')
+        .select('*')
+        .eq('store_id', savedStoreId)
+        .order('table_name')
 
-    if (data && !error) {
-      setTables(data)
+      if (data && !error) {
+        setTables(data)
+      } else if (error) {
+        console.error('Error fetching tables:', error)
+      }
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   // テーブル位置を更新
   const updateTablePosition = async (tableName: string, top: number, left: number) => {
+    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
+    
     const { error } = await supabase
       .from('table_status')
       .update({ position_top: top, position_left: left })
       .eq('table_name', tableName)
-      .eq('store_id', storeId)
+      .eq('store_id', savedStoreId)
 
     if (!error) {
       setTables(prev => prev.map(t => 
@@ -80,11 +83,13 @@ export default function TableLayoutEdit() {
 
   // テーブルの表示/非表示を切り替え
   const toggleTableVisibility = async (tableName: string, isVisible: boolean) => {
+    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
+    
     const { error } = await supabase
       .from('table_status')
       .update({ is_visible: isVisible })
       .eq('table_name', tableName)
-      .eq('store_id', storeId)
+      .eq('store_id', savedStoreId)
 
     if (!error) {
       setTables(prev => prev.map(t => 
@@ -95,11 +100,13 @@ export default function TableLayoutEdit() {
 
   // テーブル名を更新
   const updateTableName = async (tableName: string, displayName: string) => {
+    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
+    
     const { error } = await supabase
       .from('table_status')
       .update({ display_name: displayName || null })
       .eq('table_name', tableName)
-      .eq('store_id', storeId)
+      .eq('store_id', savedStoreId)
 
     if (!error) {
       setTables(prev => prev.map(t => 
@@ -113,6 +120,8 @@ export default function TableLayoutEdit() {
   const addNewTable = async () => {
     if (!newTableName.trim()) return
 
+    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
+    
     // 既存のテーブル名と重複しないかチェック
     const isDuplicate = tables.some(t => t.table_name === newTableName.trim())
     if (isDuplicate) {
@@ -124,7 +133,7 @@ export default function TableLayoutEdit() {
       .from('table_status')
       .insert({
         table_name: newTableName,
-        store_id: storeId,
+        store_id: savedStoreId,
         position_top: 300,
         position_left: 400,
         table_width: 130,
@@ -142,11 +151,13 @@ export default function TableLayoutEdit() {
   const deleteTable = async (tableName: string) => {
     if (!confirm('このテーブルを削除しますか？')) return
 
+    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
+    
     const { error } = await supabase
       .from('table_status')
       .delete()
       .eq('table_name', tableName)
-      .eq('store_id', storeId)
+      .eq('store_id', savedStoreId)
 
     if (!error) {
       setTables(prev => prev.filter(t => t.table_name !== tableName))
@@ -177,8 +188,9 @@ export default function TableLayoutEdit() {
 
     const table = tables.find(t => t.table_name === draggedTable)
     if (table) {
-      const newTop = clientY - dragOffset.y - 72 // ヘッダー分を引く
-      const newLeft = clientX - dragOffset.x
+      const canvasRect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+      const newTop = clientY - canvasRect.top - dragOffset.y
+      const newLeft = clientX - canvasRect.left - dragOffset.x
 
       setTables(prev => prev.map(t => 
         t.table_name === draggedTable 
@@ -198,9 +210,6 @@ export default function TableLayoutEdit() {
       setDraggedTable(null)
     }
   }
-
-  // Android端末かどうかの判定
-  const isAndroid = windowWidth <= 1024
 
   return (
     <>
@@ -375,170 +384,72 @@ export default function TableLayoutEdit() {
             {loading && <div style={{ textAlign: 'center', marginTop: '20px' }}>読み込み中...</div>}
           </div>
 
-          {/* キャンバスエリア（Android端末の場合は左右分割） */}
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'row',
-            gap: isAndroid ? '10px' : '0',
-            padding: isAndroid ? '10px' : '0',
-            backgroundColor: '#f9f9f9'
-          }}>
-            {/* メインキャンバス */}
-            <div
-              style={{
-                flex: isAndroid ? 1 : 1,
-                position: 'relative',
-                backgroundColor: '#f9f9f9',
-                overflow: 'auto',
-                WebkitOverflowScrolling: 'touch',
-                minHeight: windowWidth <= 768 ? '300px' : 'auto',
-                border: isAndroid ? '2px solid #ddd' : 'none',
-                borderRadius: isAndroid ? '8px' : '0'
-              }}
-              onMouseMove={handleDragMove}
-              onMouseUp={handleDragEnd}
-              onMouseLeave={handleDragEnd}
-              onTouchMove={handleDragMove}
-              onTouchEnd={handleDragEnd}
-            >
-              {/* スマホ・タブレット用のスクロールヒント */}
-              {windowWidth <= 768 && (
-                <div style={{
-                  position: 'absolute',
-                  top: '10px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  backgroundColor: 'rgba(0,0,0,0.7)',
-                  color: 'white',
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  zIndex: 10
-                }}>
-                  ← スクロールして全体を表示 →
-                </div>
-              )}
-              
-              {tables.filter(t => t.is_visible).map(table => (
-                <div
-                  key={table.table_name}
-                  style={{
-                    position: 'absolute',
-                    top: `${table.position_top}px`,
-                    left: `${table.position_left}px`,
-                    width: `${table.table_width}px`,
-                    height: `${table.table_height}px`,
-                    backgroundColor: 'white',
-                    border: `2px solid ${draggedTable === table.table_name ? '#FF9800' : '#ccc'}`,
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'move',
-                    userSelect: 'none',
-                    boxShadow: draggedTable === table.table_name 
-                      ? '0 4px 16px rgba(0,0,0,0.3)' 
-                      : '0 2px 8px rgba(0,0,0,0.1)',
-                    opacity: draggedTable === table.table_name ? 0.8 : 1,
-                    transition: 'box-shadow 0.2s',
-                    fontSize: windowWidth <= 768 ? '14px' : '16px',
-                    fontWeight: 'bold',
-                    touchAction: 'none'
-                  }}
-                  onMouseDown={(e) => handleDragStart(e, table)}
-                  onTouchStart={(e) => handleDragStart(e, table)}
-                >
-                  {table.display_name || table.table_name}
-                </div>
-              ))}
-            </div>
-
-            {/* Android端末用プレビュー */}
-            {isAndroid && (
+          {/* キャンバスエリア */}
+          <div
+            style={{
+              flex: 1,
+              position: 'relative',
+              backgroundColor: '#f9f9f9',
+              overflow: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              minHeight: windowWidth <= 768 ? '300px' : 'auto'
+            }}
+            onMouseMove={handleDragMove}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
+            onTouchMove={handleDragMove}
+            onTouchEnd={handleDragEnd}
+          >
+            {/* スマホ・タブレット用のスクロールヒント */}
+            {windowWidth <= 768 && (
               <div style={{
-                width: '40%',
-                position: 'relative',
-                backgroundColor: 'white',
-                border: '2px solid #4CAF50',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column'
+                position: 'absolute',
+                top: '10px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                zIndex: 10
               }}>
-                {/* プレビューヘッダー */}
-                <div style={{
-                  padding: '8px',
-                  backgroundColor: '#4CAF50',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  textAlign: 'center'
-                }}>
-                  プレビュー (縮小表示)
-                </div>
-                
-                {/* プレビューコンテンツ */}
-                <div style={{
-                  flex: 1,
-                  position: 'relative',
-                  backgroundColor: '#f9f9f9',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: `${1280}px`,
-                    height: `${800}px`,
-                    transform: `scale(${previewScale})`,
-                    transformOrigin: 'top left'
-                  }}>
-                    {tables.filter(t => t.is_visible).map(table => (
-                      <div
-                        key={`preview-${table.table_name}`}
-                        style={{
-                          position: 'absolute',
-                          top: `${table.position_top}px`,
-                          left: `${table.position_left}px`,
-                          width: `${table.table_width}px`,
-                          height: `${table.table_height}px`,
-                          backgroundColor: 'white',
-                          border: '2px solid #ccc',
-                          borderRadius: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '16px',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        {table.display_name || table.table_name}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 縮小率調整 */}
-                <div style={{
-                  padding: '8px',
-                  borderTop: '1px solid #ddd',
-                  backgroundColor: 'white'
-                }}>
-                  <label style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                    縮小率: {Math.round(previewScale * 100)}%
-                  </label>
-                  <input
-                    type="range"
-                    min="10"
-                    max="50"
-                    value={previewScale * 100}
-                    onChange={(e) => setPreviewScale(Number(e.target.value) / 100)}
-                    style={{ width: '100%' }}
-                  />
-                </div>
+                ← スクロールして全体を表示 →
               </div>
             )}
+            
+            {tables.filter(t => t.is_visible).map(table => (
+              <div
+                key={table.table_name}
+                style={{
+                  position: 'absolute',
+                  top: `${table.position_top}px`,
+                  left: `${table.position_left}px`,
+                  width: `${table.table_width}px`,
+                  height: `${table.table_height}px`,
+                  backgroundColor: 'white',
+                  border: `2px solid ${draggedTable === table.table_name ? '#FF9800' : '#ccc'}`,
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'move',
+                  userSelect: 'none',
+                  boxShadow: draggedTable === table.table_name 
+                    ? '0 4px 16px rgba(0,0,0,0.3)' 
+                    : '0 2px 8px rgba(0,0,0,0.1)',
+                  opacity: draggedTable === table.table_name ? 0.8 : 1,
+                  transition: 'box-shadow 0.2s',
+                  fontSize: windowWidth <= 768 ? '14px' : '16px',
+                  fontWeight: 'bold',
+                  touchAction: 'none'
+                }}
+                onMouseDown={(e) => handleDragStart(e, table)}
+                onTouchStart={(e) => handleDragStart(e, table)}
+              >
+                {table.display_name || table.table_name}
+              </div>
+            ))}
           </div>
         </div>
 
