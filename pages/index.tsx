@@ -1,52 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { SideMenu } from '../components/SideMenu'
+import { ProductSection } from '../components/ProductSection'
 import { OrderSection } from '../components/OrderSection'
-import { getCurrentStoreId } from '../utils/storeContext'
+import { TableData, OrderItem, ProductCategories, ProductCategory, Product } from '../types'
 import { createClient } from '@supabase/supabase-js'
+import { getCurrentStoreId } from '../utils/storeContext'
+import { printer } from '../utils/bluetoothPrinter'
+
+// 新しいコンポーネントのインポート
+import { LoadingOverlay } from '../components/LoadingOverlay'
+import { ConfirmModal } from '../components/modals/ConfirmModal'
+import { PaymentModal } from '../components/modals/PaymentModal'
+import { SideMenu } from '../components/SideMenu'
+import { Table } from '../components/Table'
+import { usePayment } from '../hooks/usePayment'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
-
-// 型定義
-interface TableData {
-  table: string
-  name: string
-  oshi: string
-  time: string
-  visit: string
-  elapsed: string
-  status: 'empty' | 'occupied' | 'reserved' | 'billing'
-}
-
-interface ProductCategories {
-  [key: string]: { 
-    name: string
-    price: number
-    needsCast: boolean
-  }[]
-}
-
-interface ProductCategory {
-  id: number
-  name: string
-  is_drink: boolean
-  is_bottle: boolean
-  requires_cast_selection: boolean
-  display_order: number
-  is_active: boolean
-  show_oshi_first: boolean
-}
-
-interface OrderItem {
-  name: string
-  cast?: string
-  quantity: number
-  price: number
-}
 
 // チェックアウト結果の型定義
 interface CheckoutResult {
@@ -95,10 +68,6 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState('')
   const [isMoving, setIsMoving] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
-  const [attendingCastsCount, setAttendingCastsCount] = useState(0)
-  const [occupiedTablesCount, setOccupiedTablesCount] = useState(0)
-  const [attendingCastsCount, setAttendingCastsCount] = useState(0)
-  const [occupiedTablesCount, setOccupiedTablesCount] = useState(0)
   
   // レスポンシブ用のスケール状態を追加
   const [layoutScale, setLayoutScale] = useState(1)
@@ -111,211 +80,246 @@ export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<{name: string, price: number, needsCast: boolean} | null>(null)
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
 
-  // 会計モーダル用の状態（シンプルな状態管理に変更）
+  // 会計モーダル用の状態（カスタムフックを使用）
   const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [paymentData, setPaymentData] = useState({
-    cash: 0,
-    card: 0,
-    other: 0,
-    otherMethod: '',
-    totalAmount: 0
-  })
-  const [activePaymentInput, setActivePaymentInput] = useState<'cash' | 'card' | 'other'>('cash')
+  const {
+    paymentData,
+    activePaymentInput,
+    setActivePaymentInput,
+    handleNumberClick,
+    handleQuickAmount,
+    handleDeleteNumber,
+    handleClearNumber,
+    resetPaymentData,
+    setOtherMethod
+  } = usePayment()
 
-  // フォームデータ
+  // システム設定の状態
+  const [systemSettings, setSystemSettings] = useState({
+    consumptionTaxRate: 0.10,
+    serviceChargeRate: 0.15,
+    roundingUnit: 100,
+    roundingMethod: 0
+  })
+
+  // フォームの状態
   const [formData, setFormData] = useState({
     guestName: '',
     castName: '',
-    visitType: '初回',
+    visitType: '',
     editYear: new Date().getFullYear(),
     editMonth: new Date().getMonth() + 1,
     editDate: new Date().getDate(),
-    editHour: new Date().getHours(),
-    editMinute: new Date().getMinutes()
+    editHour: 0,
+    editMinute: 0
   })
 
-  // 出勤中のキャスト数を取得
-  const getAttendingCastsCount = async () => {
+  // 長押し用のref
+  const isLongPress = useRef(false)
+
+  // ローディングと領収書確認用の状態
+  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false)
+  const [showReceiptConfirm, setShowReceiptConfirm] = useState(false)
+  const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null)
+
+  // 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
+  const getJapanTimeString = (date: Date): string => {
+    const japanTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }))
+    
+    const year = japanTime.getFullYear()
+    const month = String(japanTime.getMonth() + 1).padStart(2, '0')
+    const day = String(japanTime.getDate()).padStart(2, '0')
+    const hours = String(japanTime.getHours()).padStart(2, '0')
+    const minutes = String(japanTime.getMinutes()).padStart(2, '0')
+    const seconds = String(japanTime.getSeconds()).padStart(2, '0')
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  }
+
+  // 合計金額を計算する関数
+  const getTotal = () => {
+    const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    const serviceTax = Math.floor(subtotal * systemSettings.serviceChargeRate)
+    return subtotal + serviceTax
+  }
+
+  // 端数処理を計算する関数
+  const getRoundedTotal = (amount: number) => {
+    if (systemSettings.roundingUnit <= 0) return amount
+    
+    switch (systemSettings.roundingMethod) {
+      case 0: // 切り捨て
+        return Math.floor(amount / systemSettings.roundingUnit) * systemSettings.roundingUnit
+      case 1: // 切り上げ
+        return Math.ceil(amount / systemSettings.roundingUnit) * systemSettings.roundingUnit
+      case 2: // 四捨五入
+        return Math.round(amount / systemSettings.roundingUnit) * systemSettings.roundingUnit
+      default:
+        return amount
+    }
+  }
+
+  // 端数調整額を取得
+  const getRoundingAdjustment = () => {
+    const originalTotal = getTotal()
+    const roundedTotal = getRoundedTotal(originalTotal)
+    return roundedTotal - originalTotal
+  }
+
+  const printOrderSlip = async () => {
     try {
-      const storeId = getCurrentStoreId()
-      const today = new Date().toISOString().split('T')[0]
+      // プリンター接続を確認
+      const isConnected = await printer.checkConnection();
+      if (!isConnected) {
+        if (confirm('プリンターが接続されていません。設定画面で接続しますか？')) {
+          router.push('/settings?tab=receipt');
+        }
+        return;
+      }
+
+      // 現在の時刻を取得
+      const now = new Date();
+      const timestamp = now.toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+
+      // 印刷データを準備
+      const orderData = {
+        tableName: currentTable,
+        guestName: formData.guestName || '（未入力）',
+        castName: formData.castName || '（未選択）',
+        elapsedTime: tables[currentTable]?.elapsed || '0分',
+        orderItems: orderItems,
+        subtotal: orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+        serviceTax: Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * systemSettings.serviceChargeRate),
+        roundedTotal: getRoundedTotal(getTotal()),
+        roundingAdjustment: getRoundingAdjustment(),
+        timestamp: timestamp
+      };
+
+      // 印刷実行
+      await printer.printOrderSlip(orderData);
+      alert('会計伝票を印刷しました');
+    } catch (error) {
+      console.error('Print error:', error);
+      // エラーオブジェクトの型チェック
+      if (error instanceof Error) {
+        alert('印刷に失敗しました: ' + error.message);
+      } else {
+        alert('印刷に失敗しました: Unknown error');
+      }
+    }
+  };
+
+  // システム設定を取得
+  const loadSystemSettings = async () => {
+    const storeId = getCurrentStoreId()
+    const { data: settings } = await supabase
+      .from('system_settings')
+      .select('setting_key, setting_value')
+      .eq('store_id', storeId)
+    
+    if (settings) {
+      const settingsObj = {
+        consumptionTaxRate: settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10,
+        serviceChargeRate: settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15,
+        roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
+        roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0
+      }
+      setSystemSettings(settingsObj)
+    }
+  }
+
+// 商品データをAPIから取得
+  const loadProducts = async () => {
+    try {
+      console.log('商品データ読み込み開始...')
       
-      // まず有効な勤怠ステータスを取得
-      const { data: settingsData } = await supabase
-        .from('system_settings')
-        .select('setting_value')
-        .eq('setting_key', 'active_attendance_statuses')
-        .eq('store_id', storeId)
-        .single()
-      
-      let activeStatuses = ['出勤']
-      if (settingsData) {
-        activeStatuses = JSON.parse(settingsData.setting_value)
+      // ログインチェック
+      const isLoggedIn = localStorage.getItem('isLoggedIn')
+      if (!isLoggedIn) {
+        console.log('未ログインのため商品データ読み込みをスキップ')
+        return
       }
       
-      // 出勤中のキャスト数を取得
-      const { data: attendanceData, error } = await supabase
-        .from('attendance')
-        .select('cast_name')
-        .eq('store_id', storeId)
-        .eq('date', today)
-        .in('status', activeStatuses)
-      
-      if (error) throw error
-      
-      // 重複を除いたキャスト数をカウント
-      const uniqueCasts = new Set(attendanceData?.map(a => a.cast_name) || [])
-      setAttendingCastsCount(uniqueCasts.size)
-    } catch (error) {
-      console.error('Error getting attending casts:', error)
-      setAttendingCastsCount(0)
-    }
-  }
-
-  // 使用中のテーブル数を計算
-  const updateOccupiedTablesCount = () => {
-    const count = Object.values(tables).filter(table => 
-      table.status === 'occupied' || table.status === 'billing'
-    ).length
-    setOccupiedTablesCount(count)
-  }
-    try {
+      // 店舗IDを取得
       const storeId = getCurrentStoreId()
-      const today = new Date().toISOString().split('T')[0]
-      
-      // まず有効な勤怠ステータスを取得
-      const { data: settingsData } = await supabase
-        .from('system_settings')
-        .select('setting_value')
-        .eq('setting_key', 'active_attendance_statuses')
-        .eq('store_id', storeId)
-        .single()
-      
-      let activeStatuses = ['出勤']
-      if (settingsData) {
-        activeStatuses = JSON.parse(settingsData.setting_value)
+      if (!storeId) {
+        console.log('店舗IDが取得できないため商品データ読み込みをスキップ')
+        return
       }
       
-      // 出勤中のキャスト数を取得
-      const { data: attendanceData, error } = await supabase
-        .from('attendance')
-        .select('cast_name')
-        .eq('store_id', storeId)
-        .eq('date', today)
-        .in('status', activeStatuses)
+      // APIに店舗IDを渡す
+      const res = await fetch(`/api/products?storeId=${storeId}`)
+      const data = await res.json()
       
-      if (error) throw error
+      console.log('APIレスポンス:', data)
       
-      // 重複を除いたキャスト数をカウント
-      const uniqueCasts = new Set(attendanceData?.map(a => a.cast_name) || [])
-      setAttendingCastsCount(uniqueCasts.size)
-    } catch (error) {
-      console.error('Error getting attending casts:', error)
-      setAttendingCastsCount(0)
-    }
-  }
-
-  // 使用中のテーブル数を計算
-  const updateOccupiedTablesCount = () => {
-    const count = Object.values(tables).filter(table => 
-      table.status === 'occupied' || table.status === 'billing'
-    ).length
-    setOccupiedTablesCount(count)
-  }
-
-  // 時刻を更新
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date()
-      const hours = now.getHours().toString().padStart(2, '0')
-      const minutes = now.getMinutes().toString().padStart(2, '0')
-      const seconds = now.getSeconds().toString().padStart(2, '0')
-      setCurrentTime(`${hours}:${minutes}:${seconds}`)
-    }
-
-    updateTime()
-    const interval = setInterval(updateTime, 1000)
-    return () => clearInterval(interval)
-  }, [])
-
-  // レスポンシブ対応のスケール計算
-  useEffect(() => {
-    const updateScale = () => {
-      const layout = document.getElementById('layout')
-      if (!layout) return
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to fetch products')
+      }
       
-      const width = layout.getBoundingClientRect().width
-      const baseWidth = 1024
-      const scale = Math.max(0.5, Math.min(1, width / baseWidth))
+      const { categories, products } = data
       
-      setLayoutScale(scale)
-      setTableBaseSize({
-        width: Math.round(130 * scale),
-        height: Math.round(123 * scale)
+      // カテゴリーデータを保存
+      setProductCategoriesData(categories || [])
+      
+      // データ構造を変換
+      const productData: ProductCategories = {}
+      
+      categories?.forEach((category: ProductCategory) => {
+        productData[category.name] = {}
+        
+        products?.filter((p: Product) => p.category_id === category.id)
+          .forEach((product: Product) => {
+            productData[category.name][product.name] = {
+              id: product.id,
+              price: product.price,
+              needsCast: product.needs_cast,
+              discountRate: product.discount_rate
+            }
+          })
       })
-    }
-
-    updateScale()
-    window.addEventListener('resize', updateScale)
-    return () => window.removeEventListener('resize', updateScale)
-  }, [])
-
-  // 商品カテゴリを取得
-  const loadProductCategories = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const response = await fetch(`/api/products/by-category?storeId=${storeId}`)
-      const { categories, categoriesData } = await response.json()
-      setProductCategories(categories || {})
-      setProductCategoriesData(categoriesData || [])
-    } catch (error) {
-      console.error('Failed to load product categories:', error)
-    }
-  }
-
-  // テーブル注文を取得
-  const loadOrderItems = async (tableId: string) => {
-    try {
-      const storeId = getCurrentStoreId()
-      const response = await fetch(`/api/orders/table/${tableId}?storeId=${storeId}`)
-      const data = await response.json()
       
-      if (data && data.order_items) {
-        const items: OrderItem[] = data.order_items.map((item: {
-          product_name: string
-          cast_name: string | null
-          quantity: number
-          price: number
-        }) => ({
-          name: item.product_name,
-          cast: item.cast_name || undefined,
-          quantity: item.quantity,
-          price: item.price
-        }))
-        setOrderItems(items)
-      }
+      console.log('変換後のデータ:', productData)
+      setProductCategories(productData)
     } catch (error) {
-      console.error('Failed to load order items:', error)
+      console.error('Error loading products:', error)
+      // ログイン前は警告を表示しない
+      const isLoggedIn = localStorage.getItem('isLoggedIn')
+      if (isLoggedIn) {
+        alert('商品データの読み込みに失敗しました')
+      }
     }
   }
 
-  // 商品を追加
-  const addOrderItem = (productName: string, price: number, needsCast: boolean, castName?: string) => {
+  // 商品を直接注文に追加（タップで追加）
+  const addProductToOrder = (productName: string, price: number, needsCast: boolean, castName?: string) => {
     if (needsCast && !castName) {
-      alert('キャストを選択してください')
+      // キャストが必要な商品を選択
+      setSelectedProduct({ name: productName, price: price, needsCast: true })
       return
     }
     
+    // 既存の商品をチェック（商品名、キャスト名、価格が全て同じものを探す）
     const existingItemIndex = orderItems.findIndex(item => 
       item.name === productName && 
-      item.cast === castName
+      item.price === price &&  // 価格も一致条件に追加
+      ((!needsCast && !item.cast) || (needsCast && item.cast === castName))
     )
     
-    if (existingItemIndex !== -1) {
+    if (existingItemIndex >= 0) {
+      // 既存の商品の個数を増やす
       const updatedItems = [...orderItems]
       updatedItems[existingItemIndex].quantity += 1
       setOrderItems(updatedItems)
     } else {
+      // 新しい商品を追加（価格が異なる場合は別商品として扱う）
       const newItem: OrderItem = {
         name: productName,
         cast: needsCast ? castName : undefined,
@@ -375,274 +379,763 @@ export default function Home() {
       // 取得したデータで更新（tablePositionsに存在するテーブルのみ）
       data.forEach(item => {
         // tablePositionsに定義されているテーブルのみ処理
-        if (!tablePositions[item.table as keyof typeof tablePositions]) {
+        if (!(item.table in tablePositions)) {
+          console.warn(`未定義のテーブル「${item.table}」をスキップしました`)
           return
         }
         
-        // 経過時間を計算
-        let elapsed = ''
-        if (item.time) {
-          const startTime = new Date(item.time.replace(' ', 'T'))
+        if (item.time && item.status === 'occupied') {
+          const entryTime = new Date(item.time.replace(' ', 'T'))
           const now = new Date()
-          const diffMs = now.getTime() - startTime.getTime()
-          const hours = Math.floor(diffMs / (1000 * 60 * 60))
-          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-          elapsed = `${hours}:${minutes.toString().padStart(2, '0')}`
-        }
-        
-        tableMap[item.table] = {
-          ...item,
-          elapsed: elapsed || ''
+          
+          // 日付をまたぐ場合の経過時間計算
+          let elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
+          
+          // 負の値になった場合（日付設定ミスなど）は0にする
+          if (elapsedMin < 0) {
+            elapsedMin = 0
+          }
+          
+          // 24時間以上の場合は時間表示も追加
+          let elapsedText = ''
+          if (elapsedMin >= 1440) { // 24時間以上
+            const days = Math.floor(elapsedMin / 1440)
+            const hours = Math.floor((elapsedMin % 1440) / 60)
+            const mins = elapsedMin % 60
+            elapsedText = `${days}日${hours}時間${mins}分`
+          } else if (elapsedMin >= 60) { // 1時間以上
+            const hours = Math.floor(elapsedMin / 60)
+            const mins = elapsedMin % 60
+            elapsedText = `${hours}時間${mins}分`
+          } else {
+            elapsedText = `${elapsedMin}分`
+          }
+          
+          tableMap[item.table] = {
+            ...item,
+            elapsed: elapsedText
+          }
+        } else {
+          tableMap[item.table] = item
         }
       })
       
       setTables(tableMap)
-      updateOccupiedTablesCount()
     } catch (error) {
-      console.error('Failed to load table data:', error)
+      console.error('Error loading data:', error)
     }
   }
 
-  // キャストリストを取得
+  // キャストリスト取得
   const loadCastList = async () => {
     try {
       const storeId = getCurrentStoreId()
-      const res = await fetch(`/api/casts?storeId=${storeId}`)
+      const res = await fetch(`/api/casts/list?storeId=${storeId}`)
       const data = await res.json()
-      setCastList(data || [])
+      setCastList(data)
     } catch (error) {
-      console.error('Failed to load cast list:', error)
+      console.error('Error loading cast list:', error)
     }
   }
 
-  // 初期データ読み込み
+  // 注文データを取得
+  const loadOrderItems = async (tableId: string) => {
+    try {
+      const storeId = getCurrentStoreId()
+      const res = await fetch(`/api/orders/current?tableId=${tableId}&storeId=${storeId}`)
+      const data = await res.json()
+      
+      if (res.ok && data.length > 0) {
+        interface OrderItemDB {
+          product_name: string
+          cast_name: string | null
+          quantity: number
+          unit_price: number
+        }
+        
+        const items = data.map((item: OrderItemDB) => ({
+          name: item.product_name,
+          cast: item.cast_name || undefined,
+          quantity: item.quantity,
+          price: item.unit_price
+        }))
+        setOrderItems(items)
+      } else {
+        setOrderItems([])  // データがない場合は空配列をセット
+      }
+    } catch (error) {
+      console.error('Error loading order items:', error)
+      setOrderItems([])  // エラーの場合も空配列をセット
+    }
+  }
+
+  // 注文内容を保存
+  const saveOrderItems = async (silent: boolean = false) => {
+    try {
+      const storeId = getCurrentStoreId()
+      const response = await fetch('/api/orders/current', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: currentTable,
+          orderItems: orderItems,
+          storeId: storeId  // 店舗IDを追加
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to save order items')
+      }
+      
+      if (!silent) {
+        alert('注文内容を保存しました')
+      }
+    } catch (error) {
+      console.error('Error saving order items:', error)
+      if (!silent) {
+        alert('注文内容の保存に失敗しました')
+      }
+    }
+  }
+
+  // 初期化（統合版）
   useEffect(() => {
-    loadData()
-    loadCastList()
-    loadProductCategories()
-    getAttendingCastsCount()
+    // ログインチェック
+    const isLoggedIn = localStorage.getItem('isLoggedIn')
     
-    const interval = setInterval(() => {
+    if (isLoggedIn) {
+      // ログイン済みの場合のみデータを読み込む
+      loadSystemSettings()
       loadData()
-      getAttendingCastsCount()
-    }, 30000)
+      loadCastList()
+      loadProducts()
+    }
     
-    return () => clearInterval(interval)
+    const updateTime = () => {
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const date = String(now.getDate()).padStart(2, '0')
+      const hours = now.getHours().toString().padStart(2, '0')
+      const minutes = now.getMinutes().toString().padStart(2, '0')
+      const seconds = now.getSeconds().toString().padStart(2, '0')
+      setCurrentTime(`${year}/${month}/${date} ${hours}:${minutes}:${seconds}`)
+    }
+    
+    updateTime()
+    
+    const timeInterval = setInterval(updateTime, 1000)
+    
+    // ログイン済みの場合のみデータ更新間隔を設定
+    let dataInterval: NodeJS.Timeout | undefined
+    if (isLoggedIn) {
+      dataInterval = setInterval(loadData, 10000)
+    }
+    
+    return () => {
+      clearInterval(timeInterval)
+      if (dataInterval) {
+        clearInterval(dataInterval)
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // テーブル数が変わった時に再計算
+  // ビューポート高さの動的設定（Android対応）
   useEffect(() => {
-    updateOccupiedTablesCount()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tables])
+    const setViewportHeight = () => {
+      // 実際のビューポート高さを取得
+      const vh = window.innerHeight * 0.01;
+      // CSS変数として設定
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
 
-  // チェックアウト処理
-  const handleCheckout = async (): Promise<CheckoutResult> => {
-    if (!currentTable) return { status: 'error', message: 'テーブルが選択されていません' }
+    // 初回設定
+    setViewportHeight();
+
+    // リサイズ時に再計算
+    window.addEventListener('resize', setViewportHeight);
+    
+    // Android Chromeでのアドレスバー対応
+    window.addEventListener('orientationchange', () => {
+      setTimeout(setViewportHeight, 100);
+    });
+
+    // モーダルが開いた時の処理を追加
+    const modalObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        const target = mutation.target as HTMLElement;
+        if (target.id === 'modal' && target.style.display !== 'none') {
+          // モーダルが表示されたら高さを再計算
+          setTimeout(setViewportHeight, 0);
+          
+          // Androidでのスクロール位置リセット
+          const details = document.querySelector('#modal #details') as HTMLElement;
+          if (details) {
+            details.scrollTop = 0;
+          }
+          
+          // モーダル内のフォーカス管理
+          const firstInput = target.querySelector('input, select') as HTMLElement;
+          if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+          }
+        }
+      });
+    });
+
+    // モーダルの監視開始
+    const modal = document.getElementById('modal');
+    if (modal) {
+      modalObserver.observe(modal, { 
+        attributes: true, 
+        attributeFilter: ['style'] 
+      });
+    }
+
+    return () => {
+      window.removeEventListener('resize', setViewportHeight);
+      window.removeEventListener('orientationchange', setViewportHeight);
+      modalObserver.disconnect();
+    };
+  }, []);
+
+  // レイアウトのスケール計算（親コンポーネントで一度だけ）
+  useEffect(() => {
+    const calculateLayoutScale = () => {
+      const layout = document.getElementById('layout')
+      if (!layout) return
+      
+      const layoutRect = layout.getBoundingClientRect()
+      const baseWidth = 1024
+      const baseHeight = 768
+      const headerHeight = 72
+      
+      // 使用可能な高さ
+      const availableHeight = layoutRect.height - headerHeight
+      
+      // スケール計算
+      const scaleX = layoutRect.width / baseWidth
+      const scaleY = availableHeight / (baseHeight - headerHeight)
+      const scale = Math.min(scaleX, scaleY, 1)
+      
+      setLayoutScale(scale)
+      setTableBaseSize({
+        width: Math.round(130 * scale),
+        height: Math.round(123 * scale)
+      })
+      
+      // CSS変数として設定
+      layout.style.setProperty('--scale-factor', scale.toString())
+    }
+    
+    // 初回計算
+    calculateLayoutScale()
+    
+    // リサイズ時の再計算（ただしフォーカスイベントを除外）
+    let resizeTimer: NodeJS.Timeout
+    let lastHeight = window.innerHeight
+    
+    const handleResize = () => {
+      // キーボード表示によるリサイズを無視（高さが大きく変わった場合）
+      const heightDiff = Math.abs(window.innerHeight - lastHeight)
+      if (heightDiff > 100) {
+        // キーボードの表示/非表示と判断
+        lastHeight = window.innerHeight
+        return
+      }
+      
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(() => {
+        calculateLayoutScale()
+        lastHeight = window.innerHeight
+      }, 300)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    
+    return () => {
+      clearTimeout(resizeTimer)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
+  // フォームデータが変更されたら自動保存
+  useEffect(() => {
+    if (modalMode === 'edit' && currentTable && showModal) {
+      const timeoutId = setTimeout(() => {
+        updateTableInfo(true) // silentモードで保存
+      }, 500) // 500ms後に保存（連続入力を考慮）
+      
+      return () => clearTimeout(timeoutId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.guestName, formData.castName, formData.editYear, formData.editMonth, formData.editDate, formData.editHour, formData.editMinute])
+
+  // 注文内容が変更されたら自動保存
+  useEffect(() => {
+    if (modalMode === 'edit' && currentTable && showModal && orderItems.length >= 0) {
+      const timeoutId = setTimeout(() => {
+        saveOrderItems(true) // silentモードで保存
+      }, 500) // 500ms後に保存
+      
+      return () => clearTimeout(timeoutId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderItems])
+  
+  // メニューアイテムのクリックハンドラー
+  const handleMenuClick = async (action: string) => {
+    setShowMenu(false) // メニューを閉じる
+    
+    switch (action) {
+      case 'refresh':
+        loadData()
+        loadProducts() // 商品データも更新
+        alert('データを更新しました')
+        break
+      case 'attendance':
+        router.push('/attendance')
+        break
+      case 'receipts':
+        router.push('/receipts')
+        break
+      case 'report':
+        router.push('/report')
+        break
+      case 'settings':
+        router.push('/settings')
+        break
+      case 'logout':
+        if (confirm('ログアウトしますか？')) {
+          try {
+            // ログアウトAPIを呼び出し
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            })
+            
+            // ローカルストレージをクリア
+            localStorage.removeItem('isLoggedIn')
+            localStorage.removeItem('username')
+            localStorage.removeItem('currentStoreId')
+            
+            // ログインページにリダイレクト
+            router.push('/login')
+          } catch (error) {
+            console.error('Logout error:', error)
+            alert('ログアウトに失敗しました')
+          }
+        }
+        break
+    }
+  }
+
+  // テーブル情報更新（silent: 自動保存時はメッセージを出さない）
+  const updateTableInfo = async (silent: boolean = false) => {
+    try {
+      let timeStr: string
+      
+      if (modalMode === 'new') {
+        const now = new Date()
+        const minutes = now.getMinutes()
+        const roundedMinutes = Math.round(minutes / 5) * 5
+        
+        now.setMinutes(roundedMinutes)
+        now.setSeconds(0)
+        now.setMilliseconds(0)
+        
+        if (roundedMinutes === 60) {
+          now.setMinutes(0)
+          now.setHours(now.getHours() + 1)
+        }
+        
+        timeStr = getJapanTimeString(now)
+      } else {
+        const selectedTime = new Date(
+          formData.editYear,
+          formData.editMonth - 1,
+          formData.editDate,
+          formData.editHour,
+          formData.editMinute
+        )
+        timeStr = getJapanTimeString(selectedTime)
+      }
+
+      const storeId = getCurrentStoreId()
+      await fetch('/api/tables/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: currentTable,
+          guestName: formData.guestName,
+          castName: formData.castName,
+          timeStr,
+          visitType: formData.visitType,
+          storeId: storeId  // 店舗IDを追加
+        })
+      })
+      
+      if (!silent) {
+      document.body.classList.remove('modal-open')  // 追加
+      setShowModal(false)
+    }
+    loadData()
+  } catch (error) {
+    console.error('Error updating table:', error)
+    if (!silent) {
+      alert('更新に失敗しました')
+    }
+  }
+}
+
+  // 会計処理（修正版）
+  const checkout = async () => {
+    // 会計モーダルを表示
+    resetPaymentData()
+    setShowPaymentModal(true)
+  }
+
+// 会計完了処理（修正版）
+const completeCheckout = async () => {
+  const totalPaid = paymentData.cash + paymentData.card + paymentData.other
+  const roundedTotal = getRoundedTotal(getTotal())
+  
+  if (totalPaid < roundedTotal) {
+    alert('支払金額が不足しています')
+    return
+  }
+  
+  if (!confirm(`${currentTable} を会計完了にしますか？`)) return
+  
+  // ローディング開始
+  setIsProcessingCheckout(true)
+  
+  try {
+    const checkoutTime = getJapanTimeString(new Date())
+    const storeId = getCurrentStoreId()
+    
+    // まずAPIで会計処理を実行
+    const response = await fetch('/api/tables/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        tableId: currentTable,
+        checkoutTime,
+        orderItems: orderItems,
+        guestName: formData.guestName,
+        castName: formData.castName,
+        visitType: formData.visitType,
+        paymentCash: paymentData.cash,
+        paymentCard: paymentData.card,
+        paymentOther: paymentData.other,
+        paymentOtherMethod: paymentData.otherMethod,
+        totalAmount: getRoundedTotal(getTotal()),
+        storeId: storeId
+      })
+    })
+    
+    const result = await response.json()
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Checkout failed')
+    }
+    
+    // 結果を保存
+    setCheckoutResult(result)
+    
+    // 会計モーダルを先に閉じる
+    document.body.classList.remove('modal-open')
+    setShowPaymentModal(false)
+    
+    // ローディングを一旦終了してから領収書確認モーダルを表示
+    setIsProcessingCheckout(false)
+    
+    // 少し遅延を入れて領収書確認モーダルを表示
+    setTimeout(() => {
+      setShowReceiptConfirm(true)
+    }, 100)
+    
+  } catch (error) {
+    console.error('Error checkout:', error)
+    alert('会計処理に失敗しました')
+    setIsProcessingCheckout(false)
+  }
+}
+
+// 領収書印刷処理（別関数として定義）
+const handleReceiptPrint = async () => {
+  setShowReceiptConfirm(false)
+  
+  // 印刷処理開始時にローディングを表示
+  setIsProcessingCheckout(true)
+  
+  try {
+    const storeId = getCurrentStoreId()
+    
+    // 宛名と但し書きの入力
+    const receiptTo = prompt('宛名を入力してください（空欄可）:', formData.guestName || '') || ''
+    
+    // キャンセルされた場合
+    if (receiptTo === null) {
+      setIsProcessingCheckout(false)
+      finishCheckout()
+      return
+    }
+    
+    // 設定から但し書きテンプレートを取得
+    const { data: receiptSettings } = await supabase
+      .from('receipt_settings')
+      .select('*')
+      .eq('store_id', storeId)
+      .single();
+    
+    // デフォルトの但し書きを取得
+    let defaultReceiptNote = 'お品代として';
+    if (receiptSettings?.receipt_templates && Array.isArray(receiptSettings.receipt_templates)) {
+      const defaultTemplate = receiptSettings.receipt_templates.find((t: { is_default: boolean }) => t.is_default);
+      if (defaultTemplate) {
+        defaultReceiptNote = defaultTemplate.text;
+      }
+    }
+    
+    const receiptNote = prompt('但し書きを入力してください:', defaultReceiptNote) || defaultReceiptNote;
+    
+    // 新しく接続を確立
+    await printer.enable();
+    
+    // ペアリング済みデバイスを取得
+    const devices = await printer.getPairedDevices();
+    const mpb20 = devices.find(device => 
+      device.name && device.name.toUpperCase().includes('MP-B20')
+    );
+    
+    if (mpb20) {
+      // 接続
+      await printer.connect(mpb20.address);
+      
+      // 少し待機
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // 印刷データを準備
+      const now = new Date();
+      const timestamp = now.toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      
+      const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const serviceTax = Math.floor(subtotal * systemSettings.serviceChargeRate);
+      const consumptionTax = Math.floor((subtotal + serviceTax) * systemSettings.consumptionTaxRate);
+      
+      // 領収書印刷（設定値を使用）
+      await printer.printReceipt({
+        // 店舗情報（設定から取得）
+        storeName: receiptSettings?.store_name || '店舗名',
+        storeAddress: receiptSettings?.store_address || '',
+        storePhone: receiptSettings?.store_phone || '',
+        storePostalCode: receiptSettings?.store_postal_code || '',
+        storeRegistrationNumber: receiptSettings?.store_registration_number || '',
+        
+        // 領収書情報
+        receiptNumber: checkoutResult?.receiptNumber || `R${Date.now()}`,
+        receiptTo: receiptTo,  // 宛名
+        receiptNote: receiptNote,  // 但し書き
+        
+        // 収入印紙設定（設定から取得）
+        showRevenueStamp: receiptSettings?.show_revenue_stamp ?? true,
+        revenueStampThreshold: receiptSettings?.revenue_stamp_threshold || 50000,
+        
+        // 会計情報
+        tableName: currentTable,
+        guestName: formData.guestName || '（未入力）',
+        castName: formData.castName || '（未選択）',
+        timestamp: timestamp,
+        orderItems: orderItems,
+        subtotal: subtotal,
+        serviceTax: serviceTax,
+        consumptionTax: consumptionTax,
+        roundingAdjustment: getRoundingAdjustment(),
+        roundedTotal: getRoundedTotal(getTotal()),
+        paymentCash: paymentData.cash,
+        paymentCard: paymentData.card,
+        paymentOther: paymentData.other,
+        paymentOtherMethod: paymentData.otherMethod,
+        change: (paymentData.cash + paymentData.card + paymentData.other) - getRoundedTotal(getTotal())
+      });
+      
+      // 印刷後に切断
+      await printer.disconnect();
+      
+    } else {
+      alert('MP-B20が見つかりません。');
+    }
+  } catch (printError) {
+    console.error('領収書印刷エラー:', printError);
+    const errorMessage = printError instanceof Error 
+      ? printError.message 
+      : '不明なエラーが発生しました';
+    alert('領収書印刷に失敗しました。\n' + errorMessage);
+  } finally {
+    // 会計処理を完了
+    finishCheckout()
+  }
+}
+
+// 会計処理の完了（共通処理）
+const finishCheckout = () => {
+  // ローディングを終了
+  setIsProcessingCheckout(false)
+  
+  // 各種状態をリセット
+  setOrderItems([])
+  setShowModal(false)
+  setCheckoutResult(null)
+  setShowReceiptConfirm(false)
+  
+  // データを再読み込み
+  loadData()
+}
+
+  // テーブルクリア（修正版）
+  const clearTable = async () => {
+  if (!confirm(`${currentTable} の情報を削除しますか？`)) return
+  
+  try {
+    const storeId = getCurrentStoreId()
+    await fetch('/api/tables/clear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        tableId: currentTable,
+        storeId: storeId
+      })
+    })
+    
+    document.body.classList.remove('modal-open')  // 追加
+    setOrderItems([])
+    setShowModal(false)
+    loadData()
+  } catch (error) {
+    console.error('Error clearing table:', error)
+    alert('削除に失敗しました')
+  }
+}
+
+  // 席移動
+  const executeMove = async (toTable: string) => {
+    if (isMoving) return
+    
+    setIsMoving(true)
     
     try {
       const storeId = getCurrentStoreId()
-      const currentTableData = tables[currentTable]
-      
-      // 注文データを作成（会計処理）
-      const orderData = {
-        storeId,
-        tableId: currentTable,
-        guestName: currentTableData.name,
-        castName: currentTableData.oshi,
-        visitType: currentTableData.visit || '初回',
-        checkInTime: currentTableData.time,
-        items: orderItems,
-        paymentCash: paymentData.cash,
-        paymentCard: paymentData.card,
-        change: calculateChange()
-      }
-      
-      const response = await fetch('/api/orders/checkout', {
+      const response = await fetch('/api/tables/move', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData),
-      })
-      
-      const result = await response.json()
-      
-      if (result.success) {
-        // テーブルをクリア
-        await fetch('/api/tables/clear', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ storeId, tableId: currentTable }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromTableId: moveFromTable,
+          toTableId: toTable,
+          storeId: storeId
         })
-        
-        // 状態をリセット
-        setShowModal(false)
-        setOrderItems([])
-        loadData()
-        
-        return {
-          status: 'success',
-          receiptNumber: result.receiptNumber,
-          orderId: result.orderId,
-          data: result
+      })
+      
+      if (!response.ok) {
+        throw new Error('移動に失敗しました')
+      }
+      
+      setTables(prev => {
+        const newTables = { ...prev }
+        newTables[toTable] = { ...prev[moveFromTable] }
+        newTables[moveFromTable] = {
+          table: moveFromTable,
+          name: '',
+          oshi: '',
+          time: '',
+          visit: '',
+          elapsed: '',
+          status: 'empty'
         }
-      } else {
-        throw new Error(result.error || '会計処理に失敗しました')
-      }
-    } catch (error) {
-      console.error('Checkout error:', error)
-      return {
-        status: 'error',
-        message: error instanceof Error ? error.message : '会計処理中にエラーが発生しました'
-      }
-    }
-  }
-
-  // 新規登録/編集の保存
-  const handleSave = async () => {
-    const storeId = getCurrentStoreId()
-    const endpoint = modalMode === 'new' ? '/api/tables/checkin' : '/api/tables/update'
-    
-    const checkInTime = new Date(
-      formData.editYear,
-      formData.editMonth - 1,
-      formData.editDate,
-      formData.editHour,
-      formData.editMinute
-    )
-    
-    const data = {
-      storeId,
-      tableId: currentTable,
-      guestName: formData.guestName,
-      castName: formData.castName,
-      visitType: formData.visitType,
-      checkInTime: checkInTime.toISOString(),
-      ...(modalMode === 'edit' && { items: orderItems })
-    }
-    
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        return newTables
       })
       
-      if (res.ok) {
-        setShowModal(false)
-        loadData()
-      }
-    } catch (error) {
-      console.error('Failed to save:', error)
-    }
-  }
-
-  // テーブルクリア
-  const handleClearTable = async () => {
-    if (!confirm('テーブルをクリアしますか？')) return
-    
-    const storeId = getCurrentStoreId()
-    try {
-      const res = await fetch('/api/tables/clear', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storeId, tableId: currentTable })
-      })
+      endMoveMode()
       
-      if (res.ok) {
-        setShowModal(false)
+      setTimeout(() => {
         loadData()
-      }
+      }, 500)
+      
     } catch (error) {
-      console.error('Failed to clear table:', error)
+      console.error('Error moving table:', error)
+      alert('移動に失敗しました')
+      endMoveMode()
+    } finally {
+      setIsMoving(false)
     }
   }
 
-  // 移動モード開始
+  // 長押し開始
   const startMoveMode = (tableId: string) => {
     setMoveMode(true)
     setMoveFromTable(tableId)
     setShowMoveHint(true)
-    setTimeout(() => setShowMoveHint(false), 2000)
   }
 
   // 移動モード終了
   const endMoveMode = () => {
     setMoveMode(false)
     setMoveFromTable('')
+    setShowMoveHint(false)
+    isLongPress.current = false
+    setIsMoving(false)
   }
 
-  // テーブル移動
-  const moveTable = async (toTable: string) => {
-    if (isMoving) return
-    setIsMoving(true)
-    
-    const storeId = getCurrentStoreId()
-    try {
-      const res = await fetch('/api/tables/move', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storeId, fromTable: moveFromTable, toTable })
-      })
-      
-      if (res.ok) {
-        await loadData()
-      } else {
-        alert('移動に失敗しました')
-      }
-    } catch (error) {
-      console.error('Failed to move table:', error)
-      alert('移動に失敗しました')
-    } finally {
-      setIsMoving(false)
-      endMoveMode()
-    }
+  // モーダルを開く（修正版）
+  const openModal = (table: TableData) => {
+  setCurrentTable(table.table)
+  
+  if (table.status === 'empty') {
+    setModalMode('new')
+    const now = new Date()
+    setFormData({
+      guestName: '',
+      castName: '',
+      visitType: '',
+      editYear: now.getFullYear(),
+      editMonth: now.getMonth() + 1,
+      editDate: now.getDate(),
+      editHour: now.getHours(),
+      editMinute: Math.floor(now.getMinutes() / 5) * 5
+    })
+    setOrderItems([])
+  } else {
+    setModalMode('edit')
+    const time = table.time ? new Date(table.time.replace(' ', 'T')) : new Date()
+    setFormData({
+      guestName: table.name,
+      castName: table.oshi,
+      visitType: table.visit,
+      editYear: time.getFullYear(),
+      editMonth: time.getMonth() + 1,
+      editDate: time.getDate(),
+      editHour: time.getHours(),
+      editMinute: time.getMinutes()
+    })
+    setOrderItems([])
+    loadOrderItems(table.table)
   }
-
-  // テーブルクリック処理
-  const handleTableClick = (tableId: string) => {
-    if (moveMode) {
-      if (tableId !== moveFromTable && tables[tableId].status === 'empty') {
-        moveTable(tableId)
-      }
-    } else {
-      openModal(tableId, tables[tableId].status === 'empty' ? 'new' : 'edit')
-    }
-  }
-
-  // モーダルを開く
-  const openModal = (tableId: string, mode: 'new' | 'edit') => {
-    setCurrentTable(tableId)
-    setModalMode(mode)
-    
-    const table = tables[tableId]
-    if (mode === 'edit' && table) {
-      const time = table.time ? new Date(table.time.replace(' ', 'T')) : new Date()
-      setFormData({
-        guestName: table.name,
-        castName: table.oshi,
-        visitType: table.visit,
-        editYear: time.getFullYear(),
-        editMonth: time.getMonth() + 1,
-        editDate: time.getDate(),
-        editHour: time.getHours(),
-        editMinute: time.getMinutes()
-      })
-      setOrderItems([])
-      loadOrderItems(table.table)
-    }
-    
-    // bodyにクラスを追加
-    document.body.classList.add('modal-open')
-    
-    setShowModal(true)
-    setSelectedCategory('')
-    setSelectedProduct(null)
-  }
+  
+  // bodyにクラスを追加
+  document.body.classList.add('modal-open')
+  
+  setShowModal(true)
+  setSelectedCategory('')
+  setSelectedProduct(null)
+}
 
   // 現在のカテゴリーの推し優先表示設定を取得
   const getCurrentCategoryShowOshiFirst = () => {
@@ -675,9 +1168,9 @@ export default function Home() {
       </Head>
 
       <div id="layout" className="responsive-layout" onClick={(e) => {
-        if (moveMode && e.target === e.currentTarget) {
-          endMoveMode()
-        }
+      if (moveMode && e.target === e.currentTarget) {
+      endMoveMode()
+      }
       }}>
         <div className="header">
           {/* ハンバーガーメニューボタン */}
@@ -689,19 +1182,6 @@ export default function Home() {
           </button>
           
           📋 テーブル管理システム
-          
-          {/* キャスト人数 - 卓数表示 */}
-          <span style={{
-            position: 'absolute',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            fontSize: '20px',
-            fontWeight: 'bold',
-            color: attendingCastsCount - occupiedTablesCount >= 0 ? '#4CAF50' : '#F44336'
-          }}>
-            👥 {attendingCastsCount} - 🪑 {occupiedTablesCount} = {attendingCastsCount - occupiedTablesCount >= 0 ? '+' : ''}{attendingCastsCount - occupiedTablesCount}
-          </span>
-          
           <span style={{ 
             position: 'absolute', 
             right: '20px', 
@@ -714,715 +1194,389 @@ export default function Home() {
         
         {/* サイドメニューコンポーネント */}
         <SideMenu 
-          isOpen={showMenu} 
-          onClose={() => setShowMenu(false)} 
-          onMenuClick={(action) => {
-            setShowMenu(false)
-            switch(action) {
-              case 'refresh':
-                loadData()
-                break
-              case 'attendance':
-                router.push('/attendance')
-                break
-              case 'receipts':
-                router.push('/receipts')
-                break
-              case 'report':
-                router.push('/report')
-                break
-              case 'settings':
-                router.push('/settings')
-                break
-              case 'logout':
-                if (confirm('ログアウトしますか？')) {
-                  localStorage.removeItem('isLoggedIn')
-                  router.push('/login')
-                }
-                break
-            }
-          }}
+          isOpen={showMenu}
+          onClose={() => setShowMenu(false)}
+          onMenuClick={handleMenuClick}
         />
         
-        {/* フロアマップ */}
-        <div 
-          id="floor-container"
-          style={{
-            position: 'relative',
-            height: 'calc(100vh - 72px)',
-            overflow: 'hidden',
-            backgroundColor: '#f8f8f8',
-            backgroundImage: 'radial-gradient(circle, #e0e0e0 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
-            transformOrigin: 'top center',
-            transform: `scale(${layoutScale})`,
-            width: '1024px',
-            margin: '0 auto'
-          }}
-        >
-          {/* テーブル配置 */}
-          {Object.entries(tables).map(([tableId, table]) => {
-            const position = calculateTablePosition(tableId)
-            const isTargetTable = moveMode && tableId !== moveFromTable && table.status === 'empty'
-            
-            return (
-              <div
-                key={tableId}
-                onClick={() => handleTableClick(tableId)}
-                onContextMenu={(e) => {
-                  e.preventDefault()
-                  if (table.status !== 'empty') {
-                    startMoveMode(tableId)
-                  }
-                }}
+        {showMoveHint && (
+          <div id="move-hint">
+            🔄 移動先の空席をタップしてください（キャンセル：画面外をタップ）
+          </div>
+        )}
+        
+        {/* テーブルコンポーネント */}
+        {Object.entries(tables).map(([tableId, data]) => (
+          <Table 
+            key={tableId} 
+            tableId={tableId} 
+            data={data}
+            scale={layoutScale}
+            tableSize={tableBaseSize}
+            position={calculateTablePosition(tableId)}
+            moveMode={moveMode}
+            moveFromTable={moveFromTable}
+            isMoving={isMoving}
+            showModal={showModal}
+            onOpenModal={openModal}
+            onStartMoveMode={startMoveMode}
+            onExecuteMove={executeMove}
+          />
+        ))}
+      </div>
+
+      {/* モーダルオーバーレイ */}
+      {showModal && (
+  <div 
+    id="modal-overlay" 
+    onClick={() => {
+      document.body.classList.remove('modal-open')
+      setShowModal(false)
+    }} 
+  />
+)}
+
+      {/* メインモーダル（既存のまま） */}
+      {showModal && (
+        <div id="modal" className={modalMode === 'new' ? 'modal-new' : 'modal-edit'} style={{
+          fontSize: `${16 * layoutScale}px`
+        }}>
+          {/* 既存のモーダル内容をそのまま残す（長いので省略） */}
+          <button 
+  id="modal-close" 
+  onClick={() => {
+    document.body.classList.remove('modal-open')
+    setShowModal(false)
+  }}
+>
+  ×
+</button>
+          <h3 style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            margin: 0,
+            padding: window.innerWidth <= 1024 ? '12px 15px' : '20px',
+            background: '#ff9800',
+            color: 'white',
+            fontSize: window.innerWidth <= 1024 ? '16px' : '20px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              📌 {currentTable} の操作
+              {modalMode === 'edit' && (
+                <span style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: '#000'
+                }}>
+                  滞在時間: {tables[currentTable]?.elapsed || '0分'}
+                </span>
+              )}
+            </div>
+            {modalMode === 'edit' && orderItems.length > 0 && (
+              <button
+                onClick={printOrderSlip}
                 style={{
-                  position: 'absolute',
-                  top: `${position.top}px`,
-                  left: `${position.left}px`,
-                  width: `${tableBaseSize.width}px`,
-                  height: `${tableBaseSize.height}px`,
-                  backgroundColor: table.status === 'empty' ? '#fff' : 
-                                 table.status === 'billing' ? '#ffeb3b' : '#4CAF50',
-                  border: isTargetTable ? '3px dashed #2196F3' : 
-                         tableId === moveFromTable ? '3px solid #f44336' : '1px solid #ccc',
-                  borderRadius: '8px',
-                  padding: '10px',
-                  cursor: moveMode ? (isTargetTable ? 'pointer' : 'not-allowed') : 'pointer',
-                  userSelect: 'none',
+                  padding: '8px 16px',
+                  backgroundColor: '#2196f3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
                   display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
                   alignItems: 'center',
-                  boxShadow: table.status !== 'empty' ? '0 2px 4px rgba(0,0,0,0.2)' : 'none',
-                  transition: 'all 0.3s ease',
-                  opacity: moveMode && !isTargetTable && tableId !== moveFromTable ? 0.5 : 1
+                  gap: '5px'
                 }}
               >
-                <div style={{ 
-                  fontSize: `${16 * layoutScale}px`, 
-                  fontWeight: 'bold',
-                  marginBottom: '5px'
-                }}>
-                  {tableId}
-                </div>
-                {table.status !== 'empty' && (
-                  <>
-                    <div style={{ 
-                      fontSize: `${14 * layoutScale}px`, 
-                      marginBottom: '3px',
-                      textAlign: 'center',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      width: '100%'
-                    }}>
-                      {table.name}
-                    </div>
-                    <div style={{ 
-                      fontSize: `${12 * layoutScale}px`, 
-                      color: '#666',
-                      marginBottom: '3px'
-                    }}>
-                      {table.oshi}
-                    </div>
-                    <div style={{ 
-                      fontSize: `${12 * layoutScale}px`, 
-                      color: '#666' 
-                    }}>
-                      {formatElapsedTime(table.elapsed)}
-                    </div>
-                  </>
-                )}
+                🖨️ 会計伝票印刷
+              </button>
+            )}
+          </h3>
+
+          {modalMode === 'new' ? (
+            <div id="form-fields">
+              <label>
+                お客様名:
+                <input
+                  type="text"
+                  value={formData.guestName}
+                  onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
+                  placeholder="お客様名を入力"
+                  onFocus={(e) => {
+                    // Androidでキーボード表示時のスクロール位置調整
+                    if (window.innerWidth <= 1024) {
+                      setTimeout(() => {
+                        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      }, 300)
+                    }
+                  }}
+                />
+              </label>
+              
+              <label>
+                推し:
+                <select
+                  value={formData.castName}
+                  onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
+                >
+                  <option value="">-- 推しを選択 --</option>
+                  {castList.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </label>
+              
+              <label>
+                来店種別:
+                <select
+                  value={formData.visitType}
+                  onChange={(e) => setFormData({ ...formData, visitType: e.target.value })}
+                >
+                  <option value="">-- 来店種別を選択 --</option>
+                  <option value="初回">初回</option>
+                  <option value="再訪">再訪</option>
+                  <option value="常連">常連</option>
+                </select>
+              </label>
+              
+              <div className="center">
+                <button
+                  onClick={() => updateTableInfo(false)}
+                  className="btn-primary"
+                  style={{ width: '100%' }}
+                >
+                  決定
+                </button>
               </div>
-            )
-          })}
+            </div>
+          ) : (
+                      <div id="details">
+              <div className="order-section">
+
+                {/* 入店日時エリア - 元のまま */}
+                <div className="datetime-edit" style={{
+                  fontSize: window.innerWidth <= 1024 ? '14px' : `${16 * layoutScale}px`,
+                  padding: window.innerWidth <= 1024 ? '10px 15px' : `${15 * layoutScale}px ${20 * layoutScale}px`,
+                  justifyContent: 'center',
+                  borderBottom: '1px solid #ddd',
+                  marginBottom: 0
+                }}>
+                  <span className="label-text" style={{ 
+                    fontSize: window.innerWidth <= 1024 ? '14px' : `${16 * layoutScale}px` 
+                  }}>
+                    入店日時：
+                  </span>
+                  <select className="date-select" value={formData.editYear} onChange={(e) => {
+                    setFormData({ ...formData, editYear: parseInt(e.target.value) })
+                    updateTableInfo(true)
+                  }}>
+                    {[2024, 2025].map(year => (
+                      <option key={year} value={year}>{year}年</option>
+                    ))}
+                  </select>
+                  <select className="date-select" value={formData.editMonth} onChange={(e) => {
+                    setFormData({ ...formData, editMonth: parseInt(e.target.value) })
+                    updateTableInfo(true)
+                  }}>
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>{i + 1}月</option>
+                    ))}
+                  </select>
+                  <select className="date-select" value={formData.editDate} onChange={(e) => {
+                    setFormData({ ...formData, editDate: parseInt(e.target.value) })
+                    updateTableInfo(true)
+                  }}>
+                    {[...Array(31)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>{i + 1}日</option>
+                    ))}
+                  </select>
+                  <select 
+                    value={formData.editHour}
+                    onChange={(e) => {
+                      setFormData({ ...formData, editHour: parseInt(e.target.value) })
+                      updateTableInfo(true)
+                    }}
+                    className="time-select"
+                  >
+                    {[...Array(24)].map((_, i) => (
+                      <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
+                    ))}
+                  </select>
+                  <span>:</span>
+                  <select 
+                    value={formData.editMinute}
+                    onChange={(e) => {
+                      setFormData({ ...formData, editMinute: parseInt(e.target.value) })
+                      updateTableInfo(true)
+                    }}
+                    className="time-select"
+                  >
+                    {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(min => (
+                      <option key={min} value={min}>{min.toString().padStart(2, '0')}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="pos-container" style={{
+                  transform: `scale(${layoutScale})`,
+                  transformOrigin: 'top left',
+                  width: `${100 / layoutScale}%`,
+                  height: 'auto',
+                  padding: `${20 * layoutScale}px`,
+                  gap: `${20 * layoutScale}px`
+                }}>
+                  <ProductSection
+                    productCategories={productCategories}
+                    selectedCategory={selectedCategory}
+                    selectedProduct={selectedProduct}
+                    castList={castList}
+                    currentOshi={formData.castName}
+                    showOshiFirst={getCurrentCategoryShowOshiFirst()}
+                    onSelectCategory={(category) => {
+                      setSelectedCategory(category)
+                      // カテゴリー変更時に商品選択をクリア
+                      setSelectedProduct(null)
+                    }}
+                    onAddProduct={addProductToOrder}
+                  />
+                  
+                  <OrderSection
+                    orderItems={orderItems}
+                    onCheckout={checkout}
+                    onClearTable={clearTable}
+                    onUpdateOrderItem={updateOrderItemQuantity}
+                    onDeleteOrderItem={deleteOrderItem}
+                    onUpdateOrderItemPrice={updateOrderItemPrice}
+                    /* 変更部分: castName, guestNameを削除して、formDataとonUpdateFormDataを追加 */
+                    formData={formData}
+                    onUpdateFormData={(updates) => {
+                      setFormData({ ...formData, ...updates })
+                      updateTableInfo(true)
+                    }}
+                    /* ここまで変更 */
+                    castList={castList}
+                    subtotal={orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+                    serviceTax={Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * systemSettings.serviceChargeRate)}
+                    roundedTotal={getRoundedTotal(getTotal())}
+                    roundingAdjustment={getRoundingAdjustment()}
+                  />
+                  
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      )}
 
-        {/* 移動モードのヒント */}
-        {showMoveHint && (
-          <div style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: 'rgba(33, 150, 243, 0.9)',
-            color: 'white',
-            padding: '20px 40px',
-            borderRadius: '10px',
-            fontSize: '18px',
-            zIndex: 10000,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
-          }}>
-            空いているテーブルをクリックして移動
-          </div>
-        )}
+      {/* 会計モーダル（PaymentModalコンポーネント使用） */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        currentTable={currentTable}
+        layoutScale={layoutScale}
+        paymentData={paymentData}
+        activePaymentInput={activePaymentInput}
+        subtotal={orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+        serviceTax={Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * systemSettings.serviceChargeRate)}
+        total={getTotal()}
+        roundedTotal={getRoundedTotal(getTotal())}
+        roundingAdjustment={getRoundingAdjustment()}
+        formData={formData}
+        onNumberClick={handleNumberClick}
+        onQuickAmount={handleQuickAmount}
+        onDeleteNumber={handleDeleteNumber}
+        onClearNumber={handleClearNumber}
+        onChangeActiveInput={setActivePaymentInput}
+        onChangeOtherMethod={setOtherMethod}
+        onCompleteCheckout={completeCheckout}
+        onClose={() => {
+          document.body.classList.remove('modal-open')
+          setShowPaymentModal(false)
+        }}
+      />
+      
+      {/* 領収書確認モーダル - 他のモーダルより後に配置 */}
+      <ConfirmModal
+        isOpen={showReceiptConfirm}
+        message="領収書を印刷しますか？"
+        onConfirm={handleReceiptPrint}
+        onCancel={finishCheckout}
+      />
+      
+      {/* ローディングオーバーレイ - 最後に配置で最前面 */}
+      <LoadingOverlay 
+        isLoading={isProcessingCheckout} 
+        message="会計処理中..." 
+      />
 
-        {/* モーダル */}
-        {showModal && (
-          <div
-            id="modal"
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-start',
-              zIndex: 1000,
-              overflowY: 'auto',
-              paddingTop: '20px',
-              paddingBottom: '20px'
-            }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                document.body.classList.remove('modal-open')
-                setShowModal(false)
-              }
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: 'white',
-                borderRadius: '10px',
-                width: '90%',
-                maxWidth: '1000px',
-                maxHeight: '90vh',
-                display: 'flex',
-                flexDirection: 'column',
-                margin: '0 auto'
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* モーダルヘッダー */}
-              <div style={{
-                backgroundColor: '#FF9800',
-                color: 'white',
-                padding: '15px 20px',
-                borderRadius: '10px 10px 0 0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexShrink: 0
-              }}>
-                <h2 style={{ margin: 0, fontSize: '20px' }}>
-                  {modalMode === 'new' ? `テーブル ${currentTable} - 新規登録` : `テーブル ${currentTable} - 編集`}
-                </h2>
-                <button
-                  onClick={() => {
-                    document.body.classList.remove('modal-open')
-                    setShowModal(false)
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'white',
-                    fontSize: '24px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  ×
-                </button>
-              </div>
+      <style jsx>{`
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
 
-              {/* モーダルコンテンツ */}
-              <div style={{
-                padding: '20px',
-                overflowY: 'auto',
-                flex: 1
-              }}>
-                {/* 顧客情報セクション */}
-                <div className="customer-header">
-                  <div>
-                    <span className="label-text">ゲスト名:</span>
-                    <input
-                      type="text"
-                      value={formData.guestName}
-                      onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
-                      style={{
-                        padding: '5px 10px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '150px'
-                      }}
-                    />
-                  </div>
-                  
-                  <div>
-                    <span className="label-text">推し:</span>
-                    <select
-                      className="cast-select"
-                      value={formData.castName}
-                      onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
-                      style={{
-                        padding: '5px 10px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        minWidth: '120px'
-                      }}
-                    >
-                      <option value="">選択してください</option>
-                      {castList.map(cast => (
-                        <option key={cast} value={cast}>{cast}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <span className="label-text">来店種別:</span>
-                    <select
-                      className="visit-select"
-                      value={formData.visitType}
-                      onChange={(e) => setFormData({ ...formData, visitType: e.target.value })}
-                    >
-                      <option value="初回">初回</option>
-                      <option value="再来">再来</option>
-                      <option value="場内">場内</option>
-                      <option value="同伴">同伴</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <span className="label-text">入店時刻:</span>
-                    <input
-                      type="number"
-                      value={formData.editYear}
-                      onChange={(e) => setFormData({ ...formData, editYear: parseInt(e.target.value) || new Date().getFullYear() })}
-                      style={{ width: '60px', marginRight: '5px' }}
-                      min="2000"
-                      max="2099"
-                    />
-                    年
-                    <input
-                      type="number"
-                      value={formData.editMonth}
-                      onChange={(e) => setFormData({ ...formData, editMonth: parseInt(e.target.value) || 1 })}
-                      style={{ width: '40px', margin: '0 5px' }}
-                      min="1"
-                      max="12"
-                    />
-                    月
-                    <input
-                      type="number"
-                      value={formData.editDate}
-                      onChange={(e) => setFormData({ ...formData, editDate: parseInt(e.target.value) || 1 })}
-                      style={{ width: '40px', margin: '0 5px' }}
-                      min="1"
-                      max="31"
-                    />
-                    日
-                    <input
-                      type="number"
-                      value={formData.editHour}
-                      onChange={(e) => setFormData({ ...formData, editHour: parseInt(e.target.value) || 0 })}
-                      style={{ width: '40px', margin: '0 5px' }}
-                      min="0"
-                      max="23"
-                    />
-                    :
-                    <input
-                      type="number"
-                      value={formData.editMinute}
-                      onChange={(e) => setFormData({ ...formData, editMinute: parseInt(e.target.value) || 0 })}
-                      style={{ width: '40px', marginLeft: '5px' }}
-                      min="0"
-                      max="59"
-                    />
-                  </div>
-                </div>
-
-                {/* 既存のPOS機能部分 */}
-                {modalMode === 'edit' && (
-                  <>
-                    {/* カテゴリ選択 */}
-                    <div style={{
-                      display: 'flex',
-                      gap: '10px',
-                      marginBottom: '20px',
-                      flexWrap: 'wrap'
-                    }}>
-                      {Object.keys(productCategories).map(category => (
-                        <button
-                          key={category}
-                          onClick={() => setSelectedCategory(category)}
-                          style={{
-                            padding: '10px 20px',
-                            backgroundColor: selectedCategory === category ? '#FF9800' : '#f0f0f0',
-                            color: selectedCategory === category ? 'white' : 'black',
-                            border: 'none',
-                            borderRadius: '5px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            transition: 'all 0.3s'
-                          }}
-                        >
-                          {category}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* 商品選択エリア */}
-                    {selectedCategory && (
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-                        gap: '10px',
-                        marginBottom: '20px',
-                        padding: '15px',
-                        backgroundColor: '#f5f5f5',
-                        borderRadius: '8px',
-                        maxHeight: '300px',
-                        overflowY: 'auto'
-                      }}>
-                        {(() => {
-                          const showOshiFirst = getCurrentCategoryShowOshiFirst()
-                          const categoryProducts = productCategories[selectedCategory] || []
-                          
-                          if (showOshiFirst && formData.castName) {
-                            const oshiProducts = categoryProducts.filter(p => 
-                              p.name.includes(formData.castName)
-                            )
-                            const otherProducts = categoryProducts.filter(p => 
-                              !p.name.includes(formData.castName)
-                            )
-                            return [...oshiProducts, ...otherProducts]
-                          }
-                          
-                          return categoryProducts
-                        })().map((product, index) => (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              if (product.needsCast) {
-                                setSelectedProduct(product)
-                              } else {
-                                addOrderItem(product.name, product.price, false)
-                              }
-                            }}
-                            style={{
-                              padding: '15px 10px',
-                              backgroundColor: product.name.includes(formData.castName) ? '#FFE0B2' : 'white',
-                              border: '1px solid #ddd',
-                              borderRadius: '5px',
-                              cursor: 'pointer',
-                              fontSize: '13px',
-                              transition: 'all 0.3s',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              gap: '5px'
-                            }}
-                          >
-                            <div style={{ fontWeight: 'bold' }}>{product.name}</div>
-                            <div style={{ color: '#666' }}>¥{product.price.toLocaleString()}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* キャスト選択モーダル */}
-                    {selectedProduct && (
-                      <div style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        zIndex: 2000
-                      }}>
-                        <div style={{
-                          backgroundColor: 'white',
-                          padding: '20px',
-                          borderRadius: '10px',
-                          maxWidth: '400px',
-                          width: '90%'
-                        }}>
-                          <h3>キャストを選択してください</h3>
-                          <p>商品: {selectedProduct.name}</p>
-                          <select
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                addOrderItem(
-                                  selectedProduct.name,
-                                  selectedProduct.price,
-                                  true,
-                                  e.target.value
-                                )
-                                setSelectedProduct(null)
-                              }
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '10px',
-                              marginBottom: '10px',
-                              border: '1px solid #ddd',
-                              borderRadius: '5px'
-                            }}
-                          >
-                            <option value="">選択してください</option>
-                            {castList.map(cast => (
-                              <option key={cast} value={cast}>{cast}</option>
-                            ))}
-                          </select>
-                          <button
-                            onClick={() => setSelectedProduct(null)}
-                            style={{
-                              width: '100%',
-                              padding: '10px',
-                              backgroundColor: '#f0f0f0',
-                              border: 'none',
-                              borderRadius: '5px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            キャンセル
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 注文内容表示 - OrderSectionコンポーネントを使用 */}
-                    <OrderSection
-                      orderItems={orderItems}
-                      onCheckout={() => {
-                        const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-                        const serviceTax = Math.floor(subtotal * 0.15) // 15%のサービス料
-                        const total = subtotal + serviceTax
-                        resetPaymentData()
-                        setPaymentData(prev => ({ ...prev, totalAmount: total }))
-                        setActivePaymentInput('cash')
-                        setShowPaymentModal(true)
-                      }}
-                      onClearTable={handleClearTable}
-                      onUpdateOrderItem={updateOrderItemQuantity}
-                      onDeleteOrderItem={deleteOrderItem}
-                      onUpdateOrderItemPrice={updateOrderItemPrice}
-                      formData={formData}
-                      onUpdateFormData={(updates) => setFormData({ ...formData, ...updates })}
-                      castList={castList}
-                      subtotal={orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
-                      serviceTax={Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.15)}
-                      roundedTotal={orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.15)}
-                      roundingAdjustment={0}
-                    />
-                  </>
-                )}
-
-                {/* アクションボタン */}
-                <div style={{
-                  display: 'flex',
-                  gap: '10px',
-                  marginTop: '20px',
-                  justifyContent: 'flex-end'
-                }}>
-                  {modalMode === 'new' ? (
-                    <button
-                      onClick={handleSave}
-                      style={{
-                        padding: '10px 30px',
-                        backgroundColor: '#4CAF50',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
-                        fontSize: '16px'
-                      }}
-                    >
-                      登録
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={handleClearTable}
-                        style={{
-                          padding: '10px 30px',
-                          backgroundColor: '#f44336',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '5px',
-                          cursor: 'pointer',
-                          fontSize: '16px'
-                        }}
-                      >
-                        クリア
-                      </button>
-                      <button
-                        onClick={handleSave}
-                        style={{
-                          padding: '10px 30px',
-                          backgroundColor: '#2196F3',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '5px',
-                          cursor: 'pointer',
-                          fontSize: '16px'
-                        }}
-                      >
-                        更新
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 会計モーダル（シンプルな実装） */}
-        {showPaymentModal && (
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              zIndex: 2000
-            }}
-            onClick={() => setShowPaymentModal(false)}
-          >
-            <div
-              style={{
-                backgroundColor: 'white',
-                borderRadius: '10px',
-                padding: '30px',
-                width: '90%',
-                maxWidth: '500px',
-                maxHeight: '90vh',
-                overflowY: 'auto'
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>会計処理</h2>
-              
-              <div style={{ marginBottom: '20px', fontSize: '18px', textAlign: 'center' }}>
-                合計金額: ¥{paymentData.totalAmount.toLocaleString()}
-              </div>
-              
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>現金:</label>
-                <input
-                  type="number"
-                  value={paymentData.cash}
-                  onChange={(e) => setPaymentData({ ...paymentData, cash: parseInt(e.target.value) || 0 })}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    border: '1px solid #ddd',
-                    borderRadius: '5px',
-                    fontSize: '16px'
-                  }}
-                />
-              </div>
-              
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>カード:</label>
-                <input
-                  type="number"
-                  value={paymentData.card}
-                  onChange={(e) => setPaymentData({ ...paymentData, card: parseInt(e.target.value) || 0 })}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    border: '1px solid #ddd',
-                    borderRadius: '5px',
-                    fontSize: '16px'
-                  }}
-                />
-              </div>
-              
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>その他:</label>
-                <input
-                  type="number"
-                  value={paymentData.other}
-                  onChange={(e) => setPaymentData({ ...paymentData, other: parseInt(e.target.value) || 0 })}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    border: '1px solid #ddd',
-                    borderRadius: '5px',
-                    fontSize: '16px'
-                  }}
-                />
-              </div>
-              
-              <div style={{
-                marginBottom: '20px',
-                padding: '15px',
-                backgroundColor: '#f5f5f5',
-                borderRadius: '5px',
-                textAlign: 'center'
-              }}>
-                <div>支払合計: ¥{(paymentData.cash + paymentData.card + paymentData.other).toLocaleString()}</div>
-                <div style={{ fontSize: '20px', fontWeight: 'bold', color: calculateChange() >= 0 ? '#4CAF50' : '#f44336' }}>
-                  {calculateChange() >= 0 ? 'おつり' : '不足'}: ¥{Math.abs(calculateChange()).toLocaleString()}
-                </div>
-              </div>
-              
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  onClick={async () => {
-                    if (paymentData.cash + paymentData.card + paymentData.other < paymentData.totalAmount) {
-                      alert('支払金額が不足しています')
-                      return
-                    }
-                    const result = await handleCheckout()
-                    setShowPaymentModal(false)
-                    resetPaymentData()
-                    
-                    if (result.status === 'success') {
-                      alert(`会計が完了しました。\nレシート番号: ${result.receiptNumber}`)
-                    } else {
-                      alert(result.message || '会計処理に失敗しました')
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '15px',
-                    backgroundColor: '#FF9800',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    fontSize: '16px',
-                    cursor: 'pointer',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  完了
-                </button>
-                <button
-                  onClick={() => setShowPaymentModal(false)}
-                  style={{
-                    flex: 1,
-                    padding: '15px',
-                    backgroundColor: '#f0f0f0',
-                    color: 'black',
-                    border: 'none',
-                    borderRadius: '5px',
-                    fontSize: '16px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  キャンセル
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        .label-text {
+          font-weight: bold;
+          margin-right: 10px;
+        }
+        
+        /* Androidタブレット用のモーダル修正 */
+        @media screen and (max-width: 1024px) {
+          /* 1. ヘッダー（操作 滞在時間）の縦幅を狭く */
+          #modal.modal-edit h3 {
+            padding: 12px 15px !important;
+            font-size: 16px !important;
+          }
+          
+          /* 2. 入店日時エリアの縦幅を狭く */
+          #modal.modal-edit .datetime-edit {
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            min-height: auto !important;
+          }
+          
+          #modal.modal-edit .datetime-edit .label-text {
+            font-size: 14px !important;
+          }
+          
+          #modal.modal-edit .datetime-edit select {
+            font-size: 13px !important;
+            padding: 4px 6px !important;
+          }
+          
+          /* 3. POSコンテナのレイアウト調整 */
+          #modal.modal-edit .pos-container {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 10px !important;
+            padding: 10px !important;
+            height: calc(100% - 100px) !important;
+          }
+          
+          /* 左側（商品選択）を少し狭く */
+          #modal.modal-edit .left-section {
+            width: 45% !important;
+            padding: 12px !important;
+          }
+          
+          /* 右側（注文・会計）を少し広く */
+          #modal.modal-edit .right-section {
+            width: 55% !important;
+            padding: 12px !important;
+          }
+          
+          /* モーダル全体の高さ調整 */
+          #modal.modal-edit {
+            height: 92% !important;
+            max-height: 92vh !important;
+          }
+          
+          #modal.modal-edit #details {
+            height: calc(100% - 50px) !important;
+          }
+        }
+      `}</style>
     </>
   )
 }
