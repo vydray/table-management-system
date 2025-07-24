@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { createClient } from '@supabase/supabase-js'
@@ -35,7 +35,7 @@ export default function TableLayout() {
   const storeId = getCurrentStoreId()
 
   // テーブル一覧の取得
-  const fetchTables = async () => {
+  const fetchTables = useCallback(async () => {
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -52,11 +52,11 @@ export default function TableLayout() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [storeId])
 
   useEffect(() => {
     fetchTables()
-  }, [storeId])
+  }, [fetchTables])
 
   // テーブルの位置を更新
   const updateTablePosition = async (tableName: string, top: number, left: number) => {
@@ -347,6 +347,8 @@ export default function TableLayout() {
                 <li>削除ボタンでテーブルを削除</li>
               </ul>
             </div>
+            
+            {loading && <div style={{ textAlign: 'center', marginTop: '20px' }}>読み込み中...</div>}
           </div>
 
           {/* キャンバスエリア */}
