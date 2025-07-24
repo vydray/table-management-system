@@ -391,9 +391,9 @@ useEffect(() => {
 
       <div className="attendance-page" style={{
         width: '100%',
-        maxWidth: '1024px',
+        maxWidth: '1280px',
         height: '100vh',
-        maxHeight: '768px',
+        maxHeight: '800px',
         margin: '0 auto',
         backgroundColor: '#f2f2f7',
         overflow: 'hidden',

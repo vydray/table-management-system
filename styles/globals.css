@@ -30,8 +30,8 @@ body.modal-open {
   position: relative;
   width: 100vw;
   height: 100vh;
-  max-width: 1024px;
-  max-height: 768px;
+  max-width: 1280px;
+  max-height: 800px;
   margin: auto;
   background: #f8f8f8;
   border: 1px solid #ccc;
@@ -44,14 +44,14 @@ body.modal-open {
 }
 
 /* スマホ・タブレット対応 */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1280px) {
   #layout {
     width: 100vw;
     height: 100vh;
     max-width: 100%;
     max-height: 100%;
     border: none;
-    --scale-factor: min(1, calc(100vw / 1024));
+    --scale-factor: min(1, calc(100vw / 1280));
     /* 固定サイズモードに切り替え */
     position: fixed;
     top: 0;
@@ -59,9 +59,9 @@ body.modal-open {
   }
 }
 
-@media screen and (max-height: 768px) {
+@media screen and (max-height: 800px) {
   #layout {
-    --scale-factor: min(var(--scale-factor), calc(100vh / 768));
+    --scale-factor: min(var(--scale-factor), calc(100vh / 800));
   }
 }
 
@@ -88,7 +88,7 @@ body.modal-open {
 }
 
 /* フォントサイズもテーブルサイズに応じて調整 */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 800px) {
   .table {
     font-size: calc(14px * 0.8);
   }
@@ -379,7 +379,7 @@ body.modal-open {
 
 #modal.modal-edit {
   width: 90%;
-  max-width: 900px;
+  max-width: 1150px;
   max-height: 90vh;
   height: auto;
 }
@@ -634,7 +634,7 @@ body.modal-open {
   overflow: hidden;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 800px) {
   .left-section {
     width: 100%;
     height: auto;
@@ -652,7 +652,7 @@ body.modal-open {
   margin-bottom: 20px;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 800px) {
   .search-section {
     gap: calc(10px * var(--scale-factor, 1));
     margin-bottom: calc(20px * var(--scale-factor, 1));
@@ -667,7 +667,7 @@ body.modal-open {
   font-size: 14px;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 800px) {
   .search-input {
     padding: calc(8px * var(--scale-factor, 1)) calc(12px * var(--scale-factor, 1));
     font-size: calc(14px * var(--scale-factor, 1));
@@ -684,7 +684,7 @@ body.modal-open {
   font-size: 14px;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 800px) {
   .search-button {
     padding: calc(8px * var(--scale-factor, 1)) calc(20px * var(--scale-factor, 1));
     font-size: calc(14px * var(--scale-factor, 1));
@@ -804,7 +804,7 @@ body.modal-open {
   overflow: visible;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 800px) {
   .right-section {
     width: 100%;
     padding: calc(15px * var(--scale-factor, 1));
@@ -1150,7 +1150,7 @@ label {
 }
 
 /* iPad注文モーダルのスクロール修正 - 完全版 */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1200px) {
   /* モーダルが開いている時の特別な設定 */
   body.modal-open #layout {
     pointer-events: none;
@@ -1220,7 +1220,7 @@ label {
 }
 
 /* iPadタッチデバイス専用の追加対応 */
-@media (pointer: coarse) and (max-width: 1024px) {
+@media (pointer: coarse) and (max-width: 1200px) {
   #modal.modal-edit {
     /* タッチデバイス用の最適化 */
     touch-action: pan-y !important;
@@ -1247,7 +1247,7 @@ label {
 }
 
 /* Android/タブレット用のレスポンシブ対応 */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1200px) {
   /* レイアウト全体を画面サイズに合わせる */
   #layout {
     width: 100vw;
@@ -1264,7 +1264,7 @@ label {
 }
 
 /* Android/モバイル用の追加調整 */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 800px) {
   /* レイアウトのオーバーフローを許可（念のため） */
   #layout {
     overflow: visible;
@@ -1292,7 +1292,7 @@ label {
 }
 
 /* Android端末でのモーダル高さ修正 */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1200px) {
   /* モーダル本体の高さ調整 */
   #modal.modal-edit {
     /* 固定値ではなく動的な高さ計算 */
@@ -1350,7 +1350,7 @@ label {
 
 /* Android Chrome特有の対応を修正 */
 @supports (-webkit-appearance: none) and (not (-ms-ime-align: auto)) {
-  @media screen and (max-width: 1024px) {
+  @media screen and (max-width: 1200px) {
     #modal.modal-edit {
       /* フルスクリーンではなく、中央配置を維持 */
       position: fixed !important;
@@ -1403,7 +1403,7 @@ label {
   }
 
 /* スクロール可能領域の明確化 */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1200px) {
   /* スクロール可能エリアに影を追加 */
   #modal.modal-edit #details {
     box-shadow: inset 0 -10px 10px -10px rgba(0,0,0,0.1);
@@ -1420,7 +1420,7 @@ label {
 }
 
 /* スクロールバーの表示を改善 */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1200px) {
   /* スクロールバーを常に表示 */
   #modal.modal-edit ::-webkit-scrollbar {
     width: 6px !important;
@@ -1474,7 +1474,7 @@ label {
 }
 
 /* Android/タブレット用の修正 */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1200px) {
   /* モーダル内部のレイアウト修正 */
   #modal.modal-edit {
     width: 90% !important;
@@ -1640,7 +1640,7 @@ label {
 }
 
 /* Android特有の問題対応 */
-@media screen and (-webkit-min-device-pixel-ratio: 0) and (max-width: 1024px) {
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (max-width: 1200px) {
   /* Webkit系ブラウザ（Chrome等）での修正 */
   #modal.modal-edit {
     -webkit-transform: translate(-50%, -50%) !important;
@@ -1666,7 +1666,7 @@ label {
 }
 
 /* タッチデバイス対応 */
-@media (pointer: coarse) and (max-width: 1024px) {
+@media (pointer: coarse) and (max-width: 1200px) {
   /* スクロール可能エリアのタッチ対応 */
   #modal.modal-edit .category-section > *,
   #modal.modal-edit .order-table-body {
@@ -1681,7 +1681,7 @@ label {
 }
 
 /* Android モーダル中央配置修正 */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1200px) {
   #modal.modal-edit {
     position: fixed !important;
     top: 50% !important;
@@ -1702,7 +1702,7 @@ label {
 }
 
 /* Androidスクロール修正 - 左右別々のスクロール */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1200px) {
   /* 詳細エリア - オーバーフローを隠す */
   #modal.modal-edit #details {
     flex: 1 !important;
@@ -1811,7 +1811,7 @@ label {
 }
 
 /* Android端末でメニューアイテムの位置調整 */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1200px) {
   .menu-item {
     padding-left: 50px !important; /* 左側の余白を大きく増やす */
     justify-content: flex-start !important; /* 左寄せを維持 */
@@ -1828,9 +1828,9 @@ label {
 }
 
 /* 月次レポート画面のAndroidタブレット対応 */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1200px) {
   /* レポートページ全体の幅調整 */
-  div[style*="maxWidth: '1024px'"] {
+  div[style*="maxWidth: '1200px'"] {
     max-width: 100% !important;
     width: 100% !important;
     padding: 15px !important;
@@ -1935,7 +1935,7 @@ label {
 }
 
 /* レスポンシブ対応 */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 800px) {
   .customer-header {
     gap: 15px;
     padding: 12px 15px;
