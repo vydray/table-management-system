@@ -1254,28 +1254,32 @@ const finishCheckout = () => {
       endMoveMode()
       }
       }}>
-<div className="header">
+<div className="header" style={{ justifyContent: 'center' }}>
   {/* ハンバーガーメニューボタン */}
   <button 
     className="menu-button"
     onClick={() => setShowMenu(!showMenu)}
+    style={{
+      position: 'absolute',
+      left: '10px'
+    }}
   >
     <span className="menu-icon">☰</span>
   </button>
   
-  {/* 差分の数字をボタンとタイトルの間に配置 - 間隔を調整 */}
+  {/* 差分の数字を左側に配置 */}
   <span style={{
-    marginLeft: '60px',
-    marginRight: '60px',
+    position: 'absolute',
+    left: '80px',
     fontSize: '24px',
     fontWeight: 'bold',
     color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
-    position: 'relative',
     zIndex: 100
   }}>
     {attendingCastCount - occupiedTableCount}
   </span>
   
+  {/* タイトルは中央に */}
   📋 テーブル管理システム
   
   <span style={{ 
