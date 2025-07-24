@@ -1254,7 +1254,7 @@ const finishCheckout = () => {
       endMoveMode()
       }
       }}>
-        <div className="header" style={{ position: 'relative' }}>
+<div className="header">
   {/* ハンバーガーメニューボタン */}
   <button 
     className="menu-button"
@@ -1263,20 +1263,19 @@ const finishCheckout = () => {
     <span className="menu-icon">☰</span>
   </button>
   
-  📋 テーブル管理システム
-  
-  {/* 差分の数字を中央に配置 */}
+  {/* 差分の数字をボタンとタイトルの間に配置 */}
   <span style={{
-    position: 'absolute',
-    left: '50%',
-    transform: 'translateX(-50%)',
+    margin: '0 15px',
     fontSize: '24px',
     fontWeight: 'bold',
     color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
+    position: 'relative',
     zIndex: 100
   }}>
     {attendingCastCount - occupiedTableCount}
   </span>
+  
+  📋 テーブル管理システム
   
   <span style={{ 
     position: 'absolute', 
