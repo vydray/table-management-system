@@ -73,9 +73,20 @@ export default function Home() {
   const [layoutScale, setLayoutScale] = useState(1)
   const [tableBaseSize, setTableBaseSize] = useState({ width: 130, height: 123 })
 
-    // 出勤キャスト数と卓数の状態を追加
+  // 出勤キャスト数と卓数の状態を追加
   const [attendingCastCount, setAttendingCastCount] = useState(0)
   const [occupiedTableCount, setOccupiedTableCount] = useState(0)
+  
+  // ↓↓↓ ここに追加 ↓↓↓
+  const [tableLayouts, setTableLayouts] = useState<Array<{
+    table_name: string
+    display_name: string | null
+    position_top: number
+    position_left: number
+    table_width: number
+    table_height: number
+    is_visible: boolean
+  }>>([])
   
   // POS機能用の状態
   const [productCategories, setProductCategories] = useState<ProductCategories>({})
@@ -367,18 +378,34 @@ export default function Home() {
       
       const tableMap: Record<string, TableData> = {}
       
-      // 全テーブルの初期状態を作成
-      Object.keys(tablePositions).forEach(tableId => {
-        tableMap[tableId] = {
-          table: tableId,
-          name: '',
-          oshi: '',
-          time: '',
-          visit: '',
-          elapsed: '',
-          status: 'empty'
-        }
-      })
+      // データベースから取得したテーブルレイアウトを使用
+      if (tableLayouts.length > 0) {
+        // データベースのテーブル情報を使用
+        tableLayouts.filter(t => t.is_visible).forEach(layout => {
+          tableMap[layout.table_name] = {
+            table: layout.table_name,
+            name: '',
+            oshi: '',
+            time: '',
+            visit: '',
+            elapsed: '',
+            status: 'empty'
+          }
+        })
+      } else {
+        // フォールバック：固定のテーブル位置を使用
+        Object.keys(tablePositions).forEach(tableId => {
+          tableMap[tableId] = {
+            table: tableId,
+            name: '',
+            oshi: '',
+            time: '',
+            visit: '',
+            elapsed: '',
+            status: 'empty'
+          }
+        })
+      }
       
       // 取得したデータで更新（tablePositionsに存在するテーブルのみ）
       data.forEach(item => {
@@ -443,6 +470,18 @@ export default function Home() {
       setCastList(data)
     } catch (error) {
       console.error('Error loading cast list:', error)
+    }
+  }
+
+  // ↓↓↓ この関数を追加 ↓↓↓
+  const loadTableLayouts = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+      const res = await fetch(`/api/tables/list?storeId=${storeId}`)
+      const data = await res.json()
+      setTableLayouts(data)
+    } catch (error) {
+      console.error('Error loading table layouts:', error)
     }
   }
 
@@ -549,6 +588,7 @@ export default function Home() {
     
     if (isLoggedIn) {
       // ログイン済みの場合のみデータを読み込む
+      loadTableLayouts()
       loadSystemSettings()
       loadData()
       loadCastList()
@@ -730,47 +770,41 @@ export default function Home() {
   }, [orderItems])
   
   // メニューアイテムのクリックハンドラー
-  const handleMenuClick = async (action: string) => {
-    setShowMenu(false) // メニューを閉じる
+  const handleMenuClick = (item: string) => {
+    setShowMenu(false)
     
-    switch (action) {
-      case 'refresh':
-        loadData()
-        loadProducts() // 商品データも更新
-        alert('データを更新しました')
+    switch (item) {
+      case 'ホーム':
+        window.location.reload()
         break
-      case 'attendance':
+      case 'データ取得':
+        loadData()
+        loadCastList()
+        loadProducts()
+        loadTableLayouts() // この行を追加
+        break
+      case 'キャスト管理':
+        router.push('/casts')
+        break
+      case '売上レポート':
+        router.push('/reports')
+        break
+      case '勤怠管理':
         router.push('/attendance')
         break
-      case 'receipts':
-        router.push('/receipts')
-        break
-      case 'report':
-        router.push('/report')
-        break
-      case 'settings':
+      case '設定':
         router.push('/settings')
         break
-      case 'logout':
+      case 'テーブル配置編集':
+        router.push('/table-layout')
+        break
+      case 'ログアウト':
         if (confirm('ログアウトしますか？')) {
-          try {
-            // ログアウトAPIを呼び出し
-            await fetch('/api/auth/logout', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
-            })
-            
-            // ローカルストレージをクリア
-            localStorage.removeItem('isLoggedIn')
-            localStorage.removeItem('username')
-            localStorage.removeItem('currentStoreId')
-            
-            // ログインページにリダイレクト
-            router.push('/login')
-          } catch (error) {
-            console.error('Logout error:', error)
-            alert('ログアウトに失敗しました')
-          }
+          // ローカルストレージをクリア
+          localStorage.removeItem('storeId')
+          localStorage.removeItem('storeName')
+          // ログイン画面へ遷移
+          router.push('/login')
         }
         break
     }
@@ -1227,6 +1261,23 @@ const finishCheckout = () => {
   
   // テーブル位置を計算する関数
   const calculateTablePosition = (tableId: string) => {
+    // データベースから取得したレイアウト情報を優先
+    const tableLayout = tableLayouts.find(t => t.table_name === tableId)
+    
+    if (tableLayout) {
+      const layout = document.getElementById('layout')
+      const layoutWidth = layout?.getBoundingClientRect().width || 1024
+      const scaledContentWidth = 1024 * layoutScale
+      const horizontalOffset = (layoutWidth - scaledContentWidth) / 2
+      
+      const headerHeight = 72
+      return {
+        top: Math.round((tableLayout.position_top - headerHeight) * layoutScale + headerHeight),
+        left: Math.round(tableLayout.position_left * layoutScale + horizontalOffset)
+      }
+    }
+    
+    // フォールバック：元の固定位置を使用
     const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
     if (!originalPosition) return { top: 0, left: 0 }
     
@@ -1306,23 +1357,30 @@ const finishCheckout = () => {
         )}
         
         {/* テーブルコンポーネント */}
-        {Object.entries(tables).map(([tableId, data]) => (
-          <Table 
-            key={tableId} 
-            tableId={tableId} 
-            data={data}
-            scale={layoutScale}
-            tableSize={tableBaseSize}
-            position={calculateTablePosition(tableId)}
-            moveMode={moveMode}
-            moveFromTable={moveFromTable}
-            isMoving={isMoving}
-            showModal={showModal}
-            onOpenModal={openModal}
-            onStartMoveMode={startMoveMode}
-            onExecuteMove={executeMove}
-          />
-        ))}
+        {Object.entries(tables).map(([tableId, data]) => {
+          const layout = tableLayouts.find(t => t.table_name === tableId)
+          const tableSize = layout 
+            ? { width: layout.table_width, height: layout.table_height }
+            : tableBaseSize
+            
+          return (
+            <Table 
+              key={tableId} 
+              tableId={layout?.display_name || tableId} 
+              data={data}
+              scale={layoutScale}
+              tableSize={tableSize}
+              position={calculateTablePosition(tableId)}
+              moveMode={moveMode}
+              moveFromTable={moveFromTable}
+              isMoving={isMoving}
+              showModal={showModal}
+              onOpenModal={openModal}
+              onStartMoveMode={startMoveMode}
+              onExecuteMove={executeMove}
+            />
+          )
+        })}
       </div>
 
       {/* モーダルオーバーレイ */}
