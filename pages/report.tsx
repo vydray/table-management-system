@@ -674,13 +674,16 @@ export default function Report() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', overflow: 'auto' }}>
         {/* ヘッダー */}
         <div style={{
           backgroundColor: '#2196F3',
           color: 'white',
           padding: '20px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100
         }}>
           <div style={{ 
             maxWidth: '1200px', 
@@ -963,7 +966,8 @@ export default function Report() {
               width: '90%',
               maxWidth: '900px',
               maxHeight: '90vh',
-              overflow: 'auto'
+              overflow: 'auto',
+              position: 'relative'
             }}>
               {/* モーダルヘッダー */}
               <div style={{
@@ -977,7 +981,22 @@ export default function Report() {
                 backgroundColor: 'white',
                 zIndex: 1
               }}>
-                <h2 style={{ margin: 0, fontSize: '20px' }}>
+                <button
+                  onClick={() => setShowDailyReportModal(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    padding: '5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: '#666'
+                  }}
+                >
+                  ←
+                </button>
+                <h2 style={{ margin: 0, fontSize: '20px', flex: 1, textAlign: 'center' }}>
                   業務日報 - {selectedDate}
                 </h2>
                 <button
@@ -991,7 +1010,9 @@ export default function Report() {
                     fontSize: '14px',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '5px'
+                    gap: '5px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px'
                   }}
                 >
                   {isUpdating ? '更新中...' : '🔄 最新データを取得'}
