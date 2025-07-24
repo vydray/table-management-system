@@ -36,16 +36,22 @@ export default function TableLayout() {
 
   // テーブル一覧の取得
   const fetchTables = async () => {
-    const { data, error } = await supabase
-      .from('table_status')
-      .select('*')
-      .eq('store_id', storeId)
-      .order('table_name')
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('table_status')
+        .select('table_name, display_name, position_top, position_left, table_width, table_height, is_visible, store_id')
+        .eq('store_id', storeId)
+        .order('table_name')
 
-    if (!error && data) {
-      setTables(data)
+      if (!error && data) {
+        setTables(data)
+      }
+    } catch (error) {
+      console.error('Error fetching tables:', error)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   useEffect(() => {
