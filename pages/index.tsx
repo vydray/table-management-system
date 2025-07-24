@@ -1255,35 +1255,38 @@ const finishCheckout = () => {
       }
       }}>
         <div className="header">
-          {/* ハンバーガーメニューボタン */}
-          <button 
-            className="menu-button"
-            onClick={() => setShowMenu(!showMenu)}
-          >
-            <span className="menu-icon">☰</span>
-          </button>
-          
-          📋 テーブル管理システム
-          <span style={{
-              marginLeft: '20px',
-              fontSize: '24px',
-              fontWeight: 'bold',
-              color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
-              position: 'relative',
-              zIndex: 100  // ★★★ これを追加 ★★★
-            }}>
-              {attendingCastCount - occupiedTableCount}
-            </span>
-            
-            <span style={{ 
-              position: 'absolute', 
-              right: '20px', 
-              fontSize: '24px',
-              fontFamily: 'monospace'
-            }}>
-              {currentTime}
-            </span>
-          </div>
+  {/* ハンバーガーメニューボタン */}
+  <button 
+    className="menu-button"
+    onClick={() => setShowMenu(!showMenu)}
+  >
+    <span className="menu-icon">☰</span>
+  </button>
+  
+  {/* 差分の数字を左に配置 */}
+  <span style={{
+    marginLeft: '10px',
+    marginRight: '20px',
+    fontSize: '24px',
+    fontWeight: 'bold',
+    color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
+    position: 'relative',
+    zIndex: 100
+  }}>
+    {attendingCastCount - occupiedTableCount}
+  </span>
+  
+  📋 テーブル管理システム
+  
+  <span style={{ 
+    position: 'absolute', 
+    right: '20px', 
+    fontSize: '24px',
+    fontFamily: 'monospace'
+  }}>
+    {currentTime}
+  </span>
+</div>
         
         {/* サイドメニューコンポーネント */}
         <SideMenu 
