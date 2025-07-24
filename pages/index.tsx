@@ -1263,9 +1263,10 @@ const finishCheckout = () => {
     <span className="menu-icon">☰</span>
   </button>
   
-  {/* 差分の数字をボタンとタイトルの間に配置 */}
+  {/* 差分の数字をボタンとタイトルの間に配置 - 間隔を調整 */}
   <span style={{
-    margin: '0 15px',
+    marginLeft: '60px',
+    marginRight: '60px',
     fontSize: '24px',
     fontWeight: 'bold',
     color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
