@@ -1,4 +1,3 @@
-// pages/table-layout.tsx
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
@@ -18,18 +17,16 @@ interface TableLayout {
   is_visible: boolean
   display_name: string | null
   current_guest?: string | null
-  created_at?: string
-  created_by?: string
+  guest_name?: string | null
+  cast_name?: string | null
+  entry_time?: string | null
+  visit_type?: string | null
 }
 
 interface ScreenRatio {
   label: string
   width: number
   height: number
-}
-
-interface User {
-  id: string
 }
 
 const presetRatios: ScreenRatio[] = [
@@ -49,7 +46,6 @@ export default function TableLayoutEdit() {
   const [selectedTable, setSelectedTable] = useState<TableLayout | null>(null)
   const [newTableName, setNewTableName] = useState('')
   const [windowWidth, setWindowWidth] = useState(1280)
-  const [user, setUser] = useState<User | null>(null)
   
   // 画面比率関連の状態
   const [selectedRatio, setSelectedRatio] = useState('1280×800（PC）')
@@ -93,35 +89,38 @@ export default function TableLayoutEdit() {
   // 初期化処理
   useEffect(() => {
     loadTables()
-    checkUser()
   }, [])
 
-  // ユーザー確認
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    setUser(user)
-  }
+
 
   // テーブル情報を読み込む
   const loadTables = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('table_layouts')
-      .select('*')
-      .order('table_name')
+    try {
+      const storeId = localStorage.getItem('currentStoreId') || '1'
+      const { data, error } = await supabase
+        .from('table_status')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('table_name')
 
-    if (!error && data) {
-      setTables(data)
+      if (!error && data) {
+        setTables(data)
+      }
+    } catch (error) {
+      console.error('Error loading tables:', error)
     }
     setLoading(false)
   }
 
   // テーブル名を更新
   const updateTableName = async (tableName: string, displayName: string) => {
+    const storeId = localStorage.getItem('currentStoreId') || '1'
     const { error } = await supabase
-      .from('table_layouts')
+      .from('table_status')
       .update({ display_name: displayName })
       .eq('table_name', tableName)
+      .eq('store_id', storeId)
 
     if (!error) {
       setTables(prev => prev.map(t => 
@@ -133,10 +132,12 @@ export default function TableLayoutEdit() {
 
   // テーブル位置を更新
   const updateTablePosition = async (tableName: string, top: number, left: number) => {
+    const storeId = localStorage.getItem('currentStoreId') || '1'
     const { error } = await supabase
-      .from('table_layouts')
+      .from('table_status')
       .update({ position_top: top, position_left: left })
       .eq('table_name', tableName)
+      .eq('store_id', storeId)
 
     if (error) {
       console.error('位置更新エラー:', error)
@@ -145,10 +146,12 @@ export default function TableLayoutEdit() {
 
   // テーブルの表示/非表示を切り替え
   const toggleTableVisibility = async (tableName: string, isVisible: boolean) => {
+    const storeId = localStorage.getItem('currentStoreId') || '1'
     const { error } = await supabase
-      .from('table_layouts')
+      .from('table_status')
       .update({ is_visible: isVisible })
       .eq('table_name', tableName)
+      .eq('store_id', storeId)
 
     if (!error) {
       setTables(prev => prev.map(t => 
@@ -159,8 +162,9 @@ export default function TableLayoutEdit() {
 
   // 新規テーブル追加
   const addNewTable = async () => {
-    if (!newTableName.trim() || !user) return
+    if (!newTableName.trim()) return
 
+    const storeId = localStorage.getItem('currentStoreId') || '1'
     const newTable: TableLayout = {
       table_name: newTableName.trim(),
       display_name: newTableName.trim(),
@@ -170,13 +174,18 @@ export default function TableLayoutEdit() {
       table_height: tableSize.height,
       is_visible: true,
       current_guest: null,
-      created_at: new Date().toISOString(),
-      created_by: user.id
     }
 
     const { error } = await supabase
-      .from('table_layouts')
-      .insert([newTable])
+      .from('table_status')
+      .insert([{
+        ...newTable,
+        store_id: storeId,
+        guest_name: null,
+        cast_name: null,
+        entry_time: null,
+        visit_type: null
+      }])
 
     if (!error) {
       setTables(prev => [...prev, newTable])
@@ -188,10 +197,12 @@ export default function TableLayoutEdit() {
   const deleteTable = async (tableName: string) => {
     if (!confirm(`テーブル「${tableName}」を削除しますか？`)) return
 
+    const storeId = localStorage.getItem('currentStoreId') || '1'
     const { error } = await supabase
-      .from('table_layouts')
+      .from('table_status')
       .delete()
       .eq('table_name', tableName)
+      .eq('store_id', storeId)
 
     if (!error) {
       setTables(prev => prev.filter(t => t.table_name !== tableName))
@@ -224,15 +235,17 @@ export default function TableLayoutEdit() {
   const updateAllTableSizes = async () => {
     setIsUpdatingSize(true)
 
+    const storeId = localStorage.getItem('currentStoreId') || '1'
     // 各テーブルのサイズを更新
     for (const table of tables) {
       await supabase
-        .from('table_layouts')
+        .from('table_status')
         .update({ 
           table_width: tableSize.width,
           table_height: tableSize.height
         })
         .eq('table_name', table.table_name)
+        .eq('store_id', storeId)
     }
 
     // ローカルステートも更新
