@@ -674,276 +674,286 @@ export default function Report() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', overflow: 'auto' }}>
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: '#f5f5f5'
+      }}>
         {/* ヘッダー */}
         <div style={{
           backgroundColor: '#2196F3',
           color: 'white',
-          padding: '20px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100
+          padding: '15px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '20px'
         }}>
-          <div style={{ 
-            maxWidth: '1200px', 
-            margin: '0 auto',
+          <button
+            onClick={() => router.push('/')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '20px',
+              cursor: 'pointer',
+              padding: '5px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            ←
+          </button>
+          <h1 style={{ 
+            margin: 0, 
+            fontSize: '18px',
+            fontWeight: 'normal',
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            gap: '8px'
           }}>
-            <h1 style={{ margin: 0, fontSize: '24px' }}>📊 レポート</h1>
-            <button
-              onClick={() => router.push('/')}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              ホームに戻る
-            </button>
-          </div>
+            📊 レポート
+          </h1>
         </div>
 
         {/* コンテンツ */}
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-          {/* 年月選択 */}
-          <div style={{
-            backgroundColor: '#fff',
-            borderRadius: '8px',
-            padding: '20px',
-            marginBottom: '20px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                style={{
-                  padding: '8px 12px',
-                  fontSize: '16px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  backgroundColor: 'white'
-                }}
-              >
-                {[2024, 2025, 2026].map(year => (
-                  <option key={year} value={year}>{year}年</option>
-                ))}
-              </select>
-              
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                style={{
-                  padding: '8px 12px',
-                  fontSize: '16px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  backgroundColor: 'white'
-                }}
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                  <option key={month} value={month}>{month}月</option>
-                ))}
-              </select>
+        <div style={{ 
+          height: 'calc(100vh - 54px)',
+          overflow: 'auto',
+          padding: '20px'
+        }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            {/* 年月選択 */}
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              padding: '20px',
+              marginBottom: '20px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: '16px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    backgroundColor: 'white'
+                  }}
+                >
+                  {[2024, 2025, 2026].map(year => (
+                    <option key={year} value={year}>{year}年</option>
+                  ))}
+                </select>
+                
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: '16px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    backgroundColor: 'white'
+                  }}
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                    <option key={month} value={month}>{month}月</option>
+                  ))}
+                </select>
 
-              <button
-                onClick={() => setShowTargetSetting(true)}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#FF9800',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  marginLeft: 'auto'
-                }}
-              >
-                月間目標設定
-              </button>
-            </div>
-          </div>
-
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <div>読み込み中...</div>
-            </div>
-          ) : (
-            <>
-              {/* サマリー */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '20px',
-                marginBottom: '20px'
-              }}>
-                <div style={{
-                  backgroundColor: '#fff',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>月間売上</div>
-                  <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#2196F3' }}>
-                    ¥{monthlyTotal.totalSales.toLocaleString()}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
-                    目標達成率: {((monthlyTotal.totalSales / monthlyTargets.salesTarget) * 100).toFixed(1)}%
-                  </div>
-                </div>
-                
-                <div style={{
-                  backgroundColor: '#fff',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>月間客数</div>
-                  <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#4CAF50' }}>
-                    {monthlyTotal.orderCount}人
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
-                    目標達成率: {((monthlyTotal.orderCount / monthlyTargets.customerTarget) * 100).toFixed(1)}%
-                  </div>
-                </div>
-                
-                <div style={{
-                  backgroundColor: '#fff',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>平均単価</div>
-                  <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#FF9800' }}>
-                    ¥{monthlyTotal.orderCount > 0 ? Math.floor(monthlyTotal.totalSales / monthlyTotal.orderCount).toLocaleString() : 0}
-                  </div>
-                </div>
-                
-                <div style={{
-                  backgroundColor: '#fff',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>営業日数</div>
-                  <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#9C27B0' }}>
-                    {dailyData.filter(d => d.orderCount > 0).length}日
-                  </div>
-                </div>
+                <button
+                  onClick={() => setShowTargetSetting(true)}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#FF9800',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    marginLeft: 'auto'
+                  }}
+                >
+                  月間目標設定
+                </button>
               </div>
+            </div>
 
-              {/* 日別データテーブル */}
-              <div style={{
-                backgroundColor: '#fff',
-                borderRadius: '8px',
-                padding: '20px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                overflowX: 'auto'
-              }}>
-                <h2 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>日別データ</h2>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #ddd' }}>
-                      <th style={{ padding: '10px', textAlign: 'left', minWidth: '80px' }}>日付</th>
-                      <th style={{ padding: '10px', textAlign: 'right', minWidth: '100px' }}>総売上</th>
-                      <th style={{ padding: '10px', textAlign: 'right', minWidth: '60px' }}>会計数</th>
-                      <th style={{ padding: '10px', textAlign: 'right', minWidth: '100px' }}>現金売上</th>
-                      <th style={{ padding: '10px', textAlign: 'right', minWidth: '100px' }}>カード売上</th>
-                      <th style={{ padding: '10px', textAlign: 'right', minWidth: '100px' }}>その他</th>
-                      <th style={{ padding: '10px', textAlign: 'center', minWidth: '50px' }}>初回</th>
-                      <th style={{ padding: '10px', textAlign: 'center', minWidth: '50px' }}>再訪</th>
-                      <th style={{ padding: '10px', textAlign: 'center', minWidth: '50px' }}>常連</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dailyData.map((day, index) => (
-                      <tr 
-                        key={index} 
-                        style={{ 
-                          borderBottom: '1px solid #eee',
-                          backgroundColor: day.orderCount === 0 ? '#f9f9f9' : 'white',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.2s'
-                        }}
-                        onClick={() => openDailyReport(day)}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = day.orderCount === 0 ? '#f9f9f9' : 'white'}
-                      >
-                        <td style={{ padding: '10px' }}>{day.date}</td>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <div>読み込み中...</div>
+              </div>
+            ) : (
+              <>
+                {/* サマリー */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '20px',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{
+                    backgroundColor: '#fff',
+                    borderRadius: '8px',
+                    padding: '20px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>月間売上</div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#2196F3' }}>
+                      ¥{monthlyTotal.totalSales.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
+                      目標達成率: {((monthlyTotal.totalSales / monthlyTargets.salesTarget) * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    backgroundColor: '#fff',
+                    borderRadius: '8px',
+                    padding: '20px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>月間客数</div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#4CAF50' }}>
+                      {monthlyTotal.orderCount}人
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
+                      目標達成率: {((monthlyTotal.orderCount / monthlyTargets.customerTarget) * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    backgroundColor: '#fff',
+                    borderRadius: '8px',
+                    padding: '20px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>平均単価</div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#FF9800' }}>
+                      ¥{monthlyTotal.orderCount > 0 ? Math.floor(monthlyTotal.totalSales / monthlyTotal.orderCount).toLocaleString() : 0}
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    backgroundColor: '#fff',
+                    borderRadius: '8px',
+                    padding: '20px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>営業日数</div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#9C27B0' }}>
+                      {dailyData.filter(d => d.orderCount > 0).length}日
+                    </div>
+                  </div>
+                </div>
+
+                {/* 日別データテーブル */}
+                <div style={{
+                  backgroundColor: '#fff',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  overflowX: 'auto'
+                }}>
+                  <h2 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>日別データ</h2>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #ddd' }}>
+                        <th style={{ padding: '10px', textAlign: 'left', minWidth: '80px' }}>日付</th>
+                        <th style={{ padding: '10px', textAlign: 'right', minWidth: '100px' }}>総売上</th>
+                        <th style={{ padding: '10px', textAlign: 'right', minWidth: '60px' }}>会計数</th>
+                        <th style={{ padding: '10px', textAlign: 'right', minWidth: '100px' }}>現金売上</th>
+                        <th style={{ padding: '10px', textAlign: 'right', minWidth: '100px' }}>カード売上</th>
+                        <th style={{ padding: '10px', textAlign: 'right', minWidth: '100px' }}>その他</th>
+                        <th style={{ padding: '10px', textAlign: 'center', minWidth: '50px' }}>初回</th>
+                        <th style={{ padding: '10px', textAlign: 'center', minWidth: '50px' }}>再訪</th>
+                        <th style={{ padding: '10px', textAlign: 'center', minWidth: '50px' }}>常連</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dailyData.map((day, index) => (
+                        <tr 
+                          key={index} 
+                          style={{ 
+                            borderBottom: '1px solid #eee',
+                            backgroundColor: day.orderCount === 0 ? '#f9f9f9' : 'white',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onClick={() => openDailyReport(day)}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = day.orderCount === 0 ? '#f9f9f9' : 'white'}
+                        >
+                          <td style={{ padding: '10px' }}>{day.date}</td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            ¥{day.totalSales.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            {day.orderCount}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            ¥{day.cashSales.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            ¥{day.cardSales.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            ¥{day.otherSales.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            {day.firstTimeCount > 0 ? day.firstTimeCount : '-'}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            {day.returnCount > 0 ? day.returnCount : '-'}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            {day.regularCount > 0 ? day.regularCount : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                      {/* 合計行 */}
+                      <tr style={{ 
+                        borderTop: '2px solid #333',
+                        backgroundColor: '#f0f0f0',
+                        fontWeight: 'bold'
+                      }}>
+                        <td style={{ padding: '10px' }}>合計</td>
                         <td style={{ padding: '10px', textAlign: 'right' }}>
-                          ¥{day.totalSales.toLocaleString()}
+                          ¥{monthlyTotal.totalSales.toLocaleString()}
                         </td>
                         <td style={{ padding: '10px', textAlign: 'right' }}>
-                          {day.orderCount}
+                          {monthlyTotal.orderCount}
                         </td>
                         <td style={{ padding: '10px', textAlign: 'right' }}>
-                          ¥{day.cashSales.toLocaleString()}
+                          ¥{monthlyTotal.cashSales.toLocaleString()}
                         </td>
                         <td style={{ padding: '10px', textAlign: 'right' }}>
-                          ¥{day.cardSales.toLocaleString()}
+                          ¥{monthlyTotal.cardSales.toLocaleString()}
                         </td>
                         <td style={{ padding: '10px', textAlign: 'right' }}>
-                          ¥{day.otherSales.toLocaleString()}
+                          ¥{monthlyTotal.otherSales.toLocaleString()}
                         </td>
                         <td style={{ padding: '10px', textAlign: 'center' }}>
-                          {day.firstTimeCount > 0 ? day.firstTimeCount : '-'}
+                          {monthlyTotal.firstTimeCount}
                         </td>
                         <td style={{ padding: '10px', textAlign: 'center' }}>
-                          {day.returnCount > 0 ? day.returnCount : '-'}
+                          {monthlyTotal.returnCount}
                         </td>
                         <td style={{ padding: '10px', textAlign: 'center' }}>
-                          {day.regularCount > 0 ? day.regularCount : '-'}
+                          {monthlyTotal.regularCount}
                         </td>
                       </tr>
-                    ))}
-                    {/* 合計行 */}
-                    <tr style={{ 
-                      borderTop: '2px solid #333',
-                      backgroundColor: '#f0f0f0',
-                      fontWeight: 'bold'
-                    }}>
-                      <td style={{ padding: '10px' }}>合計</td>
-                      <td style={{ padding: '10px', textAlign: 'right' }}>
-                        ¥{monthlyTotal.totalSales.toLocaleString()}
-                      </td>
-                      <td style={{ padding: '10px', textAlign: 'right' }}>
-                        {monthlyTotal.orderCount}
-                      </td>
-                      <td style={{ padding: '10px', textAlign: 'right' }}>
-                        ¥{monthlyTotal.cashSales.toLocaleString()}
-                      </td>
-                      <td style={{ padding: '10px', textAlign: 'right' }}>
-                        ¥{monthlyTotal.cardSales.toLocaleString()}
-                      </td>
-                      <td style={{ padding: '10px', textAlign: 'right' }}>
-                        ¥{monthlyTotal.otherSales.toLocaleString()}
-                      </td>
-                      <td style={{ padding: '10px', textAlign: 'center' }}>
-                        {monthlyTotal.firstTimeCount}
-                      </td>
-                      <td style={{ padding: '10px', textAlign: 'center' }}>
-                        {monthlyTotal.returnCount}
-                      </td>
-                      <td style={{ padding: '10px', textAlign: 'center' }}>
-                        {monthlyTotal.regularCount}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* 業務日報モーダル */}
