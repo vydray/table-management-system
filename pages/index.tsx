@@ -1276,35 +1276,13 @@ const finishCheckout = () => {
             gap: '10px'
           }}>
             <span style={{
-              background: '#4CAF50',
-              color: 'white',
-              padding: '4px 12px',
-              borderRadius: '20px',
-              fontSize: '18px'
-            }}>
-              👥 {attendingCastCount}
-            </span>
-            <span style={{ fontSize: '24px' }}>-</span>
-            <span style={{
-              background: '#2196F3',
-              color: 'white',
-              padding: '4px 12px',
-              borderRadius: '20px',
-              fontSize: '18px'
-            }}>
-              🪑 {occupiedTableCount}
-            </span>
-            <span style={{ fontSize: '24px' }}>=</span>
-            <span style={{
-              background: attendingCastCount - occupiedTableCount > 0 ? '#FF9800' : '#F44336',
-              color: 'white',
-              padding: '4px 12px',
-              borderRadius: '20px',
-              fontSize: '18px',
-              fontWeight: 'bold'
-            }}>
-              {attendingCastCount - occupiedTableCount}
-            </span>
+            marginLeft: '20px',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336'
+          }}>
+            {attendingCastCount - occupiedTableCount}
+          </span>
           </div>
           
           <span style={{ 
