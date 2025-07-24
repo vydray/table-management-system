@@ -234,12 +234,12 @@ export default function TableLayout() {
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
           minHeight: '60px'
         }}>
-          <h1 style={{ margin: 0, fontSize: window.innerWidth <= 768 ? '20px' : '24px' }}>🎨 テーブル配置編集</h1>
+          <h1 style={{ margin: 0, fontSize: windowWidth <= 768 ? '20px' : '24px' }}>🎨 テーブル配置編集</h1>
           <button
             onClick={() => router.push('/')}
             style={{
-              padding: window.innerWidth <= 768 ? '6px 12px' : '8px 16px',
-              fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+              padding: windowWidth <= 768 ? '6px 12px' : '8px 16px',
+              fontSize: windowWidth <= 768 ? '14px' : '16px',
               backgroundColor: 'transparent',
               color: 'white',
               border: '2px solid white',
@@ -257,24 +257,24 @@ export default function TableLayout() {
           display: 'flex',
           flex: 1,
           overflow: 'hidden',
-          flexDirection: window.innerWidth <= 768 ? 'column' : 'row'
+          flexDirection: windowWidth <= 768 ? 'column' : 'row'
         }}>
           {/* サイドバー */}
           <div style={{
-            width: window.innerWidth <= 768 ? '100%' : '300px',
-            height: window.innerWidth <= 768 ? 'auto' : 'auto',
-            maxHeight: window.innerWidth <= 768 ? '40vh' : '100%',
+            width: windowWidth <= 768 ? '100%' : '300px',
+            height: windowWidth <= 768 ? 'auto' : 'auto',
+            maxHeight: windowWidth <= 768 ? '40vh' : '100%',
             backgroundColor: 'white',
-            borderRight: window.innerWidth <= 768 ? 'none' : '1px solid #ddd',
-            borderBottom: window.innerWidth <= 768 ? '1px solid #ddd' : 'none',
-            padding: window.innerWidth <= 768 ? '15px' : '20px',
+            borderRight: windowWidth <= 768 ? 'none' : '1px solid #ddd',
+            borderBottom: windowWidth <= 768 ? '1px solid #ddd' : 'none',
+            padding: windowWidth <= 768 ? '15px' : '20px',
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch'
           }}>
             {/* 新規テーブル追加 */}
             <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: window.innerWidth <= 768 ? '16px' : '18px' }}>新規テーブル追加</h3>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>新規テーブル追加</h3>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: windowWidth <= 768 ? 'wrap' : 'nowrap' }}>
                 <input
                   type="text"
                   placeholder="テーブル名"
@@ -283,7 +283,7 @@ export default function TableLayout() {
                   onKeyPress={(e) => e.key === 'Enter' && addNewTable()}
                   style={{
                     flex: 1,
-                    minWidth: window.innerWidth <= 768 ? '150px' : 'auto',
+                    minWidth: windowWidth <= 768 ? '150px' : 'auto',
                     padding: '8px',
                     border: '1px solid #ddd',
                     borderRadius: '4px',
@@ -310,18 +310,18 @@ export default function TableLayout() {
 
             {/* テーブル一覧 */}
             <div>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: window.innerWidth <= 768 ? '16px' : '18px' }}>テーブル一覧</h3>
-              <div style={{ maxHeight: window.innerWidth <= 768 ? '200px' : '400px', overflowY: 'auto' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>テーブル一覧</h3>
+              <div style={{ maxHeight: windowWidth <= 768 ? '200px' : '400px', overflowY: 'auto' }}>
                 {tables.map(table => (
                   <div
                     key={table.table_name}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: window.innerWidth <= 768 ? '6px' : '8px',
+                      padding: windowWidth <= 768 ? '6px' : '8px',
                       borderBottom: '1px solid #eee',
                       gap: '8px',
-                      fontSize: window.innerWidth <= 768 ? '14px' : '16px'
+                      fontSize: windowWidth <= 768 ? '14px' : '16px'
                     }}
                   >
                     <input
@@ -336,8 +336,8 @@ export default function TableLayout() {
                     <button
                       onClick={() => setSelectedTable(table)}
                       style={{
-                        padding: window.innerWidth <= 768 ? '3px 6px' : '4px 8px',
-                        fontSize: window.innerWidth <= 768 ? '11px' : '12px',
+                        padding: windowWidth <= 768 ? '3px 6px' : '4px 8px',
+                        fontSize: windowWidth <= 768 ? '11px' : '12px',
                         backgroundColor: '#2196F3',
                         color: 'white',
                         border: 'none',
@@ -351,8 +351,8 @@ export default function TableLayout() {
                     <button
                       onClick={() => deleteTable(table.table_name)}
                       style={{
-                        padding: window.innerWidth <= 768 ? '3px 6px' : '4px 8px',
-                        fontSize: window.innerWidth <= 768 ? '11px' : '12px',
+                        padding: windowWidth <= 768 ? '3px 6px' : '4px 8px',
+                        fontSize: windowWidth <= 768 ? '11px' : '12px',
                         backgroundColor: '#f44336',
                         color: 'white',
                         border: 'none',
@@ -390,7 +390,7 @@ export default function TableLayout() {
               backgroundColor: '#f9f9f9',
               overflow: 'auto',
               WebkitOverflowScrolling: 'touch',
-              minHeight: window.innerWidth <= 768 ? '300px' : 'auto'
+              minHeight: windowWidth <= 768 ? '300px' : 'auto'
             }}
             onMouseMove={handleDragMove}
             onMouseUp={handleDragEnd}
@@ -399,7 +399,7 @@ export default function TableLayout() {
             onTouchEnd={handleDragEnd}
           >
             {/* スマホ・タブレット用のスクロールヒント */}
-            {window.innerWidth <= 768 && (
+            {windowWidth <= 768 && (
               <div style={{
                 position: 'absolute',
                 top: '10px',
@@ -438,7 +438,7 @@ export default function TableLayout() {
                     : '0 2px 8px rgba(0,0,0,0.1)',
                   opacity: draggedTable === table.table_name ? 0.8 : 1,
                   transition: 'box-shadow 0.2s',
-                  fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+                  fontSize: windowWidth <= 768 ? '14px' : '16px',
                   fontWeight: 'bold',
                   touchAction: 'none'
                 }}
