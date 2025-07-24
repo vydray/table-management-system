@@ -72,6 +72,10 @@ export default function Home() {
   // レスポンシブ用のスケール状態を追加
   const [layoutScale, setLayoutScale] = useState(1)
   const [tableBaseSize, setTableBaseSize] = useState({ width: 130, height: 123 })
+
+    // 出勤キャスト数と卓数の状態を追加
+  const [attendingCastCount, setAttendingCastCount] = useState(0)
+  const [occupiedTableCount, setOccupiedTableCount] = useState(0)
   
   // POS機能用の状態
   const [productCategories, setProductCategories] = useState<ProductCategories>({})
@@ -421,6 +425,10 @@ export default function Home() {
       })
       
       setTables(tableMap)
+
+      const occupied = Object.values(tableMap).filter(table => table.status !== 'empty').length
+      setOccupiedTableCount(occupied)
+
     } catch (error) {
       console.error('Error loading data:', error)
     }
@@ -435,6 +443,42 @@ export default function Home() {
       setCastList(data)
     } catch (error) {
       console.error('Error loading cast list:', error)
+    }
+  }
+
+    // 出勤中のキャスト数を取得する関数
+  const loadAttendingCastCount = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+      const today = new Date()
+      const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      
+      // 有効な勤怠ステータスを取得
+      const { data: statusData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('store_id', storeId)
+        .eq('setting_key', 'active_attendance_statuses')
+        .single()
+      
+      const activeStatuses = statusData ? JSON.parse(statusData.setting_value) : ['出勤']
+      
+      // 当日の出勤キャストを取得
+      const { data: attendanceData, error } = await supabase
+        .from('attendance')
+        .select('cast_name')
+        .eq('store_id', storeId)
+        .eq('date', dateStr)
+        .in('status', activeStatuses)
+      
+      if (error) throw error
+      
+      // 重複を除外してユニークなキャスト数をカウント
+      const uniqueCasts = new Set(attendanceData?.map(a => a.cast_name) || [])
+      setAttendingCastCount(uniqueCasts.size)
+    } catch (error) {
+      console.error('Error loading attending cast count:', error)
+      setAttendingCastCount(0)
     }
   }
 
@@ -509,6 +553,7 @@ export default function Home() {
       loadData()
       loadCastList()
       loadProducts()
+      loadAttendingCastCount()
     }
     
     const updateTime = () => {
@@ -776,6 +821,21 @@ export default function Home() {
         })
       })
       
+      // 卓数を更新するためにテーブル状態を再取得
+      const updatedTables = { ...tables }
+      updatedTables[currentTable] = {
+        ...updatedTables[currentTable],
+        name: formData.guestName,
+        oshi: formData.castName,
+        status: formData.guestName ? 'occupied' : 'empty',
+        time: timeStr
+      }
+      setTables(updatedTables)
+      
+      // 現在の卓数を計算
+      const occupied = Object.values(updatedTables).filter(table => table.status !== 'empty').length
+      setOccupiedTableCount(occupied)
+
       if (!silent) {
       document.body.classList.remove('modal-open')  // 追加
       setShowModal(false)
@@ -841,6 +901,22 @@ const completeCheckout = async () => {
       throw new Error(result.error || 'Checkout failed')
     }
     
+    const updatedTables = { ...tables }
+    updatedTables[currentTable] = {
+      ...updatedTables[currentTable],
+      name: '',
+      oshi: '',
+      visit: '',
+      time: '',
+      elapsed: '',
+      status: 'empty'
+    }
+    setTables(updatedTables)
+    
+    // 現在の卓数を更新
+    const occupied = Object.values(updatedTables).filter(table => table.status !== 'empty').length
+    setOccupiedTableCount(occupied)
+
     // 結果を保存
     setCheckoutResult(result)
     
@@ -1060,6 +1136,12 @@ const finishCheckout = () => {
           elapsed: '',
           status: 'empty'
         }
+
+        // 卓数を更新（移動しても卓数は変わらないが、念のため再計算）
+        const occupied = Object.values(newTables).filter(table => table.status !== 'empty').length
+        setOccupiedTableCount(occupied)
+
+
         return newTables
       })
       
@@ -1182,6 +1264,49 @@ const finishCheckout = () => {
           </button>
           
           📋 テーブル管理システム
+<div style={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: '#333',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            <span style={{
+              background: '#4CAF50',
+              color: 'white',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              fontSize: '18px'
+            }}>
+              👥 {attendingCastCount}
+            </span>
+            <span style={{ fontSize: '24px' }}>-</span>
+            <span style={{
+              background: '#2196F3',
+              color: 'white',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              fontSize: '18px'
+            }}>
+              🪑 {occupiedTableCount}
+            </span>
+            <span style={{ fontSize: '24px' }}>=</span>
+            <span style={{
+              background: attendingCastCount - occupiedTableCount > 0 ? '#FF9800' : '#F44336',
+              color: 'white',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              fontSize: '18px',
+              fontWeight: 'bold'
+            }}>
+              {attendingCastCount - occupiedTableCount}
+            </span>
+          </div>
+          
           <span style={{ 
             position: 'absolute', 
             right: '20px', 
