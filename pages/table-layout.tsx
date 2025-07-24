@@ -19,6 +19,20 @@ interface TableLayout {
   display_name: string | null
 }
 
+interface ScreenRatio {
+  label: string
+  width: number
+  height: number
+}
+
+const presetRatios: ScreenRatio[] = [
+  { label: '1280×800（PC）', width: 1280, height: 800 },
+  { label: '1024×768（タブレット）', width: 1024, height: 768 },
+  { label: '768×1024（タブレット縦）', width: 768, height: 1024 },
+  { label: '2000×1200（大画面）', width: 2000, height: 1200 },
+  { label: 'カスタム...', width: 0, height: 0 }
+]
+
 export default function TableLayoutEdit() {
   const router = useRouter()
   const [tables, setTables] = useState<TableLayout[]>([])
@@ -28,6 +42,13 @@ export default function TableLayoutEdit() {
   const [selectedTable, setSelectedTable] = useState<TableLayout | null>(null)
   const [newTableName, setNewTableName] = useState('')
   const [windowWidth, setWindowWidth] = useState(1280)
+  
+  // 画面比率関連の状態
+  const [selectedRatio, setSelectedRatio] = useState('1280×800（PC）')
+  const [customWidth, setCustomWidth] = useState('')
+  const [customHeight, setCustomHeight] = useState('')
+  const [canvasSize, setCanvasSize] = useState({ width: 1280, height: 800 })
+  const [scale, setScale] = useState(1)
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth)
@@ -38,7 +59,76 @@ export default function TableLayoutEdit() {
 
   useEffect(() => {
     fetchTables()
+    
+    // 保存された画面比率を読み込む
+    const savedRatio = localStorage.getItem('tableLayoutRatio')
+    const savedCustomWidth = localStorage.getItem('tableLayoutCustomWidth')
+    const savedCustomHeight = localStorage.getItem('tableLayoutCustomHeight')
+    
+    if (savedRatio) {
+      setSelectedRatio(savedRatio)
+      if (savedRatio === 'カスタム...' && savedCustomWidth && savedCustomHeight) {
+        setCustomWidth(savedCustomWidth)
+        setCustomHeight(savedCustomHeight)
+        setCanvasSize({ 
+          width: parseInt(savedCustomWidth), 
+          height: parseInt(savedCustomHeight) 
+        })
+      } else {
+        const preset = presetRatios.find(r => r.label === savedRatio)
+        if (preset) {
+          setCanvasSize({ width: preset.width, height: preset.height })
+        }
+      }
+    }
   }, [])
+
+  // キャンバスのスケール計算
+  useEffect(() => {
+    const canvasContainer = document.getElementById('canvas-container')
+    if (canvasContainer) {
+      const containerWidth = canvasContainer.clientWidth
+      const containerHeight = canvasContainer.clientHeight
+      
+      // コンテナに収まるようにスケールを計算
+      const scaleX = containerWidth / canvasSize.width
+      const scaleY = containerHeight / canvasSize.height
+      const newScale = Math.min(scaleX, scaleY, 1) * 0.9 // 少し余白を持たせる
+      
+      setScale(newScale)
+    }
+  }, [canvasSize, windowWidth])
+
+  // 画面比率の変更処理
+  const handleRatioChange = (value: string) => {
+    setSelectedRatio(value)
+    localStorage.setItem('tableLayoutRatio', value)
+    
+    if (value === 'カスタム...') {
+      // カスタムの場合は入力欄を表示するだけ
+      return
+    }
+    
+    const preset = presetRatios.find(r => r.label === value)
+    if (preset) {
+      setCanvasSize({ width: preset.width, height: preset.height })
+    }
+  }
+
+  // カスタムサイズの適用
+  const applyCustomSize = () => {
+    const width = parseInt(customWidth)
+    const height = parseInt(customHeight)
+    
+    if (isNaN(width) || isNaN(height) || width <= 0 || height <= 0) {
+      alert('正しい数値を入力してください')
+      return
+    }
+    
+    setCanvasSize({ width, height })
+    localStorage.setItem('tableLayoutCustomWidth', customWidth)
+    localStorage.setItem('tableLayoutCustomHeight', customHeight)
+  }
 
   // テーブル情報を取得
   const fetchTables = async () => {
@@ -167,13 +257,21 @@ export default function TableLayoutEdit() {
 
   // ドラッグ開始
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent, table: TableLayout) => {
+    const canvas = document.getElementById('canvas-area')
+    if (!canvas) return
+    
+    const rect = canvas.getBoundingClientRect()
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     
+    // スケールを考慮した位置計算
+    const x = (clientX - rect.left) / scale
+    const y = (clientY - rect.top) / scale
+    
     setDraggedTable(table.table_name)
     setDragOffset({
-      x: clientX - table.position_left,
-      y: clientY - table.position_top
+      x: x - table.position_left,
+      y: y - table.position_top
     })
   }
 
@@ -181,16 +279,23 @@ export default function TableLayoutEdit() {
   const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!draggedTable) return
 
-    e.preventDefault() // タッチスクロールを防ぐ
+    e.preventDefault()
 
+    const canvas = document.getElementById('canvas-area')
+    if (!canvas) return
+    
+    const rect = canvas.getBoundingClientRect()
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-
+    
+    // スケールを考慮した位置計算
+    const x = (clientX - rect.left) / scale
+    const y = (clientY - rect.top) / scale
+    
     const table = tables.find(t => t.table_name === draggedTable)
     if (table) {
-      const canvasRect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-      const newTop = clientY - canvasRect.top - dragOffset.y
-      const newLeft = clientX - canvasRect.left - dragOffset.x
+      const newLeft = Math.max(0, Math.min(x - dragOffset.x, canvasSize.width - table.table_width))
+      const newTop = Math.max(0, Math.min(y - dragOffset.y, canvasSize.height - table.table_height))
 
       setTables(prev => prev.map(t => 
         t.table_name === draggedTable 
@@ -275,6 +380,83 @@ export default function TableLayoutEdit() {
             display: 'flex',
             flexDirection: 'column'
           }}>
+            {/* 画面比率選択 */}
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>画面比率</h3>
+              <select
+                value={selectedRatio}
+                onChange={(e) => handleRatioChange(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  fontSize: '14px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  marginBottom: '8px'
+                }}
+              >
+                {presetRatios.map(ratio => (
+                  <option key={ratio.label} value={ratio.label}>
+                    {ratio.label}
+                  </option>
+                ))}
+              </select>
+              
+              {selectedRatio === 'カスタム...' && (
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    placeholder="幅"
+                    value={customWidth}
+                    onChange={(e) => setCustomWidth(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '6px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <span>×</span>
+                  <input
+                    type="number"
+                    placeholder="高さ"
+                    value={customHeight}
+                    onChange={(e) => setCustomHeight(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '6px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <button
+                    onClick={applyCustomSize}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#4CAF50',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}
+                  >
+                    適用
+                  </button>
+                </div>
+              )}
+              
+              <div style={{ 
+                fontSize: '12px', 
+                color: '#666', 
+                marginTop: '4px' 
+              }}>
+                現在: {canvasSize.width} × {canvasSize.height}px (スケール: {Math.round(scale * 100)}%)
+              </div>
+            </div>
+
             {/* 新規テーブル追加 */}
             <div style={{ marginBottom: '20px' }}>
               <h3 style={{ margin: '0 0 8px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>新規テーブル追加</h3>
@@ -374,10 +556,10 @@ export default function TableLayoutEdit() {
             <div style={{ marginTop: '30px', fontSize: '12px', color: '#666' }}>
               <h4 style={{ margin: '0 0 8px 0' }}>使い方</h4>
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                <li>画面比率を選択して編集</li>
                 <li>テーブルをドラッグして移動</li>
                 <li>チェックボックスで表示/非表示</li>
                 <li>編集ボタンで表示名を変更</li>
-                <li>削除ボタンでテーブルを削除</li>
               </ul>
             </div>
             
@@ -386,70 +568,81 @@ export default function TableLayoutEdit() {
 
           {/* キャンバスエリア */}
           <div
+            id="canvas-container"
             style={{
               flex: 1,
               position: 'relative',
-              backgroundColor: '#f9f9f9',
-              overflow: 'auto',
-              WebkitOverflowScrolling: 'touch',
-              minHeight: windowWidth <= 768 ? '300px' : 'auto'
+              backgroundColor: '#e0e0e0',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px'
             }}
-            onMouseMove={handleDragMove}
-            onMouseUp={handleDragEnd}
-            onMouseLeave={handleDragEnd}
-            onTouchMove={handleDragMove}
-            onTouchEnd={handleDragEnd}
           >
-            {/* スマホ・タブレット用のスクロールヒント */}
-            {windowWidth <= 768 && (
+            <div
+              id="canvas-area"
+              style={{
+                position: 'relative',
+                width: `${canvasSize.width}px`,
+                height: `${canvasSize.height}px`,
+                backgroundColor: 'white',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                transform: `scale(${scale})`,
+                transformOrigin: 'center',
+                border: '2px solid #333'
+              }}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              onTouchMove={handleDragMove}
+              onTouchEnd={handleDragEnd}
+            >
+              {/* サイズ表示 */}
               <div style={{
                 position: 'absolute',
-                top: '10px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: 'rgba(0,0,0,0.7)',
-                color: 'white',
-                padding: '5px 10px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                zIndex: 10
+                top: '-30px',
+                left: '0',
+                fontSize: '14px',
+                color: '#666',
+                fontWeight: 'bold'
               }}>
-                ← スクロールして全体を表示 →
+                {canvasSize.width} × {canvasSize.height}px
               </div>
-            )}
-            
-            {tables.filter(t => t.is_visible).map(table => (
-              <div
-                key={table.table_name}
-                style={{
-                  position: 'absolute',
-                  top: `${table.position_top}px`,
-                  left: `${table.position_left}px`,
-                  width: `${table.table_width}px`,
-                  height: `${table.table_height}px`,
-                  backgroundColor: 'white',
-                  border: `2px solid ${draggedTable === table.table_name ? '#FF9800' : '#ccc'}`,
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'move',
-                  userSelect: 'none',
-                  boxShadow: draggedTable === table.table_name 
-                    ? '0 4px 16px rgba(0,0,0,0.3)' 
-                    : '0 2px 8px rgba(0,0,0,0.1)',
-                  opacity: draggedTable === table.table_name ? 0.8 : 1,
-                  transition: 'box-shadow 0.2s',
-                  fontSize: windowWidth <= 768 ? '14px' : '16px',
-                  fontWeight: 'bold',
-                  touchAction: 'none'
-                }}
-                onMouseDown={(e) => handleDragStart(e, table)}
-                onTouchStart={(e) => handleDragStart(e, table)}
-              >
-                {table.display_name || table.table_name}
-              </div>
-            ))}
+              
+              {tables.filter(t => t.is_visible).map(table => (
+                <div
+                  key={table.table_name}
+                  style={{
+                    position: 'absolute',
+                    top: `${table.position_top}px`,
+                    left: `${table.position_left}px`,
+                    width: `${table.table_width}px`,
+                    height: `${table.table_height}px`,
+                    backgroundColor: 'white',
+                    border: `2px solid ${draggedTable === table.table_name ? '#FF9800' : '#ccc'}`,
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'move',
+                    userSelect: 'none',
+                    boxShadow: draggedTable === table.table_name 
+                      ? '0 4px 16px rgba(0,0,0,0.3)' 
+                      : '0 2px 8px rgba(0,0,0,0.1)',
+                    opacity: draggedTable === table.table_name ? 0.8 : 1,
+                    transition: 'box-shadow 0.2s',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    touchAction: 'none'
+                  }}
+                  onMouseDown={(e) => handleDragStart(e, table)}
+                  onTouchStart={(e) => handleDragStart(e, table)}
+                >
+                  {table.display_name || table.table_name}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
