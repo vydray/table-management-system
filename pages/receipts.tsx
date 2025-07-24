@@ -166,20 +166,50 @@ export default function Receipts() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div style={{ 
-        width: '100%',
-        maxWidth: '1024px',
-        height: '100vh',
-        maxHeight: '768px',
-        margin: '0 auto',
-        backgroundColor: '#f5f5f5',
-        overflow: 'hidden',
-        position: 'relative'
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: '#f5f5f5'
       }}>
+        {/* ヘッダー */}
+        <div style={{
+          backgroundColor: '#607D8B',
+          color: 'white',
+          padding: '15px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '20px'
+        }}>
+          <button
+            onClick={() => router.push('/')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '20px',
+              cursor: 'pointer',
+              padding: '5px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            ←
+          </button>
+          <h1 style={{ 
+            margin: 0, 
+            fontSize: '18px',
+            fontWeight: 'normal',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            📋 伝票管理
+          </h1>
+        </div>
+
         <div style={{
           display: 'flex',
           width: '100%',
-          height: '100%'
+          height: 'calc(100vh - 54px)'
         }}>
           {/* 左側：伝票一覧 */}
           <div style={{ 
@@ -240,26 +270,6 @@ export default function Receipts() {
             />
           </div>
         </div>
-
-        {/* 戻るボタン */}
-        <button
-          onClick={() => router.push('/')}
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            padding: '10px 20px',
-            backgroundColor: '#666',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            zIndex: 1000
-          }}
-        >
-          ホームに戻る
-        </button>
       </div>
     </>
   )
