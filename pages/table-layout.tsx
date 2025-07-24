@@ -64,6 +64,10 @@ export default function TableLayoutEdit() {
   const isPanning = useRef(false)
   const lastPanPoint = useRef({ x: 0, y: 0 })
   
+  // ピンチズーム用の状態
+  const isPinching = useRef(false)
+  const lastPinchDistance = useRef(0)
+  
   // 配置禁止ゾーンの定義
   const forbiddenZones = {
     top: 80,     // ヘッダーの高さ + 余白
@@ -258,38 +262,85 @@ export default function TableLayoutEdit() {
     setIsUpdatingSize(false)
   }
 
-  // キャンバスのパン操作
+  // ピンチズームの距離計算
+  const getPinchDistance = (touch1: React.Touch, touch2: React.Touch) => {
+    const dx = touch1.clientX - touch2.clientX
+    const dy = touch1.clientY - touch2.clientY
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
+  // キャンバスのタッチ/マウス操作（ピンチズーム対応）
   const handleCanvasMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     if (draggedTable) return
 
     const target = e.target as HTMLElement
-    if (target.id === 'canvas-area') {
-      isPanning.current = true
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-      lastPanPoint.current = { x: clientX, y: clientY }
+    if (target.id === 'canvas-area' || target === canvasRef.current) {
+      // タッチイベントの場合
+      if ('touches' in e) {
+        if (e.touches.length === 2) {
+          // ピンチズーム開始
+          isPinching.current = true
+          lastPinchDistance.current = getPinchDistance(e.touches[0], e.touches[1])
+          e.preventDefault()
+        } else if (e.touches.length === 1) {
+          // パン開始
+          isPanning.current = true
+          lastPanPoint.current = { 
+            x: e.touches[0].clientX, 
+            y: e.touches[0].clientY 
+          }
+        }
+      } else {
+        // マウスイベントの場合
+        isPanning.current = true
+        lastPanPoint.current = { x: e.clientX, y: e.clientY }
+      }
     }
   }
 
   const handleCanvasMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (isPanning.current) {
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-      
-      const deltaX = clientX - lastPanPoint.current.x
-      const deltaY = clientY - lastPanPoint.current.y
+    // タッチイベントの場合
+    if ('touches' in e) {
+      if (isPinching.current && e.touches.length === 2) {
+        // ピンチズーム中
+        const currentDistance = getPinchDistance(e.touches[0], e.touches[1])
+        const scale = currentDistance / lastPinchDistance.current
+        const newZoom = Math.max(0.5, Math.min(3, zoom * scale))
+        setZoom(newZoom)
+        lastPinchDistance.current = currentDistance
+        e.preventDefault()
+      } else if (isPanning.current && e.touches.length === 1) {
+        // パン中
+        const deltaX = e.touches[0].clientX - lastPanPoint.current.x
+        const deltaY = e.touches[0].clientY - lastPanPoint.current.y
+        
+        setPanOffset(prev => ({
+          x: prev.x + deltaX,
+          y: prev.y + deltaY
+        }))
+        
+        lastPanPoint.current = { 
+          x: e.touches[0].clientX, 
+          y: e.touches[0].clientY 
+        }
+      }
+    } else if (isPanning.current) {
+      // マウスでパン中
+      const deltaX = e.clientX - lastPanPoint.current.x
+      const deltaY = e.clientY - lastPanPoint.current.y
       
       setPanOffset(prev => ({
         x: prev.x + deltaX,
         y: prev.y + deltaY
       }))
       
-      lastPanPoint.current = { x: clientX, y: clientY }
+      lastPanPoint.current = { x: e.clientX, y: e.clientY }
     }
   }
 
-  const handleCanvasMouseUp = () => {
+  const handleCanvasMouseUp = (e: React.MouseEvent | React.TouchEvent) => {
     isPanning.current = false
+    isPinching.current = false
   }
 
   // ズーム操作
@@ -300,9 +351,10 @@ export default function TableLayoutEdit() {
     setZoom(newZoom)
   }
 
-  // ドラッグ開始
+  // ドラッグ開始（タッチ対応改善）
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent, table: TableLayout) => {
     e.stopPropagation()
+    if ('touches' in e && e.touches.length > 1) return // ピンチ中はドラッグしない
     
     const canvas = document.getElementById('canvas-area')
     if (!canvas) return
@@ -320,6 +372,11 @@ export default function TableLayoutEdit() {
       x: actualX - table.position_left,
       y: actualY - table.position_top
     })
+    
+    // タッチイベントの場合、デフォルト動作を防ぐ
+    if ('touches' in e) {
+      e.preventDefault()
+    }
   }
 
   // ドラッグ中
@@ -743,7 +800,10 @@ export default function TableLayoutEdit() {
                 transformOrigin: '0 0',
                 transform: `scale(${zoom})`,
                 transition: 'none',
-                userSelect: 'none'
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                MozUserSelect: 'none',
+                msUserSelect: 'none'
               }}
               onMouseDown={handleCanvasMouseDown}
               onMouseMove={handleCanvasMouseMove}
@@ -840,6 +900,11 @@ export default function TableLayoutEdit() {
                   }}
                   onMouseDown={(e) => handleDragStart(e, table)}
                   onTouchStart={(e) => handleDragStart(e, table)}
+                  onTouchMove={(e) => {
+                    e.preventDefault()
+                    handleDragMove(e)
+                  }}
+                  onTouchEnd={handleDragEnd}
                 >
                   {table.display_name || table.table_name}
                 </div>
@@ -918,11 +983,23 @@ export default function TableLayoutEdit() {
 
       {/* グローバルイベントリスナー */}
       <div
-        style={{ display: 'none' }}
+        style={{ 
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: draggedTable ? 'auto' : 'none',
+          zIndex: draggedTable ? 999 : -1
+        }}
         onMouseMove={handleDragMove}
         onMouseUp={handleDragEnd}
-        onMouseLeave={handleDragEnd}
-        onTouchMove={handleDragMove}
+        onTouchMove={(e) => {
+          if (draggedTable) {
+            e.preventDefault()
+            handleDragMove(e)
+          }
+        }}
         onTouchEnd={handleDragEnd}
       />
     </>
