@@ -10,7 +10,6 @@ html, body {
   -webkit-touch-callout: none;
   overflow: hidden;
   position: fixed;
-  /* touch-action: none; ← 削除 */
 }
 
 /* モーダルが開いていない時のみタッチを無効化 */
@@ -43,7 +42,7 @@ body.modal-open {
   backface-visibility: hidden;
 }
 
-/* スマホ・タブレット対応 */
+/* 1280px以下の画面幅の場合 */
 @media screen and (max-width: 1280px) {
   #layout {
     width: 100vw;
@@ -51,17 +50,23 @@ body.modal-open {
     max-width: 100%;
     max-height: 100%;
     border: none;
-    --scale-factor: min(1, calc(100vw / 1280));
-    /* 固定サイズモードに切り替え */
     position: fixed;
     top: 0;
     left: 0;
   }
 }
 
-@media screen and (max-height: 800px) {
+/* アスペクト比を維持したスケーリング */
+@media screen and (max-aspect-ratio: 8/5) {
   #layout {
-    --scale-factor: min(var(--scale-factor), calc(100vh / 800));
+    --scale-factor: min(calc(100vw / 1280), calc(100vh / 800));
+  }
+}
+
+/* 画面が狭い場合の追加調整 */
+@media screen and (max-width: 800px) or (max-height: 500px) {
+  #layout {
+    --scale-factor: min(calc(100vw / 1280), calc(100vh / 800), 0.8);
   }
 }
 
@@ -88,7 +93,6 @@ body.modal-open {
 }
 
 /* フォントサイズもテーブルサイズに応じて調整 */
-@media screen and (max-width: 800px) {
   .table {
     font-size: calc(14px * 0.8);
   }
@@ -104,7 +108,6 @@ body.modal-open {
   .table-elapsed {
     font-size: calc(11px * 0.8);
   }
-}
 
 .table:hover {
   transform: scale(1.05);
@@ -161,6 +164,7 @@ body.modal-open {
   line-height: 72px;
   font-size: 32px;
   font-weight: bold;
+  font-size: calc(32px * var(--scale-factor, 1));
 }
 
 /* スマホ対応 */
@@ -378,8 +382,7 @@ body.modal-open {
 }
 
 #modal.modal-edit {
-  width: 90%;
-  max-width: 1150px;
+  width: min(90%, 1150px);
   max-height: 90vh;
   height: auto;
 }
@@ -1296,11 +1299,12 @@ label {
   /* モーダル本体の高さ調整 */
   #modal.modal-edit {
     /* 固定値ではなく動的な高さ計算 */
-    height: calc(var(--vh, 1vh) * 100 - 40px) !important;
-    max-height: calc(var(--vh, 1vh) * 100 - 40px) !important;
-    top: 20px !important;
-    transform: translateX(-50%) !important;
-    bottom: 20px !important;
+    height: calc(var(--vh, 1vh) * 90) !important;
+    max-height: calc(var(--vh, 1vh) * 90) !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
     
     /* セーフエリア対応 */
     padding-bottom: env(safe-area-inset-bottom, 0) !important;

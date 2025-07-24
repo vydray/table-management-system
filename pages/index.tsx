@@ -685,66 +685,103 @@ export default function Home() {
     };
   }, []);
 
-  // レイアウトのスケール計算（親コンポーネントで一度だけ）
-  useEffect(() => {
-        const calculateLayoutScale = () => {
-      const layout = document.getElementById('layout')
-      if (!layout) return
-      
-      const layoutRect = layout.getBoundingClientRect()
-      const baseWidth = 1280  // 1024から1280に変更
-      const baseHeight = 800  // 768から800に変更
-      const headerHeight = 72
-      
-      // 使用可能な高さ
-      const availableHeight = layoutRect.height - headerHeight
-      
-      // スケール計算
-      const scaleX = layoutRect.width / baseWidth
-      const scaleY = availableHeight / (baseHeight - headerHeight)
-      const scale = Math.min(scaleX, scaleY, 1)
-      
-      setLayoutScale(scale)
-      setTableBaseSize({
-        width: Math.round(130 * scale),
-        height: Math.round(123 * scale)
-      })
-      
-      // CSS変数として設定
-      layout.style.setProperty('--scale-factor', scale.toString())
-    }
-    
-    // 初回計算
-    calculateLayoutScale()
-    
-    // リサイズ時の再計算（ただしフォーカスイベントを除外）
-    let resizeTimer: NodeJS.Timeout
-    let lastHeight = window.innerHeight
-    
-    const handleResize = () => {
-      // キーボード表示によるリサイズを無視（高さが大きく変わった場合）
-      const heightDiff = Math.abs(window.innerHeight - lastHeight)
-      if (heightDiff > 100) {
-        // キーボードの表示/非表示と判断
-        lastHeight = window.innerHeight
-        return
-      }
-      
-      clearTimeout(resizeTimer)
-      resizeTimer = setTimeout(() => {
-        calculateLayoutScale()
-        lastHeight = window.innerHeight
-      }, 300)
-    }
-    
-    window.addEventListener('resize', handleResize)
-    
-    return () => {
-      clearTimeout(resizeTimer)
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [])
+  // pages/index.tsx の useEffect 内のレイアウトスケール計算を改善
 
+// レイアウトのスケール計算（親コンポーネントで一度だけ）
+useEffect(() => {
+  const calculateLayoutScale = () => {
+    const layout = document.getElementById('layout')
+    if (!layout) return
+    
+    const layoutRect = layout.getBoundingClientRect()
+    const baseWidth = 1280
+    const baseHeight = 800
+    const headerHeight = 72
+    
+    // 使用可能な高さ
+    const availableHeight = layoutRect.height - headerHeight
+    
+    // アスペクト比を考慮したスケール計算
+    const aspectRatio = baseWidth / baseHeight
+    const currentAspectRatio = layoutRect.width / layoutRect.height
+    
+    let scale: number
+    
+    if (currentAspectRatio > aspectRatio) {
+      // 画面が横長の場合は高さ基準
+      scale = availableHeight / (baseHeight - headerHeight)
+    } else {
+      // 画面が縦長の場合は幅基準
+      scale = layoutRect.width / baseWidth
+    }
+    
+    // 最大スケールを1に制限（拡大しすぎを防ぐ）
+    scale = Math.min(scale, 1)
+    
+    // 最小スケールを設定（小さすぎる画面対応）
+    const minScale = 0.5
+    scale = Math.max(scale, minScale)
+    
+    setLayoutScale(scale)
+    setTableBaseSize({
+      width: Math.round(130 * scale),
+      height: Math.round(123 * scale)
+    })
+    
+    // CSS変数として設定
+    layout.style.setProperty('--scale-factor', scale.toString())
+    
+    // デバッグ情報（開発時のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Layout Scale Info:', {
+        layoutSize: { width: layoutRect.width, height: layoutRect.height },
+        baseSize: { width: baseWidth, height: baseHeight },
+        scale: scale,
+        tableSize: { width: Math.round(130 * scale), height: Math.round(123 * scale) }
+      })
+    }
+  }
+  
+  // 初回計算
+  calculateLayoutScale()
+  
+  // リサイズ時の再計算（デバウンス付き）
+  let resizeTimer: NodeJS.Timeout
+  let lastWidth = window.innerWidth
+  let lastHeight = window.innerHeight
+  
+  const handleResize = () => {
+    // キーボード表示によるリサイズを検出
+    const widthChanged = Math.abs(window.innerWidth - lastWidth) > 50
+    const heightChanged = Math.abs(window.innerHeight - lastHeight) > 100
+    
+    // 幅が変わらず高さだけ大きく変わった場合はキーボード
+    if (!widthChanged && heightChanged) {
+      // キーボードの表示/非表示と判断
+      lastHeight = window.innerHeight
+      return
+    }
+    
+    clearTimeout(resizeTimer)
+    resizeTimer = setTimeout(() => {
+      calculateLayoutScale()
+      lastWidth = window.innerWidth
+      lastHeight = window.innerHeight
+    }, 300)
+  }
+  
+  // イベントリスナー
+  window.addEventListener('resize', handleResize)
+  window.addEventListener('orientationchange', () => {
+    setTimeout(calculateLayoutScale, 100)
+  })
+  
+  return () => {
+    clearTimeout(resizeTimer)
+    window.removeEventListener('resize', handleResize)
+    window.removeEventListener('orientationchange', calculateLayoutScale)
+  }
+}, [])
   // フォームデータが変更されたら自動保存
   useEffect(() => {
     if (modalMode === 'edit' && currentTable && showModal) {
@@ -1260,20 +1297,38 @@ const finishCheckout = () => {
   }
   
   // テーブル位置を計算する関数
-  const calculateTablePosition = (tableId: string) => {
+const calculateTablePosition = (tableId: string) => {
   // データベースから取得したレイアウト情報を優先
   const tableLayout = tableLayouts.find(t => t.table_name === tableId)
   
+  const layout = document.getElementById('layout')
+  if (!layout) return { top: 0, left: 0 }
+  
+  const layoutRect = layout.getBoundingClientRect()
+  const layoutWidth = layoutRect.width
+  const layoutHeight = layoutRect.height
+  
+  // 1280×800基準での位置情報
+  const baseWidth = 1280
+  const baseHeight = 800
+  const headerHeight = 72
+  
   if (tableLayout) {
-    const layout = document.getElementById('layout')
-    const layoutWidth = layout?.getBoundingClientRect().width || 1280  // 1024から1280に変更
-    const scaledContentWidth = 1280 * layoutScale  // 1024から1280に変更
-    const horizontalOffset = (layoutWidth - scaledContentWidth) / 2
+    // スケールされたコンテンツの実際のサイズ
+    const scaledContentWidth = baseWidth * layoutScale
+    const scaledContentHeight = (baseHeight - headerHeight) * layoutScale
     
-    const headerHeight = 72
+    // センタリングのためのオフセット計算
+    const horizontalOffset = Math.max(0, (layoutWidth - scaledContentWidth) / 2)
+    const verticalOffset = Math.max(0, (layoutHeight - headerHeight - scaledContentHeight) / 2)
+    
+    // 位置計算（データベースの値は1280×800基準）
+    const scaledLeft = tableLayout.position_left * layoutScale
+    const scaledTop = (tableLayout.position_top - headerHeight) * layoutScale
+    
     return {
-      top: Math.round((tableLayout.position_top - headerHeight) * layoutScale + headerHeight),
-      left: Math.round(tableLayout.position_left * layoutScale + horizontalOffset)
+      top: Math.round(scaledTop + headerHeight + verticalOffset),
+      left: Math.round(scaledLeft + horizontalOffset)
     }
   }
   
@@ -1281,15 +1336,21 @@ const finishCheckout = () => {
   const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
   if (!originalPosition) return { top: 0, left: 0 }
   
-  const layout = document.getElementById('layout')
-  const layoutWidth = layout?.getBoundingClientRect().width || 1280  // 1024から1280に変更
-  const scaledContentWidth = 1280 * layoutScale  // 1024から1280に変更
-  const horizontalOffset = (layoutWidth - scaledContentWidth) / 2
+  // スケールされたコンテンツのサイズ
+  const scaledContentWidth = baseWidth * layoutScale
+  const scaledContentHeight = (baseHeight - headerHeight) * layoutScale
   
-  const headerHeight = 72
+  // センタリングのためのオフセット
+  const horizontalOffset = Math.max(0, (layoutWidth - scaledContentWidth) / 2)
+  const verticalOffset = Math.max(0, (layoutHeight - headerHeight - scaledContentHeight) / 2)
+  
+  // スケールされた位置
+  const scaledLeft = originalPosition.left * layoutScale
+  const scaledTop = (originalPosition.top - headerHeight) * layoutScale
+  
   return {
-    top: Math.round((originalPosition.top - headerHeight) * layoutScale + headerHeight),
-    left: Math.round(originalPosition.left * layoutScale + horizontalOffset)
+    top: Math.round(scaledTop + headerHeight + verticalOffset),
+    left: Math.round(scaledLeft + horizontalOffset)
   }
 }
   
