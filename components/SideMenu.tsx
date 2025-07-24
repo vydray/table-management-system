@@ -1,4 +1,4 @@
-// components/SideMenu.tsx を修正
+// components/SideMenu.tsx - 元の構成にテーブル配置編集を追加
 
 import { FC } from 'react'
 
@@ -22,38 +22,33 @@ export const SideMenu: FC<SideMenuProps> = ({ isOpen, onClose, onMenuClick }) =>
           </button>
         </div>
         <div className="menu-items">
-          <button className="menu-item" onClick={() => onMenuClick('ホーム')}>
-            <span className="menu-icon">🏠</span>
-            ホーム
-          </button>
-          <button className="menu-item" onClick={() => onMenuClick('データ取得')}>
+          <button className="menu-item" onClick={() => onMenuClick('refresh')}>
             <span className="menu-icon">🔄</span>
-            データ取得
+            データ更新
+          </button>
+          <button className="menu-item" onClick={() => onMenuClick('attendance')}>
+            <span className="menu-icon">👥</span>
+            勤怠登録
           </button>
           <div className="menu-divider"></div>
-          <button className="menu-item" onClick={() => onMenuClick('キャスト')}>
-            <span className="menu-icon">👥</span>
-            キャスト
+          <button className="menu-item" onClick={() => onMenuClick('receipts')}>
+            <span className="menu-icon">📋</span>
+            伝票管理
           </button>
-          <button className="menu-item" onClick={() => onMenuClick('勤怠管理')}>
-            <span className="menu-icon">📅</span>
-            勤怠管理
-          </button>
-          <button className="menu-item" onClick={() => onMenuClick('レポート')}>
+          <button className="menu-item" onClick={() => onMenuClick('report')}>
             <span className="menu-icon">📊</span>
             レポート
           </button>
-          <div className="menu-divider"></div>
-          <button className="menu-item" onClick={() => onMenuClick('テーブル配置編集')}>
+          <button className="menu-item" onClick={() => onMenuClick('table-layout')}>
             <span className="menu-icon">🎨</span>
             テーブル配置編集
           </button>
-          <button className="menu-item" onClick={() => onMenuClick('設定')}>
+          <button className="menu-item" onClick={() => onMenuClick('settings')}>
             <span className="menu-icon">⚙️</span>
             設定
           </button>
           <div className="menu-divider"></div>
-          <button className="menu-item" onClick={() => onMenuClick('ログアウト')}>
+          <button className="menu-item" onClick={() => onMenuClick('logout')}>
             <span className="menu-icon">🚪</span>
             ログアウト
           </button>

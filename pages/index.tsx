@@ -811,31 +811,28 @@ const handleMenuClick = (item: string) => {
   setShowMenu(false)
   
   switch (item) {
-    case 'ホーム':
-      window.location.reload()
-      break
-    case 'データ取得':
+    case 'refresh':
       loadData()
       loadCastList()
       loadProducts()
       loadTableLayouts()
       break
-    case 'キャスト':  // 「キャスト管理」から「キャスト」に変更
-      router.push('/casts')
-      break
-    case 'レポート':  // 「売上レポート」から「レポート」に変更
-      router.push('/report')  // '/repo'を'/report'に修正
-      break
-    case '勤怠管理':
+    case 'attendance':
       router.push('/attendance')
       break
-    case '設定':
-      router.push('/settings')
+    case 'receipts':
+      router.push('/receipts')
       break
-    case 'テーブル配置編集':
+    case 'report':
+      router.push('/report')
+      break
+    case 'table-layout':
       router.push('/table-layout')
       break
-    case 'ログアウト':
+    case 'settings':
+      router.push('/settings')
+      break
+    case 'logout':
       if (confirm('ログアウトしますか？')) {
         // ローカルストレージをクリア
         localStorage.removeItem('storeId')
