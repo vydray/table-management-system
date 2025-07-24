@@ -1264,36 +1264,26 @@ const finishCheckout = () => {
           </button>
           
           📋 テーブル管理システム
-<div style={{
-            position: 'absolute',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            fontSize: '20px',
-            fontWeight: 'bold',
-            color: '#333',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}>
-            <span style={{
-            marginLeft: '20px',
-            fontSize: '24px',
-            fontWeight: 'bold',
-            color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336'
-          }}>
-            {attendingCastCount - occupiedTableCount}
-          </span>
+          <span style={{
+              marginLeft: '20px',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
+              position: 'relative',
+              zIndex: 100  // ★★★ これを追加 ★★★
+            }}>
+              {attendingCastCount - occupiedTableCount}
+            </span>
+            
+            <span style={{ 
+              position: 'absolute', 
+              right: '20px', 
+              fontSize: '24px',
+              fontFamily: 'monospace'
+            }}>
+              {currentTime}
+            </span>
           </div>
-          
-          <span style={{ 
-            position: 'absolute', 
-            right: '20px', 
-            fontSize: '24px',
-            fontFamily: 'monospace'
-          }}>
-            {currentTime}
-          </span>
-        </div>
         
         {/* サイドメニューコンポーネント */}
         <SideMenu 
