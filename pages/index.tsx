@@ -33,26 +33,26 @@ interface CheckoutResult {
 
 // テーブルの位置情報（元の固定位置）
 const tablePositions = {
-  'A1': { top: 607, left: 723 },
-  'A2': { top: 607, left: 862 },
-  'A3': { top: 479, left: 862 },
-  'A4': { top: 351, left: 862 },
-  'A5': { top: 223, left: 862 },
-  'A6': { top: 223, left: 723 },
-  'A7': { top: 223, left: 581 },
-  'B1': { top: 85, left: 858 },
-  'B2': { top: 84, left: 705 },
-  'B3': { top: 84, left: 552 },
-  'B4': { top: 84, left: 399 },
-  'B5': { top: 84, left: 246 },
-  'B6': { top: 84, left: 93 },
-  'C1': { top: 230, left: 201 },
-  'C2': { top: 230, left: 58 },
-  'C3': { top: 358, left: 58 },
-  'C4': { top: 486, left: 58 },
-  'C5': { top: 614, left: 58 },
-  '臨時1': { top: 425, left: 363 },
-  '臨時2': { top: 425, left: 505 }
+  'A1': { top: 650, left: 900 },
+  'A2': { top: 650, left: 1050 },
+  'A3': { top: 520, left: 1050 },
+  'A4': { top: 390, left: 1050 },
+  'A5': { top: 260, left: 1050 },
+  'A6': { top: 260, left: 900 },
+  'A7': { top: 260, left: 750 },
+  'B1': { top: 100, left: 1050 },
+  'B2': { top: 100, left: 880 },
+  'B3': { top: 100, left: 710 },
+  'B4': { top: 100, left: 540 },
+  'B5': { top: 100, left: 370 },
+  'B6': { top: 100, left: 200 },
+  'C1': { top: 260, left: 320 },
+  'C2': { top: 260, left: 100 },
+  'C3': { top: 390, left: 100 },
+  'C4': { top: 520, left: 100 },
+  'C5': { top: 650, left: 100 },
+  '臨時1': { top: 460, left: 490 },
+  '臨時2': { top: 460, left: 660 }
 }
 
 export default function Home() {
@@ -687,13 +687,13 @@ export default function Home() {
 
   // レイアウトのスケール計算（親コンポーネントで一度だけ）
   useEffect(() => {
-    const calculateLayoutScale = () => {
+        const calculateLayoutScale = () => {
       const layout = document.getElementById('layout')
       if (!layout) return
       
       const layoutRect = layout.getBoundingClientRect()
-      const baseWidth = 1024
-      const baseHeight = 768
+      const baseWidth = 1280  // 1024から1280に変更
+      const baseHeight = 800  // 768から800に変更
       const headerHeight = 72
       
       // 使用可能な高さ
@@ -1261,37 +1261,37 @@ const finishCheckout = () => {
   
   // テーブル位置を計算する関数
   const calculateTablePosition = (tableId: string) => {
-    // データベースから取得したレイアウト情報を優先
-    const tableLayout = tableLayouts.find(t => t.table_name === tableId)
-    
-    if (tableLayout) {
-      const layout = document.getElementById('layout')
-      const layoutWidth = layout?.getBoundingClientRect().width || 1024
-      const scaledContentWidth = 1024 * layoutScale
-      const horizontalOffset = (layoutWidth - scaledContentWidth) / 2
-      
-      const headerHeight = 72
-      return {
-        top: Math.round((tableLayout.position_top - headerHeight) * layoutScale + headerHeight),
-        left: Math.round(tableLayout.position_left * layoutScale + horizontalOffset)
-      }
-    }
-    
-    // フォールバック：元の固定位置を使用
-    const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
-    if (!originalPosition) return { top: 0, left: 0 }
-    
+  // データベースから取得したレイアウト情報を優先
+  const tableLayout = tableLayouts.find(t => t.table_name === tableId)
+  
+  if (tableLayout) {
     const layout = document.getElementById('layout')
-    const layoutWidth = layout?.getBoundingClientRect().width || 1024
-    const scaledContentWidth = 1024 * layoutScale
+    const layoutWidth = layout?.getBoundingClientRect().width || 1280  // 1024から1280に変更
+    const scaledContentWidth = 1280 * layoutScale  // 1024から1280に変更
     const horizontalOffset = (layoutWidth - scaledContentWidth) / 2
     
     const headerHeight = 72
     return {
-      top: Math.round((originalPosition.top - headerHeight) * layoutScale + headerHeight),
-      left: Math.round(originalPosition.left * layoutScale + horizontalOffset)
+      top: Math.round((tableLayout.position_top - headerHeight) * layoutScale + headerHeight),
+      left: Math.round(tableLayout.position_left * layoutScale + horizontalOffset)
     }
   }
+  
+  // フォールバック：元の固定位置を使用
+  const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
+  if (!originalPosition) return { top: 0, left: 0 }
+  
+  const layout = document.getElementById('layout')
+  const layoutWidth = layout?.getBoundingClientRect().width || 1280  // 1024から1280に変更
+  const scaledContentWidth = 1280 * layoutScale  // 1024から1280に変更
+  const horizontalOffset = (layoutWidth - scaledContentWidth) / 2
+  
+  const headerHeight = 72
+  return {
+    top: Math.round((originalPosition.top - headerHeight) * layoutScale + headerHeight),
+    left: Math.round(originalPosition.left * layoutScale + horizontalOffset)
+  }
+}
   
   return (
     <>
