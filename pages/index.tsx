@@ -807,45 +807,46 @@ useEffect(() => {
   }, [orderItems])
   
   // メニューアイテムのクリックハンドラー
-  const handleMenuClick = (item: string) => {
-    setShowMenu(false)
-    
-    switch (item) {
-      case 'ホーム':
-        window.location.reload()
-        break
-      case 'データ取得':
-        loadData()
-        loadCastList()
-        loadProducts()
-        loadTableLayouts() // この行を追加
-        break
-      case 'キャスト管理':
-        router.push('/casts')
-        break
-      case '売上レポート':
-        router.push('/reports')
-        break
-      case '勤怠管理':
-        router.push('/attendance')
-        break
-      case '設定':
-        router.push('/settings')
-        break
-      case 'テーブル配置編集':
-        router.push('/table-layout')
-        break
-      case 'ログアウト':
-        if (confirm('ログアウトしますか？')) {
-          // ローカルストレージをクリア
-          localStorage.removeItem('storeId')
-          localStorage.removeItem('storeName')
-          // ログイン画面へ遷移
-          router.push('/login')
-        }
-        break
-    }
+const handleMenuClick = (item: string) => {
+  setShowMenu(false)
+  
+  switch (item) {
+    case 'ホーム':
+      window.location.reload()
+      break
+    case 'データ取得':
+      loadData()
+      loadCastList()
+      loadProducts()
+      loadTableLayouts()
+      break
+    case 'キャスト':  // 「キャスト管理」から「キャスト」に変更
+      router.push('/casts')
+      break
+    case 'レポート':  // 「売上レポート」から「レポート」に変更
+      router.push('/report')  // '/repo'を'/report'に修正
+      break
+    case '勤怠管理':
+      router.push('/attendance')
+      break
+    case '設定':
+      router.push('/settings')
+      break
+    case 'テーブル配置編集':
+      router.push('/table-layout')
+      break
+    case 'ログアウト':
+      if (confirm('ログアウトしますか？')) {
+        // ローカルストレージをクリア
+        localStorage.removeItem('storeId')
+        localStorage.removeItem('storeName')
+        localStorage.removeItem('isLoggedIn')
+        // ログイン画面へ遷移
+        router.push('/login')
+      }
+      break
   }
+}
 
   // テーブル情報更新（silent: 自動保存時はメッセージを出さない）
   const updateTableInfo = async (silent: boolean = false) => {

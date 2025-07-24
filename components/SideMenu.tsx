@@ -1,3 +1,5 @@
+// components/SideMenu.tsx を修正
+
 import { FC } from 'react'
 
 interface SideMenuProps {
@@ -19,7 +21,7 @@ export const SideMenu: FC<SideMenuProps> = ({ isOpen, onClose, onMenuClick }) =>
             ×
           </button>
         </div>
-          <div className="menu-items">
+        <div className="menu-items">
           <button className="menu-item" onClick={() => onMenuClick('ホーム')}>
             <span className="menu-icon">🏠</span>
             ホーム
@@ -29,17 +31,17 @@ export const SideMenu: FC<SideMenuProps> = ({ isOpen, onClose, onMenuClick }) =>
             データ取得
           </button>
           <div className="menu-divider"></div>
-          <button className="menu-item" onClick={() => onMenuClick('キャスト管理')}>
+          <button className="menu-item" onClick={() => onMenuClick('キャスト')}>
             <span className="menu-icon">👥</span>
-            キャスト管理
+            キャスト
           </button>
           <button className="menu-item" onClick={() => onMenuClick('勤怠管理')}>
             <span className="menu-icon">📅</span>
             勤怠管理
           </button>
-          <button className="menu-item" onClick={() => onMenuClick('売上レポート')}>
+          <button className="menu-item" onClick={() => onMenuClick('レポート')}>
             <span className="menu-icon">📊</span>
-            売上レポート
+            レポート
           </button>
           <div className="menu-divider"></div>
           <button className="menu-item" onClick={() => onMenuClick('テーブル配置編集')}>
@@ -88,50 +90,17 @@ export const SideMenu: FC<SideMenuProps> = ({ isOpen, onClose, onMenuClick }) =>
           
           .menu-close {
             font-size: 28px !important;
-            min-width: 40px !important;
-            min-height: 40px !important;
+            padding: 8px !important;
           }
           
           .menu-item {
-            padding: 16px 20px !important;
+            padding: 18px 20px !important;
             font-size: 16px !important;
-            min-height: 50px !important;
           }
           
           .menu-item .menu-icon {
+            margin-right: 15px !important;
             font-size: 20px !important;
-            margin-right: 12px !important;
-          }
-          
-          .menu-divider {
-            margin: 15px 20px !important;
-          }
-        }
-        
-        /* スマートフォン用 */
-        @media screen and (max-width: 600px) {
-          .side-menu {
-            width: 240px !important;
-            left: -240px !important;
-          }
-          
-          .menu-header {
-            padding: 15px !important;
-          }
-          
-          .menu-header h3 {
-            font-size: 18px !important;
-          }
-          
-          .menu-item {
-            padding: 14px 15px !important;
-            font-size: 14px !important;
-            min-height: 44px !important;
-          }
-          
-          .menu-item .menu-icon {
-            font-size: 18px !important;
-            margin-right: 10px !important;
           }
         }
       `}</style>
