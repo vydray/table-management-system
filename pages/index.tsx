@@ -97,6 +97,8 @@ export default function Home() {
   const [showMenu, setShowMenu] = useState(false)
   const [attendingCastsCount, setAttendingCastsCount] = useState(0)
   const [occupiedTablesCount, setOccupiedTablesCount] = useState(0)
+  const [attendingCastsCount, setAttendingCastsCount] = useState(0)
+  const [occupiedTablesCount, setOccupiedTablesCount] = useState(0)
   
   // レスポンシブ用のスケール状態を追加
   const [layoutScale, setLayoutScale] = useState(1)
@@ -132,30 +134,51 @@ export default function Home() {
     editMinute: new Date().getMinutes()
   })
 
-  // 経過時間のフォーマット関数
-  const formatElapsedTime = (elapsed: string): string => {
-    if (!elapsed) return '0分'
-    return elapsed.includes(':') ? elapsed : elapsed
-  }
-
-  // 支払いデータのリセット
-  const resetPaymentData = () => {
-    setPaymentData({
-      cash: 0,
-      card: 0,
-      other: 0,
-      otherMethod: '',
-      totalAmount: 0
-    })
-    setActivePaymentInput('cash')
-  }
-
-  // おつりの計算
-  const calculateChange = () => {
-    const totalPaid = paymentData.cash + paymentData.card + paymentData.other
-    return totalPaid - paymentData.totalAmount
-  }
+  // 出勤中のキャスト数を取得
   const getAttendingCastsCount = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+      const today = new Date().toISOString().split('T')[0]
+      
+      // まず有効な勤怠ステータスを取得
+      const { data: settingsData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('setting_key', 'active_attendance_statuses')
+        .eq('store_id', storeId)
+        .single()
+      
+      let activeStatuses = ['出勤']
+      if (settingsData) {
+        activeStatuses = JSON.parse(settingsData.setting_value)
+      }
+      
+      // 出勤中のキャスト数を取得
+      const { data: attendanceData, error } = await supabase
+        .from('attendance')
+        .select('cast_name')
+        .eq('store_id', storeId)
+        .eq('date', today)
+        .in('status', activeStatuses)
+      
+      if (error) throw error
+      
+      // 重複を除いたキャスト数をカウント
+      const uniqueCasts = new Set(attendanceData?.map(a => a.cast_name) || [])
+      setAttendingCastsCount(uniqueCasts.size)
+    } catch (error) {
+      console.error('Error getting attending casts:', error)
+      setAttendingCastsCount(0)
+    }
+  }
+
+  // 使用中のテーブル数を計算
+  const updateOccupiedTablesCount = () => {
+    const count = Object.values(tables).filter(table => 
+      table.status === 'occupied' || table.status === 'billing'
+    ).length
+    setOccupiedTablesCount(count)
+  }
     try {
       const storeId = getCurrentStoreId()
       const today = new Date().toISOString().split('T')[0]
