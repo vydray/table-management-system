@@ -32,7 +32,21 @@ export default function TableLayout() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [newTableName, setNewTableName] = useState('')
   const [loading, setLoading] = useState(true)
+  const [windowWidth, setWindowWidth] = useState(1024) // 追加
   const storeId = getCurrentStoreId()
+
+  // ウィンドウサイズの監視
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth)
+    }
+    
+    // 初期値設定
+    setWindowWidth(window.innerWidth)
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // テーブル一覧の取得
   const fetchTables = useCallback(async () => {
@@ -165,6 +179,8 @@ export default function TableLayout() {
   const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!draggedTable) return
 
+    e.preventDefault() // タッチスクロールを防ぐ
+
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
 
@@ -204,7 +220,8 @@ export default function TableLayout() {
         height: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#f5f5f5'
+        backgroundColor: '#f5f5f5',
+        overflow: 'hidden'
       }}>
         {/* ヘッダー */}
         <div style={{
@@ -214,19 +231,21 @@ export default function TableLayout() {
           padding: '16px',
           backgroundColor: '#FF9800',
           color: 'white',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          minHeight: '60px'
         }}>
-          <h1 style={{ margin: 0, fontSize: '24px' }}>🎨 テーブル配置編集</h1>
+          <h1 style={{ margin: 0, fontSize: window.innerWidth <= 768 ? '20px' : '24px' }}>🎨 テーブル配置編集</h1>
           <button
             onClick={() => router.push('/')}
             style={{
-              padding: '8px 16px',
-              fontSize: '16px',
+              padding: window.innerWidth <= 768 ? '6px 12px' : '8px 16px',
+              fontSize: window.innerWidth <= 768 ? '14px' : '16px',
               backgroundColor: 'transparent',
               color: 'white',
               border: '2px solid white',
               borderRadius: '6px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
             }}
           >
             ホームに戻る
@@ -237,20 +256,25 @@ export default function TableLayout() {
         <div style={{
           display: 'flex',
           flex: 1,
-          overflow: 'hidden'
+          overflow: 'hidden',
+          flexDirection: window.innerWidth <= 768 ? 'column' : 'row'
         }}>
           {/* サイドバー */}
           <div style={{
-            width: '300px',
+            width: window.innerWidth <= 768 ? '100%' : '300px',
+            height: window.innerWidth <= 768 ? 'auto' : 'auto',
+            maxHeight: window.innerWidth <= 768 ? '40vh' : '100%',
             backgroundColor: 'white',
-            borderRight: '1px solid #ddd',
-            padding: '20px',
-            overflowY: 'auto'
+            borderRight: window.innerWidth <= 768 ? 'none' : '1px solid #ddd',
+            borderBottom: window.innerWidth <= 768 ? '1px solid #ddd' : 'none',
+            padding: window.innerWidth <= 768 ? '15px' : '20px',
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch'
           }}>
             {/* 新規テーブル追加 */}
             <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ margin: '0 0 10px 0' }}>新規テーブル追加</h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: window.innerWidth <= 768 ? '16px' : '18px' }}>新規テーブル追加</h3>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap' }}>
                 <input
                   type="text"
                   placeholder="テーブル名"
@@ -259,6 +283,7 @@ export default function TableLayout() {
                   onKeyPress={(e) => e.key === 'Enter' && addNewTable()}
                   style={{
                     flex: 1,
+                    minWidth: window.innerWidth <= 768 ? '150px' : 'auto',
                     padding: '8px',
                     border: '1px solid #ddd',
                     borderRadius: '4px',
@@ -274,7 +299,8 @@ export default function TableLayout() {
                     border: 'none',
                     borderRadius: '4px',
                     cursor: 'pointer',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   追加
@@ -284,36 +310,40 @@ export default function TableLayout() {
 
             {/* テーブル一覧 */}
             <div>
-              <h3 style={{ margin: '0 0 10px 0' }}>テーブル一覧</h3>
-              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: window.innerWidth <= 768 ? '16px' : '18px' }}>テーブル一覧</h3>
+              <div style={{ maxHeight: window.innerWidth <= 768 ? '200px' : '400px', overflowY: 'auto' }}>
                 {tables.map(table => (
                   <div
                     key={table.table_name}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '8px',
+                      padding: window.innerWidth <= 768 ? '6px' : '8px',
                       borderBottom: '1px solid #eee',
-                      gap: '8px'
+                      gap: '8px',
+                      fontSize: window.innerWidth <= 768 ? '14px' : '16px'
                     }}
                   >
                     <input
                       type="checkbox"
                       checked={table.is_visible}
                       onChange={(e) => toggleTableVisibility(table.table_name, e.target.checked)}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', minWidth: '16px', minHeight: '16px' }}
                     />
-                    <span style={{ flex: 1 }}>{table.display_name || table.table_name}</span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {table.display_name || table.table_name}
+                    </span>
                     <button
                       onClick={() => setSelectedTable(table)}
                       style={{
-                        padding: '4px 8px',
-                        fontSize: '12px',
+                        padding: window.innerWidth <= 768 ? '3px 6px' : '4px 8px',
+                        fontSize: window.innerWidth <= 768 ? '11px' : '12px',
                         backgroundColor: '#2196F3',
                         color: 'white',
                         border: 'none',
                         borderRadius: '4px',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       編集
@@ -321,13 +351,14 @@ export default function TableLayout() {
                     <button
                       onClick={() => deleteTable(table.table_name)}
                       style={{
-                        padding: '4px 8px',
-                        fontSize: '12px',
+                        padding: window.innerWidth <= 768 ? '3px 6px' : '4px 8px',
+                        fontSize: window.innerWidth <= 768 ? '11px' : '12px',
                         backgroundColor: '#f44336',
                         color: 'white',
                         border: 'none',
                         borderRadius: '4px',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       削除
@@ -357,7 +388,9 @@ export default function TableLayout() {
               flex: 1,
               position: 'relative',
               backgroundColor: '#f9f9f9',
-              overflow: 'hidden'
+              overflow: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              minHeight: window.innerWidth <= 768 ? '300px' : 'auto'
             }}
             onMouseMove={handleDragMove}
             onMouseUp={handleDragEnd}
@@ -365,6 +398,24 @@ export default function TableLayout() {
             onTouchMove={handleDragMove}
             onTouchEnd={handleDragEnd}
           >
+            {/* スマホ・タブレット用のスクロールヒント */}
+            {window.innerWidth <= 768 && (
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                zIndex: 10
+              }}>
+                ← スクロールして全体を表示 →
+              </div>
+            )}
+            
             {tables.filter(t => t.is_visible).map(table => (
               <div
                 key={table.table_name}
@@ -387,8 +438,9 @@ export default function TableLayout() {
                     : '0 2px 8px rgba(0,0,0,0.1)',
                   opacity: draggedTable === table.table_name ? 0.8 : 1,
                   transition: 'box-shadow 0.2s',
-                  fontSize: '16px',
-                  fontWeight: 'bold'
+                  fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+                  fontWeight: 'bold',
+                  touchAction: 'none'
                 }}
                 onMouseDown={(e) => handleDragStart(e, table)}
                 onTouchStart={(e) => handleDragStart(e, table)}
