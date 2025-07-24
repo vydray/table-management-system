@@ -68,10 +68,6 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState('')
   const [isMoving, setIsMoving] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
-  
-  // レスポンシブ用のスケール状態を追加
-  const [layoutScale, setLayoutScale] = useState(1)
-  const [tableBaseSize, setTableBaseSize] = useState({ width: 130, height: 123 })
 
   // 出勤キャスト数と卓数の状態を追加
   const [attendingCastCount, setAttendingCastCount] = useState(0)
@@ -685,103 +681,6 @@ export default function Home() {
     };
   }, []);
 
-  // pages/index.tsx の useEffect 内のレイアウトスケール計算を改善
-
-// レイアウトのスケール計算（親コンポーネントで一度だけ）
-useEffect(() => {
-  const calculateLayoutScale = () => {
-    const layout = document.getElementById('layout')
-    if (!layout) return
-    
-    const layoutRect = layout.getBoundingClientRect()
-    const baseWidth = 1280
-    const baseHeight = 800
-    const headerHeight = 72
-    
-    // 使用可能な高さ
-    const availableHeight = layoutRect.height - headerHeight
-    
-    // アスペクト比を考慮したスケール計算
-    const aspectRatio = baseWidth / baseHeight
-    const currentAspectRatio = layoutRect.width / layoutRect.height
-    
-    let scale: number
-    
-    if (currentAspectRatio > aspectRatio) {
-      // 画面が横長の場合は高さ基準
-      scale = availableHeight / (baseHeight - headerHeight)
-    } else {
-      // 画面が縦長の場合は幅基準
-      scale = layoutRect.width / baseWidth
-    }
-    
-    // 最大スケールを1に制限（拡大しすぎを防ぐ）
-    scale = Math.min(scale, 1)
-    
-    // 最小スケールを設定（小さすぎる画面対応）
-    const minScale = 0.5
-    scale = Math.max(scale, minScale)
-    
-    setLayoutScale(scale)
-    setTableBaseSize({
-      width: Math.round(130 * scale),
-      height: Math.round(123 * scale)
-    })
-    
-    // CSS変数として設定
-    layout.style.setProperty('--scale-factor', scale.toString())
-    
-    // デバッグ情報（開発時のみ）
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Layout Scale Info:', {
-        layoutSize: { width: layoutRect.width, height: layoutRect.height },
-        baseSize: { width: baseWidth, height: baseHeight },
-        scale: scale,
-        tableSize: { width: Math.round(130 * scale), height: Math.round(123 * scale) }
-      })
-    }
-  }
-  
-  // 初回計算
-  calculateLayoutScale()
-  
-  // リサイズ時の再計算（デバウンス付き）
-  let resizeTimer: NodeJS.Timeout
-  let lastWidth = window.innerWidth
-  let lastHeight = window.innerHeight
-  
-  const handleResize = () => {
-    // キーボード表示によるリサイズを検出
-    const widthChanged = Math.abs(window.innerWidth - lastWidth) > 50
-    const heightChanged = Math.abs(window.innerHeight - lastHeight) > 100
-    
-    // 幅が変わらず高さだけ大きく変わった場合はキーボード
-    if (!widthChanged && heightChanged) {
-      // キーボードの表示/非表示と判断
-      lastHeight = window.innerHeight
-      return
-    }
-    
-    clearTimeout(resizeTimer)
-    resizeTimer = setTimeout(() => {
-      calculateLayoutScale()
-      lastWidth = window.innerWidth
-      lastHeight = window.innerHeight
-    }, 300)
-  }
-  
-  // イベントリスナー
-  window.addEventListener('resize', handleResize)
-  window.addEventListener('orientationchange', () => {
-    setTimeout(calculateLayoutScale, 100)
-  })
-  
-  return () => {
-    clearTimeout(resizeTimer)
-    window.removeEventListener('resize', handleResize)
-    window.removeEventListener('orientationchange', calculateLayoutScale)
-  }
-}, [])
   // フォームデータが変更されたら自動保存
   useEffect(() => {
     if (modalMode === 'edit' && currentTable && showModal) {
@@ -1294,63 +1193,25 @@ const finishCheckout = () => {
     return categoryData?.show_oshi_first || false
   }
   
-  // テーブル位置を計算する関数
-const calculateTablePosition = (tableId: string) => {
-  // データベースから取得したレイアウト情報を優先
-  const tableLayout = tableLayouts.find(t => t.table_name === tableId)
-  
-  const layout = document.getElementById('layout')
-  if (!layout) return { top: 0, left: 0 }
-  
-  const layoutRect = layout.getBoundingClientRect()
-  const layoutWidth = layoutRect.width
-  const layoutHeight = layoutRect.height
-  
-  // 1280×800基準での位置情報
-  const baseWidth = 1280
-  const baseHeight = 800
-  const headerHeight = 72
-  
-  if (tableLayout) {
-    // スケールされたコンテンツの実際のサイズ
-    const scaledContentWidth = baseWidth * layoutScale
-    const scaledContentHeight = (baseHeight - headerHeight) * layoutScale
-    
-    // センタリングのためのオフセット計算
-    const horizontalOffset = Math.max(0, (layoutWidth - scaledContentWidth) / 2)
-    const verticalOffset = Math.max(0, (layoutHeight - headerHeight - scaledContentHeight) / 2)
-    
-    // 位置計算（データベースの値は1280×800基準）
-    const scaledLeft = tableLayout.position_left * layoutScale
-    const scaledTop = (tableLayout.position_top - headerHeight) * layoutScale
+  // テーブル位置を計算する関数（修正版）
+  const calculateTablePosition = (tableId: string) => {
+    const tableLayout = tableLayouts.find(t => t.table_name === tableId)
+    if (!tableLayout) {
+      // フォールバック：元の固定位置を使用
+      const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
+      if (!originalPosition) return { top: 0, left: 0 }
+      
+      return {
+        top: originalPosition.top,
+        left: originalPosition.left
+      }
+    }
     
     return {
-      top: Math.round(scaledTop + headerHeight + verticalOffset),
-      left: Math.round(scaledLeft + horizontalOffset)
+      top: tableLayout.position_top,
+      left: tableLayout.position_left
     }
   }
-  
-  // フォールバック：元の固定位置を使用
-  const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
-  if (!originalPosition) return { top: 0, left: 0 }
-  
-  // スケールされたコンテンツのサイズ
-  const scaledContentWidth = baseWidth * layoutScale
-  const scaledContentHeight = (baseHeight - headerHeight) * layoutScale
-  
-  // センタリングのためのオフセット
-  const horizontalOffset = Math.max(0, (layoutWidth - scaledContentWidth) / 2)
-  const verticalOffset = Math.max(0, (layoutHeight - headerHeight - scaledContentHeight) / 2)
-  
-  // スケールされた位置
-  const scaledLeft = originalPosition.left * layoutScale
-  const scaledTop = (originalPosition.top - headerHeight) * layoutScale
-  
-  return {
-    top: Math.round(scaledTop + headerHeight + verticalOffset),
-    left: Math.round(scaledLeft + horizontalOffset)
-  }
-}
   
   return (
     <>
@@ -1420,24 +1281,24 @@ const calculateTablePosition = (tableId: string) => {
           const layout = tableLayouts.find(t => t.table_name === tableId)
           const tableSize = layout 
             ? { width: layout.table_width, height: layout.table_height }
-            : tableBaseSize
+            : { width: 130, height: 123 } 
             
           return (
             <Table 
-              key={tableId} 
-              tableId={layout?.display_name || tableId} 
-              data={data}
-              scale={layoutScale}
-              tableSize={tableSize}
-              position={calculateTablePosition(tableId)}
-              moveMode={moveMode}
-              moveFromTable={moveFromTable}
-              isMoving={isMoving}
-              showModal={showModal}
-              onOpenModal={openModal}
-              onStartMoveMode={startMoveMode}
-              onExecuteMove={executeMove}
-            />
+                key={tableId} 
+                tableId={layout?.display_name || tableId} 
+                data={data}
+                scale={1}  // 固定値1を追加
+                tableSize={tableSize}
+                position={calculateTablePosition(tableId)}
+                moveMode={moveMode}
+                moveFromTable={moveFromTable}
+                isMoving={isMoving}
+                showModal={showModal}
+                onOpenModal={openModal}
+                onStartMoveMode={startMoveMode}
+                onExecuteMove={executeMove}
+/>
           )
         })}
       </div>
@@ -1456,7 +1317,7 @@ const calculateTablePosition = (tableId: string) => {
       {/* メインモーダル（既存のまま） */}
       {showModal && (
         <div id="modal" className={modalMode === 'new' ? 'modal-new' : 'modal-edit'} style={{
-          fontSize: `${16 * layoutScale}px`
+          fontSize: '16px'
         }}>
           {/* 既存のモーダル内容をそのまま残す（長いので省略） */}
           <button 
@@ -1573,14 +1434,14 @@ const calculateTablePosition = (tableId: string) => {
 
                 {/* 入店日時エリア - 元のまま */}
                 <div className="datetime-edit" style={{
-                  fontSize: window.innerWidth <= 1024 ? '14px' : `${16 * layoutScale}px`,
-                  padding: window.innerWidth <= 1024 ? '10px 15px' : `${15 * layoutScale}px ${20 * layoutScale}px`,
+                  fontSize: window.innerWidth <= 1024 ? '14px' : '16px',
+                  padding: window.innerWidth <= 1024 ? '10px 15px' : '15px 20px',
                   justifyContent: 'center',
                   borderBottom: '1px solid #ddd',
                   marginBottom: 0
                 }}>
                   <span className="label-text" style={{ 
-                    fontSize: window.innerWidth <= 1024 ? '14px' : `${16 * layoutScale}px` 
+                    fontSize: window.innerWidth <= 1024 ? '14px' : '16px'
                   }}>
                     入店日時：
                   </span>
@@ -1636,12 +1497,12 @@ const calculateTablePosition = (tableId: string) => {
                 </div>
 
                 <div className="pos-container" style={{
-                  transform: `scale(${layoutScale})`,
+                  transform: 'scale(1)',
                   transformOrigin: 'top left',
-                  width: `${100 / layoutScale}%`,
+                  width: '100%',
                   height: 'auto',
-                  padding: `${20 * layoutScale}px`,
-                  gap: `${20 * layoutScale}px`
+                  padding: '20px',
+                  gap: '20px'
                 }}>
                   <ProductSection
                     productCategories={productCategories}
@@ -1690,7 +1551,7 @@ const calculateTablePosition = (tableId: string) => {
       <PaymentModal
         isOpen={showPaymentModal}
         currentTable={currentTable}
-        layoutScale={layoutScale}
+        layoutScale={1}
         paymentData={paymentData}
         activePaymentInput={activePaymentInput}
         subtotal={orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}

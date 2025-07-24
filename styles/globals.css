@@ -35,7 +35,6 @@ body.modal-open {
   background: #f8f8f8;
   border: 1px solid #ccc;
   overflow: hidden;
-  --scale-factor: 1;
   /* Androidのレイアウト安定化 */
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
@@ -53,20 +52,6 @@ body.modal-open {
     position: fixed;
     top: 0;
     left: 0;
-  }
-}
-
-/* アスペクト比を維持したスケーリング */
-@media screen and (max-aspect-ratio: 8/5) {
-  #layout {
-    --scale-factor: min(calc(100vw / 1280), calc(100vh / 800));
-  }
-}
-
-/* 画面が狭い場合の追加調整 */
-@media screen and (max-width: 800px) or (max-height: 500px) {
-  #layout {
-    --scale-factor: min(calc(100vw / 1280), calc(100vh / 800), 0.8);
   }
 }
 
@@ -402,8 +387,8 @@ body.modal-open {
   }
   
   .datetime-edit {
-    font-size: calc(14px * var(--scale-factor, 1));
-    padding: calc(10px * var(--scale-factor, 1)) calc(15px * var(--scale-factor, 1));
+    font-size: 14px;
+    padding: 30px;
   }
   
   .date-select, .time-select {

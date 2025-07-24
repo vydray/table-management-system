@@ -48,7 +48,10 @@ export default function TableLayoutEdit() {
   const [customWidth, setCustomWidth] = useState('')
   const [customHeight, setCustomHeight] = useState('')
   const [canvasSize, setCanvasSize] = useState({ width: 1280, height: 800 })
-  const [scale, setScale] = useState(1)
+  
+  // テーブルサイズ関連の状態
+  const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
+  const [isUpdatingSize, setIsUpdatingSize] = useState(false)
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth)
@@ -81,23 +84,17 @@ export default function TableLayoutEdit() {
         }
       }
     }
-  }, [])
-
-  // キャンバスのスケール計算
-  useEffect(() => {
-    const canvasContainer = document.getElementById('canvas-container')
-    if (canvasContainer) {
-      const containerWidth = canvasContainer.clientWidth
-      const containerHeight = canvasContainer.clientHeight
-      
-      // コンテナに収まるようにスケールを計算
-      const scaleX = containerWidth / canvasSize.width
-      const scaleY = containerHeight / canvasSize.height
-      const newScale = Math.min(scaleX, scaleY, 1) * 0.9 // 少し余白を持たせる
-      
-      setScale(newScale)
+    
+    // 保存されたテーブルサイズを読み込む
+    const savedTableWidth = localStorage.getItem('tableWidth')
+    const savedTableHeight = localStorage.getItem('tableHeight')
+    if (savedTableWidth && savedTableHeight) {
+      setTableSize({
+        width: parseInt(savedTableWidth),
+        height: parseInt(savedTableHeight)
+      })
     }
-  }, [canvasSize, windowWidth])
+  }, [])
 
   // 画面比率の変更処理
   const handleRatioChange = (value: string) => {
@@ -105,7 +102,6 @@ export default function TableLayoutEdit() {
     localStorage.setItem('tableLayoutRatio', value)
     
     if (value === 'カスタム...') {
-      // カスタムの場合は入力欄を表示するだけ
       return
     }
     
@@ -130,6 +126,46 @@ export default function TableLayoutEdit() {
     localStorage.setItem('tableLayoutCustomHeight', customHeight)
   }
 
+  // テーブルサイズの一括更新
+  const updateAllTableSizes = async () => {
+    if (isUpdatingSize) return
+    
+    setIsUpdatingSize(true)
+    const savedStoreId = localStorage.getItem('currentStoreId') || '1'
+    
+    try {
+      // 全テーブルのサイズを更新
+      for (const table of tables) {
+        await supabase
+          .from('table_status')
+          .update({ 
+            table_width: tableSize.width, 
+            table_height: tableSize.height 
+          })
+          .eq('table_name', table.table_name)
+          .eq('store_id', savedStoreId)
+      }
+      
+      // ローカルストレージに保存
+      localStorage.setItem('tableWidth', tableSize.width.toString())
+      localStorage.setItem('tableHeight', tableSize.height.toString())
+      
+      // 状態を更新
+      setTables(prev => prev.map(t => ({
+        ...t,
+        table_width: tableSize.width,
+        table_height: tableSize.height
+      })))
+      
+      alert('全テーブルのサイズを更新しました')
+    } catch (error) {
+      console.error('Error updating table sizes:', error)
+      alert('サイズの更新に失敗しました')
+    } finally {
+      setIsUpdatingSize(false)
+    }
+  }
+
   // テーブル情報を取得
   const fetchTables = async () => {
     setLoading(true)
@@ -144,6 +180,13 @@ export default function TableLayoutEdit() {
 
       if (data && !error) {
         setTables(data)
+        // 最初のテーブルのサイズを取得
+        if (data.length > 0) {
+          setTableSize({
+            width: data[0].table_width || 130,
+            height: data[0].table_height || 123
+          })
+        }
       } else if (error) {
         console.error('Error fetching tables:', error)
       }
@@ -212,7 +255,6 @@ export default function TableLayoutEdit() {
 
     const savedStoreId = localStorage.getItem('currentStoreId') || '1'
     
-    // 既存のテーブル名と重複しないかチェック
     const isDuplicate = tables.some(t => t.table_name === newTableName.trim())
     if (isDuplicate) {
       alert('このテーブル名は既に存在します')
@@ -226,8 +268,8 @@ export default function TableLayoutEdit() {
         store_id: savedStoreId,
         position_top: 300,
         position_left: 400,
-        table_width: 130,
-        table_height: 123,
+        table_width: tableSize.width,
+        table_height: tableSize.height,
         is_visible: true
       })
 
@@ -264,14 +306,10 @@ export default function TableLayoutEdit() {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     
-    // スケールを考慮した位置計算
-    const x = (clientX - rect.left) / scale
-    const y = (clientY - rect.top) / scale
-    
     setDraggedTable(table.table_name)
     setDragOffset({
-      x: x - table.position_left,
-      y: y - table.position_top
+      x: clientX - rect.left - table.position_left,
+      y: clientY - rect.top - table.position_top
     })
   }
 
@@ -288,14 +326,10 @@ export default function TableLayoutEdit() {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     
-    // スケールを考慮した位置計算
-    const x = (clientX - rect.left) / scale
-    const y = (clientY - rect.top) / scale
-    
     const table = tables.find(t => t.table_name === draggedTable)
     if (table) {
-      const newLeft = Math.max(0, Math.min(x - dragOffset.x, canvasSize.width - table.table_width))
-      const newTop = Math.max(0, Math.min(y - dragOffset.y, canvasSize.height - table.table_height))
+      const newLeft = Math.max(0, Math.min(clientX - rect.left - dragOffset.x, canvasSize.width - table.table_width))
+      const newTop = Math.max(0, Math.min(clientY - rect.top - dragOffset.y, canvasSize.height - table.table_height))
 
       setTables(prev => prev.map(t => 
         t.table_name === draggedTable 
@@ -369,9 +403,9 @@ export default function TableLayoutEdit() {
         }}>
           {/* サイドバー */}
           <div style={{
-            width: windowWidth <= 768 ? '100%' : '300px',
+            width: windowWidth <= 768 ? '100%' : '320px',
             height: windowWidth <= 768 ? 'auto' : 'auto',
-            maxHeight: windowWidth <= 768 ? '40vh' : '100%',
+            maxHeight: windowWidth <= 768 ? '50vh' : '100%',
             backgroundColor: 'white',
             borderRight: windowWidth <= 768 ? 'none' : '1px solid #ddd',
             borderBottom: windowWidth <= 768 ? '1px solid #ddd' : 'none',
@@ -453,8 +487,61 @@ export default function TableLayoutEdit() {
                 color: '#666', 
                 marginTop: '4px' 
               }}>
-                現在: {canvasSize.width} × {canvasSize.height}px (スケール: {Math.round(scale * 100)}%)
+                現在: {canvasSize.width} × {canvasSize.height}px
               </div>
+            </div>
+
+            {/* テーブルサイズ設定 */}
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>テーブルサイズ（全体）</h3>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '12px', color: '#666' }}>幅</label>
+                  <input
+                    type="number"
+                    value={tableSize.width}
+                    onChange={(e) => setTableSize({ ...tableSize, width: parseInt(e.target.value) || 130 })}
+                    style={{
+                      width: '100%',
+                      padding: '6px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '12px', color: '#666' }}>高さ</label>
+                  <input
+                    type="number"
+                    value={tableSize.height}
+                    onChange={(e) => setTableSize({ ...tableSize, height: parseInt(e.target.value) || 123 })}
+                    style={{
+                      width: '100%',
+                      padding: '6px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              </div>
+              <button
+                onClick={updateAllTableSizes}
+                disabled={isUpdatingSize}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  backgroundColor: isUpdatingSize ? '#ccc' : '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: isUpdatingSize ? 'default' : 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                {isUpdatingSize ? '更新中...' : '全テーブルに適用'}
+              </button>
             </div>
 
             {/* 新規テーブル追加 */}
@@ -495,7 +582,7 @@ export default function TableLayoutEdit() {
             {/* テーブル一覧 */}
             <div style={{ flex: 1 }}>
               <h3 style={{ margin: '0 0 8px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>テーブル一覧</h3>
-              <div style={{ maxHeight: windowWidth <= 768 ? '200px' : '400px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: windowWidth <= 768 ? '150px' : '300px', overflowY: 'auto' }}>
                 {tables.map(table => (
                   <div
                     key={table.table_name}
@@ -552,31 +639,16 @@ export default function TableLayoutEdit() {
               </div>
             </div>
 
-            {/* 使い方説明 */}
-            <div style={{ marginTop: '30px', fontSize: '12px', color: '#666' }}>
-              <h4 style={{ margin: '0 0 8px 0' }}>使い方</h4>
-              <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                <li>画面比率を選択して編集</li>
-                <li>テーブルをドラッグして移動</li>
-                <li>チェックボックスで表示/非表示</li>
-                <li>編集ボタンで表示名を変更</li>
-              </ul>
-            </div>
-            
             {loading && <div style={{ textAlign: 'center', marginTop: '20px' }}>読み込み中...</div>}
           </div>
 
           {/* キャンバスエリア */}
           <div
-            id="canvas-container"
             style={{
               flex: 1,
               position: 'relative',
               backgroundColor: '#e0e0e0',
-              overflow: 'hidden',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              overflow: 'auto',
               padding: '20px'
             }}
           >
@@ -588,9 +660,8 @@ export default function TableLayoutEdit() {
                 height: `${canvasSize.height}px`,
                 backgroundColor: 'white',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                transform: `scale(${scale})`,
-                transformOrigin: 'center',
-                border: '2px solid #333'
+                border: '2px solid #333',
+                margin: 'auto'
               }}
               onMouseMove={handleDragMove}
               onMouseUp={handleDragEnd}
