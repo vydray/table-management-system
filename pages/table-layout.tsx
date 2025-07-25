@@ -338,7 +338,7 @@ export default function TableLayoutEdit() {
     }
   }
 
-  const handleCanvasMouseUp = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleCanvasMouseUp = () => {
     isPanning.current = false
     isPinching.current = false
   }
