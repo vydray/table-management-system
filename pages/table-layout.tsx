@@ -503,11 +503,7 @@ export default function TableLayoutEdit() {
                   placeholder="テーブル名"
                   value={newTableName}
                   onChange={(e) => setNewTableName(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      addNewTable()
-                    }
-                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && addNewTable()}
                   style={{
                     flex: 1,
                     minWidth: windowWidth <= 768 ? '150px' : 'auto',
