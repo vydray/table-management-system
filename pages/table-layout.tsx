@@ -503,6 +503,7 @@ export default function TableLayoutEdit() {
                   placeholder="テーブル名"
                   value={newTableName}
                   onChange={(e) => setNewTableName(e.target.value)}
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && addNewTable()}
                   style={{
                     flex: 1,
