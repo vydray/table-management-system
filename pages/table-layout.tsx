@@ -844,25 +844,20 @@ export default function TableLayoutEdit() {
                       {table.display_name || table.table_name}
                     </span>
                     <button
-                      onClick={() => {
-                        // ⭐ updateTableNameを呼び出すように修正
-                        if (selectedTable) {
-                          updateTableName(selectedTable.table_name, selectedTable.display_name || '')
-                        }
-                      }}
-                      style={{
-                        padding: windowWidth <= 768 ? '3px 6px' : '4px 8px',
-                        fontSize: windowWidth <= 768 ? '11px' : '12px',
-                        backgroundColor: '#2196F3',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      編集
-                    </button>
+                        onClick={() => setSelectedTable(table)}  // ← これに変更
+                        style={{
+                          padding: windowWidth <= 768 ? '3px 6px' : '4px 8px',
+                          fontSize: windowWidth <= 768 ? '11px' : '12px',
+                          backgroundColor: '#2196F3',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        編集
+                      </button>
                     <button
                       onClick={() => deleteTable(table.table_name)}
                       style={{
@@ -1025,22 +1020,75 @@ export default function TableLayoutEdit() {
         </div>
 
         {/* 編集ダイアログ */}
-        {selectedTable && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            {/* ... 編集ダイアログの中身 ... */}
-          </div>
-        )}
+              {selectedTable && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000
+                }}>
+                  <div style={{
+                    backgroundColor: 'white',
+                    padding: '24px',
+                    borderRadius: '8px',
+                    minWidth: '300px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
+                  }}>
+                    <h3 style={{ margin: '0 0 16px 0' }}>テーブル名編集</h3>
+                    <input
+                      type="text"
+                      value={selectedTable.display_name || selectedTable.table_name}
+                      onChange={(e) => setSelectedTable({ ...selectedTable, display_name: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        marginBottom: '16px',
+                        fontSize: '14px'
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={() => {
+                          if (selectedTable) {
+                            updateTableName(selectedTable.table_name, selectedTable.display_name || '')
+                          }
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#4CAF50',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        保存
+                      </button>
+                      <button
+                        onClick={() => setSelectedTable(null)}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#f44336',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
         {/* ⭐ 自動整列モーダルを追加 */}
         {showAlignModal && (
