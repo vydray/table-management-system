@@ -16,6 +16,7 @@ interface TableLayout {
   table_height: number
   is_visible: boolean
   display_name: string | null
+  page_number: number  // ⭐ 追加
   current_guest?: string | null
   guest_name?: string | null
   cast_name?: string | null
@@ -61,7 +62,11 @@ export default function TableLayoutEdit() {
   const [verticalSpacing, setVerticalSpacing] = useState(40) // ⭐ 縦の間隔（新規追加）
   const [alignStartX, setAlignStartX] = useState(100) // 配置開始X座標
   const [alignStartY, setAlignStartY] = useState(100) // 配置開始Y座標
-
+  
+  // ⭐ ページ管理用の状態を追加
+  const [pageCount, setPageCount] = useState(1)  // 総ページ数
+  const [currentViewPage, setCurrentViewPage] = useState(1)  // 現在フォーカス中のページ
+  
   // テーブルサイズ関連の状態
   const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
   const [isUpdatingSize, setIsUpdatingSize] = useState(false)
@@ -115,10 +120,13 @@ export default function TableLayoutEdit() {
         .from('table_status')
         .select('*')
         .eq('store_id', storeId)
-        .order('table_name')
+        .order('page_number, table_name')  // ⭐ ページ番号でソート
 
       if (!error && data) {
         setTables(data)
+        // ⭐ 最大ページ番号を取得
+        const maxPage = Math.max(...data.map(t => t.page_number || 1), 1)
+        setPageCount(maxPage)
       }
     } catch (error) {
       console.error('Error loading tables:', error)
@@ -233,6 +241,48 @@ export default function TableLayoutEdit() {
     }
   }
 
+    // ⭐ ページを追加
+  const addPage = () => {
+    setPageCount(prev => prev + 1)
+    // 新しいページにフォーカス
+    setTimeout(() => {
+      setCurrentViewPage(pageCount + 1)
+    }, 100)
+  }
+
+  // ⭐ ページを削除
+  const deletePage = async (pageNumber: number) => {
+    if (pageNumber === 1) {
+      alert('ページ1は削除できません')
+      return
+    }
+
+    // そのページにテーブルがあるか確認
+    const tablesOnPage = tables.filter(t => t.page_number === pageNumber)
+    if (tablesOnPage.length > 0) {
+      if (!confirm(`ページ${pageNumber}には${tablesOnPage.length}個のテーブルがあります。削除しますか？`)) {
+        return
+      }
+      
+      // テーブルを削除
+      const storeId = localStorage.getItem('currentStoreId') || '1'
+      for (const table of tablesOnPage) {
+        await supabase
+          .from('table_status')
+          .delete()
+          .eq('table_name', table.table_name)
+          .eq('store_id', storeId)
+      }
+    }
+
+    setPageCount(prev => Math.max(1, prev - 1))
+    if (currentViewPage >= pageNumber) {
+      setCurrentViewPage(Math.max(1, currentViewPage - 1))
+    }
+    
+    loadTables()
+  }
+
   // テーブルの表示/非表示を切り替え
   const toggleTableVisibility = async (tableName: string, isVisible: boolean) => {
     const storeId = localStorage.getItem('currentStoreId') || '1'
@@ -252,16 +302,16 @@ export default function TableLayoutEdit() {
   // 新規テーブル追加
   const addNewTable = async () => {
     if (!newTableName.trim()) return
-
     const storeId = localStorage.getItem('currentStoreId') || '1'
     const newTable: TableLayout = {
       table_name: newTableName.trim(),
       display_name: newTableName.trim(),
-      position_top: forbiddenZones.top + 50,  // 配置禁止ゾーンを避けた初期位置
+      position_top: forbiddenZones.top + 50,
       position_left: forbiddenZones.left + 50,
       table_width: tableSize.width,
       table_height: tableSize.height,
       is_visible: true,
+      page_number: currentViewPage,  // ⭐ 現在のページに追加
       current_guest: null,
     }
 
@@ -439,9 +489,11 @@ export default function TableLayoutEdit() {
   // ドラッグ開始（タッチ対応改善）
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent, table: TableLayout) => {
     e.stopPropagation()
-    if ('touches' in e && e.touches.length > 1) return // ピンチ中はドラッグしない
+    if ('touches' in e && e.touches.length > 1) return
     
-    const canvas = document.getElementById('canvas-area')
+    // ⭐ ページ番号に応じたキャンバスを取得
+    const pageNum = table.page_number || 1
+    const canvas = document.getElementById(`canvas-area-${pageNum}`)
     if (!canvas) return
     
     const rect = canvas.getBoundingClientRect()
@@ -579,6 +631,80 @@ export default function TableLayoutEdit() {
             >
               ホームに戻る
             </button>
+          </div>
+        </div>
+        
+        {/* ⭐ ページコントロール */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '10px 16px',
+          backgroundColor: 'white',
+          borderBottom: '1px solid #ddd',
+          gap: '20px'
+        }}>
+          <button
+            onClick={addPage}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            ＋ ページ追加
+          </button>
+
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', overflow: 'auto' }}>
+            {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
+              <div
+                key={pageNum}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: currentViewPage === pageNum ? '#FF9800' : '#f0f0f0',
+                  color: currentViewPage === pageNum ? 'white' : 'black',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  position: 'relative',
+                  minWidth: '80px',
+                  textAlign: 'center'
+                }}
+                onClick={() => setCurrentViewPage(pageNum)}
+              >
+                ページ {pageNum}
+                {pageNum > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deletePage(pageNum)
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '-5px',
+                      right: '-5px',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      backgroundColor: '#f44336',
+                      color: 'white',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      lineHeight: '1'
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -881,48 +1007,65 @@ export default function TableLayoutEdit() {
             {loading && <div style={{ textAlign: 'center', marginTop: '20px' }}>読み込み中...</div>}
           </div>
 
-          {/* キャンバスエリア */}
+          {/* キャンバスエリア - 横並び表示 */}
           <div
             ref={canvasRef}
             style={{
               flex: 1,
               position: 'relative',
               backgroundColor: '#e0e0e0',
-              overflow: 'hidden',
+              overflowX: 'auto',  // ⭐ 横スクロール可能
+              overflowY: 'hidden',
+              display: 'flex',    // ⭐ flexコンテナに
+              gap: '20px',
               padding: '20px',
-              cursor: isPanning.current ? 'grabbing' : 'grab'
+              alignItems: 'flex-start'
             }}
-            onWheel={handleWheel}
           >
-            <div
-              id="canvas-area"
-              style={{
-                width: `${canvasSize.width}px`,
-                height: `${canvasSize.height}px`,
-                backgroundColor: '#f0f0f0',
-                position: 'relative',
-                cursor: draggedTable ? 'grabbing' : isPanning.current ? 'grabbing' : 'grab',
-                touchAction: 'none',
-                transformOrigin: '0 0',
-                transform: `scale(${zoom})`,
-                transition: 'none',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-                MozUserSelect: 'none',
-                msUserSelect: 'none'
-              }}
-              onMouseDown={handleCanvasMouseDown}
-              onMouseMove={handleCanvasMouseMove}
-              onMouseUp={handleCanvasMouseUp}
-              onMouseLeave={handleCanvasMouseUp}
-              onTouchStart={handleCanvasMouseDown}
-              onTouchMove={handleCanvasMouseMove}
-              onTouchEnd={handleCanvasMouseUp}
-            >
-              {/* 配置禁止ゾーンの表示 */}
-              {/* 上部禁止ゾーン（ヘッダー領域） */}
+            {/* ⭐ 各ページのキャンバス */}
+            {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
               <div
+                key={pageNum}
+                id={`canvas-area-${pageNum}`}
                 style={{
+                  minWidth: `${canvasSize.width}px`,
+                  width: `${canvasSize.width}px`,
+                  height: `${canvasSize.height}px`,
+                  backgroundColor: '#f0f0f0',
+                  border: currentViewPage === pageNum ? '3px solid #FF9800' : '1px solid #ccc',
+                  borderRadius: '8px',
+                  position: 'relative',
+                  cursor: draggedTable ? 'grabbing' : 'grab',
+                  transform: `scale(${zoom})`,
+                  transformOrigin: 'top left',
+                  transition: 'border 0.3s'
+                }}
+                onMouseDown={(e) => {
+                  setCurrentViewPage(pageNum)  // クリックしたページをアクティブに
+                  handleCanvasMouseDown(e)
+                }}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseUp={handleCanvasMouseUp}
+              >
+                {/* ページ番号表示 */}
+                <div style={{
+                  position: 'absolute',
+                  top: '10px',
+                  left: '10px',
+                  backgroundColor: 'rgba(255, 152, 0, 0.8)',
+                  color: 'white',
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  zIndex: 10
+                }}>
+                  ページ {pageNum}
+                </div>
+
+                {/* 配置禁止ゾーン（既存のコードをそのまま使用） */}
+                {/* 上部禁止ゾーン */}
+                <div style={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
@@ -934,23 +1077,21 @@ export default function TableLayoutEdit() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
-                }}
-              >
-                <span style={{ 
-                  color: '#ff6b6b', 
-                  fontSize: '14px', 
-                  fontWeight: 'bold',
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  padding: '4px 12px',
-                  borderRadius: '4px'
                 }}>
-                  ヘッダー領域（配置不可）
-                </span>
-              </div>
-              
-              {/* 下部禁止ゾーン（Androidナビゲーションバー領域） */}
-              <div
-                style={{
+                  <span style={{ 
+                    color: '#ff6b6b', 
+                    fontSize: '14px', 
+                    fontWeight: 'bold',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    padding: '4px 12px',
+                    borderRadius: '4px'
+                  }}>
+                    ヘッダー領域（配置不可）
+                  </span>
+                </div>
+                
+                {/* 下部禁止ゾーン */}
+                <div style={{
                   position: 'absolute',
                   bottom: 0,
                   left: 0,
@@ -962,60 +1103,62 @@ export default function TableLayoutEdit() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
-                }}
-              >
-                <span style={{ 
-                  color: '#ff6b6b', 
-                  fontSize: '14px', 
-                  fontWeight: 'bold',
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  padding: '4px 12px',
-                  borderRadius: '4px'
                 }}>
-                  ナビゲーションバー領域（配置不可）
-                </span>
-              </div>
-
-              {/* 既存のテーブル描画 */}
-              {tables.filter(t => t.is_visible).map((table) => (
-                <div
-                  key={table.table_name}
-                  onDoubleClick={() => handleDoubleClick(table)}
-                  style={{
-                    position: 'absolute',
-                    top: `${table.position_top}px`,
-                    left: `${table.position_left}px`,
-                    width: `${table.table_width}px`,
-                    height: `${table.table_height}px`,
-                    backgroundColor: table.current_guest ? '#FF9800' : '#ccc',
-                    border: `3px solid ${table.current_guest ? '#FF9800' : '#ccc'}`,
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'move',
-                    userSelect: 'none',
-                    boxShadow: draggedTable === table.table_name 
-                      ? '0 4px 16px rgba(0,0,0,0.3)' 
-                      : '0 2px 8px rgba(0,0,0,0.1)',
-                    opacity: draggedTable === table.table_name ? 0.8 : 1,
-                    transition: 'box-shadow 0.2s',
-                    fontSize: '16px',
+                  <span style={{ 
+                    color: '#ff6b6b', 
+                    fontSize: '14px', 
                     fontWeight: 'bold',
-                    touchAction: 'none'
-                  }}
-                  onMouseDown={(e) => handleDragStart(e, table)}
-                  onTouchStart={(e) => handleDragStart(e, table)}
-                  onTouchMove={(e) => {
-                    e.preventDefault()
-                    handleDragMove(e)
-                  }}
-                  onTouchEnd={handleDragEnd}
-                >
-                  {table.display_name || table.table_name}
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    padding: '4px 12px',
+                    borderRadius: '4px'
+                  }}>
+                    ナビゲーションバー領域（配置不可）
+                  </span>
                 </div>
-              ))}
-            </div>
+
+                {/* ⭐ そのページのテーブルのみ表示 */}
+                {tables
+                  .filter(t => t.is_visible && (t.page_number || 1) === pageNum)
+                  .map((table) => (
+                    <div
+                      key={table.table_name}
+                      onDoubleClick={() => handleDoubleClick(table)}
+                      style={{
+                        position: 'absolute',
+                        top: `${table.position_top}px`,
+                        left: `${table.position_left}px`,
+                        width: `${table.table_width}px`,
+                        height: `${table.table_height}px`,
+                        backgroundColor: table.current_guest ? '#FF9800' : '#ccc',
+                        border: `3px solid ${table.current_guest ? '#FF9800' : '#ccc'}`,
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'move',
+                        userSelect: 'none',
+                        boxShadow: draggedTable === table.table_name 
+                          ? '0 4px 16px rgba(0,0,0,0.3)' 
+                          : '0 2px 8px rgba(0,0,0,0.1)',
+                        opacity: draggedTable === table.table_name ? 0.8 : 1,
+                        transition: 'box-shadow 0.2s',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        touchAction: 'none'
+                      }}
+                      onMouseDown={(e) => handleDragStart(e, table)}
+                      onTouchStart={(e) => handleDragStart(e, table)}
+                      onTouchMove={(e) => {
+                        e.preventDefault()
+                        handleDragMove(e)
+                      }}
+                      onTouchEnd={handleDragEnd}
+                    >
+                      {table.display_name || table.table_name}
+                    </div>
+                  ))}
+              </div>
+            ))}
           </div>
         </div>
 
