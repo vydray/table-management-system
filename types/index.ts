@@ -7,6 +7,7 @@ export interface TableData {
   visit: string
   elapsed: string
   status: 'empty' | 'occupied'
+  page_number?: number
 }
 
 // 注文アイテムの型定義
