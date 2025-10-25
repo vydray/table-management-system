@@ -1068,18 +1068,18 @@ export default function TableLayoutEdit() {
                 key={pageNum}
                 id={`canvas-area-${pageNum}`}
                 style={{
-                  minWidth: `${canvasSize.width}px`,
-                  width: `${canvasSize.width}px`,
-                  height: `${canvasSize.height}px`,
-                  backgroundColor: '#f0f0f0',
-                  border: currentViewPage === pageNum ? '3px solid #FF9800' : '1px solid #ccc',
-                  borderRadius: '8px',
-                  position: 'relative',
-                  cursor: draggedTable ? 'grabbing' : 'grab',
-                  transform: `scale(${zoom})`,
-                  transformOrigin: 'top left',
-                  transition: 'border 0.3s'
-                }}
+                    minWidth: `${canvasSize.width}px`,
+                    width: `${canvasSize.width}px`,
+                    height: `${canvasSize.height}px`,
+                    backgroundColor: '#f0f0f0',
+                    border: currentViewPage === pageNum ? '3px solid #FF9800' : '1px solid #ccc',
+                    borderRadius: '8px',
+                    position: 'relative',
+                    cursor: draggedTable ? 'grabbing' : 'default',
+                    transform: `scale(${zoom})`,  // ⭐ パンオフセットを削除
+                    transformOrigin: 'top left',
+                    transition: 'border 0.3s'
+                  }}
                 onMouseDown={(e) => {
                   setCurrentViewPage(pageNum)  // クリックしたページをアクティブに
                   handleCanvasMouseDown(e)
