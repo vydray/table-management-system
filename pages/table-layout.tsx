@@ -406,10 +406,16 @@ export default function TableLayoutEdit() {
 
   // キャンバスのタッチ/マウス操作（ピンチズーム対応）
   const handleCanvasMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    // ⭐ テーブルをドラッグ中の場合は何もしない
     if (draggedTable) return
-
+    
     const target = e.target as HTMLElement
-    if (target.id === 'canvas-area' || target === canvasRef.current) {
+    
+    // ⭐ テーブル要素の場合はパンを開始しない
+    if (target.style.cursor === 'move') return
+    
+    // ⭐ キャンバスエリアまたはページエリアをクリックした場合のみパン開始
+    if (target.id && (target.id.startsWith('canvas-area') || target === canvasRef.current)) {
       // タッチイベントの場合
       if ('touches' in e) {
         if (e.touches.length === 2) {
@@ -426,9 +432,12 @@ export default function TableLayoutEdit() {
           }
         }
       } else {
-        // マウスイベントの場合
-        isPanning.current = true
-        lastPanPoint.current = { x: e.clientX, y: e.clientY }
+        // マウスイベントの場合（中ボタンまたはスペースキー押下中）
+        if (e.button === 1 || e.ctrlKey || e.metaKey) {  // ⭐ 条件を変更
+          isPanning.current = true
+          lastPanPoint.current = { x: e.clientX, y: e.clientY }
+          e.preventDefault()
+        }
       }
     }
   }
@@ -489,9 +498,13 @@ export default function TableLayoutEdit() {
   // ドラッグ開始（タッチ対応改善）
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent, table: TableLayout) => {
     e.stopPropagation()
+    
+    // ⭐ パン中の場合はドラッグを開始しない
+    if (isPanning.current) return
+    
     if ('touches' in e && e.touches.length > 1) return
     
-    // ⭐ ページ番号に応じたキャンバスを取得
+    // ページ番号に応じたキャンバスを取得
     const pageNum = table.page_number || 1
     const canvas = document.getElementById(`canvas-area-${pageNum}`)
     if (!canvas) return
@@ -500,9 +513,9 @@ export default function TableLayoutEdit() {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     
-    // ズームとパンを考慮した座標計算
-    const actualX = (clientX - rect.left - panOffset.x) / zoom
-    const actualY = (clientY - rect.top - panOffset.y) / zoom
+    // ⭐ パンオフセットを考慮しない座標計算に修正
+    const actualX = (clientX - rect.left) / zoom
+    const actualY = (clientY - rect.top) / zoom
     
     setDraggedTable(table.table_name)
     setDragOffset({
@@ -519,37 +532,38 @@ export default function TableLayoutEdit() {
   // ドラッグ中
   const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!draggedTable) return
-
     e.preventDefault()
-
-    const canvas = document.getElementById('canvas-area')
+    
+    // ⭐ ドラッグ中のテーブルのページ番号を取得
+    const table = tables.find(t => t.table_name === draggedTable)
+    if (!table) return
+    
+    const pageNum = table.page_number || 1
+    const canvas = document.getElementById(`canvas-area-${pageNum}`)
     if (!canvas) return
     
     const rect = canvas.getBoundingClientRect()
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     
-    // ズームとパンを考慮した座標計算
-    const actualX = (clientX - rect.left - panOffset.x) / zoom
-    const actualY = (clientY - rect.top - panOffset.y) / zoom
+    // ⭐ パンオフセットを考慮しない座標計算に修正
+    const actualX = (clientX - rect.left) / zoom
+    const actualY = (clientY - rect.top) / zoom
     
-    const table = tables.find(t => t.table_name === draggedTable)
-    if (table) {
-      // 配置禁止ゾーンを考慮した制限
-      const minX = forbiddenZones.left
-      const maxX = canvasSize.width - table.table_width - forbiddenZones.right
-      const minY = forbiddenZones.top
-      const maxY = canvasSize.height - table.table_height - forbiddenZones.bottom
-      
-      const newLeft = Math.max(minX, Math.min(actualX - dragOffset.x, maxX))
-      const newTop = Math.max(minY, Math.min(actualY - dragOffset.y, maxY))
-
-      setTables(prev => prev.map(t => 
-        t.table_name === draggedTable 
-          ? { ...t, position_top: newTop, position_left: newLeft }
-          : t
-      ))
-    }
+    // 配置禁止ゾーンを考慮した制限
+    const minX = forbiddenZones.left
+    const maxX = canvasSize.width - table.table_width - forbiddenZones.right
+    const minY = forbiddenZones.top
+    const maxY = canvasSize.height - table.table_height - forbiddenZones.bottom
+    
+    const newLeft = Math.max(minX, Math.min(actualX - dragOffset.x, maxX))
+    const newTop = Math.max(minY, Math.min(actualY - dragOffset.y, maxY))
+    
+    setTables(prev => prev.map(t => 
+      t.table_name === draggedTable 
+        ? { ...t, position_top: newTop, position_left: newLeft }
+        : t
+    ))
   }
 
   // ドラッグ終了
@@ -665,18 +679,43 @@ export default function TableLayoutEdit() {
             {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
               <div
                 key={pageNum}
+                id={`canvas-area-${pageNum}`}
                 style={{
-                  padding: '6px 12px',
-                  backgroundColor: currentViewPage === pageNum ? '#FF9800' : '#f0f0f0',
-                  color: currentViewPage === pageNum ? 'white' : 'black',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
+                  minWidth: `${canvasSize.width}px`,
+                  width: `${canvasSize.width}px`,
+                  height: `${canvasSize.height}px`,
+                  backgroundColor: '#f0f0f0',
+                  border: currentViewPage === pageNum ? '3px solid #FF9800' : '1px solid #ccc',
+                  borderRadius: '8px',
                   position: 'relative',
-                  minWidth: '80px',
-                  textAlign: 'center'
+                  cursor: draggedTable ? 'grabbing' : isPanning.current ? 'grabbing' : 'default',  // ⭐ カーソルを修正
+                  transform: `scale(${zoom}) translate(${panOffset.x}px, ${panOffset.y}px)`,  // ⭐ パンオフセットを追加
+                  transformOrigin: 'top left',
+                  transition: 'border 0.3s'
                 }}
-                onClick={() => setCurrentViewPage(pageNum)}
+                onMouseDown={(e) => {
+                  setCurrentViewPage(pageNum)
+                  if (!draggedTable) {  // ⭐ ドラッグ中でない場合のみパンを開始
+                    handleCanvasMouseDown(e)
+                  }
+                }}
+                onMouseMove={(e) => {
+                  if (isPanning.current) {  // ⭐ パン中の場合のみ
+                    handleCanvasMouseMove(e)
+                  }
+                }}
+                onMouseUp={handleCanvasMouseUp}
+                onTouchStart={(e) => {
+                  if (!draggedTable) {
+                    handleCanvasMouseDown(e)
+                  }
+                }}
+                onTouchMove={(e) => {
+                  if (isPanning.current) {
+                    handleCanvasMouseMove(e)
+                  }
+                }}
+                onTouchEnd={handleCanvasMouseUp}
               >
                 ページ {pageNum}
                 {pageNum > 1 && (
