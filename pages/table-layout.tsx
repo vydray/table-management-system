@@ -454,32 +454,32 @@ export default function TableLayoutEdit() {
         lastPinchDistance.current = currentDistance
         e.preventDefault()
       } else if (isPanning.current && e.touches.length === 1) {
-          // パン中（現在は無効化）
-          // const deltaX = e.touches[0].clientX - lastPanPoint.current.x
-          // const deltaY = e.touches[0].clientY - lastPanPoint.current.y
-          
-          // setPanOffset(prev => ({
-          //   x: prev.x + deltaX,
-          //   y: prev.y + deltaY
-          // }))
-          
-          lastPanPoint.current = { 
-            x: e.touches[0].clientX, 
-            y: e.touches[0].clientY 
+            // パン中
+            const deltaX = e.touches[0].clientX - lastPanPoint.current.x
+            const deltaY = e.touches[0].clientY - lastPanPoint.current.y
+            
+            setPanOffset(prev => ({  // ⭐ コメント解除
+              x: prev.x + deltaX,
+              y: prev.y + deltaY
+            }))
+            
+            lastPanPoint.current = { 
+              x: e.touches[0].clientX, 
+              y: e.touches[0].clientY 
+            }
           }
-        }
-    } else if (isPanning.current) {
-        // マウスでパン中（現在は無効化）
-        // const deltaX = e.clientX - lastPanPoint.current.x
-        // const deltaY = e.clientY - lastPanPoint.current.y
-        
-        // setPanOffset(prev => ({
-        //   x: prev.x + deltaX,
-        //   y: prev.y + deltaY
-        // }))
-        
-        lastPanPoint.current = { x: e.clientX, y: e.clientY }
-      }
+          } else if (isPanning.current) {
+            // マウスでパン中
+            const deltaX = e.clientX - lastPanPoint.current.x
+            const deltaY = e.clientY - lastPanPoint.current.y
+            
+            setPanOffset(prev => ({  // ⭐ コメント解除
+              x: prev.x + deltaX,
+              y: prev.y + deltaY
+            }))
+            
+            lastPanPoint.current = { x: e.clientX, y: e.clientY }
+          }
   }
 
   const handleCanvasMouseUp = () => {
