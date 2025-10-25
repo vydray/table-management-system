@@ -844,7 +844,12 @@ export default function TableLayoutEdit() {
                       {table.display_name || table.table_name}
                     </span>
                     <button
-                      onClick={() => setSelectedTable(table)}
+                      onClick={() => {
+                        // ⭐ updateTableNameを呼び出すように修正
+                        if (selectedTable) {
+                          updateTableName(selectedTable.table_name, selectedTable.display_name || '')
+                        }
+                      }}
                       style={{
                         padding: windowWidth <= 768 ? '3px 6px' : '4px 8px',
                         fontSize: windowWidth <= 768 ? '11px' : '12px',
