@@ -53,6 +53,15 @@ export default function TableLayoutEdit() {
   const [customHeight, setCustomHeight] = useState('')
   const [canvasSize, setCanvasSize] = useState({ width: 1280, height: 800 })
   
+  // ⭐ 整列機能用の状態を修正（tableSpacingを削除して、縦横別々に）
+  const [showAlignModal, setShowAlignModal] = useState(false)
+  const [alignCols, setAlignCols] = useState(4)  // 横の個数
+  const [alignRows, setAlignRows] = useState(3)  // 縦の個数  
+  const [horizontalSpacing, setHorizontalSpacing] = useState(50) // ⭐ 横の間隔（変更）
+  const [verticalSpacing, setVerticalSpacing] = useState(40) // ⭐ 縦の間隔（新規追加）
+  const [alignStartX, setAlignStartX] = useState(100) // 配置開始X座標
+  const [alignStartY, setAlignStartY] = useState(100) // 配置開始Y座標
+
   // テーブルサイズ関連の状態
   const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
   const [isUpdatingSize, setIsUpdatingSize] = useState(false)
@@ -134,7 +143,7 @@ export default function TableLayoutEdit() {
     }
   }
 
-  // テーブル位置を更新
+// テーブル位置を更新
   const updateTablePosition = async (tableName: string, top: number, left: number) => {
     const storeId = localStorage.getItem('currentStoreId') || '1'
     const { error } = await supabase
@@ -145,6 +154,82 @@ export default function TableLayoutEdit() {
 
     if (error) {
       console.error('位置更新エラー:', error)
+    }
+  }
+
+  // ⭐ 自動整列を実行（完全に置き換え）
+  const executeAlignment = async () => {
+    const visibleTables = tables.filter(t => t.is_visible)
+    if (visibleTables.length === 0) {
+      alert('配置するテーブルがありません')
+      return
+    }
+
+    // ⭐ テーブルの最大サイズを取得（重ならないようにするため）
+    let maxTableWidth = 0
+    let maxTableHeight = 0
+    
+    visibleTables.forEach(table => {
+      const width = table.table_width || 130  // デフォルト値は実際のテーブルサイズに
+      const height = table.table_height || 123
+      if (width > maxTableWidth) maxTableWidth = width
+      if (height > maxTableHeight) maxTableHeight = height
+    })
+
+    // 最大サイズに基づいて配置を計算
+    const alignedTables: TableLayout[] = []
+    let tableIndex = 0
+
+    for (let row = 0; row < alignRows; row++) {
+      for (let col = 0; col < alignCols; col++) {
+        if (tableIndex >= visibleTables.length) break
+
+        const table = visibleTables[tableIndex]
+        const tableWidth = table.table_width || 130
+        const tableHeight = table.table_height || 123
+        
+        // ⭐ 最大サイズを基準に配置（horizontalSpacing と verticalSpacing を使用）
+        const newLeft = alignStartX + col * (maxTableWidth + horizontalSpacing)
+        const newTop = alignStartY + row * (maxTableHeight + verticalSpacing)
+
+        // 配置禁止ゾーンと画面端をチェック
+        const maxX = canvasSize.width - tableWidth - forbiddenZones.right
+        const maxY = canvasSize.height - tableHeight - forbiddenZones.bottom
+
+        if (newLeft <= maxX && newTop <= maxY) {
+          alignedTables.push({
+            ...table,
+            position_left: newLeft,
+            position_top: newTop
+          })
+          tableIndex++
+        } else {
+          console.warn(`テーブル ${table.table_name} は画面外になるためスキップしました`)
+        }
+      }
+    }
+
+    // ⭐ 配置できなかったテーブルがある場合の処理
+    const skippedCount = visibleTables.length - alignedTables.length
+    
+    // 更新されたテーブル位置を保存
+    for (const table of alignedTables) {
+      await updateTablePosition(table.table_name, table.position_top, table.position_left)
+    }
+
+    // ローカルの状態を更新
+    setTables(prev => prev.map(t => {
+      const aligned = alignedTables.find(at => at.table_name === t.table_name)
+      return aligned ? aligned : t
+    }))
+
+    setShowAlignModal(false)
+    
+    // ⭐ 結果を通知
+    if (skippedCount > 0) {
+      alert(`${alignedTables.length}個のテーブルを整列しました。\n${skippedCount}個のテーブルは画面外のため配置できませんでした。`)
+    } else {
+      alert(`${alignedTables.length}個のテーブルを整列しました`)
     }
   }
 
@@ -457,22 +542,44 @@ export default function TableLayoutEdit() {
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
           minHeight: '60px'
         }}>
-          <h1 style={{ margin: 0, fontSize: windowWidth <= 768 ? '20px' : '24px' }}>🎨 テーブル配置編集</h1>
-          <button
-            onClick={() => router.push('/')}
-            style={{
-              padding: windowWidth <= 768 ? '6px 12px' : '8px 16px',
-              fontSize: windowWidth <= 768 ? '14px' : '16px',
-              backgroundColor: 'transparent',
-              color: 'white',
-              border: '2px solid white',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            ホームに戻る
-          </button>
+          <h1 style={{ margin: 0, fontSize: windowWidth <= 768 ? '20px' : '24px' }}>
+            🎨 テーブル配置編集
+          </h1>
+          {/* ⭐ divタグで2つのボタンを囲む */}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {/* ⭐ 自動整列ボタンを追加 */}
+            <button
+              onClick={() => setShowAlignModal(true)}
+              style={{
+                padding: windowWidth <= 768 ? '6px 12px' : '8px 16px',
+                fontSize: windowWidth <= 768 ? '14px' : '16px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              ⚡ 自動整列
+            </button>
+            {/* 既存のホームに戻るボタン */}
+            <button
+              onClick={() => router.push('/')}
+              style={{
+                padding: windowWidth <= 768 ? '6px 12px' : '8px 16px',
+                fontSize: windowWidth <= 768 ? '14px' : '16px',
+                backgroundColor: 'transparent',
+                color: 'white',
+                border: '2px solid white',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              ホームに戻る
+            </button>
+          </div>
         </div>
 
         {/* メインコンテンツ */}
@@ -926,50 +1033,282 @@ export default function TableLayoutEdit() {
             justifyContent: 'center',
             zIndex: 1000
           }}>
+            {/* ... 編集ダイアログの中身 ... */}
+          </div>
+        )}
+
+        {/* ⭐ 自動整列モーダルを追加 */}
+        {showAlignModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
             <div style={{
               backgroundColor: 'white',
               padding: '24px',
-              borderRadius: '8px',
-              minWidth: '300px',
+              borderRadius: '12px',
+              width: windowWidth <= 768 ? '90%' : '500px',
+              maxHeight: '80vh',
+              overflowY: 'auto',
               boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
             }}>
-              <h3 style={{ margin: '0 0 16px 0' }}>テーブル名編集</h3>
-              <input
-                type="text"
-                value={selectedTable.display_name || selectedTable.table_name}
-                onChange={(e) => setSelectedTable({ ...selectedTable, display_name: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
+              <h2 style={{ 
+                margin: '0 0 20px 0',
+                fontSize: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                ⚡ テーブル自動整列
+              </h2>
+
+              {/* グリッド設定 */}
+              <div style={{ marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>📐 グリッド設定</h3>
+                
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                    横の個数（列数）:
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={alignCols}
+                    onChange={(e) => setAlignCols(parseInt(e.target.value) || 1)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                    縦の個数（行数）:
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={alignRows}
+                    onChange={(e) => setAlignRows(parseInt(e.target.value) || 1)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                {/* ⭐ 横の間隔（tableSpacingから変更） */}
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                    横の間隔 (px):
+                  </label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="200"
+                    step="10"
+                    value={horizontalSpacing}
+                    onChange={(e) => setHorizontalSpacing(parseInt(e.target.value) || 50)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                {/* ⭐ 縦の間隔（新規追加） */}
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                    縦の間隔 (px):
+                  </label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="200"
+                    step="10"
+                    value={verticalSpacing}
+                    onChange={(e) => setVerticalSpacing(parseInt(e.target.value) || 40)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                {/* ⭐ 自動間隔計算ボタンを追加 */}
+                <button
+                  onClick={() => {
+                    // キャンバスサイズとテーブル数から最適な間隔を計算
+                    const avgTableWidth = 130  // 平均的なテーブル幅
+                    const avgTableHeight = 123 // 平均的なテーブル高さ
+                    
+                    // 使用可能な領域を計算
+                    const usableWidth = canvasSize.width - alignStartX - forbiddenZones.right - 100
+                    const usableHeight = canvasSize.height - alignStartY - forbiddenZones.bottom - 100
+                    
+                    // 最適な間隔を計算
+                    if (alignCols > 1) {
+                      const optimalHorizontal = Math.max(20, Math.floor((usableWidth - alignCols * avgTableWidth) / (alignCols - 1)))
+                      setHorizontalSpacing(Math.min(200, optimalHorizontal))
+                    }
+                    
+                    if (alignRows > 1) {
+                      const optimalVertical = Math.max(20, Math.floor((usableHeight - alignRows * avgTableHeight) / (alignRows - 1)))
+                      setVerticalSpacing(Math.min(200, optimalVertical))
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    backgroundColor: '#2196F3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    marginTop: '10px'
+                  }}
+                >
+                  🎯 最適な間隔を自動計算
+                </button>
+              </div>
+
+              {/* 配置開始位置 */}
+              <div style={{ marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>📍 配置開始位置</h3>
+                
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                      X座標:
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="500"
+                      step="10"
+                      value={alignStartX}
+                      onChange={(e) => setAlignStartX(parseInt(e.target.value) || 0)}
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                      Y座標:
+                    </label>
+                    <input
+                      type="number"
+                      min={forbiddenZones.top}
+                      max="500"
+                      step="10"
+                      value={alignStartY}
+                      onChange={(e) => setAlignStartY(parseInt(e.target.value) || forbiddenZones.top)}
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* プレビュー情報 */}
+              <div style={{
+                padding: '15px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '8px',
+                marginBottom: '20px'
+              }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 'bold' }}>
+                  📊 プレビュー情報
+                </p>
+                <p style={{ margin: '0', fontSize: '13px', color: '#666' }}>
+                  • 配置可能なテーブル数: {tables.filter(t => t.is_visible).length}個<br />
+                  • グリッドの容量: {alignCols * alignRows}個<br />
+                  • 実際に配置される数: {Math.min(tables.filter(t => t.is_visible).length, alignCols * alignRows)}個<br />
+                  {/* ⭐ 必要なサイズを追加表示 */}
+                  • 必要な横幅: 約{alignCols * 130 + (alignCols - 1) * horizontalSpacing}px<br />
+                  • 必要な縦幅: 約{alignRows * 123 + (alignRows - 1) * verticalSpacing}px
+                </p>
+              </div>
+
+              {/* ⭐ 警告メッセージを追加（必要に応じて表示） */}
+              {(alignCols * 130 + (alignCols - 1) * horizontalSpacing + alignStartX > canvasSize.width ||
+                alignRows * 123 + (alignRows - 1) * verticalSpacing + alignStartY > canvasSize.height) && (
+                <div style={{
+                  padding: '10px',
+                  backgroundColor: '#fff3cd',
+                  border: '1px solid #ffc107',
                   borderRadius: '4px',
-                  marginBottom: '16px',
-                  fontSize: '14px'
-                }}
-              />
+                  marginBottom: '20px',
+                  fontSize: '13px',
+                  color: '#856404'
+                }}>
+                  ⚠️ 現在の設定では、一部のテーブルが画面外になる可能性があります。
+                  「最適な間隔を自動計算」ボタンを押すか、間隔を調整してください。
+                </div>
+              )}
+
+              {/* ボタン */}
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button
-                  onClick={() => updateTableName(selectedTable.table_name, selectedTable.display_name || '')}
+                  onClick={executeAlignment}
                   style={{
-                    padding: '8px 16px',
+                    padding: '10px 20px',
                     backgroundColor: '#4CAF50',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
                   }}
                 >
-                  保存
+                  整列実行
                 </button>
                 <button
-                  onClick={() => setSelectedTable(null)}
+                  onClick={() => setShowAlignModal(false)}
                   style={{
-                    padding: '8px 16px',
+                    padding: '10px 20px',
                     backgroundColor: '#f44336',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
                   }}
                 >
                   キャンセル
