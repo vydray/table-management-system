@@ -679,43 +679,18 @@ export default function TableLayoutEdit() {
             {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
               <div
                 key={pageNum}
-                id={`canvas-area-${pageNum}`}
                 style={{
-                  minWidth: `${canvasSize.width}px`,
-                  width: `${canvasSize.width}px`,
-                  height: `${canvasSize.height}px`,
-                  backgroundColor: '#f0f0f0',
-                  border: currentViewPage === pageNum ? '3px solid #FF9800' : '1px solid #ccc',
-                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  backgroundColor: currentViewPage === pageNum ? '#FF9800' : '#f0f0f0',
+                  color: currentViewPage === pageNum ? 'white' : 'black',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
                   position: 'relative',
-                  cursor: draggedTable ? 'grabbing' : isPanning.current ? 'grabbing' : 'default',  // ⭐ カーソルを修正
-                  transform: `scale(${zoom}) translate(${panOffset.x}px, ${panOffset.y}px)`,  // ⭐ パンオフセットを追加
-                  transformOrigin: 'top left',
-                  transition: 'border 0.3s'
+                  minWidth: '80px',
+                  textAlign: 'center'
                 }}
-                onMouseDown={(e) => {
-                  setCurrentViewPage(pageNum)
-                  if (!draggedTable) {  // ⭐ ドラッグ中でない場合のみパンを開始
-                    handleCanvasMouseDown(e)
-                  }
-                }}
-                onMouseMove={(e) => {
-                  if (isPanning.current) {  // ⭐ パン中の場合のみ
-                    handleCanvasMouseMove(e)
-                  }
-                }}
-                onMouseUp={handleCanvasMouseUp}
-                onTouchStart={(e) => {
-                  if (!draggedTable) {
-                    handleCanvasMouseDown(e)
-                  }
-                }}
-                onTouchMove={(e) => {
-                  if (isPanning.current) {
-                    handleCanvasMouseMove(e)
-                  }
-                }}
-                onTouchEnd={handleCanvasMouseUp}
+                onClick={() => setCurrentViewPage(pageNum)}
               >
                 ページ {pageNum}
                 {pageNum > 1 && (
