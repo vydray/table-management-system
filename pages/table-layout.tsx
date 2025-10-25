@@ -1010,13 +1010,14 @@ export default function TableLayoutEdit() {
           {/* キャンバスエリア - 横並び表示 */}
           <div
             ref={canvasRef}
+            onWheel={handleWheel}  // ⭐ これを追加
             style={{
               flex: 1,
               position: 'relative',
               backgroundColor: '#e0e0e0',
-              overflowX: 'auto',  // ⭐ 横スクロール可能
+              overflowX: 'auto',
               overflowY: 'hidden',
-              display: 'flex',    // ⭐ flexコンテナに
+              display: 'flex',
               gap: '20px',
               padding: '20px',
               alignItems: 'flex-start'
