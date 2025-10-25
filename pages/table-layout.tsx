@@ -73,6 +73,7 @@ export default function TableLayoutEdit() {
   
   // ズーム関連の状態
   const [zoom, setZoom] = useState(1)
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const canvasRef = useRef<HTMLDivElement>(null)
   const isPanning = useRef(false)
   const lastPanPoint = useRef({ x: 0, y: 0 })
@@ -1029,7 +1030,7 @@ export default function TableLayoutEdit() {
               position: 'relative',
               backgroundColor: '#e0e0e0',
               overflowX: 'auto',
-              overflowY: 'hidden',
+              overflowY: 'auto',
               display: 'flex',
               gap: '20px',
               padding: '20px',
@@ -1178,74 +1179,121 @@ export default function TableLayoutEdit() {
 
         {/* 編集ダイアログ */}
               {selectedTable && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}>
                 <div style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'rgba(0,0,0,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 1000
+                  backgroundColor: 'white',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  minWidth: '300px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
                 }}>
-                  <div style={{
-                    backgroundColor: 'white',
-                    padding: '24px',
-                    borderRadius: '8px',
-                    minWidth: '300px',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
-                  }}>
-                    <h3 style={{ margin: '0 0 16px 0' }}>テーブル名編集</h3>
-                    <input
-                      type="text"
-                      value={selectedTable.display_name || selectedTable.table_name}
-                      onChange={(e) => setSelectedTable({ ...selectedTable, display_name: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '8px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        marginBottom: '16px',
-                        fontSize: '14px'
+                  <h3 style={{ margin: '0 0 16px 0' }}>テーブル編集</h3>
+                  
+                  {/* テーブル名入力 */}
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
+                    テーブル名:
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedTable.display_name || selectedTable.table_name}
+                    onChange={(e) => setSelectedTable({ ...selectedTable, display_name: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      marginBottom: '16px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  
+                  {/* ⭐ ページ選択を追加 */}
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
+                    配置ページ:
+                  </label>
+                  <select
+                    value={selectedTable.page_number || 1}
+                    onChange={(e) => setSelectedTable({ ...selectedTable, page_number: parseInt(e.target.value) })}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      marginBottom: '16px',
+                      fontSize: '14px'
+                    }}
+                  >
+                    {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
+                      <option key={pageNum} value={pageNum}>
+                        ページ {pageNum}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={async () => {
+                        if (selectedTable) {
+                          // テーブル名を更新
+                          await updateTableName(selectedTable.table_name, selectedTable.display_name || '')
+                          
+                          // ⭐ ページも更新
+                          const storeId = localStorage.getItem('currentStoreId') || '1'
+                          await supabase
+                            .from('table_status')
+                            .update({ page_number: selectedTable.page_number })
+                            .eq('table_name', selectedTable.table_name)
+                            .eq('store_id', storeId)
+                          
+                          // ローカルの状態を更新
+                          setTables(prev => prev.map(t => 
+                            t.table_name === selectedTable.table_name 
+                              ? { ...t, page_number: selectedTable.page_number }
+                              : t
+                          ))
+                          
+                          setSelectedTable(null)
+                        }
                       }}
-                    />
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button
-                        onClick={() => {
-                          if (selectedTable) {
-                            updateTableName(selectedTable.table_name, selectedTable.display_name || '')
-                          }
-                        }}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: '#4CAF50',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        保存
-                      </button>
-                      <button
-                        onClick={() => setSelectedTable(null)}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: '#f44336',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        キャンセル
-                      </button>
-                    </div>
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#4CAF50',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      保存
+                    </button>
+                    <button
+                      onClick={() => setSelectedTable(null)}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#f44336',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      キャンセル
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
         {/* ⭐ 自動整列モーダルを追加 */}
         {showAlignModal && (
