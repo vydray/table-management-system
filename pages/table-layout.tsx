@@ -54,7 +54,7 @@ export default function TableLayoutEdit() {
   const [customHeight, setCustomHeight] = useState('')
   const [canvasSize, setCanvasSize] = useState({ width: 1280, height: 800 })
   
-  // ⭐ 整列機能用の状態を修正（tableSpacingを削除して、縦横別々に）
+// ⭐ 整列機能用の状態を修正（tableSpacingを削除して、縦横別々に）
   const [showAlignModal, setShowAlignModal] = useState(false)
   const [alignCols, setAlignCols] = useState(4)  // 横の個数
   const [alignRows, setAlignRows] = useState(3)  // 縦の個数  
@@ -62,6 +62,7 @@ export default function TableLayoutEdit() {
   const [verticalSpacing, setVerticalSpacing] = useState(40) // ⭐ 縦の間隔（新規追加）
   const [alignStartX, setAlignStartX] = useState(100) // 配置開始X座標
   const [alignStartY, setAlignStartY] = useState(100) // 配置開始Y座標
+  const [alignTarget, setAlignTarget] = useState('current')  // ⭐ 追加: 'current' or 'all'
   
   // ⭐ ページ管理用の状態を追加
   const [pageCount, setPageCount] = useState(1)  // 総ページ数
@@ -164,64 +165,92 @@ export default function TableLayoutEdit() {
     }
   }
 
-  // ⭐ 自動整列を実行（完全に置き換え）
+  // ⭐ 自動整列を実行（ページごと対応版）
   const executeAlignment = async () => {
-    const visibleTables = tables.filter(t => t.is_visible)
-    if (visibleTables.length === 0) {
+    // 対象テーブルの取得
+    let targetTables: TableLayout[] = []
+    if (alignTarget === 'current') {
+      // 現在のページのテーブルのみ
+      targetTables = tables.filter(t => t.is_visible && (t.page_number || 1) === currentViewPage)
+    } else {
+      // すべてのテーブル
+      targetTables = tables.filter(t => t.is_visible)
+    }
+    
+    if (targetTables.length === 0) {
       alert('配置するテーブルがありません')
       return
     }
 
-    // ⭐ テーブルの最大サイズを取得（重ならないようにするため）
+    // ⭐ テーブルの最大サイズを取得
     let maxTableWidth = 0
     let maxTableHeight = 0
     
-    visibleTables.forEach(table => {
-      const width = table.table_width || 130  // デフォルト値は実際のテーブルサイズに
+    targetTables.forEach(table => {
+      const width = table.table_width || 130
       const height = table.table_height || 123
       if (width > maxTableWidth) maxTableWidth = width
       if (height > maxTableHeight) maxTableHeight = height
     })
 
-    // 最大サイズに基づいて配置を計算
+    // ⭐ ページごとに整列を実行
     const alignedTables: TableLayout[] = []
-    let tableIndex = 0
-
-    for (let row = 0; row < alignRows; row++) {
-      for (let col = 0; col < alignCols; col++) {
-        if (tableIndex >= visibleTables.length) break
-
-        const table = visibleTables[tableIndex]
-        const tableWidth = table.table_width || 130
-        const tableHeight = table.table_height || 123
-        
-        // ⭐ 最大サイズを基準に配置（horizontalSpacing と verticalSpacing を使用）
-        const newLeft = alignStartX + col * (maxTableWidth + horizontalSpacing)
-        const newTop = alignStartY + row * (maxTableHeight + verticalSpacing)
-
-        // 配置禁止ゾーンと画面端をチェック
-        const maxX = canvasSize.width - tableWidth - forbiddenZones.right
-        const maxY = canvasSize.height - tableHeight - forbiddenZones.bottom
-
-        if (newLeft <= maxX && newTop <= maxY) {
-          alignedTables.push({
-            ...table,
-            position_left: newLeft,
-            position_top: newTop
-          })
-          tableIndex++
-        } else {
-          console.warn(`テーブル ${table.table_name} は画面外になるためスキップしました`)
+    let remainingTables = [...targetTables]
+    let currentPage = currentViewPage  // 現在選択中のページから開始
+    
+    while (remainingTables.length > 0 && currentPage <= pageCount + 5) {  // 最大5ページ追加
+      const tablesPerPage = alignCols * alignRows
+      const tablesForThisPage = remainingTables.slice(0, tablesPerPage)
+      remainingTables = remainingTables.slice(tablesPerPage)
+      
+      let tableIndex = 0
+      for (let row = 0; row < alignRows; row++) {
+        for (let col = 0; col < alignCols; col++) {
+          if (tableIndex >= tablesForThisPage.length) break
+          
+          const table = tablesForThisPage[tableIndex]
+          const tableWidth = table.table_width || 130
+          const tableHeight = table.table_height || 123
+          
+          const newLeft = alignStartX + col * (maxTableWidth + horizontalSpacing)
+          const newTop = alignStartY + row * (maxTableHeight + verticalSpacing)
+          
+          // 配置禁止ゾーンと画面端をチェック
+          const maxX = canvasSize.width - tableWidth - forbiddenZones.right
+          const maxY = canvasSize.height - tableHeight - forbiddenZones.bottom
+          
+          if (newLeft <= maxX && newTop <= maxY) {
+            alignedTables.push({
+              ...table,
+              position_left: newLeft,
+              position_top: newTop,
+              page_number: currentPage  // ⭐ 現在のページに配置
+            })
+            tableIndex++
+          }
         }
+      }
+      
+      // ⭐ 次のページへ（必要に応じてページ追加）
+      currentPage++
+      if (currentPage > pageCount && remainingTables.length > 0) {
+        setPageCount(prev => prev + 1)
+        await new Promise(resolve => setTimeout(resolve, 100))  // ページ追加を待つ
       }
     }
 
-    // ⭐ 配置できなかったテーブルがある場合の処理
-    const skippedCount = visibleTables.length - alignedTables.length
-    
-    // 更新されたテーブル位置を保存
+    // 更新されたテーブル位置とページを保存
+    const storeId = localStorage.getItem('currentStoreId') || '1'
     for (const table of alignedTables) {
-      await updateTablePosition(table.table_name, table.position_top, table.position_left)
+      await supabase
+        .from('table_status')
+        .update({ 
+          position_top: table.position_top, 
+          position_left: table.position_left,
+          page_number: table.page_number  // ⭐ ページ番号も更新
+        })
+        .eq('table_name', table.table_name)
+        .eq('store_id', storeId)
     }
 
     // ローカルの状態を更新
@@ -232,12 +261,9 @@ export default function TableLayoutEdit() {
 
     setShowAlignModal(false)
     
-    // ⭐ 結果を通知
-    if (skippedCount > 0) {
-      alert(`${alignedTables.length}個のテーブルを整列しました。\n${skippedCount}個のテーブルは画面外のため配置できませんでした。`)
-    } else {
-      alert(`${alignedTables.length}個のテーブルを整列しました`)
-    }
+    // 結果を通知
+    const pagesUsed = new Set(alignedTables.map(t => t.page_number)).size
+    alert(`${alignedTables.length}個のテーブルを${pagesUsed}ページに整列しました`)
   }
 
     // ⭐ ページを追加
@@ -1337,10 +1363,59 @@ export default function TableLayoutEdit() {
                 ⚡ テーブル自動整列
               </h2>
 
+
+{/* ⭐ 対象ページ選択を追加 */}
+              <div style={{ marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>📄 整列対象</h3>
+                
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="alignTarget"
+                      value="current"
+                      checked={alignTarget === 'current'}
+                      onChange={(e) => setAlignTarget(e.target.value)}
+                      style={{ marginRight: '8px' }}
+                    />
+                    <span style={{ fontSize: '14px' }}>
+                      現在のページ（ページ {currentViewPage}）のみ
+                    </span>
+                  </label>
+                </div>
+                
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="alignTarget"
+                      value="all"
+                      checked={alignTarget === 'all'}
+                      onChange={(e) => setAlignTarget(e.target.value)}
+                      style={{ marginRight: '8px' }}
+                    />
+                    <span style={{ fontSize: '14px' }}>
+                      すべてのテーブル（複数ページに自動配置）
+                    </span>
+                  </label>
+                </div>
+                
+                {alignTarget === 'all' && (
+                  <div style={{
+                    padding: '8px',
+                    backgroundColor: '#e3f2fd',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    color: '#1976d2'
+                  }}>
+                    💡 テーブル数が多い場合、自動的に次のページに配置されます
+                  </div>
+                )}
+              </div>
+              
               {/* グリッド設定 */}
               <div style={{ marginBottom: '20px' }}>
                 <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>📐 グリッド設定</h3>
-                
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                     横の個数（列数）:
