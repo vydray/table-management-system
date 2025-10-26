@@ -1051,7 +1051,7 @@ export default function TableLayoutEdit() {
                     borderRadius: '8px',
                     position: 'relative',
                     cursor: draggedTable ? 'grabbing' : 'default',
-                    transform: `scale(${zoom})`,  // ⭐ パンオフセットを削除
+                    transform: `scale(${zoom}) translate(${panOffset.x}px, ${panOffset.y}px)`,  // ⭐ panOffsetを使用
                     transformOrigin: 'top left',
                     transition: 'border 0.3s'
                   }}
