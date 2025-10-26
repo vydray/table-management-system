@@ -73,7 +73,6 @@ export default function TableLayoutEdit() {
   
   // ズーム関連の状態
   const [zoom, setZoom] = useState(1)
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const canvasRef = useRef<HTMLDivElement>(null)
   const isPanning = useRef(false)
   const lastPanPoint = useRef({ x: 0, y: 0 })
@@ -443,44 +442,28 @@ export default function TableLayoutEdit() {
   }
 
   const handleCanvasMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    // タッチイベントの場合
-    if ('touches' in e) {
-      if (isPinching.current && e.touches.length === 2) {
-        // ピンチズーム中
-        const currentDistance = getPinchDistance(e.touches[0], e.touches[1])
-        const scale = currentDistance / lastPinchDistance.current
-        const newZoom = Math.max(0.5, Math.min(3, zoom * scale))
-        setZoom(newZoom)
-        lastPinchDistance.current = currentDistance
-        e.preventDefault()
-      } else if (isPanning.current && e.touches.length === 1) {
-            // パン中
-            const deltaX = e.touches[0].clientX - lastPanPoint.current.x
-            const deltaY = e.touches[0].clientY - lastPanPoint.current.y
-            
-            setPanOffset(prev => ({  // ⭐ コメント解除
-              x: prev.x + deltaX,
-              y: prev.y + deltaY
-            }))
-            
-            lastPanPoint.current = { 
-              x: e.touches[0].clientX, 
-              y: e.touches[0].clientY 
-            }
-          }
-          } else if (isPanning.current) {
-            // マウスでパン中
-            const deltaX = e.clientX - lastPanPoint.current.x
-            const deltaY = e.clientY - lastPanPoint.current.y
-            
-            setPanOffset(prev => ({  // ⭐ コメント解除
-              x: prev.x + deltaX,
-              y: prev.y + deltaY
-            }))
-            
-            lastPanPoint.current = { x: e.clientX, y: e.clientY }
-          }
+  // タッチイベントの場合
+  if ('touches' in e) {
+    if (isPinching.current && e.touches.length === 2) {
+      // ピンチズーム中
+      const currentDistance = getPinchDistance(e.touches[0], e.touches[1])
+      const scale = currentDistance / lastPinchDistance.current
+      const newZoom = Math.max(0.5, Math.min(3, zoom * scale))
+      setZoom(newZoom)
+      lastPinchDistance.current = currentDistance
+      e.preventDefault()
+    } else if (isPanning.current && e.touches.length === 1) {
+      // パン中（現在は位置追跡のみ）
+      lastPanPoint.current = { 
+        x: e.touches[0].clientX, 
+        y: e.touches[0].clientY 
+      }
+    }
+  } else if (isPanning.current) {
+    // マウスでパン中（現在は位置追跡のみ）
+    lastPanPoint.current = { x: e.clientX, y: e.clientY }
   }
+}
 
   const handleCanvasMouseUp = () => {
     isPanning.current = false
@@ -1022,21 +1005,21 @@ export default function TableLayoutEdit() {
           </div>
 
           {/* キャンバスエリア - 横並び表示 */}
-          <div
-            ref={canvasRef}
-            onWheel={handleWheel}  // ⭐ これを追加
-            style={{
-              flex: 1,
-              position: 'relative',
-              backgroundColor: '#e0e0e0',
-              overflowX: 'auto',
-              overflowY: 'auto',
-              display: 'flex',
-              gap: '20px',
-              padding: '20px',
-              alignItems: 'flex-start'
-            }}
-          >
+            <div
+              ref={canvasRef}
+              onWheel={handleWheel}
+              style={{
+                flex: 1,
+                position: 'relative',
+                backgroundColor: '#e0e0e0',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                display: 'flex',
+                gap: '10px',        // ⭐ ページ間を近くする
+                padding: '10px',    // ⭐ 外側の余白も調整
+                alignItems: 'flex-start'
+              }}
+            >
             {/* ⭐ 各ページのキャンバス */}
             {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
               <div
@@ -1051,7 +1034,7 @@ export default function TableLayoutEdit() {
                     borderRadius: '8px',
                     position: 'relative',
                     cursor: draggedTable ? 'grabbing' : 'default',
-                    transform: `scale(${zoom}) translate(${panOffset.x}px, ${panOffset.y}px)`,  // ⭐ panOffsetを使用
+                    transform: `scale(${zoom})`,  // panOffset削除
                     transformOrigin: 'top left',
                     transition: 'border 0.3s'
                   }}
