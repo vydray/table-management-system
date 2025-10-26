@@ -517,19 +517,32 @@ export default function TableLayoutEdit() {
     if (!draggedTable) return
     e.preventDefault()
     
-    // ⭐ ドラッグ中のテーブルのページ番号を取得
     const table = tables.find(t => t.table_name === draggedTable)
     if (!table) return
     
-    const pageNum = table.page_number || 1
-    const canvas = document.getElementById(`canvas-area-${pageNum}`)
-    if (!canvas) return
-    
-    const rect = canvas.getBoundingClientRect()
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     
-    // ⭐ パンオフセットを考慮しない座標計算に修正
+    // ⭐ マウスがどのページ上にあるか判定
+    let targetPageNum = table.page_number || 1
+    
+    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+      const canvas = document.getElementById(`canvas-area-${pageNum}`)
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect()
+        if (clientX >= rect.left && clientX <= rect.right &&
+            clientY >= rect.top && clientY <= rect.bottom) {
+          targetPageNum = pageNum
+          break
+        }
+      }
+    }
+    
+    // ⭐ ターゲットページのキャンバスを取得
+    const canvas = document.getElementById(`canvas-area-${targetPageNum}`)
+    if (!canvas) return
+    
+    const rect = canvas.getBoundingClientRect()
     const actualX = (clientX - rect.left) / zoom
     const actualY = (clientY - rect.top) / zoom
     
@@ -542,19 +555,28 @@ export default function TableLayoutEdit() {
     const newLeft = Math.max(minX, Math.min(actualX - dragOffset.x, maxX))
     const newTop = Math.max(minY, Math.min(actualY - dragOffset.y, maxY))
     
+    // ⭐ ページ番号も更新
     setTables(prev => prev.map(t => 
       t.table_name === draggedTable 
-        ? { ...t, position_top: newTop, position_left: newLeft }
+        ? { ...t, position_top: newTop, position_left: newLeft, page_number: targetPageNum }
         : t
     ))
   }
-
   // ドラッグ終了
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {  // ⭐ asyncを追加
     if (draggedTable) {
       const table = tables.find(t => t.table_name === draggedTable)
       if (table) {
-        updateTablePosition(table.table_name, table.position_top, table.position_left)
+        // 位置を更新
+        await updateTablePosition(table.table_name, table.position_top, table.position_left)
+        
+        // ⭐ ページ番号も更新
+        const storeId = localStorage.getItem('currentStoreId') || '1'
+        await supabase
+          .from('table_status')
+          .update({ page_number: table.page_number })
+          .eq('table_name', table.table_name)
+          .eq('store_id', storeId)
       }
       setDraggedTable(null)
     }
@@ -1015,8 +1037,8 @@ export default function TableLayoutEdit() {
                 overflowX: 'auto',
                 overflowY: 'hidden',
                 display: 'flex',
-                gap: '10px',        // ⭐ ページ間を近くする
-                padding: '10px',    // ⭐ 外側の余白も調整
+                gap: `${5 / zoom}px`,     // ⭐ ズームの逆数で計算
+                padding: `${5 / zoom}px`, // ⭐ ズームの逆数で計算
                 alignItems: 'flex-start'
               }}
             >
