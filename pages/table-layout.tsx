@@ -1037,8 +1037,8 @@ export default function TableLayoutEdit() {
                 overflowX: 'auto',
                 overflowY: 'hidden',
                 display: 'flex',
-                gap: `${5 / zoom}px`,     // ⭐ ズームの逆数で計算
-                padding: `${5 / zoom}px`, // ⭐ ズームの逆数で計算
+                gap: '10px',      // ⭐ 固定値に戻す（ズーム関係なし）
+                padding: '10px',  // ⭐ 固定値に戻す
                 alignItems: 'flex-start'
               }}
             >
@@ -1167,12 +1167,16 @@ export default function TableLayoutEdit() {
                         touchAction: 'none'
                       }}
                       onMouseDown={(e) => handleDragStart(e, table)}
-                      onTouchStart={(e) => handleDragStart(e, table)}
-                      onTouchMove={(e) => {
-                        e.preventDefault()
-                        handleDragMove(e)
-                      }}
-                      onTouchEnd={handleDragEnd}
+                        onMouseUp={handleDragEnd}  // ⭐ 追加
+                        onTouchStart={(e) => handleDragStart(e, table)}
+                        onTouchMove={(e) => {
+                          e.preventDefault()
+                          handleDragMove(e)
+                        }}
+                        onTouchEnd={(e) => {
+                          e.preventDefault()  // ⭐ 追加
+                          handleDragEnd()
+                        }}
                     >
                       {table.display_name || table.table_name}
                     </div>
@@ -1583,26 +1587,28 @@ export default function TableLayoutEdit() {
       </div>
 
       {/* グローバルイベントリスナー */}
-      <div
-        style={{ 
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          pointerEvents: draggedTable ? 'auto' : 'none',
-          zIndex: draggedTable ? 999 : -1
-        }}
-        onMouseMove={handleDragMove}
-        onMouseUp={handleDragEnd}
-        onTouchMove={(e) => {
-          if (draggedTable) {
-            e.preventDefault()
-            handleDragMove(e)
-          }
-        }}
-        onTouchEnd={handleDragEnd}
-      />
+        <div
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            pointerEvents: draggedTable ? 'auto' : 'none',
+            zIndex: draggedTable ? 999 : -1
+          }}
+          onMouseMove={handleDragMove}
+          onMouseUp={handleDragEnd}
+          onMouseLeave={handleDragEnd}  // ⭐ 追加：マウスが離れた時も終了
+          onTouchMove={(e) => {
+            if (draggedTable) {
+              e.preventDefault()
+              handleDragMove(e)
+            }
+          }}
+          onTouchEnd={handleDragEnd}
+          onTouchCancel={handleDragEnd}  // ⭐ 追加：タッチがキャンセルされた時も終了
+        />
     </>
   )
 }
