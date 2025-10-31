@@ -159,13 +159,11 @@ export default function TableLayoutEdit() {
       .update({ position_top: top, position_left: left })
       .eq('table_name', tableName)
       .eq('store_id', storeId)
-
     if (error) {
       console.error('位置更新エラー:', error)
     }
   }
-
-  // ⭐ 自動整列を実行（ページごと対応版）
+  // ⭐ 自動整列を実行（ページごと対応版・修正版）
   const executeAlignment = async () => {
     // 対象テーブルの取得
     let targetTables: TableLayout[] = []
@@ -193,13 +191,27 @@ export default function TableLayoutEdit() {
       if (height > maxTableHeight) maxTableHeight = height
     })
 
-    // ⭐ ページごとに整列を実行
+    // ⭐⭐⭐ ここから変更 ⭐⭐⭐
+    // 必要なページ数を事前に計算
+    const tablesPerPage = alignCols * alignRows
+    const neededPages = Math.ceil(targetTables.length / tablesPerPage)
+    const startPage = alignTarget === 'current' ? currentViewPage : 1
+    const endPage = startPage + neededPages - 1
+    
+    // 必要に応じてページを追加
+    const originalPageCount = pageCount
+    if (endPage > pageCount) {
+      setPageCount(endPage)
+      // ページ追加を待つ
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
+
+    // ページごとに整列を実行
     const alignedTables: TableLayout[] = []
     let remainingTables = [...targetTables]
-    let currentPage = currentViewPage  // 現在選択中のページから開始
+    let currentPage = startPage
     
-    while (remainingTables.length > 0 && currentPage <= pageCount + 5) {  // 最大5ページ追加
-      const tablesPerPage = alignCols * alignRows
+    while (remainingTables.length > 0 && currentPage <= endPage) {
       const tablesForThisPage = remainingTables.slice(0, tablesPerPage)
       remainingTables = remainingTables.slice(tablesPerPage)
       
@@ -224,19 +236,14 @@ export default function TableLayoutEdit() {
               ...table,
               position_left: newLeft,
               position_top: newTop,
-              page_number: currentPage  // ⭐ 現在のページに配置
+              page_number: currentPage
             })
             tableIndex++
           }
         }
       }
       
-      // ⭐ 次のページへ（必要に応じてページ追加）
       currentPage++
-      if (currentPage > pageCount && remainingTables.length > 0) {
-        setPageCount(prev => prev + 1)
-        await new Promise(resolve => setTimeout(resolve, 100))  // ページ追加を待つ
-      }
     }
 
     // 更新されたテーブル位置とページを保存
@@ -247,7 +254,7 @@ export default function TableLayoutEdit() {
         .update({ 
           position_top: table.position_top, 
           position_left: table.position_left,
-          page_number: table.page_number  // ⭐ ページ番号も更新
+          page_number: table.page_number
         })
         .eq('table_name', table.table_name)
         .eq('store_id', storeId)
@@ -263,9 +270,13 @@ export default function TableLayoutEdit() {
     
     // 結果を通知
     const pagesUsed = new Set(alignedTables.map(t => t.page_number)).size
-    alert(`${alignedTables.length}個のテーブルを${pagesUsed}ページに整列しました`)
+    const pagesAdded = endPage - originalPageCount
+    if (pagesAdded > 0) {
+      alert(`${alignedTables.length}個のテーブルを${pagesUsed}ページに整列しました\n（${pagesAdded}ページを新規追加）`)
+    } else {
+      alert(`${alignedTables.length}個のテーブルを${pagesUsed}ページに整列しました`)
+    }
   }
-
     // ⭐ ページを追加
   const addPage = () => {
     setPageCount(prev => prev + 1)
