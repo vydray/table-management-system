@@ -1273,7 +1273,7 @@ const finishCheckout = () => {
   </span>
 </div>
         
-{/* ⭐ ページタブを右側に縦配置 */}
+{/* ⭐ ページ切り替え矢印のみ（右側中央） */}
         {maxPageNumber > 1 && (
           <div style={{
             position: 'fixed',
@@ -1283,77 +1283,67 @@ const finishCheckout = () => {
             zIndex: 100,
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            gap: '10px',
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
             padding: '10px',
             borderRadius: '10px',
             boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
           }}>
             {/* 左矢印（前のページへ） */}
-            {currentPage > 1 && (
-              <button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                style={{
-                  width: '40px',
-                  height: '30px',
-                  backgroundColor: '#FF9800',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  fontSize: '18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                ◀
-              </button>
-            )}
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              style={{
+                width: '45px',
+                height: '45px',
+                backgroundColor: currentPage === 1 ? '#ccc' : '#FF9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                fontSize: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: currentPage === 1 ? 0.5 : 1,
+                transition: 'all 0.3s ease'
+              }}
+            >
+              ◀
+            </button>
             
-            {/* ページ番号 */}
-            {Array.from({ length: maxPageNumber }, (_, i) => i + 1).map(pageNum => (
-              <button
-                key={pageNum}
-                onClick={() => setCurrentPage(pageNum)}
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  backgroundColor: currentPage === pageNum ? '#FF9800' : '#f0f0f0',
-                  color: currentPage === pageNum ? 'white' : 'black',
-                  border: currentPage === pageNum ? '2px solid #FF9800' : '1px solid #ddd',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: currentPage === pageNum ? 'bold' : 'normal',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                {pageNum}
-              </button>
-            ))}
+            {/* 現在のページ表示（オプション） */}
+            <div style={{
+              textAlign: 'center',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: '#FF9800'
+            }}>
+              {currentPage}/{maxPageNumber}
+            </div>
             
             {/* 右矢印（次のページへ） */}
-            {currentPage < maxPageNumber && (
-              <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                style={{
-                  width: '40px',
-                  height: '30px',
-                  backgroundColor: '#FF9800',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  fontSize: '18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                ▶
-              </button>
-            )}
+            <button
+              onClick={() => setCurrentPage(Math.min(maxPageNumber, currentPage + 1))}
+              disabled={currentPage === maxPageNumber}
+              style={{
+                width: '45px',
+                height: '45px',
+                backgroundColor: currentPage === maxPageNumber ? '#ccc' : '#FF9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: currentPage === maxPageNumber ? 'not-allowed' : 'pointer',
+                fontSize: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: currentPage === maxPageNumber ? 0.5 : 1,
+                transition: 'all 0.3s ease'
+              }}
+            >
+              ▶
+            </button>
           </div>
         )}
         
