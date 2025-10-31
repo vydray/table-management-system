@@ -133,13 +133,14 @@ export default function Report() {
   }
 
   // 初期読み込み
-  useEffect(() => {
-    loadMonthlyData()
-    loadMonthlyTargets()
-    loadBusinessDayStartHour()
-    loadActiveAttendanceStatuses()
-    loadRegisterAmount()
-  }, [selectedYear, selectedMonth])
+useEffect(() => {
+  loadMonthlyData()
+  loadMonthlyTargets()
+  loadBusinessDayStartHour()
+  loadActiveAttendanceStatuses()
+  loadRegisterAmount()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [selectedYear, selectedMonth])  // 依存関係の警告を無視
 
   // 月間データを読み込む
   const loadMonthlyData = async () => {

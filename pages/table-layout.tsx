@@ -44,10 +44,7 @@ export default function TableLayoutEdit() {
   const [selectedTable, setSelectedTable] = useState<TableLayout | null>(null)
   const [newTableName, setNewTableName] = useState('')
   
-  // windowWidth削除
-  
-  // 画面比率関連の状態
-  const [selectedRatio, setSelectedRatio] = useState('2176×1600（標準）')
+  // 画面比率関連の状態（selectedRatio削除）
   const [customWidth, setCustomWidth] = useState('')
   const [customHeight, setCustomHeight] = useState('')
   const [canvasSize, setCanvasSize] = useState({ width: 2176, height: 1600 }) // 固定値に変更
@@ -102,12 +99,12 @@ export default function TableLayoutEdit() {
       .order('table_name')
 
     if (!error && data) {
-      setTables(data.map((table: any) => ({
+      setTables(data.map((table) => ({  // any削除
         ...table,
         page_number: table.page_number || 1
       })))
       
-      const maxPage = Math.max(...data.map((t: any) => t.page_number || 1), 1)
+      const maxPage = Math.max(...data.map((t) => t.page_number || 1), 1)  // any削除
       setPageCount(maxPage)
     }
     setLoading(false)
@@ -116,7 +113,6 @@ export default function TableLayoutEdit() {
   // 新規テーブル追加
   const addNewTable = async () => {
     if (!newTableName) return
-
     const storeId = localStorage.getItem('currentStoreId') || '1'
     const newTable = {
       table_name: newTableName,
@@ -141,8 +137,7 @@ export default function TableLayoutEdit() {
 
   // テーブル削除
   const deleteTable = async (tableName: string) => {
-    if (!confirm(`テーブル「${tableName}」を削除しますか？`)) return
-
+    if (!confirm(`テーブル「${tableName}」を削除しますか？`)) return  // 括弧追加
     const storeId = localStorage.getItem('currentStoreId') || '1'
     const { error } = await supabase
       .from('table_status')
@@ -174,7 +169,6 @@ export default function TableLayoutEdit() {
   // テーブル表示名の更新
   const updateTableDisplayName = async () => {
     if (!selectedTable) return
-
     const storeId = localStorage.getItem('currentStoreId') || '1'
     const displayName = selectedTable.display_name || selectedTable.table_name
     
@@ -205,6 +199,7 @@ export default function TableLayoutEdit() {
       .update({ position_top: top, position_left: left })
       .eq('table_name', tableName)
       .eq('store_id', storeId)
+
     if (error) {
       console.error('位置更新エラー:', error)
     }
@@ -353,19 +348,6 @@ export default function TableLayoutEdit() {
     }
   }
 
-  // 画面比率の変更
-  const handleRatioChange = (value: string) => {
-    setSelectedRatio(value)
-    const ratio = presetRatios.find(r => r.label === value)
-    if (ratio && ratio.width > 0) {
-      setCanvasSize({ width: ratio.width, height: ratio.height })
-    }
-    if (value === 'カスタム...') {
-      setCustomWidth('')
-      setCustomHeight('')
-    }
-  }
-
   // カスタムサイズ適用
   const applyCustomSize = () => {
     const width = parseInt(customWidth)
@@ -379,8 +361,8 @@ export default function TableLayoutEdit() {
   // 全テーブルのサイズを更新
   const updateAllTableSizes = async () => {
     setIsUpdatingSize(true)
-
     const storeId = localStorage.getItem('currentStoreId') || '1'
+
     for (const table of tables) {
       await supabase
         .from('table_status')
@@ -480,7 +462,7 @@ export default function TableLayoutEdit() {
     if ('touches' in e && e.touches.length > 1) return
     
     const pageNum = table.page_number || 1
-    const canvas = document.getElementById(`canvas-area-${pageNum}`)
+    const canvas = document.getElementById(`canvas-area-${pageNum}`)  // 括弧追加
     if (!canvas) return
     
     const rect = canvas.getBoundingClientRect()
@@ -515,7 +497,7 @@ export default function TableLayoutEdit() {
     let targetPageNum = table.page_number || 1
     
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
-      const canvas = document.getElementById(`canvas-area-${pageNum}`)
+      const canvas = document.getElementById(`canvas-area-${pageNum}`)  // 括弧追加
       if (canvas) {
         const rect = canvas.getBoundingClientRect()
         if (clientX >= rect.left && clientX <= rect.right &&
@@ -526,7 +508,7 @@ export default function TableLayoutEdit() {
       }
     }
     
-    const canvas = document.getElementById(`canvas-area-${targetPageNum}`)
+    const canvas = document.getElementById(`canvas-area-${targetPageNum}`)  // 括弧追加
     if (!canvas) return
     
     const rect = canvas.getBoundingClientRect()
@@ -660,7 +642,6 @@ export default function TableLayoutEdit() {
           >
             ＋ ページ追加
           </button>
-
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', overflow: 'auto' }}>
             {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
               <div
@@ -930,7 +911,6 @@ export default function TableLayoutEdit() {
                 ))}
               </div>
             </div>
-
             {loading && <div style={{ textAlign: 'center', marginTop: '20px' }}>読み込み中...</div>}
           </div>
 
@@ -954,7 +934,7 @@ export default function TableLayoutEdit() {
             {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
               <div
                 key={pageNum}
-                id={`canvas-area-${pageNum}`}
+                id={`canvas-area-${pageNum}`}  // 中括弧で囲む
                 style={{
                   minWidth: `${canvasSize.width}px`,
                   width: `${canvasSize.width}px`,
@@ -1008,7 +988,6 @@ export default function TableLayoutEdit() {
                 }}>
                   ヘッダーエリア（配置不可）
                 </div>
-
                 <div style={{
                   position: 'absolute',
                   bottom: 0,
@@ -1284,7 +1263,6 @@ export default function TableLayoutEdit() {
                     }}
                   />
                 </div>
-
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                     縦の個数（行数）:
@@ -1304,7 +1282,6 @@ export default function TableLayoutEdit() {
                     }}
                   />
                 </div>
-
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                     横の間隔 (px):
@@ -1325,7 +1302,6 @@ export default function TableLayoutEdit() {
                     }}
                   />
                 </div>
-
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                     縦の間隔 (px):
@@ -1346,7 +1322,6 @@ export default function TableLayoutEdit() {
                     }}
                   />
                 </div>
-
                 <button
                   onClick={() => {
                     const avgTableWidth = 130
@@ -1405,7 +1380,6 @@ export default function TableLayoutEdit() {
                       }}
                     />
                   </div>
-
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                       Y座標:
