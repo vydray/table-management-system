@@ -1273,126 +1273,91 @@ const finishCheckout = () => {
   </span>
 </div>
         
-{/* ⭐ ページタブを追加 */}
+{/* ⭐ ページタブを右側に縦配置 */}
         {maxPageNumber > 1 && (
           <div style={{
-            position: 'relative',
-            backgroundColor: 'white',
-            borderBottom: '2px solid #ddd',
+            position: 'fixed',
+            right: '10px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 100,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            padding: '10px',
+            borderRadius: '10px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
           }}>
-            {/* 左矢印 */}
+            {/* 上矢印 */}
             {currentPage > 1 && (
               <button
-                onClick={() => {
-                  const container = document.getElementById('page-tabs-container')
-                  if (container) {
-                    container.scrollBy({ left: -100, behavior: 'smooth' })
-                  }
-                  setCurrentPage(Math.max(1, currentPage - 1))
-                }}
+                onClick={() => setCurrentPage(currentPage - 1)}
                 style={{
-                  position: 'absolute',
-                  left: '5px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  zIndex: 10,
-                  width: '30px',
+                  width: '40px',
                   height: '30px',
-                  backgroundColor: 'rgba(255, 152, 0, 0.9)',
+                  backgroundColor: '#FF9800',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '50%',
+                  borderRadius: '5px',
                   cursor: 'pointer',
-                  fontSize: '16px',
+                  fontSize: '18px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  justifyContent: 'center'
                 }}
               >
-                ‹
+                ▲
               </button>
             )}
             
-            {/* タブコンテナ */}
-            <div
-              id="page-tabs-container"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '10px 45px', // 左右に矢印分の余白
-                gap: '10px',
-                overflowX: 'auto',
-                WebkitOverflowScrolling: 'touch',
-                scrollbarWidth: 'none', // Firefox
-                msOverflowStyle: 'none', // IE/Edge
-              }}
-            >
-              <style>{`
-                #page-tabs-container::-webkit-scrollbar {
-                  display: none; /* Chrome/Safari/Opera */
-                }
-              `}</style>
-              {Array.from({ length: maxPageNumber }, (_, i) => i + 1).map(pageNum => (
-                <button
-                  key={pageNum}
-                  onClick={() => setCurrentPage(pageNum)}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: currentPage === pageNum ? '#FF9800' : '#f0f0f0',
-                    color: currentPage === pageNum ? 'white' : 'black',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: currentPage === pageNum ? 'bold' : 'normal',
-                    transition: 'all 0.3s ease',
-                    minWidth: '80px',
-                    flexShrink: 0
-                  }}
-                >
-                  ページ {pageNum}
-                </button>
-              ))}
-            </div>
-            
-            {/* 右矢印 */}
-            {currentPage < maxPageNumber && (
+            {/* ページ番号 */}
+            {Array.from({ length: maxPageNumber }, (_, i) => i + 1).map(pageNum => (
               <button
-                onClick={() => {
-                  const container = document.getElementById('page-tabs-container')
-                  if (container) {
-                    container.scrollBy({ left: 100, behavior: 'smooth' })
-                  }
-                  setCurrentPage(Math.min(maxPageNumber, currentPage + 1))
-                }}
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
                 style={{
-                  position: 'absolute',
-                  right: '5px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  zIndex: 10,
-                  width: '30px',
-                  height: '30px',
-                  backgroundColor: 'rgba(255, 152, 0, 0.9)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  backgroundColor: currentPage === pageNum ? '#FF9800' : '#f0f0f0',
+                  color: currentPage === pageNum ? 'white' : 'black',
+                  border: currentPage === pageNum ? '2px solid #FF9800' : '1px solid #ddd',
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  fontSize: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  fontSize: '14px',
+                  fontWeight: currentPage === pageNum ? 'bold' : 'normal',
+                  transition: 'all 0.3s ease'
                 }}
               >
-                ›
+                {pageNum}
+              </button>
+            ))}
+            
+            {/* 下矢印 */}
+            {currentPage < maxPageNumber && (
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                style={{
+                  width: '40px',
+                  height: '30px',
+                  backgroundColor: '#FF9800',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ▼
               </button>
             )}
           </div>
         )}
         
-        {/* サイドメニューコンポーネント */}
+        {/* サイドメニューコンポーネント（元の位置のまま） */}
         <SideMenu 
           isOpen={showMenu}
           onClose={() => setShowMenu(false)}
