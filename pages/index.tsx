@@ -1289,7 +1289,7 @@ const finishCheckout = () => {
             borderRadius: '10px',
             boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
           }}>
-            {/* 上矢印 */}
+            {/* 左矢印（前のページへ） */}
             {currentPage > 1 && (
               <button
                 onClick={() => setCurrentPage(currentPage - 1)}
@@ -1307,7 +1307,7 @@ const finishCheckout = () => {
                   justifyContent: 'center'
                 }}
               >
-                ▲
+                ◀
               </button>
             )}
             
@@ -1333,7 +1333,7 @@ const finishCheckout = () => {
               </button>
             ))}
             
-            {/* 下矢印 */}
+            {/* 右矢印（次のページへ） */}
             {currentPage < maxPageNumber && (
               <button
                 onClick={() => setCurrentPage(currentPage + 1)}
@@ -1351,7 +1351,7 @@ const finishCheckout = () => {
                   justifyContent: 'center'
                 }}
               >
-                ▼
+                ▶
               </button>
             )}
           </div>
