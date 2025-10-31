@@ -16,7 +16,7 @@ interface TableLayout {
   table_height: number
   is_visible: boolean
   display_name: string | null
-  page_number: number  // ⭐ 追加
+  page_number: number
   current_guest?: string | null
   guest_name?: string | null
   cast_name?: string | null
@@ -30,12 +30,9 @@ interface ScreenRatio {
   height: number
 }
 
+// 固定値に変更
 const presetRatios: ScreenRatio[] = [
-  { label: '1280×800（PC）', width: 1280, height: 800 },
-  { label: '1024×768（タブレット）', width: 1024, height: 768 },
-  { label: '768×1024（タブレット縦）', width: 768, height: 1024 },
-  { label: '2000×1200（大画面）', width: 2000, height: 1200 },
-  { label: 'カスタム...', width: 0, height: 0 }
+  { label: '2176×1600（標準）', width: 2176, height: 1600 }
 ]
 
 export default function TableLayoutEdit() {
@@ -46,112 +43,161 @@ export default function TableLayoutEdit() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [selectedTable, setSelectedTable] = useState<TableLayout | null>(null)
   const [newTableName, setNewTableName] = useState('')
-  const [windowWidth, setWindowWidth] = useState(1280)
+  
+  // windowWidth削除
   
   // 画面比率関連の状態
-  const [selectedRatio, setSelectedRatio] = useState('1280×800（PC）')
+  const [selectedRatio, setSelectedRatio] = useState('2176×1600（標準）')
   const [customWidth, setCustomWidth] = useState('')
   const [customHeight, setCustomHeight] = useState('')
-  const [canvasSize, setCanvasSize] = useState({ width: 1280, height: 800 })
+  const [canvasSize, setCanvasSize] = useState({ width: 2176, height: 1600 }) // 固定値に変更
   
-// ⭐ 整列機能用の状態を修正（tableSpacingを削除して、縦横別々に）
+  // 整列機能用の状態
   const [showAlignModal, setShowAlignModal] = useState(false)
-  const [alignCols, setAlignCols] = useState(4)  // 横の個数
-  const [alignRows, setAlignRows] = useState(3)  // 縦の個数  
-  const [horizontalSpacing, setHorizontalSpacing] = useState(50) // ⭐ 横の間隔（変更）
-  const [verticalSpacing, setVerticalSpacing] = useState(40) // ⭐ 縦の間隔（新規追加）
-  const [alignStartX, setAlignStartX] = useState(100) // 配置開始X座標
-  const [alignStartY, setAlignStartY] = useState(100) // 配置開始Y座標
-  const [alignTarget, setAlignTarget] = useState('current')  // ⭐ 追加: 'current' or 'all'
+  const [alignCols, setAlignCols] = useState(3)
+  const [alignRows, setAlignRows] = useState(3)
+  const [horizontalSpacing, setHorizontalSpacing] = useState(50)
+  const [verticalSpacing, setVerticalSpacing] = useState(40)
+  const [alignStartX, setAlignStartX] = useState(100)
+  const [alignStartY, setAlignStartY] = useState(100)
+  const [alignTarget, setAlignTarget] = useState<'all' | 'current'>('all')
   
-  // ⭐ ページ管理用の状態を追加
-  const [pageCount, setPageCount] = useState(1)  // 総ページ数
-  const [currentViewPage, setCurrentViewPage] = useState(1)  // 現在フォーカス中のページ
-  
-  // テーブルサイズ関連の状態
+  // テーブルサイズ設定
   const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
   const [isUpdatingSize, setIsUpdatingSize] = useState(false)
   
-  // ズーム関連の状態
+  // ズーム関連
   const [zoom, setZoom] = useState(1)
   const canvasRef = useRef<HTMLDivElement>(null)
   const isPanning = useRef(false)
-  const lastPanPoint = useRef({ x: 0, y: 0 })
-  
-  // ピンチズーム用の状態
   const isPinching = useRef(false)
   const lastPinchDistance = useRef(0)
+  const lastPanPoint = useRef({ x: 0, y: 0 })
   
-  // 配置禁止ゾーンの定義
+  // ページ管理
+  const [pageCount, setPageCount] = useState(1)
+  const [currentViewPage, setCurrentViewPage] = useState(1)
+  
+  // 配置禁止ゾーン
   const forbiddenZones = {
-    top: 80,     // ヘッダーの高さ + 余白
-    bottom: 60,  // Androidナビゲーションバーの高さ
+    top: 80,
+    bottom: 60,
     left: 0,
     right: 0
   }
 
-  // ウィンドウサイズの監視
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth)
-    }
-    
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    
-    return () => {
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [])
-
-  // 初期化処理
+  // テーブルデータの読み込み
   useEffect(() => {
     loadTables()
   }, [])
 
-
-
-  // テーブル情報を読み込む
   const loadTables = async () => {
     setLoading(true)
-    try {
-      const storeId = localStorage.getItem('currentStoreId') || '1'
-      const { data, error } = await supabase
-        .from('table_status')
-        .select('*')
-        .eq('store_id', storeId)
-        .order('page_number, table_name')  // ⭐ ページ番号でソート
+    const storeId = localStorage.getItem('currentStoreId') || '1'
+    
+    const { data, error } = await supabase
+      .from('table_status')
+      .select('*')
+      .eq('store_id', storeId)
+      .order('table_name')
 
-      if (!error && data) {
-        setTables(data)
-        // ⭐ 最大ページ番号を取得
-        const maxPage = Math.max(...data.map(t => t.page_number || 1), 1)
-        setPageCount(maxPage)
-      }
-    } catch (error) {
-      console.error('Error loading tables:', error)
+    if (!error && data) {
+      setTables(data.map((table: any) => ({
+        ...table,
+        page_number: table.page_number || 1
+      })))
+      
+      const maxPage = Math.max(...data.map((t: any) => t.page_number || 1), 1)
+      setPageCount(maxPage)
     }
     setLoading(false)
   }
 
-  // テーブル名を更新
-  const updateTableName = async (tableName: string, displayName: string) => {
+  // 新規テーブル追加
+  const addNewTable = async () => {
+    if (!newTableName) return
+
+    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const newTable = {
+      table_name: newTableName,
+      position_top: 100,
+      position_left: 100,
+      table_width: tableSize.width,
+      table_height: tableSize.height,
+      is_visible: true,
+      store_id: storeId,
+      page_number: currentViewPage
+    }
+
+    const { error } = await supabase
+      .from('table_status')
+      .insert(newTable)
+
+    if (!error) {
+      await loadTables()
+      setNewTableName('')
+    }
+  }
+
+  // テーブル削除
+  const deleteTable = async (tableName: string) => {
+    if (!confirm(`テーブル「${tableName}」を削除しますか？`)) return
+
     const storeId = localStorage.getItem('currentStoreId') || '1'
     const { error } = await supabase
       .from('table_status')
-      .update({ display_name: displayName })
+      .delete()
       .eq('table_name', tableName)
       .eq('store_id', storeId)
 
     if (!error) {
-      setTables(prev => prev.map(t => 
-        t.table_name === tableName ? { ...t, display_name: displayName } : t
+      await loadTables()
+    }
+  }
+
+  // テーブル表示/非表示切り替え
+  const toggleTableVisibility = async (tableName: string, isVisible: boolean) => {
+    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const { error } = await supabase
+      .from('table_status')
+      .update({ is_visible: isVisible })
+      .eq('table_name', tableName)
+      .eq('store_id', storeId)
+
+    if (!error) {
+      setTables(prev => prev.map(t =>
+        t.table_name === tableName ? { ...t, is_visible: isVisible } : t
+      ))
+    }
+  }
+
+  // テーブル表示名の更新
+  const updateTableDisplayName = async () => {
+    if (!selectedTable) return
+
+    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const displayName = selectedTable.display_name || selectedTable.table_name
+    
+    const { error } = await supabase
+      .from('table_status')
+      .update({ 
+        display_name: displayName,
+        page_number: selectedTable.page_number 
+      })
+      .eq('table_name', selectedTable.table_name)
+      .eq('store_id', storeId)
+
+    if (!error) {
+      setTables(prev => prev.map(t =>
+        t.table_name === selectedTable.table_name 
+          ? { ...t, display_name: displayName, page_number: selectedTable.page_number } 
+          : t
       ))
       setSelectedTable(null)
     }
   }
 
-// テーブル位置を更新
+  // テーブル位置を更新
   const updateTablePosition = async (tableName: string, top: number, left: number) => {
     const storeId = localStorage.getItem('currentStoreId') || '1'
     const { error } = await supabase
@@ -163,15 +209,13 @@ export default function TableLayoutEdit() {
       console.error('位置更新エラー:', error)
     }
   }
-  // ⭐ 自動整列を実行（ページごと対応版・修正版）
+
+  // 自動整列を実行
   const executeAlignment = async () => {
-    // 対象テーブルの取得
     let targetTables: TableLayout[] = []
     if (alignTarget === 'current') {
-      // 現在のページのテーブルのみ
       targetTables = tables.filter(t => t.is_visible && (t.page_number || 1) === currentViewPage)
     } else {
-      // すべてのテーブル
       targetTables = tables.filter(t => t.is_visible)
     }
     
@@ -180,7 +224,6 @@ export default function TableLayoutEdit() {
       return
     }
 
-    // ⭐ テーブルの最大サイズを取得
     let maxTableWidth = 0
     let maxTableHeight = 0
     
@@ -191,22 +234,16 @@ export default function TableLayoutEdit() {
       if (height > maxTableHeight) maxTableHeight = height
     })
 
-    // ⭐⭐⭐ ここから変更 ⭐⭐⭐
-    // 必要なページ数を事前に計算
     const tablesPerPage = alignCols * alignRows
     const neededPages = Math.ceil(targetTables.length / tablesPerPage)
     const startPage = alignTarget === 'current' ? currentViewPage : 1
     const endPage = startPage + neededPages - 1
     
-    // 必要に応じてページを追加
-    const originalPageCount = pageCount
     if (endPage > pageCount) {
       setPageCount(endPage)
-      // ページ追加を待つ
       await new Promise(resolve => setTimeout(resolve, 200))
     }
 
-    // ページごとに整列を実行
     const alignedTables: TableLayout[] = []
     let remainingTables = [...targetTables]
     let currentPage = startPage
@@ -227,7 +264,6 @@ export default function TableLayoutEdit() {
           const newLeft = alignStartX + col * (maxTableWidth + horizontalSpacing)
           const newTop = alignStartY + row * (maxTableHeight + verticalSpacing)
           
-          // 配置禁止ゾーンと画面端をチェック
           const maxX = canvasSize.width - tableWidth - forbiddenZones.right
           const maxY = canvasSize.height - tableHeight - forbiddenZones.bottom
           
@@ -246,7 +282,6 @@ export default function TableLayoutEdit() {
       currentPage++
     }
 
-    // 更新されたテーブル位置とページを保存
     const storeId = localStorage.getItem('currentStoreId') || '1'
     for (const table of alignedTables) {
       await supabase
@@ -260,137 +295,72 @@ export default function TableLayoutEdit() {
         .eq('store_id', storeId)
     }
 
-    // ローカルの状態を更新
     setTables(prev => prev.map(t => {
       const aligned = alignedTables.find(at => at.table_name === t.table_name)
       return aligned ? aligned : t
     }))
 
-    setShowAlignModal(false)
+    const updatedCount = alignedTables.length
+    const totalPages = endPage - startPage + 1
+    const newPagesCreated = endPage > pageCount ? endPage - pageCount : 0
     
-    // 結果を通知
-    const pagesUsed = new Set(alignedTables.map(t => t.page_number)).size
-    const pagesAdded = endPage - originalPageCount
-    if (pagesAdded > 0) {
-      alert(`${alignedTables.length}個のテーブルを${pagesUsed}ページに整列しました\n（${pagesAdded}ページを新規追加）`)
-    } else {
-      alert(`${alignedTables.length}個のテーブルを${pagesUsed}ページに整列しました`)
+    let message = `${updatedCount}個のテーブルを配置しました`
+    if (newPagesCreated > 0) {
+      message += `\n${newPagesCreated}ページを新規追加しました`
     }
-  }
-    // ⭐ ページを追加
-  const addPage = () => {
-    setPageCount(prev => prev + 1)
-    // 新しいページにフォーカス
-    setTimeout(() => {
-      setCurrentViewPage(pageCount + 1)
-    }, 100)
+    if (totalPages > 1) {
+      message += `\nページ${startPage}〜${endPage}に配置されています`
+    }
+    
+    alert(message)
+    setShowAlignModal(false)
   }
 
-  // ⭐ ページを削除
-  const deletePage = async (pageNumber: number) => {
-    if (pageNumber === 1) {
+  // ページ追加
+  const addPage = () => {
+    setPageCount(prev => prev + 1)
+  }
+
+  // ページ削除
+  const deletePage = async (pageNum: number) => {
+    if (pageNum === 1) {
       alert('ページ1は削除できません')
       return
     }
-
-    // そのページにテーブルがあるか確認
-    const tablesOnPage = tables.filter(t => t.page_number === pageNumber)
+    
+    const tablesOnPage = tables.filter(t => t.page_number === pageNum)
     if (tablesOnPage.length > 0) {
-      if (!confirm(`ページ${pageNumber}には${tablesOnPage.length}個のテーブルがあります。削除しますか？`)) {
+      if (!confirm(`ページ${pageNum}には${tablesOnPage.length}個のテーブルがあります。ページを削除しますか？`)) {
         return
       }
-      
-      // テーブルを削除
-      const storeId = localStorage.getItem('currentStoreId') || '1'
-      for (const table of tablesOnPage) {
-        await supabase
-          .from('table_status')
-          .delete()
-          .eq('table_name', table.table_name)
-          .eq('store_id', storeId)
-      }
     }
-
+    
     setPageCount(prev => Math.max(1, prev - 1))
-    if (currentViewPage >= pageNumber) {
-      setCurrentViewPage(Math.max(1, currentViewPage - 1))
+    
+    const storeId = localStorage.getItem('currentStoreId') || '1'
+    for (const table of tablesOnPage) {
+      await supabase
+        .from('table_status')
+        .update({ page_number: 1 })
+        .eq('table_name', table.table_name)
+        .eq('store_id', storeId)
     }
     
-    loadTables()
-  }
-
-  // テーブルの表示/非表示を切り替え
-  const toggleTableVisibility = async (tableName: string, isVisible: boolean) => {
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    const { error } = await supabase
-      .from('table_status')
-      .update({ is_visible: isVisible })
-      .eq('table_name', tableName)
-      .eq('store_id', storeId)
-
-    if (!error) {
-      setTables(prev => prev.map(t => 
-        t.table_name === tableName ? { ...t, is_visible: isVisible } : t
-      ))
-    }
-  }
-
-  // 新規テーブル追加
-  const addNewTable = async () => {
-    if (!newTableName.trim()) return
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    const newTable: TableLayout = {
-      table_name: newTableName.trim(),
-      display_name: newTableName.trim(),
-      position_top: forbiddenZones.top + 50,
-      position_left: forbiddenZones.left + 50,
-      table_width: tableSize.width,
-      table_height: tableSize.height,
-      is_visible: true,
-      page_number: currentViewPage,  // ⭐ 現在のページに追加
-      current_guest: null,
-    }
-
-    const { error } = await supabase
-      .from('table_status')
-      .insert([{
-        ...newTable,
-        store_id: storeId,
-        guest_name: null,
-        cast_name: null,
-        entry_time: null,
-        visit_type: null
-      }])
-
-    if (!error) {
-      setTables(prev => [...prev, newTable])
-      setNewTableName('')
-    }
-  }
-
-  // テーブル削除
-  const deleteTable = async (tableName: string) => {
-    if (!confirm(`テーブル「${tableName}」を削除しますか？`)) return
-
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    const { error } = await supabase
-      .from('table_status')
-      .delete()
-      .eq('table_name', tableName)
-      .eq('store_id', storeId)
-
-    if (!error) {
-      setTables(prev => prev.filter(t => t.table_name !== tableName))
-    }
-  }
-
-  // 画面比率の処理
-  const handleRatioChange = (ratio: string) => {
-    setSelectedRatio(ratio)
-    const preset = presetRatios.find(r => r.label === ratio)
+    await loadTables()
     
-    if (preset && preset.width > 0) {
-      setCanvasSize({ width: preset.width, height: preset.height })
+    if (currentViewPage > pageCount - 1) {
+      setCurrentViewPage(pageCount - 1)
+    }
+  }
+
+  // 画面比率の変更
+  const handleRatioChange = (value: string) => {
+    setSelectedRatio(value)
+    const ratio = presetRatios.find(r => r.label === value)
+    if (ratio && ratio.width > 0) {
+      setCanvasSize({ width: ratio.width, height: ratio.height })
+    }
+    if (value === 'カスタム...') {
       setCustomWidth('')
       setCustomHeight('')
     }
@@ -411,7 +381,6 @@ export default function TableLayoutEdit() {
     setIsUpdatingSize(true)
 
     const storeId = localStorage.getItem('currentStoreId') || '1'
-    // 各テーブルのサイズを更新
     for (const table of tables) {
       await supabase
         .from('table_status')
@@ -423,7 +392,6 @@ export default function TableLayoutEdit() {
         .eq('store_id', storeId)
     }
 
-    // ローカルステートも更新
     setTables(prev => prev.map(t => ({
       ...t,
       table_width: tableSize.width,
@@ -440,27 +408,20 @@ export default function TableLayoutEdit() {
     return Math.sqrt(dx * dx + dy * dy)
   }
 
-  // キャンバスのタッチ/マウス操作（ピンチズーム対応）
+  // キャンバスのタッチ/マウス操作
   const handleCanvasMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-    // ⭐ テーブルをドラッグ中の場合は何もしない
     if (draggedTable) return
     
     const target = e.target as HTMLElement
-    
-    // ⭐ テーブル要素の場合はパンを開始しない
     if (target.style.cursor === 'move') return
     
-    // ⭐ キャンバスエリアまたはページエリアをクリックした場合のみパン開始
     if (target.id && (target.id.startsWith('canvas-area') || target === canvasRef.current)) {
-      // タッチイベントの場合
       if ('touches' in e) {
         if (e.touches.length === 2) {
-          // ピンチズーム開始
           isPinching.current = true
           lastPinchDistance.current = getPinchDistance(e.touches[0], e.touches[1])
           e.preventDefault()
         } else if (e.touches.length === 1) {
-          // パン開始
           isPanning.current = true
           lastPanPoint.current = { 
             x: e.touches[0].clientX, 
@@ -468,8 +429,7 @@ export default function TableLayoutEdit() {
           }
         }
       } else {
-        // マウスイベントの場合（中ボタンまたはスペースキー押下中）
-        if (e.button === 1 || e.ctrlKey || e.metaKey) {  // ⭐ 条件を変更
+        if (e.button === 1 || e.ctrlKey || e.metaKey) {
           isPanning.current = true
           lastPanPoint.current = { x: e.clientX, y: e.clientY }
           e.preventDefault()
@@ -479,28 +439,24 @@ export default function TableLayoutEdit() {
   }
 
   const handleCanvasMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-  // タッチイベントの場合
-  if ('touches' in e) {
-    if (isPinching.current && e.touches.length === 2) {
-      // ピンチズーム中
-      const currentDistance = getPinchDistance(e.touches[0], e.touches[1])
-      const scale = currentDistance / lastPinchDistance.current
-      const newZoom = Math.max(0.5, Math.min(3, zoom * scale))
-      setZoom(newZoom)
-      lastPinchDistance.current = currentDistance
-      e.preventDefault()
-    } else if (isPanning.current && e.touches.length === 1) {
-      // パン中（現在は位置追跡のみ）
-      lastPanPoint.current = { 
-        x: e.touches[0].clientX, 
-        y: e.touches[0].clientY 
+    if ('touches' in e) {
+      if (isPinching.current && e.touches.length === 2) {
+        const currentDistance = getPinchDistance(e.touches[0], e.touches[1])
+        const scale = currentDistance / lastPinchDistance.current
+        const newZoom = Math.max(0.5, Math.min(3, zoom * scale))
+        setZoom(newZoom)
+        lastPinchDistance.current = currentDistance
+        e.preventDefault()
+      } else if (isPanning.current && e.touches.length === 1) {
+        lastPanPoint.current = { 
+          x: e.touches[0].clientX, 
+          y: e.touches[0].clientY 
+        }
       }
+    } else if (isPanning.current) {
+      lastPanPoint.current = { x: e.clientX, y: e.clientY }
     }
-  } else if (isPanning.current) {
-    // マウスでパン中（現在は位置追跡のみ）
-    lastPanPoint.current = { x: e.clientX, y: e.clientY }
   }
-}
 
   const handleCanvasMouseUp = () => {
     isPanning.current = false
@@ -515,16 +471,14 @@ export default function TableLayoutEdit() {
     setZoom(newZoom)
   }
 
-  // ドラッグ開始（タッチ対応改善）
+  // ドラッグ開始
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent, table: TableLayout) => {
     e.stopPropagation()
     
-    // ⭐ パン中の場合はドラッグを開始しない
     if (isPanning.current) return
     
     if ('touches' in e && e.touches.length > 1) return
     
-    // ページ番号に応じたキャンバスを取得
     const pageNum = table.page_number || 1
     const canvas = document.getElementById(`canvas-area-${pageNum}`)
     if (!canvas) return
@@ -533,7 +487,6 @@ export default function TableLayoutEdit() {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     
-    // ⭐ パンオフセットを考慮しない座標計算に修正
     const actualX = (clientX - rect.left) / zoom
     const actualY = (clientY - rect.top) / zoom
     
@@ -543,7 +496,6 @@ export default function TableLayoutEdit() {
       y: actualY - table.position_top
     })
     
-    // タッチイベントの場合、デフォルト動作を防ぐ
     if ('touches' in e) {
       e.preventDefault()
     }
@@ -560,7 +512,6 @@ export default function TableLayoutEdit() {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     
-    // ⭐ マウスがどのページ上にあるか判定
     let targetPageNum = table.page_number || 1
     
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
@@ -575,7 +526,6 @@ export default function TableLayoutEdit() {
       }
     }
     
-    // ⭐ ターゲットページのキャンバスを取得
     const canvas = document.getElementById(`canvas-area-${targetPageNum}`)
     if (!canvas) return
     
@@ -583,7 +533,6 @@ export default function TableLayoutEdit() {
     const actualX = (clientX - rect.left) / zoom
     const actualY = (clientY - rect.top) / zoom
     
-    // 配置禁止ゾーンを考慮した制限
     const minX = forbiddenZones.left
     const maxX = canvasSize.width - table.table_width - forbiddenZones.right
     const minY = forbiddenZones.top
@@ -592,22 +541,20 @@ export default function TableLayoutEdit() {
     const newLeft = Math.max(minX, Math.min(actualX - dragOffset.x, maxX))
     const newTop = Math.max(minY, Math.min(actualY - dragOffset.y, maxY))
     
-    // ⭐ ページ番号も更新
     setTables(prev => prev.map(t => 
       t.table_name === draggedTable 
         ? { ...t, position_top: newTop, position_left: newLeft, page_number: targetPageNum }
         : t
     ))
   }
+
   // ドラッグ終了
-  const handleDragEnd = async () => {  // ⭐ asyncを追加
+  const handleDragEnd = async () => {
     if (draggedTable) {
       const table = tables.find(t => t.table_name === draggedTable)
       if (table) {
-        // 位置を更新
         await updateTablePosition(table.table_name, table.position_top, table.position_left)
         
-        // ⭐ ページ番号も更新
         const storeId = localStorage.getItem('currentStoreId') || '1'
         await supabase
           .from('table_status')
@@ -650,17 +597,15 @@ export default function TableLayoutEdit() {
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
           minHeight: '60px'
         }}>
-          <h1 style={{ margin: 0, fontSize: windowWidth <= 768 ? '20px' : '24px' }}>
+          <h1 style={{ margin: 0, fontSize: '24px' }}>
             🎨 テーブル配置編集
           </h1>
-          {/* ⭐ divタグで2つのボタンを囲む */}
           <div style={{ display: 'flex', gap: '10px' }}>
-            {/* ⭐ 自動整列ボタンを追加 */}
             <button
               onClick={() => setShowAlignModal(true)}
               style={{
-                padding: windowWidth <= 768 ? '6px 12px' : '8px 16px',
-                fontSize: windowWidth <= 768 ? '14px' : '16px',
+                padding: '8px 16px',
+                fontSize: '16px',
                 backgroundColor: '#4CAF50',
                 color: 'white',
                 border: 'none',
@@ -671,12 +616,11 @@ export default function TableLayoutEdit() {
             >
               ⚡ 自動整列
             </button>
-            {/* 既存のホームに戻るボタン */}
             <button
               onClick={() => router.push('/')}
               style={{
-                padding: windowWidth <= 768 ? '6px 12px' : '8px 16px',
-                fontSize: windowWidth <= 768 ? '14px' : '16px',
+                padding: '8px 16px',
+                fontSize: '16px',
                 backgroundColor: 'transparent',
                 color: 'white',
                 border: '2px solid white',
@@ -690,7 +634,7 @@ export default function TableLayoutEdit() {
           </div>
         </div>
         
-        {/* ⭐ ページコントロール */}
+        {/* ページコントロール */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -769,24 +713,23 @@ export default function TableLayoutEdit() {
           display: 'flex',
           flex: 1,
           overflow: 'hidden',
-          flexDirection: windowWidth <= 768 ? 'column' : 'row'
+          flexDirection: 'row'
         }}>
           {/* サイドバー */}
           <div style={{
-            width: windowWidth <= 768 ? '100%' : '320px',
-            height: windowWidth <= 768 ? 'auto' : 'auto',
-            maxHeight: windowWidth <= 768 ? '40vh' : '100%',
+            width: '320px',
+            height: 'auto',
+            maxHeight: '100%',
             backgroundColor: 'white',
-            borderRight: windowWidth <= 768 ? 'none' : '1px solid #ddd',
-            borderBottom: windowWidth <= 768 ? '1px solid #ddd' : 'none',
-            padding: windowWidth <= 768 ? '15px' : '20px',
+            borderRight: '1px solid #ddd',
+            padding: '20px',
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch'
           }}>
             {/* 新規テーブル追加 */}
             <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>新規テーブル追加</h3>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: windowWidth <= 768 ? 'wrap' : 'nowrap' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>新規テーブル追加</h3>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap' }}>
                 <input
                   type="text"
                   placeholder="テーブル名"
@@ -794,7 +737,7 @@ export default function TableLayoutEdit() {
                   onChange={(e) => setNewTableName(e.target.value)}
                   style={{
                     flex: 1,
-                    minWidth: windowWidth <= 768 ? '150px' : 'auto',
+                    minWidth: 'auto',
                     padding: '8px',
                     border: '1px solid #ddd',
                     borderRadius: '4px',
@@ -819,81 +762,9 @@ export default function TableLayoutEdit() {
               </div>
             </div>
 
-            {/* 画面比率選択 */}
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>画面比率</h3>
-              <select
-                value={selectedRatio}
-                onChange={(e) => handleRatioChange(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  marginBottom: '10px'
-                }}
-              >
-                {presetRatios.map(ratio => (
-                  <option key={ratio.label} value={ratio.label}>
-                    {ratio.label}
-                  </option>
-                ))}
-              </select>
-              
-              {selectedRatio === 'カスタム...' && (
-                <div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <input
-                      type="number"
-                      placeholder="幅"
-                      value={customWidth}
-                      onChange={(e) => setCustomWidth(e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: '6px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '13px'
-                      }}
-                    />
-                    <span style={{ alignSelf: 'center' }}>×</span>
-                    <input
-                      type="number"
-                      placeholder="高さ"
-                      value={customHeight}
-                      onChange={(e) => setCustomHeight(e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: '6px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '13px'
-                      }}
-                    />
-                  </div>
-                  <button
-                    onClick={applyCustomSize}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      backgroundColor: '#2196F3',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
-                  >
-                    適用
-                  </button>
-                </div>
-              )}
-            </div>
-
             {/* テーブルサイズ設定 */}
             <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>
                 テーブルサイズ（全体）
               </h3>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
@@ -948,7 +819,7 @@ export default function TableLayoutEdit() {
 
             {/* ズームコントロール */}
             <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>
                 ズーム: {Math.round(zoom * 100)}%
               </h3>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -1002,18 +873,18 @@ export default function TableLayoutEdit() {
 
             {/* テーブル一覧 */}
             <div>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: windowWidth <= 768 ? '16px' : '18px' }}>テーブル一覧</h3>
-              <div style={{ maxHeight: windowWidth <= 768 ? '200px' : '400px', overflowY: 'auto' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>テーブル一覧</h3>
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 {tables.map(table => (
                   <div
                     key={table.table_name}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: windowWidth <= 768 ? '6px' : '8px',
+                      padding: '8px',
                       borderBottom: '1px solid #eee',
                       gap: '8px',
-                      fontSize: windowWidth <= 768 ? '14px' : '16px'
+                      fontSize: '16px'
                     }}
                   >
                     <input
@@ -1026,25 +897,25 @@ export default function TableLayoutEdit() {
                       {table.display_name || table.table_name}
                     </span>
                     <button
-                        onClick={() => setSelectedTable(table)}  // ← これに変更
-                        style={{
-                          padding: windowWidth <= 768 ? '3px 6px' : '4px 8px',
-                          fontSize: windowWidth <= 768 ? '11px' : '12px',
-                          backgroundColor: '#2196F3',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        編集
-                      </button>
+                      onClick={() => setSelectedTable(table)}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '12px',
+                        backgroundColor: '#2196F3',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      編集
+                    </button>
                     <button
                       onClick={() => deleteTable(table.table_name)}
                       style={{
-                        padding: windowWidth <= 768 ? '3px 6px' : '4px 8px',
-                        fontSize: windowWidth <= 768 ? '11px' : '12px',
+                        padding: '4px 8px',
+                        fontSize: '12px',
                         backgroundColor: '#f44336',
                         color: 'white',
                         border: 'none',
@@ -1064,54 +935,53 @@ export default function TableLayoutEdit() {
           </div>
 
           {/* キャンバスエリア - 横並び表示 */}
-            <div
-              ref={canvasRef}
-              onWheel={handleWheel}
-              style={{
-                flex: 1,
-                position: 'relative',
-                backgroundColor: '#e0e0e0',
-                overflowX: 'auto',
-                overflowY: 'hidden',
-                display: 'flex',
-                gap: '10px',      // ⭐ 固定値に戻す（ズーム関係なし）
-                padding: '10px',  // ⭐ 固定値に戻す
-                alignItems: 'flex-start'
-              }}
-            >
-            {/* ⭐ 各ページのキャンバス */}
+          <div
+            ref={canvasRef}
+            onWheel={handleWheel}
+            style={{
+              flex: 1,
+              position: 'relative',
+              backgroundColor: '#e0e0e0',
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              display: 'flex',
+              gap: '10px',
+              padding: '10px',
+              alignItems: 'flex-start'
+            }}
+          >
+            {/* 各ページのキャンバス */}
             {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
               <div
                 key={pageNum}
                 id={`canvas-area-${pageNum}`}
                 style={{
-                    minWidth: `${canvasSize.width}px`,
-                    width: `${canvasSize.width}px`,
-                    height: `${canvasSize.height}px`,
-                    backgroundColor: '#f0f0f0',
-                    border: currentViewPage === pageNum ? '3px solid #FF9800' : '1px solid #ccc',
-                    borderRadius: '8px',
-                    position: 'relative',
-                    cursor: draggedTable ? 'grabbing' : 'default',
-                    transform: `scale(${zoom})`,  // panOffset削除
-                    transformOrigin: 'top left',
-                    transition: 'border 0.3s'
-                  }}
-                onMouseDown={(e) => {
-                  setCurrentViewPage(pageNum)  // クリックしたページをアクティブに
-                  handleCanvasMouseDown(e)
+                  minWidth: `${canvasSize.width}px`,
+                  width: `${canvasSize.width}px`,
+                  height: `${canvasSize.height}px`,
+                  backgroundColor: '#f0f0f0',
+                  border: currentViewPage === pageNum ? '3px solid #FF9800' : '1px solid #ccc',
+                  borderRadius: '8px',
+                  position: 'relative',
+                  cursor: draggedTable ? 'grabbing' : 'default',
+                  transform: `scale(${zoom})`,
+                  transformOrigin: 'top left'
                 }}
+                onMouseDown={handleCanvasMouseDown}
                 onMouseMove={handleCanvasMouseMove}
                 onMouseUp={handleCanvasMouseUp}
+                onTouchStart={handleCanvasMouseDown}
+                onTouchMove={handleCanvasMouseMove}
+                onTouchEnd={handleCanvasMouseUp}
               >
                 {/* ページ番号表示 */}
                 <div style={{
                   position: 'absolute',
                   top: '10px',
                   left: '10px',
-                  backgroundColor: 'rgba(255, 152, 0, 0.8)',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
                   color: 'white',
-                  padding: '5px 10px',
+                  padding: '4px 12px',
                   borderRadius: '4px',
                   fontSize: '14px',
                   fontWeight: 'bold',
@@ -1120,8 +990,7 @@ export default function TableLayoutEdit() {
                   ページ {pageNum}
                 </div>
 
-                {/* 配置禁止ゾーン（既存のコードをそのまま使用） */}
-                {/* 上部禁止ゾーン */}
+                {/* 配置禁止ゾーン表示 */}
                 <div style={{
                   position: 'absolute',
                   top: 0,
@@ -1129,25 +998,17 @@ export default function TableLayoutEdit() {
                   right: 0,
                   height: `${forbiddenZones.top}px`,
                   backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                  borderBottom: '2px dashed #ff6b6b',
+                  borderBottom: '2px dashed #ff0000',
                   pointerEvents: 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  color: '#ff0000'
                 }}>
-                  <span style={{ 
-                    color: '#ff6b6b', 
-                    fontSize: '14px', 
-                    fontWeight: 'bold',
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    padding: '4px 12px',
-                    borderRadius: '4px'
-                  }}>
-                    ヘッダー領域（配置不可）
-                  </span>
+                  ヘッダーエリア（配置不可）
                 </div>
-                
-                {/* 下部禁止ゾーン */}
+
                 <div style={{
                   position: 'absolute',
                   bottom: 0,
@@ -1155,28 +1016,21 @@ export default function TableLayoutEdit() {
                   right: 0,
                   height: `${forbiddenZones.bottom}px`,
                   backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                  borderTop: '2px dashed #ff6b6b',
+                  borderTop: '2px dashed #ff0000',
                   pointerEvents: 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  color: '#ff0000'
                 }}>
-                  <span style={{ 
-                    color: '#ff6b6b', 
-                    fontSize: '14px', 
-                    fontWeight: 'bold',
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    padding: '4px 12px',
-                    borderRadius: '4px'
-                  }}>
-                    ナビゲーションバー領域（配置不可）
-                  </span>
+                  Androidナビゲーションバーエリア（配置不可）
                 </div>
 
-                {/* ⭐ そのページのテーブルのみ表示 */}
+                {/* テーブル表示 */}
                 {tables
-                  .filter(t => t.is_visible && (t.page_number || 1) === pageNum)
-                  .map((table) => (
+                  .filter(table => table.is_visible && (table.page_number || 1) === pageNum)
+                  .map(table => (
                     <div
                       key={table.table_name}
                       onDoubleClick={() => handleDoubleClick(table)}
@@ -1184,10 +1038,9 @@ export default function TableLayoutEdit() {
                         position: 'absolute',
                         top: `${table.position_top}px`,
                         left: `${table.position_left}px`,
-                        width: `${table.table_width}px`,
-                        height: `${table.table_height}px`,
-                        backgroundColor: table.current_guest ? '#FF9800' : '#ccc',
-                        border: `3px solid ${table.current_guest ? '#FF9800' : '#ccc'}`,
+                        width: `${table.table_width || 130}px`,
+                        height: `${table.table_height || 123}px`,
+                        backgroundColor: table.current_guest ? '#ffe0f0' : table.guest_name ? '#FF9800' : '#ccc',
                         borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
@@ -1204,16 +1057,16 @@ export default function TableLayoutEdit() {
                         touchAction: 'none'
                       }}
                       onMouseDown={(e) => handleDragStart(e, table)}
-                        onMouseUp={handleDragEnd}  // ⭐ 追加
-                        onTouchStart={(e) => handleDragStart(e, table)}
-                        onTouchMove={(e) => {
-                          e.preventDefault()
-                          handleDragMove(e)
-                        }}
-                        onTouchEnd={(e) => {
-                          e.preventDefault()  // ⭐ 追加
-                          handleDragEnd()
-                        }}
+                      onMouseUp={handleDragEnd}
+                      onTouchStart={(e) => handleDragStart(e, table)}
+                      onTouchMove={(e) => {
+                        e.preventDefault()
+                        handleDragMove(e)
+                      }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault()
+                        handleDragEnd()
+                      }}
                     >
                       {table.display_name || table.table_name}
                     </div>
@@ -1224,125 +1077,7 @@ export default function TableLayoutEdit() {
         </div>
 
         {/* 編集ダイアログ */}
-              {selectedTable && (
-              <div style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000
-              }}>
-                <div style={{
-                  backgroundColor: 'white',
-                  padding: '24px',
-                  borderRadius: '8px',
-                  minWidth: '300px',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
-                }}>
-                  <h3 style={{ margin: '0 0 16px 0' }}>テーブル編集</h3>
-                  
-                  {/* テーブル名入力 */}
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
-                    テーブル名:
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedTable.display_name || selectedTable.table_name}
-                    onChange={(e) => setSelectedTable({ ...selectedTable, display_name: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      marginBottom: '16px',
-                      fontSize: '14px'
-                    }}
-                  />
-                  
-                  {/* ⭐ ページ選択を追加 */}
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
-                    配置ページ:
-                  </label>
-                  <select
-                    value={selectedTable.page_number || 1}
-                    onChange={(e) => setSelectedTable({ ...selectedTable, page_number: parseInt(e.target.value) })}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      marginBottom: '16px',
-                      fontSize: '14px'
-                    }}
-                  >
-                    {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
-                      <option key={pageNum} value={pageNum}>
-                        ページ {pageNum}
-                      </option>
-                    ))}
-                  </select>
-                  
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button
-                      onClick={async () => {
-                        if (selectedTable) {
-                          // テーブル名を更新
-                          await updateTableName(selectedTable.table_name, selectedTable.display_name || '')
-                          
-                          // ⭐ ページも更新
-                          const storeId = localStorage.getItem('currentStoreId') || '1'
-                          await supabase
-                            .from('table_status')
-                            .update({ page_number: selectedTable.page_number })
-                            .eq('table_name', selectedTable.table_name)
-                            .eq('store_id', storeId)
-                          
-                          // ローカルの状態を更新
-                          setTables(prev => prev.map(t => 
-                            t.table_name === selectedTable.table_name 
-                              ? { ...t, page_number: selectedTable.page_number }
-                              : t
-                          ))
-                          
-                          setSelectedTable(null)
-                        }
-                      }}
-                      style={{
-                        padding: '8px 16px',
-                        backgroundColor: '#4CAF50',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      保存
-                    </button>
-                    <button
-                      onClick={() => setSelectedTable(null)}
-                      style={{
-                        padding: '8px 16px',
-                        backgroundColor: '#f44336',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      キャンセル
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-        {/* ⭐ 自動整列モーダルを追加 */}
-        {showAlignModal && (
+        {selectedTable && (
           <div style={{
             position: 'fixed',
             top: 0,
@@ -1358,8 +1093,106 @@ export default function TableLayoutEdit() {
             <div style={{
               backgroundColor: 'white',
               padding: '24px',
-              borderRadius: '12px',
-              width: windowWidth <= 768 ? '90%' : '500px',
+              borderRadius: '8px',
+              minWidth: '300px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
+            }}>
+              <h3 style={{ margin: '0 0 16px 0' }}>テーブル編集</h3>
+              
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
+                テーブル名:
+              </label>
+              <input
+                type="text"
+                value={selectedTable.display_name || selectedTable.table_name}
+                onChange={(e) => setSelectedTable({ ...selectedTable, display_name: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  marginBottom: '16px',
+                  fontSize: '14px'
+                }}
+              />
+              
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
+                配置ページ:
+              </label>
+              <select
+                value={selectedTable.page_number || 1}
+                onChange={(e) => setSelectedTable({ ...selectedTable, page_number: parseInt(e.target.value) })}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  marginBottom: '16px',
+                  fontSize: '14px'
+                }}
+              >
+                {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
+                  <option key={pageNum} value={pageNum}>
+                    ページ {pageNum}
+                  </option>
+                ))}
+              </select>
+              
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={updateTableDisplayName}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  保存
+                </button>
+                <button
+                  onClick={() => setSelectedTable(null)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    backgroundColor: '#757575',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  キャンセル
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 自動整列モーダル */}
+        {showAlignModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              padding: '30px',
+              borderRadius: '10px',
+              width: '500px',
               maxHeight: '80vh',
               overflowY: 'auto',
               boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
@@ -1374,45 +1207,49 @@ export default function TableLayoutEdit() {
                 ⚡ テーブル自動整列
               </h2>
 
-
-{/* ⭐ 対象ページ選択を追加 */}
+              {/* 対象選択 */}
               <div style={{ marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>📄 整列対象</h3>
+                <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>🎯 整列対象</h3>
                 
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                    <input
-                      type="radio"
-                      name="alignTarget"
-                      value="current"
-                      checked={alignTarget === 'current'}
-                      onChange={(e) => setAlignTarget(e.target.value)}
-                      style={{ marginRight: '8px' }}
-                    />
-                    <span style={{ fontSize: '14px' }}>
-                      現在のページ（ページ {currentViewPage}）のみ
-                    </span>
-                  </label>
-                </div>
-                
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <label style={{ 
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    cursor: 'pointer'
+                  }}>
                     <input
                       type="radio"
                       name="alignTarget"
                       value="all"
                       checked={alignTarget === 'all'}
-                      onChange={(e) => setAlignTarget(e.target.value)}
-                      style={{ marginRight: '8px' }}
+                      onChange={(e) => setAlignTarget(e.target.value as 'all' | 'current')}
                     />
-                    <span style={{ fontSize: '14px' }}>
-                      すべてのテーブル（複数ページに自動配置）
-                    </span>
+                    すべてのテーブル
+                  </label>
+                  
+                  <label style={{ 
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    cursor: 'pointer'
+                  }}>
+                    <input
+                      type="radio"
+                      name="alignTarget"
+                      value="current"
+                      checked={alignTarget === 'current'}
+                      onChange={(e) => setAlignTarget(e.target.value as 'all' | 'current')}
+                    />
+                    現在のページのみ
                   </label>
                 </div>
                 
-                {alignTarget === 'all' && (
+                {alignTarget === 'all' && tables.filter(t => t.is_visible).length > alignCols * alignRows && (
                   <div style={{
+                    marginTop: '10px',
                     padding: '8px',
                     backgroundColor: '#e3f2fd',
                     borderRadius: '4px',
@@ -1427,6 +1264,7 @@ export default function TableLayoutEdit() {
               {/* グリッド設定 */}
               <div style={{ marginBottom: '20px' }}>
                 <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>📐 グリッド設定</h3>
+                
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                     横の個数（列数）:
@@ -1467,7 +1305,6 @@ export default function TableLayoutEdit() {
                   />
                 </div>
 
-                {/* ⭐ 横の間隔（tableSpacingから変更） */}
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                     横の間隔 (px):
@@ -1489,7 +1326,6 @@ export default function TableLayoutEdit() {
                   />
                 </div>
 
-                {/* ⭐ 縦の間隔（新規追加） */}
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                     縦の間隔 (px):
@@ -1511,18 +1347,13 @@ export default function TableLayoutEdit() {
                   />
                 </div>
 
-                {/* ⭐ 自動間隔計算ボタンを追加 */}
                 <button
                   onClick={() => {
-                    // キャンバスサイズとテーブル数から最適な間隔を計算
-                    const avgTableWidth = 130  // 平均的なテーブル幅
-                    const avgTableHeight = 123 // 平均的なテーブル高さ
-                    
-                    // 使用可能な領域を計算
+                    const avgTableWidth = 130
+                    const avgTableHeight = 123
                     const usableWidth = canvasSize.width - alignStartX - forbiddenZones.right - 100
                     const usableHeight = canvasSize.height - alignStartY - forbiddenZones.bottom - 100
                     
-                    // 最適な間隔を計算
                     if (alignCols > 1) {
                       const optimalHorizontal = Math.max(20, Math.floor((usableWidth - alignCols * avgTableWidth) / (alignCols - 1)))
                       setHorizontalSpacing(Math.min(200, optimalHorizontal))
@@ -1612,13 +1443,12 @@ export default function TableLayoutEdit() {
                   • 配置可能なテーブル数: {tables.filter(t => t.is_visible).length}個<br />
                   • グリッドの容量: {alignCols * alignRows}個<br />
                   • 実際に配置される数: {Math.min(tables.filter(t => t.is_visible).length, alignCols * alignRows)}個<br />
-                  {/* ⭐ 必要なサイズを追加表示 */}
                   • 必要な横幅: 約{alignCols * 130 + (alignCols - 1) * horizontalSpacing}px<br />
                   • 必要な縦幅: 約{alignRows * 123 + (alignRows - 1) * verticalSpacing}px
                 </p>
               </div>
 
-              {/* ⭐ 警告メッセージを追加（必要に応じて表示） */}
+              {/* 警告メッセージ */}
               {(alignCols * 130 + (alignCols - 1) * horizontalSpacing + alignStartX > canvasSize.width ||
                 alignRows * 123 + (alignRows - 1) * verticalSpacing + alignStartY > canvasSize.height) && (
                 <div style={{
@@ -1673,28 +1503,28 @@ export default function TableLayoutEdit() {
       </div>
 
       {/* グローバルイベントリスナー */}
-        <div
-          style={{ 
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            pointerEvents: draggedTable ? 'auto' : 'none',
-            zIndex: draggedTable ? 999 : -1
-          }}
-          onMouseMove={handleDragMove}
-          onMouseUp={handleDragEnd}
-          onMouseLeave={handleDragEnd}  // ⭐ 追加：マウスが離れた時も終了
-          onTouchMove={(e) => {
-            if (draggedTable) {
-              e.preventDefault()
-              handleDragMove(e)
-            }
-          }}
-          onTouchEnd={handleDragEnd}
-          onTouchCancel={handleDragEnd}  // ⭐ 追加：タッチがキャンセルされた時も終了
-        />
+      <div
+        style={{ 
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: draggedTable ? 'auto' : 'none',
+          zIndex: draggedTable ? 999 : -1
+        }}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+        onTouchMove={(e) => {
+          if (draggedTable) {
+            e.preventDefault()
+            handleDragMove(e)
+          }
+        }}
+        onTouchEnd={handleDragEnd}
+        onTouchCancel={handleDragEnd}
+      />
     </>
   )
 }

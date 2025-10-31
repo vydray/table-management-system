@@ -1,3 +1,4 @@
+/* 基本設定 */
 html, body {
   margin: 0;
   padding: 0;
@@ -20,25 +21,39 @@ body:not(.modal-open) {
 /* モーダルが開いている時はタッチを許可 */
 body.modal-open {
   touch-action: auto !important;
-  overflow: hidden !important; /* スクロールは無効にする */
-  position: fixed !important; /* 位置は固定 */
+  overflow: hidden !important;
+  position: fixed !important;
 }
 
-/* レスポンシブ用のスケール変数 */
+:root {
+  --viewport-scale: 1; /* JavaScriptで動的に変更される */
+  --vh: 1vh;          /* 既存のまま */
+}
+
+/* レイアウト - 2176×1600pxを画面に自動フィット */
 #layout {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  max-width: 1280px;
-  max-height: 800px;
-  margin: auto;
+  /* サイズは固定 */
+  width: 2176px;
+  height: 1600px;
+  
+  /* 基本スタイル */
   background: #f8f8f8;
   border: 1px solid #ccc;
   overflow: hidden;
-  /* Androidのレイアウト安定化 */
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+  
+  /* 画面中央に配置 */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  
+  /* 画面サイズに応じて自動縮小（重要） */
+  transform: translate(-50%, -50%) scale(var(--viewport-scale, 1));
+  -webkit-transform: translate(-50%, -50%) scale(var(--viewport-scale, 1));
+  transform-origin: center center;
+  
+  /* パフォーマンス最適化 */
   backface-visibility: hidden;
+  will-change: transform;
 }
 
 /* 1280px以下の画面幅の場合 */
@@ -52,10 +67,13 @@ body.modal-open {
     position: fixed;
     top: 0;
     left: 0;
+    /* ここではscaleを1に戻す */
+    transform: none !important;
+    -webkit-transform: none !important;
   }
 }
 
-/* テーブルのレスポンシブ対応 */
+/* テーブル */
 .table {
   background: #fff;
   border: 2px solid #707070;
@@ -71,28 +89,10 @@ body.modal-open {
   padding: 5px;
   box-sizing: border-box;
   transition: all 0.3s ease;
-  /* Androidでのちらつき防止 */
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   will-change: transform;
 }
-
-/* フォントサイズもテーブルサイズに応じて調整 */
-  .table {
-    font-size: calc(14px * 0.8);
-  }
-  
-  .table-name {
-    font-size: calc(16px * 0.8);
-  }
-  
-  .table-info {
-    font-size: calc(12px * 0.8);
-  }
-  
-  .table-elapsed {
-    font-size: calc(11px * 0.8);
-  }
 
 .table:hover {
   transform: scale(1.05);
@@ -137,6 +137,7 @@ body.modal-open {
   background-color: #ffe0f0;
 }
 
+/* ヘッダー */
 .header {
   position: absolute;
   top: 0;
@@ -149,7 +150,6 @@ body.modal-open {
   line-height: 72px;
   font-size: 32px;
   font-weight: bold;
-  font-size: calc(32px * var(--scale-factor, 1));
 }
 
 /* スマホ対応 */
@@ -167,11 +167,11 @@ body.modal-open {
   left: 20px;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.8);  /* 背景を追加 */
+  background: rgba(255, 255, 255, 0.8);
   border: none;
   cursor: pointer;
   padding: 12px;
-  font-size: 32px;       /* アイコンを大きく */
+  font-size: 32px;
   color: #333;
   transition: all 0.3s ease;
   border-radius: 8px;
@@ -192,12 +192,11 @@ body.modal-open {
   height: calc(100% - 72px);
   background: white;
   box-shadow: 4px 0 20px rgba(0,0,0,0.15);
-  transition: left 0.3s ease;
-  z-index: 1001; /* モーダルより上 */
+  transition: left 0.3s ease, visibility 0.3s ease, opacity 0.3s ease;
+  z-index: 1001;
   overflow-y: auto;
   visibility: hidden;
   opacity: 0;
-  transition: left 0.3s ease, visibility 0.3s ease, opacity 0.3s ease;
 }
 
 .side-menu.open {
@@ -210,7 +209,7 @@ body.modal-open {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 30px 25px;     /* パディングをさらに増加 */
+  padding: 30px 25px;
   border-bottom: 2px solid #eee;
   background: #f8f8f8;
   position: sticky;
@@ -220,19 +219,19 @@ body.modal-open {
 
 .menu-header h3 {
   margin: 0;
-  font-size: 28px;    /* 24px → 28px に拡大 */
+  font-size: 28px;
   color: #333;
 }
 
 .menu-close {
   background: none;
   border: none;
-  font-size: 36px;    /* 28px → 36px に拡大 */
+  font-size: 36px;
   cursor: pointer;
   color: #666;
-  padding: 10px;      /* タッチエリアを拡大 */
+  padding: 10px;
   transition: transform 0.2s;
-  min-width: 44px;    /* Apple推奨の最小タッチサイズ */
+  min-width: 44px;
   min-height: 44px;
 }
 
@@ -249,15 +248,15 @@ body.modal-open {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 24px 30px;    /* 18px → 24px に拡大 */
+  padding: 24px 30px;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 20px;       /* 18px → 20px に拡大 */
+  font-size: 20px;
   text-align: left;
   transition: all 0.2s ease;
   position: relative;
-  min-height: 60px;      /* 最小高さを設定 */
+  min-height: 60px;
 }
 
 .menu-item:hover {
@@ -270,15 +269,15 @@ body.modal-open {
 }
 
 .menu-item .menu-icon {
-  margin-right: 25px;    /* 間隔も広げる */
-  font-size: 28px;       /* 24px → 28px に拡大 */
+  margin-right: 25px;
+  font-size: 28px;
   min-width: 35px;
 }
 
 .menu-divider {
-  height: 2px;           /* 1px → 2px に太く */
+  height: 2px;
   background-color: #d0d0d0;
-  margin: 20px 30px;     /* マージンも調整 */
+  margin: 20px 30px;
 }
 
 .menu-overlay {
@@ -288,18 +287,19 @@ body.modal-open {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1000; /* モーダルより上 */
+  z-index: 1000;
   cursor: pointer;
 }
 
+/* テーブル情報表示 - scale-factor削除 */
 .table-name {
-  font-size: calc(16px * var(--scale-factor, 1));
+  font-size: 16px;
   font-weight: bold;
   margin-bottom: 5px;
 }
 
 .table-info {
-  font-size: calc(12px * var(--scale-factor, 1));
+  font-size: 12px;
   text-align: center;
   line-height: 1.4;
 }
@@ -310,11 +310,12 @@ body.modal-open {
 }
 
 .table-elapsed {
-  font-size: calc(11px * var(--scale-factor, 1));
+  font-size: 11px;
   color: #666;
   margin-top: 5px;
 }
 
+/* 移動ヒント */
 #move-hint {
   display: block;
   position: absolute;
@@ -330,6 +331,7 @@ body.modal-open {
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
+/* モーダルオーバーレイ */
 #modal-overlay {
   display: block;
   position: fixed;
@@ -338,10 +340,10 @@ body.modal-open {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 998; /* メニューより下 */
+  z-index: 998;
 }
 
-/* モーダル全体をスクロール可能に */
+/* モーダル基本 */
 #modal {
   display: block;
   position: fixed;
@@ -372,113 +374,6 @@ body.modal-open {
   height: auto;
 }
 
-/* タブレット対応（画面が小さい場合） */
-@media screen and (max-width: 900px) {
-  #modal.modal-edit {
-    width: 95%;
-    max-width: 100%;
-    font-size: 14px;
-  }
-  
-  /* モーダル内の要素のサイズ調整 */
-  #modal h3 {
-    font-size: calc(18px * var(--scale-factor, 1));
-    padding: calc(15px * var(--scale-factor, 1));
-  }
-  
-  .datetime-edit {
-    font-size: 14px;
-    padding: 30px;
-  }
-  
-  .date-select, .time-select {
-    font-size: calc(13px * var(--scale-factor, 1));
-    padding: calc(4px * var(--scale-factor, 1)) calc(6px * var(--scale-factor, 1));
-  }
-  
-  /* POSコンテナの調整 */
-  .pos-container {
-    padding: calc(15px * var(--scale-factor, 1));
-    gap: calc(15px * var(--scale-factor, 1));
-  }
-  
-  .left-section {
-    width: 50%;
-    padding: calc(15px * var(--scale-factor, 1));
-    height: calc(400px * var(--scale-factor, 1));
-  }
-  
-  .right-section {
-    width: 50%;
-    padding: calc(15px * var(--scale-factor, 1));
-    min-height: calc(400px * var(--scale-factor, 1));
-  }
-  
-  /* カテゴリーと商品リストの文字サイズ */
-  .category-title {
-    font-size: calc(13px * var(--scale-factor, 1));
-  }
-  
-  .main-category-item, .sub-category-item, .cast-item {
-    font-size: calc(13px * var(--scale-factor, 1));
-    padding: calc(8px * var(--scale-factor, 1)) calc(12px * var(--scale-factor, 1));
-  }
-  
-  /* 注文テーブルの調整 */
-  .order-table-header, .order-table-row {
-    font-size: calc(13px * var(--scale-factor, 1));
-  }
-  
-  .order-title {
-    font-size: calc(16px * var(--scale-factor, 1));
-  }
-  
-  /* ボタンの調整 */
-  .btn-checkout, .btn-delete {
-    font-size: calc(14px * var(--scale-factor, 1));
-    padding: calc(10px * var(--scale-factor, 1));
-  }
-}
-
-/* スマホ対応 */
-@media screen and (max-width: 600px) {
-  #modal.modal-edit {
-    width: 95%;
-    max-width: 100%;
-    height: 95vh;
-    padding: calc(10px * var(--scale-factor, 1));
-  }
-  
-  .pos-container {
-    flex-direction: column !important;
-  }
-  
-  .left-section,
-  .right-section {
-    width: 100% !important;
-    margin-bottom: calc(20px * var(--scale-factor, 1)) !important;
-  }
-}
-
-/* モーダルのスクロールバー */
-#modal::-webkit-scrollbar {
-  width: 8px;
-}
-
-#modal::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-#modal::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-#modal::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
 #modal h3 {
   margin: 0;
   padding: 20px;
@@ -490,6 +385,25 @@ body.modal-open {
   z-index: 10;
 }
 
+#modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: white;
+  padding: 5px;
+  line-height: 1;
+  z-index: 1;
+}
+
+#modal-close:hover {
+  color: #f0f0f0;
+}
+
+/* 移動モーダル */
 #move-modal {
   display: block;
   position: fixed;
@@ -522,13 +436,29 @@ body.modal-open {
   overflow: visible;
 }
 
+/* 顧客情報ヘッダー */
 .customer-header {
   display: flex;
-  justify-content: space-between;
-  padding: 10px 0;
-  margin-bottom: 20px;
-  font-size: 16px;
   align-items: center;
+  gap: 20px;
+  padding: 15px 20px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+
+.customer-header > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.customer-header .label-text {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  white-space: nowrap;
 }
 
 .label-text {
@@ -537,7 +467,7 @@ body.modal-open {
   font-weight: bold;
 }
 
-/* 入店日時の編集エリア - 改善版 */
+/* 入店日時編集 */
 .datetime-edit {
   display: flex;
   align-items: center;
@@ -547,50 +477,34 @@ body.modal-open {
   margin-bottom: 0;
   font-size: 16px;
   background: #f5f5f5;
-  justify-content: center; /* 中央揃え */
+  justify-content: center;
 }
 
-/* セレクトボックスのスタイル改善 */
+/* セレクトボックス */
 .date-select, .time-select {
   padding: 6px 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
-  text-align: center; /* テキスト中央揃え */
+  text-align: center;
   background: white;
   cursor: pointer;
-  text-align-last: center; /* Firefoxサポート */
+  text-align-last: center;
 }
 
-/* 各セレクトボックスの幅を調整 */
-.date-select:nth-of-type(1) { /* 年 */
-  width: 80px;
-}
+.date-select:nth-of-type(1) { width: 80px; }
+.date-select:nth-of-type(2) { width: 60px; }
+.date-select:nth-of-type(3) { width: 60px; }
+.time-select { width: 55px; }
 
-.date-select:nth-of-type(2) { /* 月 */
-  width: 60px;
-}
-
-.date-select:nth-of-type(3) { /* 日 */
-  width: 60px;
-}
-
-.time-select { /* 時・分 */
-  width: 55px;
-}
-
-.time-edit, .oshi-edit, .guest-edit {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.cast-select {
+.visit-select, .cast-select {
   padding: 4px 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
-  min-width: 150px;
+  min-width: 100px;
+  background: white;
+  cursor: pointer;
 }
 
 .guest-input {
@@ -610,7 +524,7 @@ body.modal-open {
   min-height: 500px;
 }
 
-/* 左側セクション（商品選択）は固定高さ */
+/* 左側セクション（商品選択） */
 .left-section {
   width: 530px;
   display: flex;
@@ -622,29 +536,11 @@ body.modal-open {
   overflow: hidden;
 }
 
-@media screen and (max-width: 800px) {
-  .left-section {
-    width: 100%;
-    height: auto;
-    padding: calc(15px * var(--scale-factor, 1));
-  }
-}
-
-.sub-categories {
-  margin-top: 20px;
-}
-
+/* 検索セクション */
 .search-section {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
-}
-
-@media screen and (max-width: 800px) {
-  .search-section {
-    gap: calc(10px * var(--scale-factor, 1));
-    margin-bottom: calc(20px * var(--scale-factor, 1));
-  }
 }
 
 .search-input {
@@ -653,13 +549,6 @@ body.modal-open {
   border: 1px solid #ddd;
   border-radius: 20px;
   font-size: 14px;
-}
-
-@media screen and (max-width: 800px) {
-  .search-input {
-    padding: calc(8px * var(--scale-factor, 1)) calc(12px * var(--scale-factor, 1));
-    font-size: calc(14px * var(--scale-factor, 1));
-  }
 }
 
 .search-button {
@@ -672,13 +561,7 @@ body.modal-open {
   font-size: 14px;
 }
 
-@media screen and (max-width: 800px) {
-  .search-button {
-    padding: calc(8px * var(--scale-factor, 1)) calc(20px * var(--scale-factor, 1));
-    font-size: calc(14px * var(--scale-factor, 1));
-  }
-}
-
+/* カテゴリーセクション */
 .category-section {
   display: flex;
   gap: 15px;
@@ -688,14 +571,12 @@ body.modal-open {
   overflow: hidden;
 }
 
-/* 左側のカテゴリーエリアのスクロールバー */
 .main-categories, .sub-categories, .cast-select-area {
   flex: 1;
   overflow-y: auto;
   height: 100%;
 }
 
-/* カテゴリーエリアのスクロールバーのスタイリング */
 .main-categories::-webkit-scrollbar,
 .sub-categories::-webkit-scrollbar,
 .cast-select-area::-webkit-scrollbar {
@@ -722,12 +603,6 @@ body.modal-open {
   background: #555;
 }
 
-.cast-select-area {
-  margin-left: 5px;
-  position: relative;
-  z-index: 1;
-}
-
 .category-title {
   font-size: 14px;
   color: #666;
@@ -745,6 +620,7 @@ body.modal-open {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: background-color 0.2s;
 }
 
 .main-category-item:hover, .sub-category-item:hover, .cast-item:hover {
@@ -760,26 +636,7 @@ body.modal-open {
   font-size: 13px;
 }
 
-.cast-list {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.cast-item {
-  padding: 10px 15px;
-  margin-bottom: 5px;
-  background: #f5f5f5;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.cast-item:hover {
-  background: #e0e0e0;
-}
-
-/* 右側セクション（注文リスト）は高さ自動調整 */
+/* 右側セクション（注文リスト） */
 .right-section {
   width: 380px;
   display: flex;
@@ -792,14 +649,7 @@ body.modal-open {
   overflow: visible;
 }
 
-@media screen and (max-width: 800px) {
-  .right-section {
-    width: 100%;
-    padding: calc(15px * var(--scale-factor, 1));
-    min-height: calc(400px * var(--scale-factor, 1));
-  }
-}
-
+/* 注文タイトル */
 .order-title {
   text-align: center;
   font-size: 18px;
@@ -808,7 +658,7 @@ body.modal-open {
   flex-shrink: 0;
 }
 
-/* 注文テーブルは内容に応じて伸びる */
+/* 注文テーブル */
 .order-table {
   flex: 0 1 auto;
   border: 1px solid #ddd;
@@ -831,7 +681,6 @@ body.modal-open {
   flex-shrink: 0;
 }
 
-/* 注文リストのスクロールを削除 */
 .order-table-body {
   flex: 1;
   overflow: visible;
@@ -855,16 +704,7 @@ body.modal-open {
   background-color: #f5f5f5;
 }
 
-.order-table-row-wrapper {
-  position: relative;
-  overflow: hidden;
-}
-
-.delete-indicator {
-  font-weight: bold;
-}
-
-/* 商品詳細モーダル - 自動追尾対応 */
+/* 商品詳細モーダル - scale-factor削除 */
 .item-detail-modal {
   position: fixed;
   top: 0;
@@ -879,54 +719,53 @@ body.modal-open {
 
 .item-detail-content {
   background: white;
-  padding: calc(30px * var(--scale-factor, 1));
+  padding: 30px;
   border-radius: 10px;
-  width: calc(400px * var(--scale-factor, 1));
+  width: 400px;
   max-width: 90%;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  /* position と transform は JavaScript で動的に設定 */
   transition: top 0.3s ease-out;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
 
 .item-detail-content h3 {
-  margin: 0 0 calc(20px * var(--scale-factor, 1)) 0;
-  font-size: calc(1.5em * var(--scale-factor, 1));
+  margin: 0 0 20px 0;
+  font-size: 24px;
   color: #333;
 }
 
 .cast-info {
-  margin: 0 0 calc(20px * var(--scale-factor, 1)) 0;
+  margin: 0 0 20px 0;
   color: #666;
-  font-size: calc(1.1em * var(--scale-factor, 1));
+  font-size: 18px;
 }
 
 .detail-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: calc(15px * var(--scale-factor, 1));
-  padding: calc(10px * var(--scale-factor, 1)) 0;
+  margin-bottom: 15px;
+  padding: 10px 0;
   border-bottom: 1px solid #eee;
-  font-size: calc(1em * var(--scale-factor, 1));
+  font-size: 16px;
 }
 
 .detail-row label {
   font-weight: bold;
   color: #555;
-  font-size: calc(1em * var(--scale-factor, 1));
+  font-size: 16px;
 }
 
 .detail-row.total {
   border-bottom: 2px solid #333;
-  margin-top: calc(20px * var(--scale-factor, 1));
-  font-size: calc(1.2em * var(--scale-factor, 1));
+  margin-top: 20px;
+  font-size: 20px;
 }
 
 .quantity-select {
-  padding: calc(5px * var(--scale-factor, 1)) calc(10px * var(--scale-factor, 1));
-  font-size: calc(1em * var(--scale-factor, 1));
+  padding: 5px 10px;
+  font-size: 16px;
   border: 1px solid #ddd;
   border-radius: 4px;
   cursor: pointer;
@@ -934,60 +773,19 @@ body.modal-open {
 
 .button-group {
   display: flex;
-  gap: calc(10px * var(--scale-factor, 1));
-  margin-top: calc(30px * var(--scale-factor, 1));
+  gap: 10px;
+  margin-top: 30px;
 }
 
 .delete-button,
 .close-button {
   flex: 1;
-  padding: calc(10px * var(--scale-factor, 1));
-  font-size: calc(1em * var(--scale-factor, 1));
+  padding: 10px;
+  font-size: 16px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s;
-}
-
-/* iPadでのタッチイベント対応 */
-@supports (-webkit-touch-callout: none) {
-  .item-detail-modal {
-    position: fixed;
-    -webkit-transform: translate3d(0, 0, 0);
-    transform: translate3d(0, 0, 0);
-  }
-  
-  .item-detail-content {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-  }
-}
-
-/* モーダル内のスクロールバー */
-.item-detail-content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.item-detail-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.item-detail-content::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-.item-detail-content::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* モバイルやタブレット向けの調整 */
-@media (max-height: 600px) {
-  .item-detail-content {
-    max-height: 90vh;
-    margin: 10px;
-  }
 }
 
 .delete-button {
@@ -1008,26 +806,19 @@ body.modal-open {
   background-color: #ddd;
 }
 
-label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-/* 合計部分 */
+/* 合計部分 - scale-factor削除 */
 .order-total {
   padding: 0;
   background: transparent;
-  margin-bottom: calc(20px * var(--scale-factor, 1));
+  margin-bottom: 20px;
   flex-shrink: 0;
 }
 
 .total-row {
   display: flex;
   justify-content: space-between;
-  padding: calc(8px * var(--scale-factor, 1)) calc(15px * var(--scale-factor, 1));
-  font-size: calc(16px * var(--scale-factor, 1));
+  padding: 8px 15px;
+  font-size: 16px;
   background: white;
 }
 
@@ -1039,18 +830,19 @@ label {
 
 .total-row.final {
   border-top: none;
-  padding-top: calc(8px * var(--scale-factor, 1));
+  padding-top: 8px;
   margin-top: 0;
-  font-size: calc(18px * var(--scale-factor, 1));
+  font-size: 18px;
   font-weight: bold;
   background: white;
 }
 
 .final-amount {
   color: #333;
-  font-size: calc(20px * var(--scale-factor, 1));
+  font-size: 20px;
 }
 
+/* アクションボタン */
 .action-buttons {
   display: flex;
   gap: 10px;
@@ -1077,6 +869,7 @@ label {
   color: white;
 }
 
+/* フォーム要素 */
 #modal input, #modal select {
   margin-bottom: 10px;
   width: 100%;
@@ -1104,26 +897,15 @@ label {
   color: white;
 }
 
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
 .center {
   text-align: center;
-}
-
-#modal-close {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: transparent;
-  border: none;
-  font-size: 28px;
-  cursor: pointer;
-  color: white;
-  padding: 5px;
-  line-height: 1;
-  z-index: 1;
-}
-
-#modal-close:hover {
-  color: #f0f0f0;
 }
 
 /* フォームフィールド */
@@ -1137,9 +919,135 @@ label {
   font-weight: bold;
 }
 
-/* iPad注文モーダルのスクロール修正 - 完全版 */
+/* スクロールバー */
+#modal::-webkit-scrollbar,
+.item-detail-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+#modal::-webkit-scrollbar-track,
+.item-detail-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+#modal::-webkit-scrollbar-thumb,
+.item-detail-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+#modal::-webkit-scrollbar-thumb:hover,
+.item-detail-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* ======================================
+   レスポンシブ対応（タブレット・モバイル）
+   ====================================== */
+
+/* タブレット対応 (900px以下) - scale-factor削除 */
+@media screen and (max-width: 900px) {
+  #modal.modal-edit {
+    width: 95%;
+    max-width: 100%;
+    font-size: 14px;
+  }
+  
+  #modal h3 {
+    font-size: 18px;
+    padding: 15px;
+  }
+  
+  .datetime-edit {
+    font-size: 14px;
+    padding: 30px;
+  }
+  
+  .date-select, .time-select {
+    font-size: 13px;
+    padding: 4px 6px;
+  }
+  
+  .pos-container {
+    padding: 15px;
+    gap: 15px;
+  }
+  
+  .left-section {
+    width: 50%;
+    padding: 15px;
+    height: 400px;
+  }
+  
+  .right-section {
+    width: 50%;
+    padding: 15px;
+    min-height: 400px;
+  }
+  
+  .category-title {
+    font-size: 13px;
+  }
+  
+  .main-category-item, .sub-category-item, .cast-item {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+  
+  .order-table-header, .order-table-row {
+    font-size: 13px;
+  }
+  
+  .order-title {
+    font-size: 16px;
+  }
+  
+  .btn-checkout, .btn-delete {
+    font-size: 14px;
+    padding: 10px;
+  }
+}
+
+/* スマホ対応 (600px以下) */
+@media screen and (max-width: 600px) {
+  #modal.modal-edit {
+    width: 95%;
+    max-width: 100%;
+    height: 95vh;
+    padding: 10px;
+  }
+  
+  .pos-container {
+    flex-direction: column !important;
+  }
+  
+  .left-section,
+  .right-section {
+    width: 100% !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .table {
+    font-size: 11px;
+  }
+  
+  .table-name {
+    font-size: 13px;
+  }
+  
+  .table-info {
+    font-size: 10px;
+  }
+  
+  .table-elapsed {
+    font-size: 9px;
+  }
+}
+
+/* 大画面レスポンシブ対応 (1200px以下) */
 @media screen and (max-width: 1200px) {
-  /* モーダルが開いている時の特別な設定 */
+  /* モーダルが開いている時の設定 */
   body.modal-open #layout {
     pointer-events: none;
   }
@@ -1164,7 +1072,6 @@ label {
     margin: 0 !important;
   }
   
-  /* transformが効かない場合の代替案 */
   @supports not (transform: translate(-50%, -50%)) {
     #modal.modal-edit {
       top: 5% !important;
@@ -1173,13 +1080,11 @@ label {
     }
   }
   
-  /* ヘッダーの固定を解除 */
   #modal.modal-edit h3 {
     position: relative !important;
     top: auto !important;
   }
   
-  /* モーダル内のコンテンツ */
   #modal.modal-edit #details {
     overflow: visible !important;
     height: auto !important;
@@ -1191,14 +1096,12 @@ label {
     flex-direction: column !important;
   }
   
-  /* 左右のセクションを縦並びに */
   #modal.modal-edit .left-section,
   #modal.modal-edit .right-section {
     width: 100% !important;
     margin-bottom: 20px !important;
   }
   
-  /* bodyのスクロールを無効化 */
   body.modal-open {
     position: fixed !important;
     width: 100% !important;
@@ -1207,59 +1110,13 @@ label {
   }
 }
 
-/* iPadタッチデバイス専用の追加対応 */
-@media (pointer: coarse) and (max-width: 1200px) {
-  #modal.modal-edit {
-    /* タッチデバイス用の最適化 */
-    touch-action: pan-y !important;
-    -webkit-transform: translate(-50%, -50%) translateZ(0) !important;
-    transform: translate(-50%, -50%) translateZ(0) !important;
-  }
-}
-
-/* iOS Safari特有の対応 */
-@supports (-webkit-touch-callout: none) {
-  #modal.modal-edit {
-    /* iOSでのスクロール問題対策 */
-    position: fixed !important;
-    -webkit-overflow-scrolling: touch !important;
-    -webkit-transform: translate(-50%, -50%) translate3d(0, 0, 0) !important;
-    transform: translate(-50%, -50%) translate3d(0, 0, 0) !important;
-  }
-  
-  /* モーダル内部も最適化 */
-  #modal.modal-edit > * {
-    -webkit-transform: translate3d(0, 0, 0) !important;
-    transform: translate3d(0, 0, 0) !important;
-  }
-}
-
-/* Android/タブレット用のレスポンシブ対応 */
-@media screen and (max-width: 1200px) {
-  /* レイアウト全体を画面サイズに合わせる */
-  #layout {
-    width: 100vw;
-    height: 100vh;
-    margin: 0;
-    border: none;
-    max-width: 100%;
-    max-height: 100%;
-  }
-  
-  .header {
-    width: 100%;
-  }
-}
-
-/* Android/モバイル用の追加調整 */
+/* Androidタブレット対応 */
 @media screen and (max-width: 800px) {
-  /* レイアウトのオーバーフローを許可（念のため） */
   #layout {
     overflow: visible;
     min-height: 100vh;
   }
   
-  /* ヘッダーも少し小さく */
   .header {
     height: 56px;
     line-height: 56px;
@@ -1270,9 +1127,51 @@ label {
     font-size: 24px;
     padding: 8px;
   }
+  
+  .left-section {
+    width: 100%;
+    height: auto;
+    padding: 15px;
+  }
+  
+  .search-section {
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .search-input {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .search-button {
+    padding: 8px 20px;
+    font-size: 14px;
+  }
+  
+  .right-section {
+    width: 100%;
+    padding: 15px;
+    min-height: 400px;
+  }
+  
+  .customer-header {
+    gap: 15px;
+    padding: 12px 15px;
+    font-size: 13px;
+  }
+  
+  .customer-header > div {
+    flex: 1 1 auto;
+    min-width: 150px;
+  }
+  
+  .visit-select,
+  .cast-select {
+    min-width: 80px;
+    font-size: 13px;
+  }
 }
-
-/* Androidスクロール問題の修正 */
 
 /* ビューポート高さの動的設定用 */
 :root {
@@ -1281,38 +1180,31 @@ label {
 
 /* Android端末でのモーダル高さ修正 */
 @media screen and (max-width: 1200px) {
-  /* モーダル本体の高さ調整 */
   #modal.modal-edit {
-    /* 固定値ではなく動的な高さ計算 */
     height: calc(var(--vh, 1vh) * 90) !important;
     max-height: calc(var(--vh, 1vh) * 90) !important;
     position: fixed !important;
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    
-    /* セーフエリア対応 */
     padding-bottom: env(safe-area-inset-bottom, 0) !important;
   }
   
-  /* モーダル内部のスクロール設定 */
   #modal.modal-edit #details {
-    height: calc(100% - 60px) !important; /* ヘッダー分を引く */
+    height: calc(100% - 60px) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior: contain;
   }
   
-  /* POSコンテナのスクロール改善 */
   #modal.modal-edit .pos-container {
     min-height: 0 !important;
     flex: 1 1 auto !important;
     overflow: visible !important;
-    padding-bottom: 20px !important; /* 下部に余白追加 */
+    padding-bottom: 20px !important;
   }
   
-  /* 各セクションの高さ制限を解除 */
   #modal.modal-edit .left-section,
   #modal.modal-edit .right-section {
     min-height: 400px !important;
@@ -1320,7 +1212,6 @@ label {
     height: auto !important;
   }
   
-  /* 注文テーブルのスクロール改善 */
   #modal.modal-edit .order-table-body {
     max-height: 300px !important;
     overflow-y: auto !important;
@@ -1328,7 +1219,6 @@ label {
     scroll-behavior: smooth;
   }
   
-  /* アクションボタンを確実に表示 */
   #modal.modal-edit .action-buttons {
     position: relative !important;
     margin-top: 10px !important;
@@ -1337,11 +1227,10 @@ label {
   }
 }
 
-/* Android Chrome特有の対応を修正 */
+/* Android Chrome特有の対応 */
 @supports (-webkit-appearance: none) and (not (-ms-ime-align: auto)) {
   @media screen and (max-width: 1200px) {
     #modal.modal-edit {
-      /* フルスクリーンではなく、中央配置を維持 */
       position: fixed !important;
       top: 50% !important;
       left: 50% !important;
@@ -1356,97 +1245,55 @@ label {
   }
 }
 
-  /* ヘッダー部分を固定 */
-  #modal.modal-edit h3 {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 10 !important;
-    flex-shrink: 0 !important;
-    margin: 0 !important;
-  }
-  
-  /* 詳細部分のスクロール設定 */
-  #modal.modal-edit #details {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    height: 100% !important;
-    min-height: 0 !important;
-  }
-  
-  /* 内部のpadding調整 */
-  #modal.modal-edit .order-section {
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    padding-bottom: 20px !important;
-  }
-  
-  /* POSコンテナの調整 */
-  #modal.modal-edit .pos-container {
-    flex: 1 !important;
-    min-height: 0 !important;
-    overflow: visible !important;
-    margin-bottom: 20px !important;
-  }
-
-/* スクロール可能領域の明確化 */
-@media screen and (max-width: 1200px) {
-  /* スクロール可能エリアに影を追加 */
-  #modal.modal-edit #details {
-    box-shadow: inset 0 -10px 10px -10px rgba(0,0,0,0.1);
-  }
-  
-  /* 下部に余白を確保 */
-  #modal.modal-edit .pos-container {
-    padding-bottom: 30px !important;
-  }
-  
-  #modal.modal-edit .action-buttons {
-    margin-bottom: 20px !important;
+/* iPadタッチデバイス専用 */
+@media (pointer: coarse) and (max-width: 1200px) {
+  #modal.modal-edit {
+    touch-action: pan-y !important;
+    -webkit-transform: translate(-50%, -50%) translateZ(0) !important;
+    transform: translate(-50%, -50%) translateZ(0) !important;
   }
 }
 
-/* スクロールバーの表示を改善 */
-@media screen and (max-width: 1200px) {
-  /* スクロールバーを常に表示 */
-  #modal.modal-edit ::-webkit-scrollbar {
-    width: 6px !important;
-    height: 6px !important;
+/* iOS Safari特有の対応 */
+@supports (-webkit-touch-callout: none) {
+  .item-detail-modal {
+    position: fixed;
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
   }
   
-  #modal.modal-edit ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1) !important;
-    border-radius: 3px !important;
+  .item-detail-content {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
   
-  #modal.modal-edit ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.3) !important;
-    border-radius: 3px !important;
+  #modal.modal-edit {
+    position: fixed !important;
+    -webkit-overflow-scrolling: touch !important;
+    -webkit-transform: translate(-50%, -50%) translate3d(0, 0, 0) !important;
+    transform: translate(-50%, -50%) translate3d(0, 0, 0) !important;
   }
   
-  /* スクロール可能であることを視覚的に示す */
-  #modal.modal-edit #details::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 20px;
-    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.8));
-    pointer-events: none;
+  #modal.modal-edit > * {
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
+}
+
+/* モバイルやタブレット向けの調整 */
+@media (max-height: 600px) {
+  .item-detail-content {
+    max-height: 90vh;
+    margin: 10px;
   }
 }
 
 /* タッチデバイスでのスクロール最適化 */
 @media (hover: none) and (pointer: coarse) {
   #modal.modal-edit * {
-    /* モーメンタムスクロールを有効化 */
     -webkit-overflow-scrolling: touch !important;
   }
   
-  /* スクロール可能エリアのバウンス効果を制御 */
   #modal.modal-edit #details,
   #modal.modal-edit .order-table-body,
   #modal.modal-edit .category-section > * {
@@ -1454,26 +1301,50 @@ label {
   }
 }
 
-/* Android端末用のモーダルレイアウト修正 */
-
-/* モーダルの基本設定を強化 */
-#modal.modal-edit {
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* Android/タブレット用の修正 */
-@media screen and (max-width: 1200px) {
-  /* モーダル内部のレイアウト修正 */
+/* Android Webkit系ブラウザ対応 */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (max-width: 1200px) {
   #modal.modal-edit {
-    width: 90% !important;
-    height: 90% !important;
-    max-width: 100% !important;
-    max-height: 90vh !important;
-    padding: 0 !important;
+    -webkit-transform: translate(-50%, -50%) !important;
+    transform: translate(-50%, -50%) !important;
   }
   
-  /* 詳細エリアの修正 */
+  #modal.modal-edit,
+  #modal.modal-edit #details,
+  #modal.modal-edit .order-section {
+    display: -webkit-flex !important;
+    display: flex !important;
+    -webkit-flex-direction: column !important;
+    flex-direction: column !important;
+  }
+  
+  #modal.modal-edit .pos-container {
+    display: -webkit-flex !important;
+    display: flex !important;
+    -webkit-flex-direction: row !important;
+    flex-direction: row !important;
+  }
+}
+
+/* タッチデバイス対応 */
+@media (pointer: coarse) and (max-width: 1200px) {
+  #modal.modal-edit .category-section > *,
+  #modal.modal-edit .order-table-body {
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  #modal.modal-edit button {
+    min-height: 44px !important;
+  }
+}
+
+/* Android端末用の詳細な調整（続き） */
+@media screen and (max-width: 1200px) {
+  #modal.modal-edit {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
   #modal.modal-edit #details {
     flex: 1;
     display: flex;
@@ -1482,7 +1353,6 @@ label {
     height: 100% !important;
   }
   
-  /* 注文セクションの修正 */
   #modal.modal-edit .order-section {
     flex: 1;
     display: flex;
@@ -1490,7 +1360,6 @@ label {
     height: 100%;
   }
   
-  /* 入店日時エリアの修正 */
   #modal.modal-edit .datetime-edit {
     flex-shrink: 0;
     padding: 15px 20px !important;
@@ -1504,21 +1373,19 @@ label {
     gap: 5px;
   }
   
-  /* POSコンテナの修正 - 左右分割を維持 */
   #modal.modal-edit .pos-container {
     flex: 1;
     display: flex !important;
-    flex-direction: row !important; /* 横並びを維持 */
+    flex-direction: row !important;
     gap: 15px !important;
     padding: 15px !important;
     overflow: auto !important;
-    transform: none !important; /* スケール解除 */
+    transform: none !important;
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
   }
   
-  /* 左側（商品選択）エリア */
   #modal.modal-edit .left-section {
     width: 50% !important;
     height: auto !important;
@@ -1531,7 +1398,6 @@ label {
     overflow: hidden;
   }
   
-  /* 右側（注文リスト）エリア */
   #modal.modal-edit .right-section {
     width: 50% !important;
     height: auto !important;
@@ -1544,7 +1410,6 @@ label {
     overflow: hidden;
   }
   
-  /* カテゴリーセクションのスクロール対応 */
   #modal.modal-edit .category-section {
     flex: 1;
     display: flex;
@@ -1553,7 +1418,6 @@ label {
     min-height: 0;
   }
   
-  /* 各カテゴリーリストのスクロール */
   #modal.modal-edit .main-categories,
   #modal.modal-edit .sub-categories,
   #modal.modal-edit .cast-select-area {
@@ -1563,7 +1427,6 @@ label {
     max-height: 100%;
   }
   
-  /* 注文テーブルのスクロール対応 */
   #modal.modal-edit .order-table {
     flex: 1;
     display: flex;
@@ -1579,7 +1442,6 @@ label {
     min-height: 0;
   }
   
-  /* ボタンエリアを下部に固定 */
   #modal.modal-edit .action-buttons {
     flex-shrink: 0;
     display: flex;
@@ -1587,7 +1449,6 @@ label {
     padding-top: 10px;
   }
   
-  /* フォントサイズの調整 */
   #modal.modal-edit .order-title {
     font-size: 16px !important;
   }
@@ -1613,96 +1474,7 @@ label {
     font-size: 14px !important;
     padding: 10px !important;
   }
-}
-
-/* より小さい画面（スマートフォン）では縦並びに */
-@media screen and (max-width: 600px) {
-  #modal.modal-edit .pos-container {
-    flex-direction: column !important;
-  }
   
-  #modal.modal-edit .left-section,
-  #modal.modal-edit .right-section {
-    width: 100% !important;
-    margin-bottom: 15px !important;
-  }
-}
-
-/* Android特有の問題対応 */
-@media screen and (-webkit-min-device-pixel-ratio: 0) and (max-width: 1200px) {
-  /* Webkit系ブラウザ（Chrome等）での修正 */
-  #modal.modal-edit {
-    -webkit-transform: translate(-50%, -50%) !important;
-    transform: translate(-50%, -50%) !important;
-  }
-  
-  /* フレックスボックスの修正 */
-  #modal.modal-edit,
-  #modal.modal-edit #details,
-  #modal.modal-edit .order-section {
-    display: -webkit-flex !important;
-    display: flex !important;
-    -webkit-flex-direction: column !important;
-    flex-direction: column !important;
-  }
-  
-  #modal.modal-edit .pos-container {
-    display: -webkit-flex !important;
-    display: flex !important;
-    -webkit-flex-direction: row !important;
-    flex-direction: row !important;
-  }
-}
-
-/* タッチデバイス対応 */
-@media (pointer: coarse) and (max-width: 1200px) {
-  /* スクロール可能エリアのタッチ対応 */
-  #modal.modal-edit .category-section > *,
-  #modal.modal-edit .order-table-body {
-    touch-action: pan-y !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-  
-  /* ボタンのタッチターゲットを大きく */
-  #modal.modal-edit button {
-    min-height: 44px !important;
-  }
-}
-
-/* Android モーダル中央配置修正 */
-@media screen and (max-width: 1200px) {
-  #modal.modal-edit {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    width: 90% !important;
-    height: 90% !important;
-    max-width: 900px !important;
-    max-height: 90vh !important;
-    transform: translate(-50%, -50%) !important;
-    -webkit-transform: translate(-50%, -50%) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 10px !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-}
-
-/* Androidスクロール修正 - 左右別々のスクロール */
-@media screen and (max-width: 1200px) {
-  /* 詳細エリア - オーバーフローを隠す */
-  #modal.modal-edit #details {
-    flex: 1 !important;
-    overflow: hidden !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  
-  /* 入店日時の文字を大きく */
   #modal.modal-edit .datetime-edit {
     font-size: 18px !important;
     padding: 20px 25px !important;
@@ -1718,54 +1490,38 @@ label {
     padding: 8px 10px !important;
   }
   
-  /* POSコンテナ - フレックスで高さを埋める */
-  #modal.modal-edit .pos-container {
-    flex: 1 !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    display: flex !important;
-    padding: 15px !important;
-    gap: 15px !important;
-  }
-  
-  /* 左側セクション - 全体をスクロール可能に */
   #modal.modal-edit .left-section {
     width: 50% !important;
     height: 100% !important;
     min-height: 0 !important;
     max-height: none !important;
-    overflow-y: auto !important; /* 左側全体をスクロール可能に */
+    overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     display: flex !important;
     flex-direction: column !important;
   }
   
-  /* 検索セクションを固定しない */
   #modal.modal-edit .search-section {
     flex-shrink: 0 !important;
     margin-bottom: 20px !important;
   }
   
-  /* カテゴリーセクションの高さを自動に */
   #modal.modal-edit .category-section {
-    flex: none !important; /* 内容に応じて伸びる */
+    flex: none !important;
     height: auto !important;
     overflow: visible !important;
-    min-height: 400px !important; /* 最小高さを設定 */
+    min-height: 400px !important;
   }
   
-  /* 各カテゴリーリストも高さ自動 */
   #modal.modal-edit .main-categories,
   #modal.modal-edit .sub-categories,
   #modal.modal-edit .cast-select-area {
     height: auto !important;
     min-height: 300px !important;
-    overflow: visible !important; /* 個別のスクロールを無効 */
+    overflow: visible !important;
   }
   
-  /* 右側セクション - 独立したスクロール */
   #modal.modal-edit .right-section {
     width: 50% !important;
     height: 100% !important;
@@ -1778,7 +1534,6 @@ label {
     flex-direction: column !important;
   }
   
-  /* 注文テーブルは内容に応じて伸びる */
   #modal.modal-edit .order-table {
     overflow: visible !important;
     height: auto !important;
@@ -1791,7 +1546,6 @@ label {
     max-height: none !important;
   }
   
-  /* アクションボタンは下部に固定 */
   #modal.modal-edit .action-buttons {
     flex-shrink: 0 !important;
     margin-top: auto !important;
@@ -1799,26 +1553,24 @@ label {
   }
 }
 
-/* Android端末でメニューアイテムの位置調整 */
+/* メニューアイテムの位置調整 */
 @media screen and (max-width: 1200px) {
   .menu-item {
-    padding-left: 50px !important; /* 左側の余白を大きく増やす */
-    justify-content: flex-start !important; /* 左寄せを維持 */
+    padding-left: 50px !important;
+    justify-content: flex-start !important;
   }
   
   .menu-item:hover {
-    padding-left: 55px !important; /* ホバー時も調整 */
+    padding-left: 55px !important;
   }
   
-  /* アイコンとテキストの間隔を調整 */
   .menu-item .menu-icon {
-    margin-right: 15px !important; /* 間隔を少し狭める */
+    margin-right: 15px !important;
   }
 }
 
 /* 月次レポート画面のAndroidタブレット対応 */
 @media screen and (max-width: 1200px) {
-  /* レポートページ全体の幅調整 */
   div[style*="maxWidth: '1200px'"] {
     max-width: 100% !important;
     width: 100% !important;
@@ -1826,9 +1578,8 @@ label {
     box-sizing: border-box !important;
   }
   
-  /* グラフエリアの高さを維持 */
   div[style*="height: '300px'"] {
-    height: 300px !important; /* 高さを維持 */
+    height: 300px !important;
     width: 100% !important;
     display: flex !important;
     align-items: flex-end !important;
@@ -1836,28 +1587,24 @@ label {
     box-sizing: border-box !important;
   }
   
-  /* グラフの棒を適切なサイズに */
   div[style*="flex: 1"] {
-    flex: 1 !important; /* 元のflex設定を維持 */
-    min-width: 15px !important; /* タブレット用に少し太く */
+    flex: 1 !important;
+    min-width: 15px !important;
     margin: 0 1px !important;
   }
   
-  /* 月次集計は3列に（タブレット用） */
   div[style*="gridTemplateColumns: 'repeat(4, 1fr)'"] {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 15px !important;
   }
   
-  /* フォントサイズは少し小さく */
   div[style*="fontSize: '24px'"] {
     font-size: 22px !important;
   }
   
-  /* テーブルの調整 */
   table {
-    font-size: 14px !important; /* タブレット用に読みやすく */
+    font-size: 14px !important;
     width: 100% !important;
   }
   
@@ -1865,82 +1612,97 @@ label {
   table td {
     padding: 10px 8px !important;
   }
-  
-  /* スマホ用の調整 */
-  @media screen and (max-width: 600px) {
-    /* グラフの棒を細く */
-    div[style*="flex: 1"] {
-      min-width: 8px !important;
-    }
-    
-    /* 月次集計を2列に */
-    div[style*="gridTemplateColumns: 'repeat(3, 1fr)'"] {
-      grid-template-columns: repeat(2, 1fr) !important;
-    }
-    
-    /* フォントサイズを小さく */
-    div[style*="fontSize: '22px'"] {
-      font-size: 18px !important;
-    }
-    
-    table {
-      font-size: 12px !important;
-    }
-  }
-/* 顧客情報ヘッダーのスタイル更新 - globals.cssの最後に追加 */
-.customer-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 15px 20px;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 0;
-  flex-wrap: wrap;
 }
 
-.customer-header > div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.customer-header .label-text {
-  font-size: 14px;
-  font-weight: bold;
-  color: #333;
-  white-space: nowrap;
-}
-
-/* 来店種別セレクトボックス */
-.visit-select {
-  padding: 4px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  min-width: 100px;
-  background: white;
-  cursor: pointer;
-}
-
-/* レスポンシブ対応 */
-@media screen and (max-width: 800px) {
-  .customer-header {
-    gap: 15px;
-    padding: 12px 15px;
-    font-size: 13px;
+/* スマホ用の追加調整 */
+@media screen and (max-width: 600px) {
+  #modal.modal-edit .pos-container {
+    flex-direction: column !important;
   }
   
-  .customer-header > div {
-    flex: 1 1 auto;
-    min-width: 150px;
+  #modal.modal-edit .left-section,
+  #modal.modal-edit .right-section {
+    width: 100% !important;
+    margin-bottom: 15px !important;
   }
   
-  .visit-select,
-  .cast-select {
-    min-width: 80px;
-    font-size: 13px;
+  div[style*="flex: 1"] {
+    min-width: 8px !important;
+  }
+  
+  div[style*="gridTemplateColumns: 'repeat(3, 1fr)'"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  div[style*="fontSize: '22px'"] {
+    font-size: 18px !important;
+  }
+  
+  table {
+    font-size: 12px !important;
   }
 }
 
+/* スクロール可能領域の明確化 */
+@media screen and (max-width: 1200px) {
+  #modal.modal-edit #details {
+    box-shadow: inset 0 -10px 10px -10px rgba(0,0,0,0.1);
+  }
+  
+  #modal.modal-edit .pos-container {
+    padding-bottom: 30px !important;
+  }
+  
+  #modal.modal-edit .action-buttons {
+    margin-bottom: 20px !important;
+  }
+  
+  #modal.modal-edit::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+  }
+  
+  #modal.modal-edit::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border-radius: 3px !important;
+  }
+  
+  #modal.modal-edit::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-radius: 3px !important;
+  }
+  
+  #modal.modal-edit #details::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.8));
+    pointer-events: none;
+  }
+  
+  #modal.modal-edit #details {
+    flex: 1 !important;
+    overflow: hidden !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  #modal.modal-edit .order-section {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding-bottom: 20px !important;
+  }
+  
+  #modal.modal-edit .pos-container {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin-bottom: 20px !important;
+  }
 }
