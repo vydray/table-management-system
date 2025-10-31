@@ -44,12 +44,10 @@ export default function TableLayoutEdit() {
   const [selectedTable, setSelectedTable] = useState<TableLayout | null>(null)
   const [newTableName, setNewTableName] = useState('')
   
-  // 画面比率関連の状態（selectedRatio削除）
-  const [customWidth, setCustomWidth] = useState('')
-  const [customHeight, setCustomHeight] = useState('')
-  const [canvasSize, setCanvasSize] = useState({ width: 2176, height: 1600 }) // 固定値に変更
+  // 画面比率関連の状態（カスタム設定関連を削除）
+  const [canvasSize, setCanvasSize] = useState({ width: 2176, height: 1600 }) // 固定値
   
-  // 整列機能用の状態
+  // 整列機能用の状態（以下そのまま）
   const [showAlignModal, setShowAlignModal] = useState(false)
   const [alignCols, setAlignCols] = useState(3)
   const [alignRows, setAlignRows] = useState(3)

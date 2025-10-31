@@ -772,8 +772,8 @@ export default function ReceiptSettings() {
           }}>
             {logoPreview && (
               <img 
-                src="/path/to/image"
-                alt="説明文"
+                src={logoPreview}  
+                alt="店舗ロゴ"     // ← alt属性も修正
                 style={{
                   width: '100px',
                   height: '100px',
