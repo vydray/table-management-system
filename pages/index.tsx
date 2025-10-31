@@ -490,11 +490,37 @@ export default function Home() {
       console.error('Error loading table layouts:', error)
     }
   }
-    // 出勤中のキャスト数を取得する関数
+  
+  // 出勤中のキャスト数を取得する関数
   const loadAttendingCastCount = async () => {
     try {
       const storeId = getCurrentStoreId()
-      // 省略...
+      const today = new Date()
+      const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      
+      // 有効な勤怠ステータスを取得
+      const { data: statusData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('store_id', storeId)
+        .eq('setting_key', 'active_attendance_statuses')
+        .single()
+      
+      const activeStatuses = statusData ? JSON.parse(statusData.setting_value) : ['出勤']
+      
+      // 当日の出勤キャストを取得
+      const { data: attendanceData, error } = await supabase
+        .from('attendance')
+        .select('cast_name')
+        .eq('store_id', storeId)
+        .eq('date', dateStr)
+        .in('status', activeStatuses)
+      
+      if (error) throw error
+      
+      // 重複を除外してユニークなキャスト数をカウント
+      const uniqueCasts = new Set(attendanceData?.map(a => a.cast_name) || [])
+      setAttendingCastCount(uniqueCasts.size)
     } catch (error) {
       console.error('Error loading attending cast count:', error)
       setAttendingCastCount(0)
