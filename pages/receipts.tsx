@@ -146,6 +146,7 @@ useEffect(() => {
   loadReceipts()
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [selectedDate])  // loadReceiptsは意図的に除外
+
   // 日付変更時
   useEffect(() => {
     if (businessDayStartHour !== null) {

@@ -23,17 +23,7 @@ interface TableLayout {
   entry_time?: string | null
   visit_type?: string | null
 }
-
-interface ScreenRatio {
-  label: string
-  width: number
-  height: number
-}
-
-// 固定値に変更
-const presetRatios: ScreenRatio[] = [
-  { label: '2176×1600（標準）', width: 2176, height: 1600 }
-]
+// ScreenRatioとpresetRatiosを削除（この行はコメントとして残してもOK）
 
 export default function TableLayoutEdit() {
   const router = useRouter()
@@ -45,7 +35,7 @@ export default function TableLayoutEdit() {
   const [newTableName, setNewTableName] = useState('')
   
   // 画面比率関連の状態（カスタム設定関連を削除）
-  const [canvasSize, setCanvasSize] = useState({ width: 2176, height: 1600 }) // 固定値
+  const canvasSize = { width: 2176, height: 1600 } // 固定値
   
   // 整列機能用の状態（以下そのまま）
   const [showAlignModal, setShowAlignModal] = useState(false)
@@ -343,16 +333,6 @@ export default function TableLayoutEdit() {
     
     if (currentViewPage > pageCount - 1) {
       setCurrentViewPage(pageCount - 1)
-    }
-  }
-
-  // カスタムサイズ適用
-  const applyCustomSize = () => {
-    const width = parseInt(customWidth)
-    const height = parseInt(customHeight)
-    
-    if (width > 0 && height > 0) {
-      setCanvasSize({ width, height })
     }
   }
 

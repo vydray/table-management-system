@@ -769,20 +769,23 @@ export default function ReceiptSettings() {
             display: 'flex',
             gap: '20px',
             alignItems: 'flex-start'
-          }}>
+           }}>
             {logoPreview && (
-              <img 
-                src={logoPreview}  
-                alt="店舗ロゴ"     // ← alt属性も修正
-                style={{
-                  width: '100px',
-                  height: '100px',
-                  objectFit: 'contain',
-                  border: '1px solid #ddd',
-                  borderRadius: '5px',
-                  padding: '5px'
-                }}
-              />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={logoPreview}        // ← 変数に修正
+                  alt="店舗ロゴ"          // ← 適切な説明に修正
+                  style={{
+                    width: '100px',
+                    height: '100px',
+                    objectFit: 'contain',
+                    border: '1px solid #ddd',
+                    borderRadius: '5px',
+                    padding: '5px'
+                  }}
+                />
+              </>
             )}
             <input
               type="file"
