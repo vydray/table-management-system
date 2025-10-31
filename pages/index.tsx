@@ -73,7 +73,6 @@ export default function Home() {
   const [attendingCastCount, setAttendingCastCount] = useState(0)
   const [occupiedTableCount, setOccupiedTableCount] = useState(0)
   
-  // ↓↓↓ ここに追加 ↓↓↓
   const [tableLayouts, setTableLayouts] = useState<Array<{
     table_name: string
     display_name: string | null
@@ -82,7 +81,12 @@ export default function Home() {
     table_width: number
     table_height: number
     is_visible: boolean
+    page_number: number  // ⭐ 追加
   }>>([])
+  
+  // ⭐ ページ管理用の状態を追加
+  const [currentPage, setCurrentPage] = useState(1)
+  const [maxPageNumber, setMaxPageNumber] = useState(1)
   
   // POS機能用の状態
   const [productCategories, setProductCategories] = useState<ProductCategories>({})
@@ -469,13 +473,19 @@ export default function Home() {
     }
   }
 
-  // ↓↓↓ この関数を追加 ↓↓↓
+// ↓↓↓ この関数を追加 ↓↓↓
   const loadTableLayouts = async () => {
     try {
       const storeId = getCurrentStoreId()
       const res = await fetch(`/api/tables/list?storeId=${storeId}`)
       const data = await res.json()
       setTableLayouts(data)
+      
+      // ⭐ 最大ページ番号を取得
+      if (data && data.length > 0) {
+        const maxPage = Math.max(...data.map((t: any) => t.page_number || 1), 1)
+        setMaxPageNumber(maxPage)
+      }
     } catch (error) {
       console.error('Error loading table layouts:', error)
     }
@@ -1263,6 +1273,41 @@ const finishCheckout = () => {
   </span>
 </div>
         
+        {/* ⭐ ページタブを追加 */}
+        {maxPageNumber > 1 && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '10px 16px',
+            backgroundColor: 'white',
+            borderBottom: '2px solid #ddd',
+            gap: '10px',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch'
+          }}>
+            {Array.from({ length: maxPageNumber }, (_, i) => i + 1).map(pageNum => (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: currentPage === pageNum ? '#FF9800' : '#f0f0f0',
+                  color: currentPage === pageNum ? 'white' : 'black',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: currentPage === pageNum ? 'bold' : 'normal',
+                  transition: 'all 0.3s ease',
+                  minWidth: '80px'
+                }}
+              >
+                ページ {pageNum}
+              </button>
+            ))}
+          </div>
+        )}
+        
         {/* サイドメニューコンポーネント */}
         <SideMenu 
           isOpen={showMenu}
@@ -1276,9 +1321,15 @@ const finishCheckout = () => {
           </div>
         )}
         
-        {/* テーブルコンポーネント */}
+{/* テーブルコンポーネント */}
         {Object.entries(tables).map(([tableId, data]) => {
           const layout = tableLayouts.find(t => t.table_name === tableId)
+          
+          // ⭐ 現在のページのテーブルのみ表示
+          if (!layout || (layout.page_number || 1) !== currentPage) {
+            return null
+          }
+          
           const tableSize = layout 
             ? { width: layout.table_width, height: layout.table_height }
             : { width: 130, height: 123 } 
@@ -1298,7 +1349,7 @@ const finishCheckout = () => {
                 onOpenModal={openModal}
                 onStartMoveMode={startMoveMode}
                 onExecuteMove={executeMove}
-/>
+            />
           )
         })}
       </div>

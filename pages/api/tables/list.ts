@@ -17,6 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq('store_id', targetStoreId)
       .eq('is_visible', true)
       .order('table_name')
+      .order('page_number, table_name')
 
     if (error) return res.status(500).json({ error: error.message })
 
