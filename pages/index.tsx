@@ -1273,38 +1273,122 @@ const finishCheckout = () => {
   </span>
 </div>
         
-        {/* ⭐ ページタブを追加 */}
+{/* ⭐ ページタブを追加 */}
         {maxPageNumber > 1 && (
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '10px 16px',
+            position: 'relative',
             backgroundColor: 'white',
             borderBottom: '2px solid #ddd',
-            gap: '10px',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch'
           }}>
-            {Array.from({ length: maxPageNumber }, (_, i) => i + 1).map(pageNum => (
+            {/* 左矢印 */}
+            {currentPage > 1 && (
               <button
-                key={pageNum}
-                onClick={() => setCurrentPage(pageNum)}
+                onClick={() => {
+                  const container = document.getElementById('page-tabs-container')
+                  if (container) {
+                    container.scrollBy({ left: -100, behavior: 'smooth' })
+                  }
+                  setCurrentPage(Math.max(1, currentPage - 1))
+                }}
                 style={{
-                  padding: '8px 16px',
-                  backgroundColor: currentPage === pageNum ? '#FF9800' : '#f0f0f0',
-                  color: currentPage === pageNum ? 'white' : 'black',
+                  position: 'absolute',
+                  left: '5px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 10,
+                  width: '30px',
+                  height: '30px',
+                  backgroundColor: 'rgba(255, 152, 0, 0.9)',
+                  color: 'white',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '50%',
                   cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: currentPage === pageNum ? 'bold' : 'normal',
-                  transition: 'all 0.3s ease',
-                  minWidth: '80px'
+                  fontSize: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                 }}
               >
-                ページ {pageNum}
+                ‹
               </button>
-            ))}
+            )}
+            
+            {/* タブコンテナ */}
+            <div
+              id="page-tabs-container"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '10px 45px', // 左右に矢印分の余白
+                gap: '10px',
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'none', // Firefox
+                msOverflowStyle: 'none', // IE/Edge
+              }}
+            >
+              <style>{`
+                #page-tabs-container::-webkit-scrollbar {
+                  display: none; /* Chrome/Safari/Opera */
+                }
+              `}</style>
+              {Array.from({ length: maxPageNumber }, (_, i) => i + 1).map(pageNum => (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: currentPage === pageNum ? '#FF9800' : '#f0f0f0',
+                    color: currentPage === pageNum ? 'white' : 'black',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: currentPage === pageNum ? 'bold' : 'normal',
+                    transition: 'all 0.3s ease',
+                    minWidth: '80px',
+                    flexShrink: 0
+                  }}
+                >
+                  ページ {pageNum}
+                </button>
+              ))}
+            </div>
+            
+            {/* 右矢印 */}
+            {currentPage < maxPageNumber && (
+              <button
+                onClick={() => {
+                  const container = document.getElementById('page-tabs-container')
+                  if (container) {
+                    container.scrollBy({ left: 100, behavior: 'smooth' })
+                  }
+                  setCurrentPage(Math.min(maxPageNumber, currentPage + 1))
+                }}
+                style={{
+                  position: 'absolute',
+                  right: '5px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 10,
+                  width: '30px',
+                  height: '30px',
+                  backgroundColor: 'rgba(255, 152, 0, 0.9)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+              >
+                ›
+              </button>
+            )}
           </div>
         )}
         
