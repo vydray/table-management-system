@@ -1505,7 +1505,7 @@ const finishCheckout = () => {
           </h3>
 
           {modalMode === 'new' ? (
-            <div id="form-fields" style={{ padding: '20px', display: 'flex', gap: '20px' }}>
+            <div id="form-fields" style={{ padding: '20px', display: 'flex', gap: '20px', height: 'calc(100% - 80px)' }}>
               {/* 左カラム: お客様情報 */}
               <div style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <label>
@@ -1571,7 +1571,7 @@ const finishCheckout = () => {
               </div>
 
               {/* 右カラム: 推し選択 */}
-              <div style={{ flex: '1', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <label style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>
                   推し:
                 </label>
@@ -1613,6 +1613,7 @@ const finishCheckout = () => {
                   style={{
                     width: '100%',
                     flex: 1,
+                    minHeight: 0,
                     border: '2px solid #ddd',
                     borderRadius: '6px',
                     overflowY: 'auto',
