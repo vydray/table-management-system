@@ -231,59 +231,39 @@ export default function TableLayoutEdit() {
 
   // 自動整列を実行
   const executeAlignment = async () => {
-    let targetTables: TableLayout[] = []
     if (alignTarget === 'current') {
-      targetTables = tables.filter(t => t.is_visible && (t.page_number || 1) === currentViewPage)
-    } else {
-      targetTables = tables.filter(t => t.is_visible)
-    }
+      // 現在のページのみ整列
+      const targetTables = tables.filter(t => t.is_visible && (t.page_number || 1) === currentViewPage)
 
-    if (targetTables.length === 0) {
-      alert('配置するテーブルがありません')
-      return
-    }
+      if (targetTables.length === 0) {
+        alert('配置するテーブルがありません')
+        return
+      }
 
-    // テーブルサイズは既存のサイズを使用（自動サイズ変更なし）
-    // 代表的なテーブルサイズを取得（最初のテーブル）
-    const representativeWidth = targetTables[0]?.table_width || 130
-    const representativeHeight = targetTables[0]?.table_height || 123
+      // テーブルサイズは既存のサイズを使用（自動サイズ変更なし）
+      const representativeWidth = targetTables[0]?.table_width || 130
+      const representativeHeight = targetTables[0]?.table_height || 123
 
-    const tablesPerPage = alignCols * alignRows
-    const neededPages = Math.ceil(targetTables.length / tablesPerPage)
-    const startPage = alignTarget === 'current' ? currentViewPage : 1
-    const endPage = startPage + neededPages - 1
+      // 利用可能なスペースを計算
+      const availableWidth = canvasSize.width - forbiddenZones.left - forbiddenZones.right
+      const availableHeight = canvasSize.height - forbiddenZones.top - forbiddenZones.bottom
 
-    if (endPage > pageCount) {
-      setPageCount(endPage)
-      await new Promise(resolve => setTimeout(resolve, 200))
-    }
+      // 全テーブルの合計幅と高さを計算
+      const totalTablesWidth = representativeWidth * alignCols + horizontalSpacing * (alignCols - 1)
+      const totalTablesHeight = representativeHeight * alignRows + verticalSpacing * (alignRows - 1)
 
-    // 利用可能なスペースを計算
-    const availableWidth = canvasSize.width - forbiddenZones.left - forbiddenZones.right
-    const availableHeight = canvasSize.height - forbiddenZones.top - forbiddenZones.bottom
+      // 上下左右の余白を均等に配分
+      const startX = forbiddenZones.left + (availableWidth - totalTablesWidth) / 2
+      const startY = forbiddenZones.top + (availableHeight - totalTablesHeight) / 2
 
-    // 全テーブルの合計幅と高さを計算
-    const totalTablesWidth = representativeWidth * alignCols + horizontalSpacing * (alignCols - 1)
-    const totalTablesHeight = representativeHeight * alignRows + verticalSpacing * (alignRows - 1)
-
-    // 上下左右の余白を均等に配分
-    const startX = forbiddenZones.left + (availableWidth - totalTablesWidth) / 2
-    const startY = forbiddenZones.top + (availableHeight - totalTablesHeight) / 2
-
-    const alignedTables: TableLayout[] = []
-    let remainingTables = [...targetTables]
-    let currentPage = startPage
-
-    while (remainingTables.length > 0 && currentPage <= endPage) {
-      const tablesForThisPage = remainingTables.slice(0, tablesPerPage)
-      remainingTables = remainingTables.slice(tablesPerPage)
-
+      const alignedTables: TableLayout[] = []
       let tableIndex = 0
+
       for (let row = 0; row < alignRows; row++) {
         for (let col = 0; col < alignCols; col++) {
-          if (tableIndex >= tablesForThisPage.length) break
+          if (tableIndex >= targetTables.length) break
 
-          const table = tablesForThisPage[tableIndex]
+          const table = targetTables[tableIndex]
 
           const newLeft = startX + col * (representativeWidth + horizontalSpacing)
           const newTop = startY + row * (representativeHeight + verticalSpacing)
@@ -292,47 +272,116 @@ export default function TableLayoutEdit() {
             ...table,
             position_left: newLeft,
             position_top: newTop,
-            page_number: currentPage
+            page_number: currentViewPage // 現在のページ番号を維持
           })
           tableIndex++
         }
       }
 
-      currentPage++
-    }
+      // データベース更新
+      const storeId = localStorage.getItem('currentStoreId') || '1'
+      for (const table of alignedTables) {
+        await supabase
+          .from('table_status')
+          .update({
+            position_top: table.position_top,
+            position_left: table.position_left,
+            page_number: table.page_number
+          })
+          .eq('table_name', table.table_name)
+          .eq('store_id', storeId)
+      }
 
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    for (const table of alignedTables) {
-      await supabase
-        .from('table_status')
-        .update({
-          position_top: table.position_top,
-          position_left: table.position_left,
-          page_number: table.page_number
-        })
-        .eq('table_name', table.table_name)
-        .eq('store_id', storeId)
-    }
+      setTables(prev => prev.map(t => {
+        const aligned = alignedTables.find(at => at.table_name === t.table_name)
+        return aligned ? aligned : t
+      }))
 
-    setTables(prev => prev.map(t => {
-      const aligned = alignedTables.find(at => at.table_name === t.table_name)
-      return aligned ? aligned : t
-    }))
+      alert(`${alignedTables.length}個のテーブルをページ${currentViewPage}に配置しました`)
+      setShowAlignModal(false)
 
-    const updatedCount = alignedTables.length
-    const totalPages = endPage - startPage + 1
-    const newPagesCreated = endPage > pageCount ? endPage - pageCount : 0
-    
-    let message = `${updatedCount}個のテーブルを配置しました`
-    if (newPagesCreated > 0) {
-      message += `\n${newPagesCreated}ページを新規追加しました`
+    } else {
+      // 全ページのテーブルを各ページごとに整列
+      const allVisibleTables = tables.filter(t => t.is_visible)
+
+      if (allVisibleTables.length === 0) {
+        alert('配置するテーブルがありません')
+        return
+      }
+
+      // ページごとにグループ化
+      const tablesByPage = new Map<number, TableLayout[]>()
+      allVisibleTables.forEach(table => {
+        const pageNum = table.page_number || 1
+        if (!tablesByPage.has(pageNum)) {
+          tablesByPage.set(pageNum, [])
+        }
+        tablesByPage.get(pageNum)!.push(table)
+      })
+
+      const allAlignedTables: TableLayout[] = []
+      const storeId = localStorage.getItem('currentStoreId') || '1'
+
+      // 各ページごとに整列
+      for (const [pageNum, pageTables] of tablesByPage.entries()) {
+        const representativeWidth = pageTables[0]?.table_width || 130
+        const representativeHeight = pageTables[0]?.table_height || 123
+
+        // 利用可能なスペースを計算
+        const availableWidth = canvasSize.width - forbiddenZones.left - forbiddenZones.right
+        const availableHeight = canvasSize.height - forbiddenZones.top - forbiddenZones.bottom
+
+        // 全テーブルの合計幅と高さを計算
+        const totalTablesWidth = representativeWidth * alignCols + horizontalSpacing * (alignCols - 1)
+        const totalTablesHeight = representativeHeight * alignRows + verticalSpacing * (alignRows - 1)
+
+        // 上下左右の余白を均等に配分
+        const startX = forbiddenZones.left + (availableWidth - totalTablesWidth) / 2
+        const startY = forbiddenZones.top + (availableHeight - totalTablesHeight) / 2
+
+        let tableIndex = 0
+        for (let row = 0; row < alignRows; row++) {
+          for (let col = 0; col < alignCols; col++) {
+            if (tableIndex >= pageTables.length) break
+
+            const table = pageTables[tableIndex]
+
+            const newLeft = startX + col * (representativeWidth + horizontalSpacing)
+            const newTop = startY + row * (representativeHeight + verticalSpacing)
+
+            const alignedTable = {
+              ...table,
+              position_left: newLeft,
+              position_top: newTop,
+              page_number: pageNum // 既存のページ番号を維持
+            }
+
+            allAlignedTables.push(alignedTable)
+
+            // データベース更新
+            await supabase
+              .from('table_status')
+              .update({
+                position_top: alignedTable.position_top,
+                position_left: alignedTable.position_left,
+                page_number: alignedTable.page_number
+              })
+              .eq('table_name', alignedTable.table_name)
+              .eq('store_id', storeId)
+
+            tableIndex++
+          }
+        }
+      }
+
+      setTables(prev => prev.map(t => {
+        const aligned = allAlignedTables.find(at => at.table_name === t.table_name)
+        return aligned ? aligned : t
+      }))
+
+      alert(`${allAlignedTables.length}個のテーブルを${tablesByPage.size}ページに配置しました`)
+      setShowAlignModal(false)
     }
-    if (totalPages > 1) {
-      message += `\nページ${startPage}〜${endPage}に配置されています`
-    }
-    
-    alert(message)
-    setShowAlignModal(false)
   }
 
   // ページ追加
