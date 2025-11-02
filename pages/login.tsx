@@ -25,7 +25,7 @@ export default function Login() {
     try {
       // Capacitorアプリかどうかを判定
       const isCapacitor = typeof window !== 'undefined' &&
-        // @ts-ignore
+        // @ts-expect-error - Capacitor is injected by the native app
         window.Capacitor?.isNativePlatform();
 
       if (isCapacitor) {
