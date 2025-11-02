@@ -57,34 +57,67 @@ export class BluetoothPrinter {
     }
   }
 
-  // プリンターに接続（修正版）
-  async connect(address: string): Promise<void> {
+  // プリンターに接続（改善版 - タイムアウトとリトライ追加）
+  async connect(address: string, retries: number = 2): Promise<void> {
     const plugin = this.getPlugin();
     if (!plugin) {
       throw new Error('SiiPrinter plugin not available');
     }
-    
-    try {
-      // 既に接続されている場合は一度切断
-      if (this.isConnected) {
-        console.log('既存の接続を切断します');
-        try {
-          await plugin.disconnect();
-        } catch (e) {
-          console.error('切断エラー（無視）:', e);
+
+    for (let attempt = 1; attempt <= retries + 1; attempt++) {
+      try {
+        console.log(`接続試行 ${attempt}/${retries + 1}...`);
+
+        // 既に接続されている場合は一度切断
+        if (this.isConnected) {
+          console.log('既存の接続を切断します');
+          try {
+            await plugin.disconnect();
+            // 切断後少し待つ
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (e) {
+            console.error('切断エラー（無視）:', e);
+          }
+          this.isConnected = false;
         }
+
+        console.log(`プリンター (${address}) に接続中...`);
+        await plugin.connect({ address });
+
+        // 接続成功後、少し待って確認
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        this.isConnected = true;
+        this.currentAddress = address;
+        console.log(`✓ プリンター接続成功: ${address}`);
+        return; // 成功したら終了
+
+      } catch (error: any) {
+        console.error(`✗ 接続試行 ${attempt} 失敗:`, error);
+
         this.isConnected = false;
+        this.currentAddress = '';
+
+        // 最後の試行でなければリトライ
+        if (attempt < retries + 1) {
+          console.log(`${attempt + 1}秒後にリトライします...`);
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        } else {
+          // 全ての試行が失敗
+          console.error('全ての接続試行が失敗しました');
+
+          // より詳細なエラーメッセージ
+          if (error.message?.includes('already connected')) {
+            throw new Error('プリンターは既に他のデバイスに接続されています。プリンターを再起動してください。');
+          } else if (error.message?.includes('connection refused')) {
+            throw new Error('プリンターが接続を拒否しました。プリンターの電源を確認してください。');
+          } else if (error.message?.includes('timeout')) {
+            throw new Error('接続がタイムアウトしました。プリンターの電源とBluetooth設定を確認してください。');
+          } else {
+            throw new Error(`接続エラー: ${error.message || '不明なエラー'}`);
+          }
+        }
       }
-      
-      await plugin.connect({ address });
-      this.isConnected = true;
-      this.currentAddress = address;
-      console.log('Connected to printer:', address);
-    } catch (error) {
-      console.error('Connection error:', error);
-      this.isConnected = false;
-      this.currentAddress = '';
-      throw error;
     }
   }
 

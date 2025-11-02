@@ -252,45 +252,109 @@ export default function ReceiptSettings() {
     setSettings({ ...settings, receipt_templates: newTemplates })
   }
 
-  // Bluetoothプリンター接続（修正版）
+  // Bluetoothプリンター接続（改善版 - デバッグログ追加）
   const connectBluetoothPrinter = async () => {
     if (printerConnected) {
-      // すでに接続されている場合は何もしない
+      console.log('既に接続済みです')
       return
     }
-    
+
     setIsConnecting(true)
     try {
-      // Bluetoothを有効化
+      console.log('=== Bluetooth接続開始 ===')
+
+      // ステップ1: Bluetoothを有効化
+      console.log('1. Bluetooth有効化中...')
       await printer.enable()
-      
-      // ペアリング済みデバイスを取得
+      console.log('✓ Bluetooth有効化成功')
+
+      // ステップ2: ペアリング済みデバイスを取得
+      console.log('2. ペアリング済みデバイスを検索中...')
       const devices = await printer.getPairedDevices()
-      console.log('Paired devices:', devices)
-      
-      // MP-B20を探す
-      const mp20 = devices.find((device: any) => 
-        device.name && (
-          device.name.includes('MP-B20') || 
-          device.name.includes('MP-') ||
-          device.name.includes('MPB20')
-        )
-      )
-      
+      console.log(`✓ ${devices.length}個のデバイスが見つかりました`)
+
+      // デバイス一覧を詳細表示
+      devices.forEach((device: any, index: number) => {
+        console.log(`  [${index + 1}] ${device.name || '(名前なし)'} - ${device.address || '(アドレス不明)'}`)
+      })
+
+      // ステップ3: MP-B20を探す（より柔軟な検索）
+      console.log('3. MP-B20プリンターを検索中...')
+      const mp20 = devices.find((device: any) => {
+        const name = device.name || ''
+        const address = device.address || ''
+
+        // 名前での検索（大文字小文字を区別しない）
+        const nameMatch = name.toUpperCase().includes('MP') &&
+                         (name.toUpperCase().includes('B20') || name.toUpperCase().includes('B-20'))
+
+        // アドレスでの検索（一部のデバイスは名前が表示されない場合がある）
+        const hasAddress = address.length > 0
+
+        console.log(`  検証: ${name} (${address}) - 名前一致: ${nameMatch}, アドレス有: ${hasAddress}`)
+
+        return nameMatch || (hasAddress && name.length === 0) // 名前が空でアドレスがある場合も候補にする
+      })
+
       if (mp20) {
+        console.log(`✓ プリンター発見: ${mp20.name} (${mp20.address})`)
+
+        // ステップ4: プリンターに接続
+        console.log('4. プリンターに接続中...')
         await printer.connect(mp20.address)
+        console.log('✓ 接続成功!')
+
         setPrinterConnected(true)
         setPrinterAddress(mp20.address)
-        alert('MP-B20に接続しました')
+        alert(`MP-B20に接続しました\n${mp20.name || 'プリンター'}\n${mp20.address}`)
       } else {
-        alert('MP-B20が見つかりません。\nAndroid設定でペアリングされているか確認してください。')
+        console.error('✗ MP-B20が見つかりませんでした')
+        console.log('ヒント: Androidの設定 > Bluetooth でプリンターとペアリングされているか確認してください')
+
+        // デバイス一覧を表示
+        const deviceList = devices.map((d: any) => `・${d.name || '(名前なし)'}`).join('\n')
+        alert(
+          'MP-B20が見つかりません。\n\n' +
+          'ペアリング済みデバイス:\n' +
+          (deviceList || '(デバイスなし)') +
+          '\n\nAndroid設定でMP-B20とペアリングされているか確認してください。'
+        )
       }
-    } catch (error) {
-      console.error('Printer connection error:', error)
-      alert('プリンター接続エラー: ' + error)
+    } catch (error: any) {
+      console.error('✗ プリンター接続エラー:', error)
+      console.error('エラー詳細:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      })
+
+      let errorMessage = 'プリンター接続エラー:\n\n'
+
+      if (error.message) {
+        errorMessage += error.message + '\n\n'
+      }
+
+      if (error.message?.includes('enable')) {
+        errorMessage += '解決策:\n' +
+          '1. Androidの設定でBluetoothがONになっているか確認\n' +
+          '2. アプリにBluetooth権限が許可されているか確認'
+      } else if (error.message?.includes('connect')) {
+        errorMessage += '解決策:\n' +
+          '1. プリンターの電源がONになっているか確認\n' +
+          '2. 他のデバイスに接続されていないか確認\n' +
+          '3. プリンターを再起動してみてください'
+      } else {
+        errorMessage += '解決策:\n' +
+          '1. プリンターの電源を確認\n' +
+          '2. Bluetooth設定を確認\n' +
+          '3. アプリを再起動してみてください'
+      }
+
+      alert(errorMessage)
       setPrinterConnected(false)
     } finally {
       setIsConnecting(false)
+      console.log('=== Bluetooth接続処理終了 ===')
     }
   }
 
