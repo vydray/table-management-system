@@ -1505,120 +1505,146 @@ const finishCheckout = () => {
           </h3>
 
           {modalMode === 'new' ? (
-            <div id="form-fields" style={{ padding: '20px' }}>
-              <label>
-                お客様名:
-                <input
-                  type="text"
-                  value={formData.guestName}
-                  onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
-                  placeholder="お客様名を入力"
-                  onFocus={(e) => {
-                    // Androidでキーボード表示時のスクロール位置調整
-                    if (window.innerWidth <= 1024) {
-                      setTimeout(() => {
-                        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                      }, 300)
-                    }
-                  }}
-                />
-              </label>
-
-              <label style={{ marginTop: '15px', display: 'block' }}>
-                推し:
-              </label>
-
-              {/* 50音フィルターボタン */}
-              <div style={{
-                display: 'flex',
-                gap: '5px',
-                flexWrap: 'wrap',
-                marginBottom: '10px',
-                padding: '10px',
-                backgroundColor: '#f5f5f5',
-                borderRadius: '8px'
-              }}>
-                {['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'].map(kana => (
-                  <button
-                    key={kana}
-                    type="button"
-                    onClick={() => setCastFilter(kana === '全' ? '' : kana)}
+            <div id="form-fields" style={{ padding: '20px', display: 'flex', gap: '20px' }}>
+              {/* 左カラム: お客様情報 */}
+              <div style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <label>
+                  お客様名:
+                  <input
+                    type="text"
+                    value={formData.guestName}
+                    onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
+                    placeholder="お客様名を入力"
                     style={{
-                      padding: '8px 12px',
-                      fontSize: '16px',
-                      fontWeight: 'bold',
-                      backgroundColor: castFilter === (kana === '全' ? '' : kana) ? '#FF9800' : 'white',
-                      color: castFilter === (kana === '全' ? '' : kana) ? 'white' : '#333',
-                      border: '2px solid #FF9800',
+                      width: '100%',
+                      fontSize: '18px',
+                      padding: '12px',
                       borderRadius: '6px',
-                      cursor: 'pointer',
-                      minWidth: '45px'
+                      border: '2px solid #ddd',
+                      marginTop: '8px'
+                    }}
+                    onFocus={(e) => {
+                      // Androidでキーボード表示時のスクロール位置調整
+                      if (window.innerWidth <= 1024) {
+                        setTimeout(() => {
+                          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        }, 300)
+                      }
+                    }}
+                  />
+                </label>
+
+                <label>
+                  来店種別:
+                  <select
+                    value={formData.visitType}
+                    onChange={(e) => setFormData({ ...formData, visitType: e.target.value })}
+                    style={{
+                      width: '100%',
+                      fontSize: '18px',
+                      padding: '12px',
+                      borderRadius: '6px',
+                      border: '2px solid #ddd',
+                      marginTop: '8px'
                     }}
                   >
-                    {kana}
-                  </button>
-                ))}
-              </div>
+                    <option value="">-- 来店種別を選択 --</option>
+                    <option value="初回">初回</option>
+                    <option value="再訪">再訪</option>
+                    <option value="常連">常連</option>
+                  </select>
+                </label>
 
-              {/* リストボックス形式のセレクト（複数行表示） */}
-              <select
-                value={formData.castName}
-                onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
-                size={8}
-                style={{
-                  width: '100%',
-                  fontSize: '18px',
-                  padding: '8px',
-                  borderRadius: '6px',
-                  border: '2px solid #ddd',
-                  marginBottom: '15px'
-                }}
-              >
-                <option value="">-- 推しを選択 --</option>
-                {castList
-                  .filter(name => {
-                    if (!castFilter) return true
-                    const firstChar = name.charAt(0)
-                    const kanaMap: Record<string, string> = {
-                      'あ': 'あいうえお',
-                      'か': 'かきくけこがぎぐげご',
-                      'さ': 'さしすせそざじずぜぞ',
-                      'た': 'たちつてとだぢづでど',
-                      'な': 'なにぬねの',
-                      'は': 'はひふへほばびぶべぼぱぴぷぺぽ',
-                      'ま': 'まみむめも',
-                      'や': 'やゆよ',
-                      'ら': 'らりるれろ',
-                      'わ': 'わをん'
-                    }
-                    return kanaMap[castFilter]?.includes(firstChar)
-                  })
-                  .map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-              </select>
-
-              <label>
-                来店種別:
-                <select
-                  value={formData.visitType}
-                  onChange={(e) => setFormData({ ...formData, visitType: e.target.value })}
-                >
-                  <option value="">-- 来店種別を選択 --</option>
-                  <option value="初回">初回</option>
-                  <option value="再訪">再訪</option>
-                  <option value="常連">常連</option>
-                </select>
-              </label>
-
-              <div className="center">
                 <button
                   onClick={() => updateTableInfo(false)}
                   className="btn-primary"
-                  style={{ width: '100%', marginTop: '15px' }}
+                  style={{
+                    width: '100%',
+                    marginTop: 'auto',
+                    padding: '15px',
+                    fontSize: '20px',
+                    fontWeight: 'bold'
+                  }}
                 >
                   決定
                 </button>
+              </div>
+
+              {/* 右カラム: 推し選択 */}
+              <div style={{ flex: '1', display: 'flex', flexDirection: 'column' }}>
+                <label style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>
+                  推し:
+                </label>
+
+                {/* 50音フィルターボタン */}
+                <div style={{
+                  display: 'flex',
+                  gap: '5px',
+                  flexWrap: 'wrap',
+                  marginBottom: '10px',
+                  padding: '10px',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: '8px'
+                }}>
+                  {['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'].map(kana => (
+                    <button
+                      key={kana}
+                      type="button"
+                      onClick={() => setCastFilter(kana === '全' ? '' : kana)}
+                      style={{
+                        padding: '8px 12px',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        backgroundColor: castFilter === (kana === '全' ? '' : kana) ? '#FF9800' : 'white',
+                        color: castFilter === (kana === '全' ? '' : kana) ? 'white' : '#333',
+                        border: '2px solid #FF9800',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        minWidth: '45px'
+                      }}
+                    >
+                      {kana}
+                    </button>
+                  ))}
+                </div>
+
+                {/* リストボックス形式のセレクト（複数行表示） */}
+                <select
+                  value={formData.castName}
+                  onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
+                  size={10}
+                  style={{
+                    width: '100%',
+                    fontSize: '18px',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '2px solid #ddd',
+                    flex: 1
+                  }}
+                >
+                  <option value="">-- 推しを選択 --</option>
+                  {castList
+                    .filter(name => {
+                      if (!castFilter) return true
+                      const firstChar = name.charAt(0)
+                      const kanaMap: Record<string, string> = {
+                        'あ': 'あいうえお',
+                        'か': 'かきくけこがぎぐげご',
+                        'さ': 'さしすせそざじずぜぞ',
+                        'た': 'たちつてとだぢづでど',
+                        'な': 'なにぬねの',
+                        'は': 'はひふへほばびぶべぼぱぴぷぺぽ',
+                        'ま': 'まみむめも',
+                        'や': 'やゆよ',
+                        'ら': 'らりるれろ',
+                        'わ': 'わをん'
+                      }
+                      return kanaMap[castFilter]?.includes(firstChar)
+                    })
+                    .map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                </select>
               </div>
             </div>
           ) : (
