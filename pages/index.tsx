@@ -7,6 +7,8 @@ import { TableData, OrderItem, ProductCategories, ProductCategory, Product } fro
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../utils/storeContext'
 import { printer } from '../utils/bluetoothPrinter'
+import { calculateSubtotal, calculateServiceTax, getRoundedTotal, getRoundingAdjustment } from '../utils/calculations'
+import { getJapanTimeString } from '../utils/dateTime'
 
 // 新しいコンポーネントのインポート
 import { LoadingOverlay } from '../components/LoadingOverlay'
@@ -140,48 +142,21 @@ export default function Home() {
   const [showReceiptConfirm, setShowReceiptConfirm] = useState(false)
   const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null)
 
-  // 日本時間をYYYY-MM-DD HH:mm:ss形式で取得する関数
-  const getJapanTimeString = (date: Date): string => {
-    const japanTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }))
-    
-    const year = japanTime.getFullYear()
-    const month = String(japanTime.getMonth() + 1).padStart(2, '0')
-    const day = String(japanTime.getDate()).padStart(2, '0')
-    const hours = String(japanTime.getHours()).padStart(2, '0')
-    const minutes = String(japanTime.getMinutes()).padStart(2, '0')
-    const seconds = String(japanTime.getSeconds()).padStart(2, '0')
-    
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-  }
-
   // 合計金額を計算する関数
   const getTotal = () => {
-    const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const serviceTax = Math.floor(subtotal * systemSettings.serviceChargeRate)
+    const subtotal = calculateSubtotal(orderItems)
+    const serviceTax = calculateServiceTax(subtotal, systemSettings.serviceChargeRate)
     return subtotal + serviceTax
   }
 
-  // 端数処理を計算する関数
-  const getRoundedTotal = (amount: number) => {
-    if (systemSettings.roundingUnit <= 0) return amount
-    
-    switch (systemSettings.roundingMethod) {
-      case 0: // 切り捨て
-        return Math.floor(amount / systemSettings.roundingUnit) * systemSettings.roundingUnit
-      case 1: // 切り上げ
-        return Math.ceil(amount / systemSettings.roundingUnit) * systemSettings.roundingUnit
-      case 2: // 四捨五入
-        return Math.round(amount / systemSettings.roundingUnit) * systemSettings.roundingUnit
-      default:
-        return amount
-    }
+  // 端数処理を適用した合計金額を取得
+  const getRoundedTotalAmount = () => {
+    return getRoundedTotal(getTotal(), systemSettings.roundingUnit, systemSettings.roundingMethod)
   }
 
   // 端数調整額を取得
-  const getRoundingAdjustment = () => {
-    const originalTotal = getTotal()
-    const roundedTotal = getRoundedTotal(originalTotal)
-    return roundedTotal - originalTotal
+  const getRoundingAdjustmentAmount = () => {
+    return getRoundingAdjustment(getTotal(), getRoundedTotalAmount())
   }
 
   const printOrderSlip = async () => {
@@ -213,10 +188,10 @@ export default function Home() {
         castName: formData.castName || '（未選択）',
         elapsedTime: tables[currentTable]?.elapsed || '0分',
         orderItems: orderItems,
-        subtotal: orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-        serviceTax: Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * systemSettings.serviceChargeRate),
-        roundedTotal: getRoundedTotal(getTotal()),
-        roundingAdjustment: getRoundingAdjustment(),
+        subtotal: calculateSubtotal(orderItems),
+        serviceTax: calculateServiceTax(calculateSubtotal(orderItems), systemSettings.serviceChargeRate),
+        roundedTotal: getRoundedTotalAmount(),
+        roundingAdjustment: getRoundingAdjustmentAmount(),
         timestamp: timestamp
       };
 
@@ -880,7 +855,7 @@ const handleMenuClick = (item: string) => {
 // 会計完了処理（修正版）
 const completeCheckout = async () => {
   const totalPaid = paymentData.cash + paymentData.card + paymentData.other
-  const roundedTotal = getRoundedTotal(getTotal())
+  const roundedTotal = getRoundedTotalAmount()
   
   if (totalPaid < roundedTotal) {
     alert('支払金額が不足しています')
@@ -911,7 +886,7 @@ const completeCheckout = async () => {
         paymentCard: paymentData.card,
         paymentOther: paymentData.other,
         paymentOtherMethod: paymentData.otherMethod,
-        totalAmount: getRoundedTotal(getTotal()),
+        totalAmount: getRoundedTotalAmount(),
         storeId: storeId
       })
     })
@@ -1025,8 +1000,8 @@ const handleReceiptPrint = async () => {
         hour12: false
       });
       
-      const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const serviceTax = Math.floor(subtotal * systemSettings.serviceChargeRate);
+      const subtotal = calculateSubtotal(orderItems);
+      const serviceTax = calculateServiceTax(subtotal, systemSettings.serviceChargeRate);
       const consumptionTax = Math.floor((subtotal + serviceTax) * systemSettings.consumptionTaxRate);
       
       // 領収書印刷（設定値を使用）
@@ -1056,13 +1031,13 @@ const handleReceiptPrint = async () => {
         subtotal: subtotal,
         serviceTax: serviceTax,
         consumptionTax: consumptionTax,
-        roundingAdjustment: getRoundingAdjustment(),
-        roundedTotal: getRoundedTotal(getTotal()),
+        roundingAdjustment: getRoundingAdjustmentAmount(),
+        roundedTotal: getRoundedTotalAmount(),
         paymentCash: paymentData.cash,
         paymentCard: paymentData.card,
         paymentOther: paymentData.other,
         paymentOtherMethod: paymentData.otherMethod,
-        change: (paymentData.cash + paymentData.card + paymentData.other) - getRoundedTotal(getTotal())
+        change: (paymentData.cash + paymentData.card + paymentData.other) - getRoundedTotalAmount()
       });
       
       // 印刷後に切断
@@ -1792,10 +1767,10 @@ const finishCheckout = () => {
                     }}
                     /* ここまで変更 */
                     castList={castList}
-                    subtotal={orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
-                    serviceTax={Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * systemSettings.serviceChargeRate)}
-                    roundedTotal={getRoundedTotal(getTotal())}
-                    roundingAdjustment={getRoundingAdjustment()}
+                    subtotal={calculateSubtotal(orderItems)}
+                    serviceTax={calculateServiceTax(calculateSubtotal(orderItems), systemSettings.serviceChargeRate)}
+                    roundedTotal={getRoundedTotalAmount()}
+                    roundingAdjustment={getRoundingAdjustmentAmount()}
                   />
                   
                 </div>
@@ -1812,11 +1787,11 @@ const finishCheckout = () => {
         layoutScale={1}
         paymentData={paymentData}
         activePaymentInput={activePaymentInput}
-        subtotal={orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
-        serviceTax={Math.floor(orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * systemSettings.serviceChargeRate)}
+        subtotal={calculateSubtotal(orderItems)}
+        serviceTax={calculateServiceTax(calculateSubtotal(orderItems), systemSettings.serviceChargeRate)}
         total={getTotal()}
-        roundedTotal={getRoundedTotal(getTotal())}
-        roundingAdjustment={getRoundingAdjustment()}
+        roundedTotal={getRoundedTotalAmount()}
+        roundingAdjustment={getRoundingAdjustmentAmount()}
         formData={formData}
         onNumberClick={handleNumberClick}
         onQuickAmount={handleQuickAmount}
