@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../utils/storeContext'
+import { getBusinessDayRangeDates } from '../utils/dateTime'
 import ReceiptList from '../components/receipts/ReceiptList'
 import ReceiptDetail from '../components/receipts/ReceiptDetail'
 import { Receipt, OrderItem } from '../types/receipt'
@@ -40,31 +41,14 @@ export default function Receipts() {
     }
   }
 
-  // 営業日の開始・終了時刻を計算
-  const getBusinessDayRange = (date: string) => {
-    const targetDate = new Date(date)
-    
-    // 開始時刻（当日の営業開始時間）
-    const start = new Date(targetDate)
-    start.setHours(businessDayStartHour, 0, 0, 0)
-    
-    // 終了時刻（翌日の営業開始時間）
-    const end = new Date(targetDate)
-    end.setDate(end.getDate() + 1)
-    end.setHours(businessDayStartHour, 0, 0, 0)
-    
-    return { 
-      start: start.toISOString(), 
-      end: end.toISOString() 
-    }
-  }
 
   // 伝票一覧を読み込む
   const loadReceipts = async () => {
     setLoading(true)
     try {
       const storeId = getCurrentStoreId()
-      const { start, end } = getBusinessDayRange(selectedDate)
+      const targetDate = new Date(selectedDate)
+      const { start, end } = getBusinessDayRangeDates(targetDate, businessDayStartHour)
 
       const { data, error } = await supabase
         .from('orders')
@@ -81,8 +65,8 @@ export default function Receipts() {
         `)
         .eq('store_id', storeId)
         .not('checkout_datetime', 'is', null)
-        .gte('checkout_datetime', start)
-        .lt('checkout_datetime', end)
+        .gte('checkout_datetime', start.toISOString())
+        .lt('checkout_datetime', end.toISOString())
         .order('checkout_datetime', { ascending: false })
 
       if (error) throw error

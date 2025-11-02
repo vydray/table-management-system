@@ -61,3 +61,23 @@ export const getBusinessDayRangeFromString = (
   const date = new Date(dateStr + 'T00:00:00')
   return getBusinessDayRange(date, businessDayStartHour)
 }
+
+/**
+ * 営業日の開始・終了時刻を計算（Dateオブジェクト版）
+ * @param date 基準日
+ * @param businessDayStartHour 営業日の開始時刻（例: 18）
+ * @returns { start: Date, end: Date }
+ */
+export const getBusinessDayRangeDates = (
+  date: Date,
+  businessDayStartHour: number
+): { start: Date; end: Date } => {
+  const start = new Date(date)
+  start.setHours(businessDayStartHour, 0, 0, 0)
+
+  const end = new Date(date)
+  end.setDate(end.getDate() + 1)
+  end.setHours(businessDayStartHour, 0, 0, 0)
+
+  return { start, end }
+}

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../utils/storeContext'
+import { getBusinessDayRangeDates } from '../utils/dateTime'
 import CashCountModal from '../components/report/CashCountModal'
 
 const supabase = createClient(
@@ -154,7 +155,7 @@ useEffect(() => {
       
       for (let day = 1; day <= daysInMonth; day++) {
         const targetDate = new Date(selectedYear, selectedMonth - 1, day)
-        const { start, end } = getBusinessDayRange(targetDate)
+        const { start, end } = getBusinessDayRangeDates(targetDate, businessDayStartHour)
 
         const { data: salesData } = await supabase
           .from('orders')
@@ -470,17 +471,6 @@ useEffect(() => {
     }
   }
 
-  // 営業日の開始・終了時刻を計算
-  const getBusinessDayRange = (date: Date) => {
-    const start = new Date(date)
-    start.setHours(businessDayStartHour, 0, 0, 0)
-    
-    const end = new Date(date)
-    end.setDate(end.getDate() + 1)
-    end.setHours(businessDayStartHour, 0, 0, 0)
-    
-    return { start, end }
-  }
 
   // 最新の売上データを取得する関数
   const getLatestSalesData = async (dateStr: string): Promise<SalesStats> => {
@@ -492,7 +482,7 @@ useEffect(() => {
       const month = parseInt(matches[1])
       const day = parseInt(matches[2])
       const targetDate = new Date(selectedYear, month - 1, day)
-      const { start, end } = getBusinessDayRange(targetDate)
+      const { start, end } = getBusinessDayRangeDates(targetDate, businessDayStartHour)
 
       const { data: salesData } = await supabase
         .from('orders')
