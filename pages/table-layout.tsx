@@ -588,7 +588,16 @@ export default function TableLayoutEdit() {
           </h1>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
-              onClick={() => setShowAlignModal(true)}
+              onClick={() => {
+                // モーダルを開く際に現在の値を入力欄にセット
+                setAlignColsInput(alignCols.toString())
+                setAlignRowsInput(alignRows.toString())
+                setHorizontalSpacingInput(horizontalSpacing.toString())
+                setVerticalSpacingInput(verticalSpacing.toString())
+                setAlignStartXInput(alignStartX.toString())
+                setAlignStartYInput(alignStartY.toString())
+                setShowAlignModal(true)
+              }}
               style={{
                 padding: '8px 16px',
                 fontSize: '16px',
