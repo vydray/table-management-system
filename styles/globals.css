@@ -55,22 +55,7 @@ body.modal-open {
   will-change: transform;
 }
 
-/* 1280px以下の画面幅の場合 */
-@media screen and (max-width: 1280px) {
-  #layout {
-    width: 100vw;
-    height: 100vh;
-    max-width: 100%;
-    max-height: 100%;
-    border: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    /* ここではscaleを1に戻す */
-    transform: none !important;
-    -webkit-transform: none !important;
-  }
-}
+/* メディアクエリによるスケール無効化を削除 - 全サイズで自動スケーリング */
 
 /* テーブル */
 .table {
