@@ -536,10 +536,14 @@ export default function TableLayoutEdit() {
     if (draggedTable) {
       const table = tables.find(t => t.table_name === draggedTable)
       if (table) {
+        // 座標を整数に丸める
+        const posTop = Math.round(table.position_top)
+        const posLeft = Math.round(table.position_left)
+
         console.log('保存開始:', {
           table_name: table.table_name,
-          position_top: table.position_top,
-          position_left: table.position_left,
+          position_top: posTop,
+          position_left: posLeft,
           page_number: table.page_number
         })
 
@@ -549,8 +553,8 @@ export default function TableLayoutEdit() {
         const { error } = await supabase
           .from('table_status')
           .update({
-            position_top: table.position_top,
-            position_left: table.position_left,
+            position_top: posTop,
+            position_left: posLeft,
             page_number: table.page_number
           })
           .eq('table_name', table.table_name)
@@ -561,6 +565,12 @@ export default function TableLayoutEdit() {
           alert(`保存に失敗しました: ${error.message}`)
         } else {
           console.log('保存成功:', table.table_name)
+          // ローカルステートも更新（整数値で）
+          setTables(prev => prev.map(t =>
+            t.table_name === table.table_name
+              ? { ...t, position_top: posTop, position_left: posLeft }
+              : t
+          ))
         }
       }
       setDraggedTable(null)
