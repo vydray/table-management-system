@@ -935,18 +935,18 @@ export default function TableLayoutEdit() {
             <div
               id={`canvas-area-${currentViewPage}`}
               key={currentViewPage}
-                style={{
-                  minWidth: `${canvasSize.width}px`,
-                  width: `${canvasSize.width}px`,
-                  height: `${canvasSize.height}px`,
-                  backgroundColor: '#f0f0f0',
-                  border: currentViewPage === pageNum ? '3px solid #FF9800' : '1px solid #ccc',
-                  borderRadius: '8px',
-                  position: 'relative',
-                  cursor: draggedTable ? 'grabbing' : 'default',
-                  transform: `scale(${zoom})`,
-                  transformOrigin: 'top left'
-                }}
+              style={{
+                minWidth: `${canvasSize.width}px`,
+                width: `${canvasSize.width}px`,
+                height: `${canvasSize.height}px`,
+                backgroundColor: '#f0f0f0',
+                border: '3px solid #FF9800',
+                borderRadius: '8px',
+                position: 'relative',
+                cursor: draggedTable ? 'grabbing' : 'default',
+                transform: `scale(${zoom})`,
+                transformOrigin: 'top left'
+              }}
                 onMouseDown={handleCanvasMouseDown}
                 onMouseMove={handleCanvasMouseMove}
                 onMouseUp={handleCanvasMouseUp}
