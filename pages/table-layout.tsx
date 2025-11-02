@@ -51,18 +51,13 @@ export default function TableLayoutEdit() {
   const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
   const [isUpdatingSize, setIsUpdatingSize] = useState(false)
   
-  // ズーム関連
-  const [zoom, setZoom] = useState(1)
-  const [initialZoom, setInitialZoom] = useState(1)
+  // 自動スケール計算用
+  const [autoScale, setAutoScale] = useState(1)
   const canvasRef = useRef<HTMLDivElement>(null)
-  const isPanning = useRef(false)
-  const isPinching = useRef(false)
-  const lastPinchDistance = useRef(0)
-  const lastPanPoint = useRef({ x: 0, y: 0 })
 
-  // 初期ズームの計算
+  // 画面サイズに合わせた自動スケールを計算
   useEffect(() => {
-    const calculateInitialZoom = () => {
+    const calculateAutoScale = () => {
       if (canvasRef.current) {
         const container = canvasRef.current
         const containerWidth = container.clientWidth
@@ -71,17 +66,16 @@ export default function TableLayoutEdit() {
         // キャンバスサイズに対する縮小率を計算（マージンを考慮）
         const scaleX = (containerWidth - 40) / canvasSize.width
         const scaleY = (containerHeight - 40) / canvasSize.height
-        const initialScale = Math.min(scaleX, scaleY, 1) // 最大でも1.0まで
+        const scale = Math.min(scaleX, scaleY, 1) // 最大でも1.0まで
 
-        setInitialZoom(initialScale)
-        setZoom(initialScale)
+        setAutoScale(scale)
       }
     }
 
-    calculateInitialZoom()
-    window.addEventListener('resize', calculateInitialZoom)
-    return () => window.removeEventListener('resize', calculateInitialZoom)
-  }, [])
+    calculateAutoScale()
+    window.addEventListener('resize', calculateAutoScale)
+    return () => window.removeEventListener('resize', calculateAutoScale)
+  }, [canvasSize.width, canvasSize.height])
   
   // ページ管理
   const [pageCount, setPageCount] = useState(1)
@@ -385,82 +379,23 @@ export default function TableLayoutEdit() {
     setIsUpdatingSize(false)
   }
 
-  // ピンチズームの距離計算
-  const getPinchDistance = (touch1: React.Touch, touch2: React.Touch) => {
-    const dx = touch1.clientX - touch2.clientX
-    const dy = touch1.clientY - touch2.clientY
-    return Math.sqrt(dx * dx + dy * dy)
+  // キャンバスのタッチ/マウス操作（ズーム機能削除）
+  const handleCanvasMouseDown = () => {
+    // ページクリックのみ対応
   }
 
-  // キャンバスのタッチ/マウス操作
-  const handleCanvasMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-    if (draggedTable) return
-    
-    const target = e.target as HTMLElement
-    if (target.style.cursor === 'move') return
-    
-    if (target.id && (target.id.startsWith('canvas-area') || target === canvasRef.current)) {
-      if ('touches' in e) {
-        if (e.touches.length === 2) {
-          isPinching.current = true
-          lastPinchDistance.current = getPinchDistance(e.touches[0], e.touches[1])
-          e.preventDefault()
-        } else if (e.touches.length === 1) {
-          isPanning.current = true
-          lastPanPoint.current = { 
-            x: e.touches[0].clientX, 
-            y: e.touches[0].clientY 
-          }
-        }
-      } else {
-        if (e.button === 1 || e.ctrlKey || e.metaKey) {
-          isPanning.current = true
-          lastPanPoint.current = { x: e.clientX, y: e.clientY }
-          e.preventDefault()
-        }
-      }
-    }
-  }
-
-  const handleCanvasMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if ('touches' in e) {
-      if (isPinching.current && e.touches.length === 2) {
-        const currentDistance = getPinchDistance(e.touches[0], e.touches[1])
-        const scale = currentDistance / lastPinchDistance.current
-        const newZoom = Math.max(0.5, Math.min(3, zoom * scale))
-        setZoom(newZoom)
-        lastPinchDistance.current = currentDistance
-        e.preventDefault()
-      } else if (isPanning.current && e.touches.length === 1) {
-        lastPanPoint.current = { 
-          x: e.touches[0].clientX, 
-          y: e.touches[0].clientY 
-        }
-      }
-    } else if (isPanning.current) {
-      lastPanPoint.current = { x: e.clientX, y: e.clientY }
-    }
+  const handleCanvasMouseMove = () => {
+    // 何もしない
   }
 
   const handleCanvasMouseUp = () => {
-    isPanning.current = false
-    isPinching.current = false
-  }
-
-  // ズーム操作
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault()
-    const delta = e.deltaY > 0 ? 0.9 : 1.1
-    const newZoom = Math.max(0.5, Math.min(2, zoom * delta))
-    setZoom(newZoom)
+    // 何もしない
   }
 
   // ドラッグ開始
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent, table: TableLayout) => {
     e.stopPropagation()
-    
-    if (isPanning.current) return
-    
+
     if ('touches' in e && e.touches.length > 1) return
     
     const pageNum = table.page_number || 1
@@ -471,8 +406,8 @@ export default function TableLayoutEdit() {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     
-    const actualX = (clientX - rect.left) / zoom
-    const actualY = (clientY - rect.top) / zoom
+    const actualX = (clientX - rect.left) / autoScale
+    const actualY = (clientY - rect.top) / autoScale
     
     setDraggedTable(table.table_name)
     setDragOffset({
@@ -514,8 +449,8 @@ export default function TableLayoutEdit() {
     if (!canvas) return
     
     const rect = canvas.getBoundingClientRect()
-    const actualX = (clientX - rect.left) / zoom
-    const actualY = (clientY - rect.top) / zoom
+    const actualX = (clientX - rect.left) / autoScale
+    const actualY = (clientY - rect.top) / autoScale
     
     const minX = forbiddenZones.left
     const maxX = canvasSize.width - table.table_width - forbiddenZones.right
@@ -800,58 +735,11 @@ export default function TableLayoutEdit() {
               </button>
             </div>
 
-            {/* ズームコントロール */}
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>
-                ズーム: {Math.round((zoom / initialZoom) * 100)}%
-              </h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={() => setZoom(Math.max(0.1, zoom - 0.05))}
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    backgroundColor: '#757575',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  ー
-                </button>
-                <button
-                  onClick={() => setZoom(initialZoom)}
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    backgroundColor: '#616161',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  100%
-                </button>
-                <button
-                  onClick={() => setZoom(Math.min(2, zoom + 0.05))}
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    backgroundColor: '#757575',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  ＋
-                </button>
-              </div>
+            {/* 表示倍率情報 */}
+            <div style={{ marginBottom: '20px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
+              <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
+                表示倍率: {Math.round(autoScale * 100)}% (自動調整)
+              </p>
             </div>
 
             {/* テーブル一覧 */}
@@ -916,37 +804,39 @@ export default function TableLayoutEdit() {
             {loading && <div style={{ textAlign: 'center', marginTop: '20px' }}>読み込み中...</div>}
           </div>
 
-          {/* キャンバスエリア - 中央配置で全体表示 */}
+          {/* キャンバスエリア - 全体が見える固定スケール、横スクロール対応 */}
           <div
             ref={canvasRef}
-            onWheel={handleWheel}
             style={{
               flex: 1,
               position: 'relative',
               backgroundColor: '#e0e0e0',
-              overflow: 'auto',
+              overflowX: 'auto',
+              overflowY: 'hidden',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px'
+              justifyContent: 'flex-start',
+              padding: '20px',
+              gap: '20px'
             }}
           >
-            {/* 現在のページのキャンバスのみ表示 */}
-            <div
-              id={`canvas-area-${currentViewPage}`}
-              key={currentViewPage}
-              style={{
-                minWidth: `${canvasSize.width}px`,
-                width: `${canvasSize.width}px`,
-                height: `${canvasSize.height}px`,
-                backgroundColor: '#f0f0f0',
-                border: '3px solid #FF9800',
-                borderRadius: '8px',
-                position: 'relative',
-                cursor: draggedTable ? 'grabbing' : 'default',
-                transform: `scale(${zoom})`,
-                transformOrigin: 'top left'
-              }}
+            {/* 全ページを横並びで表示 */}
+            {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
+              <div
+                key={pageNum}
+                id={`canvas-area-${pageNum}`}
+                style={{
+                  minWidth: `${canvasSize.width * autoScale}px`,
+                  width: `${canvasSize.width * autoScale}px`,
+                  height: `${canvasSize.height * autoScale}px`,
+                  backgroundColor: '#f0f0f0',
+                  border: currentViewPage === pageNum ? '3px solid #FF9800' : '2px solid #ccc',
+                  borderRadius: '8px',
+                  position: 'relative',
+                  cursor: draggedTable ? 'grabbing' : 'default',
+                  flexShrink: 0
+                }}
+                onClick={() => setCurrentViewPage(pageNum)}
                 onMouseDown={handleCanvasMouseDown}
                 onMouseMove={handleCanvasMouseMove}
                 onMouseUp={handleCanvasMouseUp}
@@ -954,21 +844,21 @@ export default function TableLayoutEdit() {
                 onTouchMove={handleCanvasMouseMove}
                 onTouchEnd={handleCanvasMouseUp}
               >
-              {/* ページ番号表示 */}
-              <div style={{
-                position: 'absolute',
-                top: '10px',
-                left: '10px',
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                color: 'white',
-                padding: '4px 12px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                zIndex: 10
-              }}>
-                ページ {currentViewPage}
-              </div>
+                {/* ページ番号表示 */}
+                <div style={{
+                  position: 'absolute',
+                  top: `${10 * autoScale}px`,
+                  left: `${10 * autoScale}px`,
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  color: 'white',
+                  padding: `${4 * autoScale}px ${12 * autoScale}px`,
+                  borderRadius: `${4 * autoScale}px`,
+                  fontSize: `${14 * autoScale}px`,
+                  fontWeight: 'bold',
+                  zIndex: 10
+                }}>
+                  ページ {pageNum}
+                </div>
 
                 {/* 配置禁止ゾーン表示 */}
                 <div style={{
@@ -976,14 +866,14 @@ export default function TableLayoutEdit() {
                   top: 0,
                   left: 0,
                   right: 0,
-                  height: `${forbiddenZones.top}px`,
+                  height: `${forbiddenZones.top * autoScale}px`,
                   backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                  borderBottom: '2px dashed #ff0000',
+                  borderBottom: `${2 * autoScale}px dashed #ff0000`,
                   pointerEvents: 'none',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '12px',
+                  fontSize: `${12 * autoScale}px`,
                   color: '#ff0000'
                 }}>
                   ヘッダーエリア（配置不可）
@@ -993,45 +883,45 @@ export default function TableLayoutEdit() {
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  height: `${forbiddenZones.bottom}px`,
+                  height: `${forbiddenZones.bottom * autoScale}px`,
                   backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                  borderTop: '2px dashed #ff0000',
+                  borderTop: `${2 * autoScale}px dashed #ff0000`,
                   pointerEvents: 'none',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '12px',
+                  fontSize: `${12 * autoScale}px`,
                   color: '#ff0000'
                 }}>
                   Androidナビゲーションバーエリア（配置不可）
                 </div>
 
-              {/* テーブル表示 */}
-              {tables
-                .filter(table => table.is_visible && (table.page_number || 1) === currentViewPage)
-                .map(table => (
+                {/* テーブル表示 */}
+                {tables
+                  .filter(table => table.is_visible && (table.page_number || 1) === pageNum)
+                  .map(table => (
                     <div
                       key={table.table_name}
                       onDoubleClick={() => handleDoubleClick(table)}
                       style={{
                         position: 'absolute',
-                        top: `${table.position_top}px`,
-                        left: `${table.position_left}px`,
-                        width: `${table.table_width || 130}px`,
-                        height: `${table.table_height || 123}px`,
+                        top: `${table.position_top * autoScale}px`,
+                        left: `${table.position_left * autoScale}px`,
+                        width: `${(table.table_width || 130) * autoScale}px`,
+                        height: `${(table.table_height || 123) * autoScale}px`,
                         backgroundColor: table.current_guest ? '#ffe0f0' : table.guest_name ? '#FF9800' : '#ccc',
-                        borderRadius: '8px',
+                        borderRadius: `${8 * autoScale}px`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'move',
                         userSelect: 'none',
-                        boxShadow: draggedTable === table.table_name 
-                          ? '0 4px 16px rgba(0,0,0,0.3)' 
-                          : '0 2px 8px rgba(0,0,0,0.1)',
+                        boxShadow: draggedTable === table.table_name
+                          ? `0 ${4 * autoScale}px ${16 * autoScale}px rgba(0,0,0,0.3)`
+                          : `0 ${2 * autoScale}px ${8 * autoScale}px rgba(0,0,0,0.1)`,
                         opacity: draggedTable === table.table_name ? 0.8 : 1,
                         transition: 'box-shadow 0.2s',
-                        fontSize: '16px',
+                        fontSize: `${16 * autoScale}px`,
                         fontWeight: 'bold',
                         touchAction: 'none'
                       }}
@@ -1047,10 +937,11 @@ export default function TableLayoutEdit() {
                         handleDragEnd()
                       }}
                     >
-                    {table.display_name || table.table_name}
-                  </div>
-                ))}
-            </div>
+                      {table.display_name || table.table_name}
+                    </div>
+                  ))}
+              </div>
+            ))}
           </div>
         </div>
 
