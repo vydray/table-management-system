@@ -133,12 +133,12 @@ body.modal-open {
   top: 0;
   left: 0;
   width: 2176px;
-  height: 72px;
+  height: 110px;
   background-color: #b9f6b7;
   border: 1px solid #707070;
   text-align: center;
-  line-height: 72px;
-  font-size: 32px;
+  line-height: 110px;
+  font-size: 52px;
   font-weight: bold;
 }
 
@@ -160,12 +160,12 @@ body.modal-open {
   background: rgba(255, 255, 255, 0.8);
   border: none;
   cursor: pointer;
-  padding: 12px;
-  font-size: 32px;
+  padding: 16px;
+  font-size: 48px;
   color: #333;
   border-radius: 8px;
-  width: 60px;
-  height: 60px;
+  width: 90px;
+  height: 90px;
 }
 
 .menu-button:hover {
@@ -177,10 +177,10 @@ body.modal-open {
 /* サイドメニュー */
 .side-menu {
   position: absolute;
-  left: -340px;
-  top: 72px;
-  width: 340px;
-  height: 1528px;  /* 1600 - 72 */
+  left: -480px;
+  top: 110px;
+  width: 480px;
+  height: 1490px;  /* 1600 - 110 */
   background: white;
   box-shadow: 4px 0 20px rgba(0,0,0,0.15);
   transition: left 0.3s ease;
@@ -196,7 +196,7 @@ body.modal-open {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 30px 25px;
+  padding: 35px 30px;
   border-bottom: 2px solid #eee;
   background: #f8f8f8;
   position: sticky;
@@ -206,20 +206,20 @@ body.modal-open {
 
 .menu-header h3 {
   margin: 0;
-  font-size: 28px;
+  font-size: 38px;
   color: #333;
 }
 
 .menu-close {
   background: none;
   border: none;
-  font-size: 36px;
+  font-size: 50px;
   cursor: pointer;
   color: #666;
   padding: 10px;
   transition: transform 0.2s;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 60px;
+  min-height: 60px;
 }
 
 .menu-close:hover {
@@ -235,18 +235,18 @@ body.modal-open {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 24px 30px;
+  padding: 32px 35px;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 28px;
   text-align: left;
-  min-height: 60px;
+  min-height: 80px;
 }
 
 .menu-item:hover {
   background-color: #f5f5f5;
-  padding-left: 35px;
+  padding-left: 42px;
 }
 
 .menu-item:active {
@@ -254,15 +254,15 @@ body.modal-open {
 }
 
 .menu-item .menu-icon {
-  margin-right: 25px;
-  font-size: 28px;
-  min-width: 35px;
+  margin-right: 30px;
+  font-size: 40px;
+  min-width: 50px;
 }
 
 .menu-divider {
   height: 2px;
   background-color: #d0d0d0;
-  margin: 20px 30px;
+  margin: 25px 35px;
 }
 
 .menu-overlay {
