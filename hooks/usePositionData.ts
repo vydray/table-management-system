@@ -1,0 +1,118 @@
+import { useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
+import { getCurrentStoreId } from '../utils/storeContext'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+const getStoreIdAsNumber = (): number => {
+  const storeId = getCurrentStoreId()
+  let numericId: number
+
+  if (typeof storeId === 'string') {
+    numericId = parseInt(storeId)
+  } else if (typeof storeId === 'number') {
+    numericId = storeId
+  } else {
+    numericId = 1
+  }
+
+  if (isNaN(numericId) || numericId <= 0) {
+    return 1
+  }
+
+  return numericId
+}
+
+// 役職の型定義
+export interface Position {
+  id: number
+  store_id: number
+  name: string
+  display_order: number
+  is_active: boolean
+}
+
+export const usePositionData = () => {
+  const [positions, setPositions] = useState<Position[]>([])
+
+  // 役職一覧を読み込む
+  const loadPositions = async () => {
+    try {
+      const storeId = getStoreIdAsNumber()
+      const { data, error } = await supabase
+        .from('cast_positions')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('is_active', true)
+        .order('display_order')
+
+      if (error) throw error
+      setPositions(data || [])
+    } catch (error) {
+      console.error('Failed to load positions:', error)
+    }
+  }
+
+  // 役職を追加
+  const addPosition = async (newPositionName: string) => {
+    if (!newPositionName.trim()) return false
+
+    try {
+      const storeId = getStoreIdAsNumber()
+      const maxOrder = Math.max(...positions.map(p => p.display_order), 0)
+
+      const { error } = await supabase
+        .from('cast_positions')
+        .insert({
+          store_id: storeId,
+          name: newPositionName,
+          display_order: maxOrder + 10,
+          is_active: true
+        })
+
+      if (error) throw error
+
+      await loadPositions()
+      alert('役職を追加しました')
+      return true
+    } catch (error) {
+      console.error('Failed to add position:', error)
+      alert('役職の追加に失敗しました')
+      return false
+    }
+  }
+
+  // 役職を削除（非アクティブ化）
+  const deletePosition = async (id: number) => {
+    if (!confirm('この役職を削除しますか？')) return false
+
+    try {
+      const storeId = getStoreIdAsNumber()
+      const { error } = await supabase
+        .from('cast_positions')
+        .update({ is_active: false })
+        .eq('id', id)
+        .eq('store_id', storeId)
+
+      if (error) throw error
+
+      await loadPositions()
+      alert('役職を削除しました')
+      return true
+    } catch (error) {
+      console.error('Failed to delete position:', error)
+      alert('役職の削除に失敗しました')
+      return false
+    }
+  }
+
+  return {
+    positions,
+    loadPositions,
+    addPosition,
+    deletePosition
+  }
+}
