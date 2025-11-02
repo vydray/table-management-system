@@ -36,22 +36,22 @@ body.modal-open {
   /* サイズは固定 */
   width: 2176px;
   height: 1600px;
-  
+
   /* 基本スタイル */
   background: #f8f8f8;
   border: 1px solid #ccc;
   overflow: hidden;
-  
-  /* 位置固定（スケーリング無効化） */
+
+  /* 中央配置（重要！） */
   position: fixed;
-  top: 0;
-  left: 0;
-  
-  /* 画面サイズに応じて自動縮小（重要） */
+  top: 50%;
+  left: 50%;
+
+  /* 画面サイズに応じて自動縮小＆中央配置 */
   transform: translate(-50%, -50%) scale(var(--viewport-scale, 1));
   -webkit-transform: translate(-50%, -50%) scale(var(--viewport-scale, 1));
   transform-origin: center center;
-  
+
   /* パフォーマンス最適化 */
   backface-visibility: hidden;
   will-change: transform;
