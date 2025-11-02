@@ -1,14 +1,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { createClient } from '@supabase/supabase-js'
-import bcrypt from 'bcryptjs'
-
-// Supabaseクライアントを初期化
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export default function Login() {
   const router = useRouter()
@@ -23,71 +15,28 @@ export default function Login() {
     setLoading(true)
 
     try {
-      // Capacitorアプリかどうかを判定
-      const isCapacitor = typeof window !== 'undefined' &&
-        // @ts-expect-error - Capacitor is injected by the native app
-        window.Capacitor?.isNativePlatform();
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      })
 
-      if (isCapacitor) {
-        // APK版：クライアント側で直接Supabaseにアクセス
-        const { data: user, error: dbError } = await supabase
-          .from('users')
-          .select('id, username, password, role, store_id')
-          .eq('username', username)
-          .single()
+      const data = await res.json()
 
-        if (dbError || !user) {
-          setError('ユーザー名またはパスワードが間違っています')
-          setLoading(false)
-          return
-        }
-
-        const passwordMatch = await bcrypt.compare(password, user.password)
-
-        if (!passwordMatch) {
-          setError('ユーザー名またはパスワードが間違っています')
-          setLoading(false)
-          return
-        }
-
-        if (!user.store_id) {
-          setError('店舗が設定されていません。管理者に連絡してください。')
-          setLoading(false)
-          return
-        }
-
+      if (res.ok) {
         localStorage.setItem('isLoggedIn', 'true')
-        localStorage.setItem('username', user.username)
-        localStorage.setItem('currentStoreId', user.store_id.toString())
-        localStorage.setItem('userRole', user.role)
+        localStorage.setItem('username', data.username)
+        localStorage.setItem('currentStoreId', data.storeId.toString())
+        localStorage.setItem('userRole', data.role)
 
-        console.log(`ログイン成功: ${user.username} (店舗ID: ${user.store_id})`)
+        console.log(`ログイン成功: ${data.username} (店舗ID: ${data.storeId})`)
         router.push('/')
       } else {
-        // Vercel版：APIルート経由
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        })
-
-        const data = await res.json()
-
-        if (res.ok) {
-          localStorage.setItem('isLoggedIn', 'true')
-          localStorage.setItem('username', data.username)
-          localStorage.setItem('currentStoreId', data.storeId.toString())
-          localStorage.setItem('userRole', data.role)
-
-          console.log(`ログイン成功: ${data.username} (店舗ID: ${data.storeId})`)
-          router.push('/')
-        } else {
-          setError(data.error || 'ログインに失敗しました')
-        }
+        setError(data.error || 'ログインに失敗しました')
       }
     } catch (err) {
       console.error('Login error:', err)
-      setError('ログイン処理中にエラーが発生しました')
+      setError('ネットワークエラーが発生しました')
     } finally {
       setLoading(false)
     }

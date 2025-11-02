@@ -8,6 +8,12 @@ const config: CapacitorConfig = {
     allowMixedContent: true,
     captureInput: true,
     webContentsDebuggingEnabled: true
+  },
+  server: {
+    url: undefined,
+    cleartext: true,
+    // APK版は login-apk.html から開始
+    androidScheme: 'https'
   }
 };
 
