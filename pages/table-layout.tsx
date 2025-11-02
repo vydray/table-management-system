@@ -53,11 +53,35 @@ export default function TableLayoutEdit() {
   
   // ズーム関連
   const [zoom, setZoom] = useState(1)
+  const [initialZoom, setInitialZoom] = useState(1)
   const canvasRef = useRef<HTMLDivElement>(null)
   const isPanning = useRef(false)
   const isPinching = useRef(false)
   const lastPinchDistance = useRef(0)
   const lastPanPoint = useRef({ x: 0, y: 0 })
+
+  // 初期ズームの計算
+  useEffect(() => {
+    const calculateInitialZoom = () => {
+      if (canvasRef.current) {
+        const container = canvasRef.current
+        const containerWidth = container.clientWidth
+        const containerHeight = container.clientHeight
+
+        // キャンバスサイズに対する縮小率を計算（マージンを考慮）
+        const scaleX = (containerWidth - 40) / canvasSize.width
+        const scaleY = (containerHeight - 40) / canvasSize.height
+        const initialScale = Math.min(scaleX, scaleY, 1) // 最大でも1.0まで
+
+        setInitialZoom(initialScale)
+        setZoom(initialScale)
+      }
+    }
+
+    calculateInitialZoom()
+    window.addEventListener('resize', calculateInitialZoom)
+    return () => window.removeEventListener('resize', calculateInitialZoom)
+  }, [])
   
   // ページ管理
   const [pageCount, setPageCount] = useState(1)
@@ -779,11 +803,11 @@ export default function TableLayoutEdit() {
             {/* ズームコントロール */}
             <div style={{ marginBottom: '20px' }}>
               <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>
-                ズーム: {Math.round(zoom * 100)}%
+                ズーム: {Math.round((zoom / initialZoom) * 100)}%
               </h3>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
-                  onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
+                  onClick={() => setZoom(Math.max(0.1, zoom - 0.05))}
                   style={{
                     flex: 1,
                     padding: '8px',
@@ -798,7 +822,7 @@ export default function TableLayoutEdit() {
                   ー
                 </button>
                 <button
-                  onClick={() => setZoom(1)}
+                  onClick={() => setZoom(initialZoom)}
                   style={{
                     flex: 1,
                     padding: '8px',
@@ -813,7 +837,7 @@ export default function TableLayoutEdit() {
                   100%
                 </button>
                 <button
-                  onClick={() => setZoom(Math.min(2, zoom + 0.1))}
+                  onClick={() => setZoom(Math.min(2, zoom + 0.05))}
                   style={{
                     flex: 1,
                     padding: '8px',
@@ -892,7 +916,7 @@ export default function TableLayoutEdit() {
             {loading && <div style={{ textAlign: 'center', marginTop: '20px' }}>読み込み中...</div>}
           </div>
 
-          {/* キャンバスエリア - 横並び表示 */}
+          {/* キャンバスエリア - 中央配置で全体表示 */}
           <div
             ref={canvasRef}
             onWheel={handleWheel}
@@ -900,12 +924,12 @@ export default function TableLayoutEdit() {
               flex: 1,
               position: 'relative',
               backgroundColor: '#e0e0e0',
-              overflowX: 'auto',
-              overflowY: 'hidden',
+              overflow: 'hidden',
               display: 'flex',
               gap: '10px',
-              padding: '10px',
-              alignItems: 'flex-start'
+              padding: '20px',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
             {/* 各ページのキャンバス */}
