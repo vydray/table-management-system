@@ -1173,10 +1173,11 @@ export default function ReceiptSettings() {
       {/* 保存ボタン */}
       <div style={{
         position: 'sticky',
-        bottom: '0',
+        bottom: '60px',
         backgroundColor: 'white',
         padding: '20px 0',
-        borderTop: '1px solid #eee'
+        borderTop: '1px solid #eee',
+        zIndex: 10
       }}>
         <button
           onClick={saveSettings}
