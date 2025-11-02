@@ -42,7 +42,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // パスワードをハッシュと比較
     console.log('パスワードハッシュ確認中...')
-    const passwordMatch = await bcrypt.compare(password, user.password)
+    console.log('DBのパスワード（最初の20文字）:', user.password.substring(0, 20))
+
+    let passwordMatch = false
+
+    // bcryptハッシュの場合
+    if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+      passwordMatch = await bcrypt.compare(password, user.password)
+      console.log('bcryptで照合:', passwordMatch)
+    } else {
+      // 平文の場合（テスト用）
+      passwordMatch = password === user.password
+      console.log('平文で照合:', passwordMatch)
+    }
+
     console.log('パスワード照合結果:', passwordMatch)
 
     if (!passwordMatch) {
