@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { ProductSection } from '../components/ProductSection'
 import { OrderSection } from '../components/OrderSection'
-import { TableData, OrderItem, ProductCategories, ProductCategory, Product } from '../types'
+import { TableData } from '../types'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../utils/storeContext'
 import { printer } from '../utils/bluetoothPrinter'
@@ -16,7 +16,12 @@ import { ConfirmModal } from '../components/modals/ConfirmModal'
 import { PaymentModal } from '../components/modals/PaymentModal'
 import { SideMenu } from '../components/SideMenu'
 import { Table } from '../components/Table'
+
+// カスタムフック
 import { usePayment } from '../hooks/usePayment'
+import { useTableManagement } from '../hooks/useTableManagement'
+import { useOrderManagement } from '../hooks/useOrderManagement'
+import { useProductManagement } from '../hooks/useProductManagement'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,69 +38,66 @@ interface CheckoutResult {
   data?: Record<string, any>
 }
 
-// テーブルの位置情報（元の固定位置）
-const tablePositions = {
-  'A1': { top: 650, left: 900 },
-  'A2': { top: 650, left: 1050 },
-  'A3': { top: 520, left: 1050 },
-  'A4': { top: 390, left: 1050 },
-  'A5': { top: 260, left: 1050 },
-  'A6': { top: 260, left: 900 },
-  'A7': { top: 260, left: 750 },
-  'B1': { top: 100, left: 1050 },
-  'B2': { top: 100, left: 880 },
-  'B3': { top: 100, left: 710 },
-  'B4': { top: 100, left: 540 },
-  'B5': { top: 100, left: 370 },
-  'B6': { top: 100, left: 200 },
-  'C1': { top: 260, left: 320 },
-  'C2': { top: 260, left: 100 },
-  'C3': { top: 390, left: 100 },
-  'C4': { top: 520, left: 100 },
-  'C5': { top: 650, left: 100 },
-  '臨時1': { top: 460, left: 490 },
-  '臨時2': { top: 460, left: 660 }
-}
 
 export default function Home() {
   const router = useRouter()
-  const [tables, setTables] = useState<Record<string, TableData>>({})
-  const [castList, setCastList] = useState<string[]>([])
-  const [currentTable, setCurrentTable] = useState('')
+
+  // カスタムフック - テーブル管理
+  const {
+    tables,
+    setTables,
+    currentTable,
+    setCurrentTable,
+    tableLayouts,
+    currentPage,
+    setCurrentPage,
+    maxPageNumber,
+    moveMode,
+    moveFromTable,
+    showMoveHint,
+    isMoving,
+    attendingCastCount,
+    occupiedTableCount,
+    setOccupiedTableCount,
+    loadData,
+    loadTableLayouts,
+    loadAttendingCastCount,
+    executeMove,
+    startMoveMode,
+    endMoveMode,
+    calculateTablePosition
+  } = useTableManagement()
+
+  // カスタムフック - 注文管理
+  const {
+    orderItems,
+    setOrderItems,
+    selectedProduct,
+    setSelectedProduct,
+    selectedCategory,
+    setSelectedCategory,
+    loadOrderItems,
+    saveOrderItems: saveOrderItemsFromHook,
+    addProductToOrder,
+    deleteOrderItem,
+    updateOrderItemQuantity,
+    updateOrderItemPrice
+  } = useOrderManagement()
+
+  // カスタムフック - 商品管理
+  const {
+    productCategories,
+    castList,
+    loadProducts,
+    loadCastList,
+    getCurrentCategoryShowOshiFirst
+  } = useProductManagement()
+
+  // ローカル状態（カスタムフックに移動していない状態）
   const [showModal, setShowModal] = useState(false)
   const [modalMode, setModalMode] = useState<'new' | 'edit'>('new')
-  const [moveMode, setMoveMode] = useState(false)
-  const [moveFromTable, setMoveFromTable] = useState('')
-  const [showMoveHint, setShowMoveHint] = useState(false)
   const [currentTime, setCurrentTime] = useState('')
-  const [isMoving, setIsMoving] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
-
-  // 出勤キャスト数と卓数の状態を追加
-  const [attendingCastCount, setAttendingCastCount] = useState(0)
-  const [occupiedTableCount, setOccupiedTableCount] = useState(0)
-  
-  const [tableLayouts, setTableLayouts] = useState<Array<{
-    table_name: string
-    display_name: string | null
-    position_top: number
-    position_left: number
-    table_width: number
-    table_height: number
-    is_visible: boolean
-    page_number: number  // ⭐ 追加
-  }>>([])
-  
-  // ⭐ ページ管理用の状態を追加
-  const [currentPage, setCurrentPage] = useState(1)
-  const [maxPageNumber, setMaxPageNumber] = useState(1)
-  
-  // POS機能用の状態
-  const [productCategories, setProductCategories] = useState<ProductCategories>({})
-  const [productCategoriesData, setProductCategoriesData] = useState<ProductCategory[]>([])
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [selectedProduct, setSelectedProduct] = useState<{name: string, price: number, needsCast: boolean} | null>(null)
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([])
 
   // 会計モーダル用の状態（カスタムフックを使用）
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -133,9 +135,6 @@ export default function Home() {
 
   // 50音フィルター用の状態
   const [castFilter, setCastFilter] = useState('')
-
-  // 長押し用のref
-  const isLongPress = useRef(false)
 
   // ローディングと領収書確認用の状態
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false)
@@ -228,282 +227,6 @@ export default function Home() {
     }
   }
 
-// 商品データをAPIから取得
-  const loadProducts = async () => {
-    try {
-      console.log('商品データ読み込み開始...')
-      
-      // ログインチェック
-      const isLoggedIn = localStorage.getItem('isLoggedIn')
-      if (!isLoggedIn) {
-        console.log('未ログインのため商品データ読み込みをスキップ')
-        return
-      }
-      
-      // 店舗IDを取得
-      const storeId = getCurrentStoreId()
-      if (!storeId) {
-        console.log('店舗IDが取得できないため商品データ読み込みをスキップ')
-        return
-      }
-      
-      // APIに店舗IDを渡す
-      const res = await fetch(`/api/products?storeId=${storeId}`)
-      const data = await res.json()
-      
-      console.log('APIレスポンス:', data)
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to fetch products')
-      }
-      
-      const { categories, products } = data
-      
-      // カテゴリーデータを保存
-      setProductCategoriesData(categories || [])
-      
-      // データ構造を変換
-      const productData: ProductCategories = {}
-      
-      categories?.forEach((category: ProductCategory) => {
-        productData[category.name] = {}
-        
-        products?.filter((p: Product) => p.category_id === category.id)
-          .forEach((product: Product) => {
-            productData[category.name][product.name] = {
-              id: product.id,
-              price: product.price,
-              needsCast: product.needs_cast,
-              discountRate: product.discount_rate
-            }
-          })
-      })
-      
-      console.log('変換後のデータ:', productData)
-      setProductCategories(productData)
-    } catch (error) {
-      console.error('Error loading products:', error)
-      // ログイン前は警告を表示しない
-      const isLoggedIn = localStorage.getItem('isLoggedIn')
-      if (isLoggedIn) {
-        alert('商品データの読み込みに失敗しました')
-      }
-    }
-  }
-
-  // 商品を直接注文に追加（タップで追加）
-  const addProductToOrder = (productName: string, price: number, needsCast: boolean, castName?: string) => {
-    if (needsCast && !castName) {
-      // キャストが必要な商品を選択
-      setSelectedProduct({ name: productName, price: price, needsCast: true })
-      return
-    }
-    
-    // 既存の商品をチェック（商品名、キャスト名、価格が全て同じものを探す）
-    const existingItemIndex = orderItems.findIndex(item => 
-      item.name === productName && 
-      item.price === price &&  // 価格も一致条件に追加
-      ((!needsCast && !item.cast) || (needsCast && item.cast === castName))
-    )
-    
-    if (existingItemIndex >= 0) {
-      // 既存の商品の個数を増やす
-      const updatedItems = [...orderItems]
-      updatedItems[existingItemIndex].quantity += 1
-      setOrderItems(updatedItems)
-    } else {
-      // 新しい商品を追加（価格が異なる場合は別商品として扱う）
-      const newItem: OrderItem = {
-        name: productName,
-        cast: needsCast ? castName : undefined,
-        quantity: 1,
-        price: price
-      }
-      setOrderItems([...orderItems, newItem])
-    }
-  }
-
-  // 注文アイテムを削除
-  const deleteOrderItem = (index: number) => {
-    const updatedItems = orderItems.filter((_, i) => i !== index)
-    setOrderItems(updatedItems)
-  }
-
-  // 注文アイテムの個数を更新
-  const updateOrderItemQuantity = (index: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      deleteOrderItem(index)
-      return
-    }
-    const updatedItems = [...orderItems]
-    updatedItems[index].quantity = newQuantity
-    setOrderItems(updatedItems)
-  }
-
-  // 注文アイテムの価格を更新（新規追加）
-  const updateOrderItemPrice = (index: number, newPrice: number) => {
-    const updatedItems = [...orderItems]
-    updatedItems[index].price = newPrice
-    setOrderItems(updatedItems)
-  }
-
-  // データ取得
-  const loadData = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const res = await fetch(`/api/tables/status?storeId=${storeId}`)
-      const data: TableData[] = await res.json()
-      
-      const tableMap: Record<string, TableData> = {}
-      
-      // データベースから取得したテーブルレイアウトを使用
-      if (tableLayouts.length > 0) {
-        // データベースのテーブル情報を使用
-        tableLayouts.filter(t => t.is_visible).forEach(layout => {
-          tableMap[layout.table_name] = {
-            table: layout.table_name,
-            name: '',
-            oshi: '',
-            time: '',
-            visit: '',
-            elapsed: '',
-            status: 'empty'
-          }
-        })
-      } else {
-        // フォールバック：固定のテーブル位置を使用
-        Object.keys(tablePositions).forEach(tableId => {
-          tableMap[tableId] = {
-            table: tableId,
-            name: '',
-            oshi: '',
-            time: '',
-            visit: '',
-            elapsed: '',
-            status: 'empty'
-          }
-        })
-      }
-      
-      // 取得したデータで更新（tablePositionsに存在するテーブルのみ）
-      data.forEach(item => {
-        // tablePositionsに定義されているテーブルのみ処理
-        if (!(item.table in tablePositions)) {
-          console.warn(`未定義のテーブル「${item.table}」をスキップしました`)
-          return
-        }
-        
-        if (item.time && item.status === 'occupied') {
-          const entryTime = new Date(item.time.replace(' ', 'T'))
-          const now = new Date()
-          
-          // 日付をまたぐ場合の経過時間計算
-          let elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
-          
-          // 負の値になった場合（日付設定ミスなど）は0にする
-          if (elapsedMin < 0) {
-            elapsedMin = 0
-          }
-          
-          // 24時間以上の場合は時間表示も追加
-          let elapsedText = ''
-          if (elapsedMin >= 1440) { // 24時間以上
-            const days = Math.floor(elapsedMin / 1440)
-            const hours = Math.floor((elapsedMin % 1440) / 60)
-            const mins = elapsedMin % 60
-            elapsedText = `${days}日${hours}時間${mins}分`
-          } else if (elapsedMin >= 60) { // 1時間以上
-            const hours = Math.floor(elapsedMin / 60)
-            const mins = elapsedMin % 60
-            elapsedText = `${hours}時間${mins}分`
-          } else {
-            elapsedText = `${elapsedMin}分`
-          }
-          
-          tableMap[item.table] = {
-            ...item,
-            elapsed: elapsedText
-          }
-        } else {
-          tableMap[item.table] = item
-        }
-      })
-      
-      setTables(tableMap)
-
-      const occupied = Object.values(tableMap).filter(table => table.status !== 'empty').length
-      setOccupiedTableCount(occupied)
-
-    } catch (error) {
-      console.error('Error loading data:', error)
-    }
-  }
-
-  // キャストリスト取得
-  const loadCastList = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const res = await fetch(`/api/casts/list?storeId=${storeId}`)
-      const data = await res.json()
-      setCastList(data)
-    } catch (error) {
-      console.error('Error loading cast list:', error)
-    }
-  }
-
-// ↓↓↓ この関数を追加 ↓↓↓
-  const loadTableLayouts = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const res = await fetch(`/api/tables/list?storeId=${storeId}`)
-      const data = await res.json()
-      setTableLayouts(data)
-      
-      // ⭐ 最大ページ番号を取得（any型を使わない）
-      if (data && data.length > 0) {
-        const maxPage = Math.max(...data.map((t: {page_number?: number}) => t.page_number || 1), 1)
-        setMaxPageNumber(maxPage)
-      }
-    } catch (error) {
-      console.error('Error loading table layouts:', error)
-    }
-  }
-  
-  // 出勤中のキャスト数を取得する関数
-  const loadAttendingCastCount = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const today = new Date()
-      const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-      
-      // 有効な勤怠ステータスを取得
-      const { data: statusData } = await supabase
-        .from('system_settings')
-        .select('setting_value')
-        .eq('store_id', storeId)
-        .eq('setting_key', 'active_attendance_statuses')
-        .single()
-      
-      const activeStatuses = statusData ? JSON.parse(statusData.setting_value) : ['出勤']
-      
-      // 当日の出勤キャストを取得
-      const { data: attendanceData, error } = await supabase
-        .from('attendance')
-        .select('cast_name')
-        .eq('store_id', storeId)
-        .eq('date', dateStr)
-        .in('status', activeStatuses)
-      
-      if (error) throw error
-      
-      // 重複を除外してユニークなキャスト数をカウント
-      const uniqueCasts = new Set(attendanceData?.map(a => a.cast_name) || [])
-      setAttendingCastCount(uniqueCasts.size)
-    } catch (error) {
-      console.error('Error loading attending cast count:', error)
-      setAttendingCastCount(0)
-    }
-  }
   
  const adjustLayoutScale = () => {
     const layout = document.getElementById('layout')
@@ -528,64 +251,9 @@ export default function Home() {
     console.log(`Layout scale: ${scale.toFixed(3)} (viewport: ${window.innerWidth}x${window.innerHeight}, layout: ${LAYOUT_WIDTH}x${LAYOUT_HEIGHT})`)
   }
 
-  // 注文データを取得
-  const loadOrderItems = async (tableId: string) => {
-    try {
-      const storeId = getCurrentStoreId()
-      const res = await fetch(`/api/orders/current?tableId=${tableId}&storeId=${storeId}`)
-      const data = await res.json()
-      
-      if (res.ok && data.length > 0) {
-        interface OrderItemDB {
-          product_name: string
-          cast_name: string | null
-          quantity: number
-          unit_price: number
-        }
-        
-        const items = data.map((item: OrderItemDB) => ({
-          name: item.product_name,
-          cast: item.cast_name || undefined,
-          quantity: item.quantity,
-          price: item.unit_price
-        }))
-        setOrderItems(items)
-      } else {
-        setOrderItems([])  // データがない場合は空配列をセット
-      }
-    } catch (error) {
-      console.error('Error loading order items:', error)
-      setOrderItems([])  // エラーの場合も空配列をセット
-    }
-  }
-
-  // 注文内容を保存
+  // 注文内容を保存（ラッパー関数）
   const saveOrderItems = async (silent: boolean = false) => {
-    try {
-      const storeId = getCurrentStoreId()
-      const response = await fetch('/api/orders/current', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tableId: currentTable,
-          orderItems: orderItems,
-          storeId: storeId  // 店舗IDを追加
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to save order items')
-      }
-      
-      if (!silent) {
-        alert('注文内容を保存しました')
-      }
-    } catch (error) {
-      console.error('Error saving order items:', error)
-      if (!silent) {
-        alert('注文内容の保存に失敗しました')
-      }
-    }
+    await saveOrderItemsFromHook(currentTable, silent)
   }
 
   // 初期化（統合版）
@@ -1098,79 +766,6 @@ const finishCheckout = () => {
   }
 }
 
-  // 席移動
-  const executeMove = async (toTable: string) => {
-    if (isMoving) return
-    
-    setIsMoving(true)
-    
-    try {
-      const storeId = getCurrentStoreId()
-      const response = await fetch('/api/tables/move', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fromTableId: moveFromTable,
-          toTableId: toTable,
-          storeId: storeId
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error('移動に失敗しました')
-      }
-      
-      setTables(prev => {
-        const newTables = { ...prev }
-        newTables[toTable] = { ...prev[moveFromTable] }
-        newTables[moveFromTable] = {
-          table: moveFromTable,
-          name: '',
-          oshi: '',
-          time: '',
-          visit: '',
-          elapsed: '',
-          status: 'empty'
-        }
-
-        // 卓数を更新（移動しても卓数は変わらないが、念のため再計算）
-        const occupied = Object.values(newTables).filter(table => table.status !== 'empty').length
-        setOccupiedTableCount(occupied)
-
-
-        return newTables
-      })
-      
-      endMoveMode()
-      
-      setTimeout(() => {
-        loadData()
-      }, 500)
-      
-    } catch (error) {
-      console.error('Error moving table:', error)
-      alert('移動に失敗しました')
-      endMoveMode()
-    } finally {
-      setIsMoving(false)
-    }
-  }
-
-  // 長押し開始
-  const startMoveMode = (tableId: string) => {
-    setMoveMode(true)
-    setMoveFromTable(tableId)
-    setShowMoveHint(true)
-  }
-
-  // 移動モード終了
-  const endMoveMode = () => {
-    setMoveMode(false)
-    setMoveFromTable('')
-    setShowMoveHint(false)
-    isLongPress.current = false
-    setIsMoving(false)
-  }
 
   // モーダルを開く（修正版）
   const openModal = (table: TableData) => {
@@ -1215,31 +810,6 @@ const finishCheckout = () => {
   setSelectedProduct(null)
 }
 
-  // 現在のカテゴリーの推し優先表示設定を取得
-  const getCurrentCategoryShowOshiFirst = () => {
-    const categoryData = productCategoriesData.find(cat => cat.name === selectedCategory)
-    return categoryData?.show_oshi_first || false
-  }
-  
-  // テーブル位置を計算する関数（修正版）
-  const calculateTablePosition = (tableId: string) => {
-    const tableLayout = tableLayouts.find(t => t.table_name === tableId)
-    if (!tableLayout) {
-      // フォールバック：元の固定位置を使用
-      const originalPosition = tablePositions[tableId as keyof typeof tablePositions]
-      if (!originalPosition) return { top: 0, left: 0 }
-      
-      return {
-        top: originalPosition.top,
-        left: originalPosition.left
-      }
-    }
-    
-    return {
-      top: tableLayout.position_top,
-      left: tableLayout.position_left
-    }
-  }
   
   return (
     <>
@@ -1743,7 +1313,7 @@ const finishCheckout = () => {
                     selectedProduct={selectedProduct}
                     castList={castList}
                     currentOshi={formData.castName}
-                    showOshiFirst={getCurrentCategoryShowOshiFirst()}
+                    showOshiFirst={getCurrentCategoryShowOshiFirst(selectedCategory)}
                     onSelectCategory={(category) => {
                       setSelectedCategory(category)
                       // カテゴリー変更時に商品選択をクリア
