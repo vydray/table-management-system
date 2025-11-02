@@ -1781,6 +1781,7 @@ const finishCheckout = () => {
                     orderItems={orderItems}
                     onCheckout={checkout}
                     onClearTable={clearTable}
+                    onPrintReceipt={printOrderSlip}
                     onUpdateOrderItem={updateOrderItemQuantity}
                     onDeleteOrderItem={deleteOrderItem}
                     onUpdateOrderItemPrice={updateOrderItemPrice}

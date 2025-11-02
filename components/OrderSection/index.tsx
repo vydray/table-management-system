@@ -8,6 +8,7 @@ interface OrderSectionProps {
   orderItems: OrderItem[]
   onCheckout: () => void
   onClearTable: () => void
+  onPrintReceipt?: () => void  // 会計明細印刷用
   onUpdateOrderItem: (index: number, newQuantity: number) => void
   onDeleteOrderItem: (index: number) => void
   onUpdateOrderItemPrice?: (index: number, newPrice: number) => void
@@ -40,6 +41,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
   orderItems,
   onCheckout,
   onClearTable,
+  onPrintReceipt,
   onUpdateOrderItem,
   onDeleteOrderItem,
   onUpdateOrderItemPrice,
@@ -178,6 +180,19 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
       />
 
       <div className="action-buttons">
+        {onPrintReceipt && (
+          <button
+            onClick={onPrintReceipt}
+            className="btn-receipt"
+            style={{
+              backgroundColor: '#2196F3',
+              color: 'white',
+              marginBottom: '10px'
+            }}
+          >
+            会計明細
+          </button>
+        )}
         <button onClick={onCheckout} className="btn-checkout">会計</button>
         <button onClick={onClearTable} className="btn-delete">削除</button>
       </div>
