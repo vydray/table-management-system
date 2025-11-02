@@ -90,9 +90,9 @@ export default function TableLayoutEdit() {
   const [pageCount, setPageCount] = useState(1)
   const [currentViewPage, setCurrentViewPage] = useState(1)
   
-  // 配置禁止ゾーン
+  // 配置禁止ゾーン（ヘッダー160px + ナビゲーションバー60px）
   const forbiddenZones = {
-    top: 80,
+    top: 160,
     bottom: 60,
     left: 0,
     right: 0
@@ -245,11 +245,13 @@ export default function TableLayoutEdit() {
     const optimalWidth = Math.floor((availableWidth - totalHorizontalSpacing) / alignCols)
     const optimalHeight = Math.floor((availableHeight - totalVerticalSpacing) / alignRows)
 
-    // 最小サイズと最大サイズを設定
+    // 正方形に近づけるため、小さい方の値に合わせる
     const minSize = 80
-    const maxSize = 200
-    const calculatedWidth = Math.max(minSize, Math.min(maxSize, optimalWidth))
-    const calculatedHeight = Math.max(minSize, Math.min(maxSize, optimalHeight))
+    const squareSize = Math.min(optimalWidth, optimalHeight)
+
+    // 最小サイズを確保しつつ、できるだけ大きく
+    const calculatedWidth = Math.max(minSize, squareSize)
+    const calculatedHeight = Math.max(minSize, squareSize)
 
     const tablesPerPage = alignCols * alignRows
     const neededPages = Math.ceil(targetTables.length / tablesPerPage)
