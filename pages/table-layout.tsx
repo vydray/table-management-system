@@ -106,7 +106,7 @@ export default function TableLayoutEdit() {
   const loadTables = async () => {
     setLoading(true)
     const storeId = localStorage.getItem('currentStoreId') || '1'
-    
+
     const { data, error } = await supabase
       .from('table_status')
       .select('*')
@@ -118,9 +118,18 @@ export default function TableLayoutEdit() {
         ...table,
         page_number: table.page_number || 1
       })))
-      
+
       const maxPage = Math.max(...data.map((t) => t.page_number || 1), 1)  // any削除
       setPageCount(maxPage)
+
+      // 最初のテーブルのサイズを初期値として設定
+      if (data.length > 0) {
+        const firstTable = data[0]
+        const width = firstTable.table_width || 130
+        const height = firstTable.table_height || 123
+        setTableSize({ width, height })
+        setTableSizeInput({ width: width.toString(), height: height.toString() })
+      }
     }
     setLoading(false)
   }
@@ -235,25 +244,40 @@ export default function TableLayoutEdit() {
     }
 
     // テーブルサイズは既存のサイズを使用（自動サイズ変更なし）
+    // 代表的なテーブルサイズを取得（最初のテーブル）
+    const representativeWidth = targetTables[0]?.table_width || 130
+    const representativeHeight = targetTables[0]?.table_height || 123
 
     const tablesPerPage = alignCols * alignRows
     const neededPages = Math.ceil(targetTables.length / tablesPerPage)
     const startPage = alignTarget === 'current' ? currentViewPage : 1
     const endPage = startPage + neededPages - 1
-    
+
     if (endPage > pageCount) {
       setPageCount(endPage)
       await new Promise(resolve => setTimeout(resolve, 200))
     }
 
+    // 利用可能なスペースを計算
+    const availableWidth = canvasSize.width - forbiddenZones.left - forbiddenZones.right
+    const availableHeight = canvasSize.height - forbiddenZones.top - forbiddenZones.bottom
+
+    // 全テーブルの合計幅と高さを計算
+    const totalTablesWidth = representativeWidth * alignCols + horizontalSpacing * (alignCols - 1)
+    const totalTablesHeight = representativeHeight * alignRows + verticalSpacing * (alignRows - 1)
+
+    // 上下左右の余白を均等に配分
+    const startX = forbiddenZones.left + (availableWidth - totalTablesWidth) / 2
+    const startY = forbiddenZones.top + (availableHeight - totalTablesHeight) / 2
+
     const alignedTables: TableLayout[] = []
     let remainingTables = [...targetTables]
     let currentPage = startPage
-    
+
     while (remainingTables.length > 0 && currentPage <= endPage) {
       const tablesForThisPage = remainingTables.slice(0, tablesPerPage)
       remainingTables = remainingTables.slice(tablesPerPage)
-      
+
       let tableIndex = 0
       for (let row = 0; row < alignRows; row++) {
         for (let col = 0; col < alignCols; col++) {
@@ -261,28 +285,19 @@ export default function TableLayoutEdit() {
 
           const table = tablesForThisPage[tableIndex]
 
-          // 既存のテーブルサイズを使用
-          const tableWidth = table.table_width || 130
-          const tableHeight = table.table_height || 123
+          const newLeft = startX + col * (representativeWidth + horizontalSpacing)
+          const newTop = startY + row * (representativeHeight + verticalSpacing)
 
-          const newLeft = alignStartX + col * (tableWidth + horizontalSpacing)
-          const newTop = alignStartY + row * (tableHeight + verticalSpacing)
-
-          const maxX = canvasSize.width - tableWidth - forbiddenZones.right
-          const maxY = canvasSize.height - tableHeight - forbiddenZones.bottom
-
-          if (newLeft <= maxX && newTop <= maxY) {
-            alignedTables.push({
-              ...table,
-              position_left: newLeft,
-              position_top: newTop,
-              page_number: currentPage
-            })
-            tableIndex++
-          }
+          alignedTables.push({
+            ...table,
+            position_left: newLeft,
+            position_top: newTop,
+            page_number: currentPage
+          })
+          tableIndex++
         }
       }
-      
+
       currentPage++
     }
 
