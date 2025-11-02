@@ -924,12 +924,12 @@ export default function TableLayoutEdit() {
               flex: 1,
               position: 'relative',
               backgroundColor: '#e0e0e0',
-              overflow: 'hidden',
+              overflow: 'auto',
               display: 'flex',
               gap: '10px',
               padding: '20px',
-              alignItems: 'center',
-              justifyContent: 'center'
+              alignItems: zoom > initialZoom ? 'flex-start' : 'center',
+              justifyContent: zoom > initialZoom ? 'flex-start' : 'center'
             }}
           >
             {/* 各ページのキャンバス */}
