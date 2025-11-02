@@ -1586,7 +1586,7 @@ const finishCheckout = () => {
                   backgroundColor: '#f5f5f5',
                   borderRadius: '8px'
                 }}>
-                  {['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'].map(kana => (
+                  {['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ', 'その他'].map(kana => (
                     <button
                       key={kana}
                       type="button"
@@ -1639,6 +1639,13 @@ const finishCheckout = () => {
                         'ら': 'らりるれろ',
                         'わ': 'わをん'
                       }
+
+                      // 「その他」フィルター: ひらがな以外の名前を表示
+                      if (castFilter === 'その他') {
+                        const allKana = Object.values(kanaMap).join('')
+                        return !allKana.includes(firstChar)
+                      }
+
                       return kanaMap[castFilter]?.includes(firstChar)
                     })
                     .map(name => (
