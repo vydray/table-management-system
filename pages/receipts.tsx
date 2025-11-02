@@ -1,141 +1,50 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { createClient } from '@supabase/supabase-js'
-import { getCurrentStoreId } from '../utils/storeContext'
-import { getBusinessDayRangeDates } from '../utils/dateTime'
 import ReceiptList from '../components/receipts/ReceiptList'
 import ReceiptDetail from '../components/receipts/ReceiptDetail'
-import { Receipt, OrderItem } from '../types/receipt'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// カスタムフック
+import { useReceiptsData } from '../hooks/useReceiptsData'
 
 export default function Receipts() {
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [receipts, setReceipts] = useState<Receipt[]>([])
-  const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null)
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([])
-  const [loading, setLoading] = useState(false)
-  const [businessDayStartHour, setBusinessDayStartHour] = useState(5) // デフォルト5時
 
-  // 営業日切り替え時間を取得
-  const loadBusinessDayStartHour = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const { data } = await supabase
-        .from('system_settings')
-        .select('setting_value')
-        .eq('setting_key', 'business_day_start_hour')
-        .eq('store_id', storeId)
-        .single()
-      
-      if (data) {
-        setBusinessDayStartHour(parseInt(data.setting_value))
-      }
-    } catch (error) {
-      console.error('Error loading business day start hour:', error)
-    }
-  }
+  // カスタムフック - 伝票データ管理
+  const {
+    receipts,
+    selectedReceipt,
+    setSelectedReceipt,
+    orderItems,
+    loading,
+    businessDayStartHour,
+    loadBusinessDayStartHour,
+    loadReceipts,
+    loadOrderItems,
+    deleteReceipt: deleteReceiptFromDB
+  } = useReceiptsData()
 
-
-  // 伝票一覧を読み込む
-  const loadReceipts = async () => {
-    setLoading(true)
-    try {
-      const storeId = getCurrentStoreId()
-      const targetDate = new Date(selectedDate)
-      const { start, end } = getBusinessDayRangeDates(targetDate, businessDayStartHour)
-
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          receipt_number,
-          checkout_datetime,
-          table_number,
-          total_incl_tax,
-          guest_name,
-          staff_name,
-          deleted_at,
-          deleted_by
-        `)
-        .eq('store_id', storeId)
-        .not('checkout_datetime', 'is', null)
-        .gte('checkout_datetime', start.toISOString())
-        .lt('checkout_datetime', end.toISOString())
-        .order('checkout_datetime', { ascending: false })
-
-      if (error) throw error
-
-      setReceipts(data || [])
-      
-      // 最初の伝票を自動選択
-      if (data && data.length > 0 && !selectedReceipt) {
-        setSelectedReceipt(data[0])
-      }
-    } catch (error) {
-      console.error('Error loading receipts:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // 伝票詳細（注文明細）を読み込む
-  const loadOrderItems = async (orderId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('order_items')
-        .select('*')
-        .eq('order_id', orderId)
-        .order('created_at')
-
-      if (error) throw error
-      setOrderItems(data || [])
-    } catch (error) {
-      console.error('Error loading order items:', error)
-    }
-  }
-
-  // 伝票を削除（論理削除）
-  const deleteReceipt = async (receiptId: string) => {
-    if (!confirm('この伝票を削除してもよろしいですか？')) return
-
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ 
-          deleted_at: new Date().toISOString(),
-          deleted_by: 1 // TODO: 実際のユーザーIDを使用
-        })
-        .eq('id', receiptId)
-
-      if (error) throw error
-
-      alert('伝票を削除しました')
-      loadReceipts()
-      setSelectedReceipt(null)
-    } catch (error) {
-      console.error('Error deleting receipt:', error)
-      alert('削除に失敗しました')
+  // 削除ハンドラー（削除後に一覧を再読み込み）
+  const handleDeleteReceipt = async (receiptId: string) => {
+    const success = await deleteReceiptFromDB(receiptId)
+    if (success) {
+      loadReceipts(selectedDate)
     }
   }
 
   // 初期読み込み
-useEffect(() => {
-  loadBusinessDayStartHour()
-  loadReceipts()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [selectedDate])  // loadReceiptsは意図的に除外
+  useEffect(() => {
+    loadBusinessDayStartHour()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 日付変更時
   useEffect(() => {
     if (businessDayStartHour !== null) {
-      loadReceipts()
+      loadReceipts(selectedDate)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, businessDayStartHour])
 
   // 伝票選択時
@@ -143,6 +52,7 @@ useEffect(() => {
     if (selectedReceipt) {
       loadOrderItems(selectedReceipt.id)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedReceipt])
 
   return (
@@ -252,7 +162,7 @@ useEffect(() => {
             <ReceiptDetail
               selectedReceipt={selectedReceipt}
               orderItems={orderItems}
-              onDelete={deleteReceipt}
+              onDelete={handleDeleteReceipt}
             />
           </div>
         </div>
