@@ -219,21 +219,28 @@ export default function TableLayoutEdit() {
     } else {
       targetTables = tables.filter(t => t.is_visible)
     }
-    
+
     if (targetTables.length === 0) {
       alert('配置するテーブルがありません')
       return
     }
 
-    let maxTableWidth = 0
-    let maxTableHeight = 0
-    
-    targetTables.forEach(table => {
-      const width = table.table_width || 130
-      const height = table.table_height || 123
-      if (width > maxTableWidth) maxTableWidth = width
-      if (height > maxTableHeight) maxTableHeight = height
-    })
+    // 利用可能なスペースを計算
+    const availableWidth = canvasSize.width - forbiddenZones.left - forbiddenZones.right - alignStartX
+    const availableHeight = canvasSize.height - forbiddenZones.top - forbiddenZones.bottom - alignStartY
+
+    // テーブルサイズを自動計算（重ならないように）
+    const totalHorizontalSpacing = horizontalSpacing * (alignCols - 1)
+    const totalVerticalSpacing = verticalSpacing * (alignRows - 1)
+
+    const optimalWidth = Math.floor((availableWidth - totalHorizontalSpacing) / alignCols)
+    const optimalHeight = Math.floor((availableHeight - totalVerticalSpacing) / alignRows)
+
+    // 最小サイズと最大サイズを設定
+    const minSize = 80
+    const maxSize = 200
+    const calculatedWidth = Math.max(minSize, Math.min(maxSize, optimalWidth))
+    const calculatedHeight = Math.max(minSize, Math.min(maxSize, optimalHeight))
 
     const tablesPerPage = alignCols * alignRows
     const neededPages = Math.ceil(targetTables.length / tablesPerPage)
@@ -257,22 +264,22 @@ export default function TableLayoutEdit() {
       for (let row = 0; row < alignRows; row++) {
         for (let col = 0; col < alignCols; col++) {
           if (tableIndex >= tablesForThisPage.length) break
-          
+
           const table = tablesForThisPage[tableIndex]
-          const tableWidth = table.table_width || 130
-          const tableHeight = table.table_height || 123
-          
-          const newLeft = alignStartX + col * (maxTableWidth + horizontalSpacing)
-          const newTop = alignStartY + row * (maxTableHeight + verticalSpacing)
-          
-          const maxX = canvasSize.width - tableWidth - forbiddenZones.right
-          const maxY = canvasSize.height - tableHeight - forbiddenZones.bottom
-          
+
+          const newLeft = alignStartX + col * (calculatedWidth + horizontalSpacing)
+          const newTop = alignStartY + row * (calculatedHeight + verticalSpacing)
+
+          const maxX = canvasSize.width - calculatedWidth - forbiddenZones.right
+          const maxY = canvasSize.height - calculatedHeight - forbiddenZones.bottom
+
           if (newLeft <= maxX && newTop <= maxY) {
             alignedTables.push({
               ...table,
               position_left: newLeft,
               position_top: newTop,
+              table_width: calculatedWidth,
+              table_height: calculatedHeight,
               page_number: currentPage
             })
             tableIndex++
@@ -287,9 +294,11 @@ export default function TableLayoutEdit() {
     for (const table of alignedTables) {
       await supabase
         .from('table_status')
-        .update({ 
-          position_top: table.position_top, 
+        .update({
+          position_top: table.position_top,
           position_left: table.position_left,
+          table_width: table.table_width,
+          table_height: table.table_height,
           page_number: table.page_number
         })
         .eq('table_name', table.table_name)
@@ -688,9 +697,13 @@ export default function TableLayoutEdit() {
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
                 <label style={{ fontSize: '14px', minWidth: '30px' }}>幅:</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={tableSize.width}
-                  onChange={(e) => setTableSize({ ...tableSize, width: parseInt(e.target.value) || 130 })}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '')
+                    setTableSize({ ...tableSize, width: val === '' ? 130 : parseInt(val) })
+                  }}
                   style={{
                     flex: 1,
                     padding: '6px',
@@ -704,9 +717,13 @@ export default function TableLayoutEdit() {
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
                 <label style={{ fontSize: '14px', minWidth: '30px' }}>高さ:</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={tableSize.height}
-                  onChange={(e) => setTableSize({ ...tableSize, height: parseInt(e.target.value) || 123 })}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '')
+                    setTableSize({ ...tableSize, height: val === '' ? 123 : parseInt(val) })
+                  }}
                   style={{
                     flex: 1,
                     padding: '6px',
@@ -1139,11 +1156,14 @@ export default function TableLayoutEdit() {
                     横の個数（列数）:
                   </label>
                   <input
-                    type="number"
-                    min="1"
-                    max="10"
+                    type="text"
+                    inputMode="numeric"
                     value={alignCols}
-                    onChange={(e) => setAlignCols(parseInt(e.target.value) || 1)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '')
+                      const num = val === '' ? 1 : Math.max(1, Math.min(10, parseInt(val)))
+                      setAlignCols(num)
+                    }}
                     style={{
                       width: '100%',
                       padding: '8px',
@@ -1158,11 +1178,14 @@ export default function TableLayoutEdit() {
                     縦の個数（行数）:
                   </label>
                   <input
-                    type="number"
-                    min="1"
-                    max="10"
+                    type="text"
+                    inputMode="numeric"
                     value={alignRows}
-                    onChange={(e) => setAlignRows(parseInt(e.target.value) || 1)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '')
+                      const num = val === '' ? 1 : Math.max(1, Math.min(10, parseInt(val)))
+                      setAlignRows(num)
+                    }}
                     style={{
                       width: '100%',
                       padding: '8px',
@@ -1177,12 +1200,14 @@ export default function TableLayoutEdit() {
                     横の間隔 (px):
                   </label>
                   <input
-                    type="number"
-                    min="10"
-                    max="200"
-                    step="10"
+                    type="text"
+                    inputMode="numeric"
                     value={horizontalSpacing}
-                    onChange={(e) => setHorizontalSpacing(parseInt(e.target.value) || 50)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '')
+                      const num = val === '' ? 50 : Math.max(10, Math.min(200, parseInt(val)))
+                      setHorizontalSpacing(num)
+                    }}
                     style={{
                       width: '100%',
                       padding: '8px',
@@ -1197,12 +1222,14 @@ export default function TableLayoutEdit() {
                     縦の間隔 (px):
                   </label>
                   <input
-                    type="number"
-                    min="10"
-                    max="200"
-                    step="10"
+                    type="text"
+                    inputMode="numeric"
                     value={verticalSpacing}
-                    onChange={(e) => setVerticalSpacing(parseInt(e.target.value) || 40)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '')
+                      const num = val === '' ? 40 : Math.max(10, Math.min(200, parseInt(val)))
+                      setVerticalSpacing(num)
+                    }}
                     style={{
                       width: '100%',
                       padding: '8px',
@@ -1255,12 +1282,14 @@ export default function TableLayoutEdit() {
                       X座標:
                     </label>
                     <input
-                      type="number"
-                      min="0"
-                      max="500"
-                      step="10"
+                      type="text"
+                      inputMode="numeric"
                       value={alignStartX}
-                      onChange={(e) => setAlignStartX(parseInt(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '')
+                        const num = val === '' ? 0 : Math.max(0, Math.min(500, parseInt(val)))
+                        setAlignStartX(num)
+                      }}
                       style={{
                         width: '100%',
                         padding: '8px',
@@ -1275,12 +1304,14 @@ export default function TableLayoutEdit() {
                       Y座標:
                     </label>
                     <input
-                      type="number"
-                      min={forbiddenZones.top}
-                      max="500"
-                      step="10"
+                      type="text"
+                      inputMode="numeric"
                       value={alignStartY}
-                      onChange={(e) => setAlignStartY(parseInt(e.target.value) || forbiddenZones.top)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '')
+                        const num = val === '' ? forbiddenZones.top : Math.max(forbiddenZones.top, Math.min(500, parseInt(val)))
+                        setAlignStartY(num)
+                      }}
                       style={{
                         width: '100%',
                         padding: '8px',
