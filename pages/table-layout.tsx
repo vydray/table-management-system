@@ -44,7 +44,7 @@ export default function TableLayoutEdit() {
   const [horizontalSpacing, setHorizontalSpacing] = useState(50)
   const [verticalSpacing, setVerticalSpacing] = useState(40)
   const [alignStartX, setAlignStartX] = useState(100)
-  const [alignStartY, setAlignStartY] = useState(100)
+  const [alignStartY, setAlignStartY] = useState(160)
   const [alignTarget, setAlignTarget] = useState<'all' | 'current'>('all')
 
   // 整列機能の入力用state（空欄を許可）
@@ -53,7 +53,7 @@ export default function TableLayoutEdit() {
   const [horizontalSpacingInput, setHorizontalSpacingInput] = useState('50')
   const [verticalSpacingInput, setVerticalSpacingInput] = useState('40')
   const [alignStartXInput, setAlignStartXInput] = useState('100')
-  const [alignStartYInput, setAlignStartYInput] = useState('100')
+  const [alignStartYInput, setAlignStartYInput] = useState('160')
   
   // テーブルサイズ設定
   const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
@@ -234,24 +234,7 @@ export default function TableLayoutEdit() {
       return
     }
 
-    // 利用可能なスペースを計算
-    const availableWidth = canvasSize.width - forbiddenZones.left - forbiddenZones.right - alignStartX
-    const availableHeight = canvasSize.height - forbiddenZones.top - forbiddenZones.bottom - alignStartY
-
-    // テーブルサイズを自動計算（重ならないように）
-    const totalHorizontalSpacing = horizontalSpacing * (alignCols - 1)
-    const totalVerticalSpacing = verticalSpacing * (alignRows - 1)
-
-    const optimalWidth = Math.floor((availableWidth - totalHorizontalSpacing) / alignCols)
-    const optimalHeight = Math.floor((availableHeight - totalVerticalSpacing) / alignRows)
-
-    // 正方形に近づけるため、小さい方の値に合わせる
-    const minSize = 80
-    const squareSize = Math.min(optimalWidth, optimalHeight)
-
-    // 最小サイズを確保しつつ、できるだけ大きく
-    const calculatedWidth = Math.max(minSize, squareSize)
-    const calculatedHeight = Math.max(minSize, squareSize)
+    // テーブルサイズは既存のサイズを使用（自動サイズ変更なし）
 
     const tablesPerPage = alignCols * alignRows
     const neededPages = Math.ceil(targetTables.length / tablesPerPage)
@@ -278,19 +261,21 @@ export default function TableLayoutEdit() {
 
           const table = tablesForThisPage[tableIndex]
 
-          const newLeft = alignStartX + col * (calculatedWidth + horizontalSpacing)
-          const newTop = alignStartY + row * (calculatedHeight + verticalSpacing)
+          // 既存のテーブルサイズを使用
+          const tableWidth = table.table_width || 130
+          const tableHeight = table.table_height || 123
 
-          const maxX = canvasSize.width - calculatedWidth - forbiddenZones.right
-          const maxY = canvasSize.height - calculatedHeight - forbiddenZones.bottom
+          const newLeft = alignStartX + col * (tableWidth + horizontalSpacing)
+          const newTop = alignStartY + row * (tableHeight + verticalSpacing)
+
+          const maxX = canvasSize.width - tableWidth - forbiddenZones.right
+          const maxY = canvasSize.height - tableHeight - forbiddenZones.bottom
 
           if (newLeft <= maxX && newTop <= maxY) {
             alignedTables.push({
               ...table,
               position_left: newLeft,
               position_top: newTop,
-              table_width: calculatedWidth,
-              table_height: calculatedHeight,
               page_number: currentPage
             })
             tableIndex++
@@ -308,8 +293,6 @@ export default function TableLayoutEdit() {
         .update({
           position_top: table.position_top,
           position_left: table.position_left,
-          table_width: table.table_width,
-          table_height: table.table_height,
           page_number: table.page_number
         })
         .eq('table_name', table.table_name)
