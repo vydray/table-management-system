@@ -1,131 +1,63 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { createClient } from '@supabase/supabase-js'
-import { getCurrentStoreId } from '../utils/storeContext'
-import { getBusinessDayRangeDates } from '../utils/dateTime'
 import CashCountModal from '../components/report/CashCountModal'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-interface DailyData {
-  date: string
-  totalSales: number
-  orderCount: number
-  cashSales: number
-  cardSales: number
-  otherSales: number
-  firstTimeCount: number
-  returnCount: number
-  regularCount: number
-}
-
-interface DailyReportData {
-  date: string
-  eventName: string
-  weather?: string
-  totalReceipt: number
-  totalSales: number
-  cashReceipt: number
-  cardReceipt: number
-  payPayReceipt: number
-  otherSales: number
-  notTransmittedReceipt: number
-  notTransmittedAmount: number
-  unpaidAmount: number
-  incomeAmount: number
-  expenseAmount: number
-  balance: number
-  staffCount: number
-  castCount: number
-  remarks: string
-  twitterFollowers: number
-  instagramFollowers: number
-  tiktokFollowers: number
-  dailyPaymentTotal: number
-}
-
-interface SalesStats {
-  totalSales: number
-  orderCount: number
-  cashSales: number
-  cardSales: number
-  otherSales: number
-  firstTimeCount: number
-  returnCount: number
-  regularCount: number
-}
+// カスタムフック
+import { useReportData } from '../hooks/useReportData'
+import { useDailyReport } from '../hooks/useDailyReport'
+import { useReportSettings } from '../hooks/useReportSettings'
 
 export default function Report() {
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
+
+  // ローカルstate（日付選択）
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [dailyData, setDailyData] = useState<DailyData[]>([])
-  const [businessDayStartHour, setBusinessDayStartHour] = useState(5)
-  const [showDailyReportModal, setShowDailyReportModal] = useState(false)
-  const [selectedDate, setSelectedDate] = useState<string>('')
-  const [monthlyTargets, setMonthlyTargets] = useState({
-    salesTarget: 12000000,
-    customerTarget: 400
-  })
-  const [showTargetSetting, setShowTargetSetting] = useState(false)
-  const [tempTargets, setTempTargets] = useState({
-    salesTarget: 12000000,
-    customerTarget: 400
-  })
-  const [dailyReportData, setDailyReportData] = useState<DailyReportData>({
-    date: '',
-    eventName: '',
-    totalReceipt: 0,
-    totalSales: 0,
-    cashReceipt: 0,
-    cardReceipt: 0,
-    payPayReceipt: 0,
-    otherSales: 0,
-    notTransmittedReceipt: 0,
-    notTransmittedAmount: 0,
-    unpaidAmount: 0,
-    incomeAmount: 0,
-    expenseAmount: 0,
-    balance: 0,
-    staffCount: 0,
-    castCount: 0,
-    remarks: '',
-    twitterFollowers: 0,
-    instagramFollowers: 0,
-    tiktokFollowers: 0,
-    dailyPaymentTotal: 0
-  })
-  const [activeAttendanceStatuses, setActiveAttendanceStatuses] = useState<string[]>(['出勤'])
-  const [isUpdating, setIsUpdating] = useState(false)
-  
+
   // 現金回収計算用の状態
   const [showCashCountModal, setShowCashCountModal] = useState(false)
-  const [registerAmount, setRegisterAmount] = useState(50000) // デフォルト値
   const [calculatedCashReceipt, setCalculatedCashReceipt] = useState<number | null>(null)
 
-  // レジ金設定を読み込む関数
-  const loadRegisterAmount = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const { data } = await supabase
-        .from('system_settings')
-        .select('setting_value')
-        .eq('setting_key', 'register_amount')
-        .eq('store_id', storeId)
-        .single()
-      
-      if (data) {
-        setRegisterAmount(parseInt(data.setting_value))
-      }
-    } catch (error) {
-      console.error('Error loading register amount:', error)
-    }
-  }
+  // カスタムフック - レポートデータ
+  const {
+    dailyData,
+    loading,
+    loadMonthlyData,
+    getLatestSalesData,
+    getAttendanceCountsAndPayments,
+    calculateMonthlyTotal
+  } = useReportData()
+
+  // カスタムフック - 日報管理
+  const {
+    dailyReportData,
+    setDailyReportData,
+    showDailyReportModal,
+    setShowDailyReportModal,
+    selectedDate,
+    setSelectedDate,
+    isUpdating,
+    loadDailyReport,
+    saveDailyReport
+  } = useDailyReport()
+
+  // カスタムフック - システム設定
+  const {
+    businessDayStartHour,
+    registerAmount,
+    activeAttendanceStatuses,
+    monthlyTargets,
+    tempTargets,
+    setTempTargets,
+    showTargetSetting,
+    setShowTargetSetting,
+    loadBusinessDayStartHour,
+    loadRegisterAmount,
+    loadActiveAttendanceStatuses,
+    loadMonthlyTargets,
+    saveMonthlyTargets
+  } = useReportSettings()
 
   // 現金計算完了時の処理
   const handleCashCountComplete = (totalCash: number) => {
@@ -134,215 +66,64 @@ export default function Report() {
   }
 
   // 初期読み込み
-useEffect(() => {
-  loadMonthlyData()
-  loadMonthlyTargets()
-  loadBusinessDayStartHour()
-  loadActiveAttendanceStatuses()
-  loadRegisterAmount()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [selectedYear, selectedMonth])  // 依存関係の警告を無視
-
-  // 月間データを読み込む
-  const loadMonthlyData = async () => {
-    setLoading(true)
-    try {
-      const storeId = getCurrentStoreId()
-      const monthlyData: DailyData[] = []
-      
-      // 月の日数を取得
-      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate()
-      
-      for (let day = 1; day <= daysInMonth; day++) {
-        const targetDate = new Date(selectedYear, selectedMonth - 1, day)
-        const { start, end } = getBusinessDayRangeDates(targetDate, businessDayStartHour)
-
-        const { data: salesData } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            payments(cash_amount, credit_card_amount, other_payment_amount)
-          `)
-          .gte('checkout_datetime', start.toISOString())
-          .lt('checkout_datetime', end.toISOString())
-          .eq('store_id', storeId)
-          .not('checkout_datetime', 'is', null)
-          .is('deleted_at', null)
-          
-        if (salesData && salesData.length > 0) {
-          const dailyStats: DailyData = {
-            date: `${selectedMonth}月${day}日`,
-            totalSales: 0,
-            orderCount: salesData.length,
-            cashSales: 0,
-            cardSales: 0,
-            otherSales: 0,
-            firstTimeCount: 0,
-            returnCount: 0,
-            regularCount: 0
-          }
-
-          salesData.forEach(sale => {
-            dailyStats.totalSales += sale.total_incl_tax || 0
-            
-            if (sale.payments && sale.payments.length > 0) {
-              const payment = sale.payments[0]
-              dailyStats.cashSales += payment.cash_amount || 0
-              dailyStats.cardSales += payment.credit_card_amount || 0
-              dailyStats.otherSales += payment.other_payment_amount || 0
-            }
-            
-            switch (sale.visit_type) {
-              case '初回':
-                dailyStats.firstTimeCount++
-                break
-              case '再訪':
-                dailyStats.returnCount++
-                break
-              case '常連':
-                dailyStats.regularCount++
-                break
-            }
-          })
-
-          monthlyData.push(dailyStats)
-        } else {
-          monthlyData.push({
-            date: `${selectedMonth}月${day}日`,
-            totalSales: 0,
-            orderCount: 0,
-            cashSales: 0,
-            cardSales: 0,
-            otherSales: 0,
-            firstTimeCount: 0,
-            returnCount: 0,
-            regularCount: 0
-          })
-        }
-      }
-
-      setDailyData(monthlyData)
-    } catch (error) {
-      console.error('Error loading monthly data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // 業務日報を読み込む関数
-  const loadDailyReport = async (businessDate: string) => {
-    try {
-      const storeId = getCurrentStoreId()
-      
-      const { data, error } = await supabase
-        .from('daily_reports')
-        .select('*')
-        .eq('store_id', storeId)
-        .eq('business_date', businessDate)
-        .single()
-      
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading daily report:', error)
-        return null
-      }
-      
-      return data
-    } catch (error) {
-      console.error('Error loading daily report:', error)
-      return null
-    }
-  }
+  useEffect(() => {
+    loadMonthlyData(selectedYear, selectedMonth, businessDayStartHour, activeAttendanceStatuses)
+    loadMonthlyTargets(selectedYear, selectedMonth)
+    loadBusinessDayStartHour()
+    loadActiveAttendanceStatuses()
+    loadRegisterAmount()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear, selectedMonth])
 
   // 日別詳細を開く（リアルタイム対応）
-  const openDailyReport = async (day: DailyData) => {
+  const openDailyReport = async (day: { date: string; totalSales: number; orderCount: number; cashSales: number; cardSales: number; otherSales: number; firstTimeCount: number; returnCount: number; regularCount: number }) => {
     setSelectedDate(day.date)
     setCalculatedCashReceipt(null) // 現金計算結果をリセット
-    
+
     // 常に最新の売上データを取得
-    const latestSalesData = await getLatestSalesData(day.date)
-    
+    const latestSalesData = await getLatestSalesData(day.date, businessDayStartHour)
+
     // 勤怠データから人数と日払いを取得
-    const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(day.date)
-    
+    const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(day.date, activeAttendanceStatuses)
+
     // 日付を解析して業務日を取得
     const matches = day.date.match(/(\d+)月(\d+)日/)
     if (matches) {
       const month = parseInt(matches[1])
       const dayNum = parseInt(matches[2])
       const businessDate = new Date(selectedYear, month - 1, dayNum).toISOString().slice(0, 10)
-      
+
       // 保存されたデータ（調整項目とSNS）を読み込む
-      const savedReport = await loadDailyReport(businessDate)
-      
-      setDailyReportData({
+      await loadDailyReport(businessDate)
+
+      // loadDailyReportで読み込まれたデータに最新の売上データを上書き
+      setDailyReportData(prev => ({
+        ...prev,
         date: day.date,
-        eventName: savedReport?.event_name || '無し',
-        weather: savedReport?.weather || '晴れ',
-        // 売上関連は常に最新データを使用
         totalReceipt: latestSalesData.orderCount,
         totalSales: latestSalesData.totalSales,
         cashReceipt: latestSalesData.cashSales,
         cardReceipt: latestSalesData.cardSales,
         payPayReceipt: 0,
         otherSales: latestSalesData.otherSales,
-        // 調整項目は保存されたデータを使用
-        notTransmittedReceipt: savedReport?.unknown_receipt || 0,
-        notTransmittedAmount: savedReport?.unknown_amount || 0,
-        unpaidAmount: savedReport?.unpaid_amount || 0,
-        incomeAmount: 0,
-        expenseAmount: savedReport?.expense_amount || 0,
         balance: latestSalesData.totalSales,
         staffCount: staffCount,
         castCount: castCount,
-        remarks: savedReport?.remarks || '',
-        // SNSデータは保存されたデータを使用
-        twitterFollowers: savedReport?.twitter_followers || 0,
-        instagramFollowers: savedReport?.instagram_followers || 0,
-        tiktokFollowers: savedReport?.tiktok_followers || 0,
-        // 日払いは保存されたデータがあればそれを、なければ勤怠から
-        dailyPaymentTotal: savedReport?.daily_payment_total ?? dailyPaymentTotal
-      })
+        dailyPaymentTotal: prev.dailyPaymentTotal || dailyPaymentTotal
+      }))
     }
-    
-    setShowDailyReportModal(true)
-  }
 
-  // 月間目標を読み込む
-  const loadMonthlyTargets = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const { data } = await supabase
-        .from('monthly_targets')
-        .select('*')
-        .eq('year', selectedYear)
-        .eq('month', selectedMonth)
-        .eq('store_id', storeId)
-        .single()
-      
-      if (data) {
-        setMonthlyTargets({
-          salesTarget: data.sales_target,
-          customerTarget: data.customer_target
-        })
-        setTempTargets({
-          salesTarget: data.sales_target,
-          customerTarget: data.customer_target
-        })
-      }
-    } catch (error) {
-      console.error('Error loading monthly targets:', error)
-    }
+    setShowDailyReportModal(true)
   }
 
   // 最新データを取得
   const updateToLatestData = async () => {
     if (!selectedDate) return
-    
-    setIsUpdating(true)
+
     try {
-      const latestSalesData = await getLatestSalesData(selectedDate)
-      const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(selectedDate)
-      
+      const latestSalesData = await getLatestSalesData(selectedDate, businessDayStartHour)
+      const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(selectedDate, activeAttendanceStatuses)
+
       setDailyReportData(prev => ({
         ...prev,
         totalReceipt: latestSalesData.orderCount,
@@ -355,308 +136,26 @@ useEffect(() => {
         castCount: castCount,
         dailyPaymentTotal: prev.dailyPaymentTotal > 0 ? prev.dailyPaymentTotal : dailyPaymentTotal
       }))
-      
-      await loadMonthlyData()
+
+      await loadMonthlyData(selectedYear, selectedMonth, businessDayStartHour, activeAttendanceStatuses)
     } catch (error) {
       console.error('Error updating data:', error)
       alert('データの更新中にエラーが発生しました')
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
-  // 業務日報を保存
-  const saveDailyReport = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      
-      // 日付を解析（"6月21日" → "2025-06-21"）
-      const matches = selectedDate.match(/(\d+)月(\d+)日/)
-      if (!matches) {
-        alert('日付の形式が正しくありません')
-        return
-      }
-      
-      const month = parseInt(matches[1])
-      const day = parseInt(matches[2])
-      const businessDate = new Date(selectedYear, month - 1, day).toISOString().slice(0, 10)
-      
-      // 保存するデータ（売上データは保存しない）
-      const reportData = {
-        store_id: storeId,
-        business_date: businessDate,
-        event_name: dailyReportData.eventName || '無し',
-        weather: dailyReportData.weather || '晴れ',
-        
-        // 調整項目のみ保存
-        unknown_receipt: dailyReportData.notTransmittedReceipt,
-        unknown_amount: dailyReportData.notTransmittedAmount,
-        unpaid_amount: dailyReportData.unpaidAmount,
-        expense_amount: dailyReportData.expenseAmount,
-        daily_payment_total: dailyReportData.dailyPaymentTotal,
-        
-        // SNSフォロワー
-        twitter_followers: dailyReportData.twitterFollowers,
-        instagram_followers: dailyReportData.instagramFollowers,
-        tiktok_followers: dailyReportData.tiktokFollowers,
-        
-        // その他
-        remarks: dailyReportData.remarks || ''
-      }
-      
-      // upsert（既存データがあれば更新、なければ新規作成）
-      const { error } = await supabase
-        .from('daily_reports')
-        .upsert(reportData, {
-          onConflict: 'store_id,business_date'
-        })
-      
-      if (error) {
-        console.error('Error saving daily report:', error)
-        alert('保存中にエラーが発生しました: ' + error.message)
-        return
-      }
-      
-      alert('業務日報を保存しました')
-      setShowDailyReportModal(false)
-    } catch (error) {
-      console.error('Error saving daily report:', error)
-      alert('保存中にエラーが発生しました')
-    }
-  }
-
-  // 月間目標を保存
-  const saveMonthlyTargets = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const { error } = await supabase
-        .from('monthly_targets')
-        .upsert({
-          year: selectedYear,
-          month: selectedMonth,
-          sales_target: tempTargets.salesTarget,
-          customer_target: tempTargets.customerTarget,
-          store_id: storeId
-        }, {
-          onConflict: 'year,month,store_id'
-        })
-      
-      if (!error) {
-        setMonthlyTargets(tempTargets)
-        setShowTargetSetting(false)
-        alert('目標を保存しました')
-      }
-    } catch (error) {
-      console.error('Error saving monthly targets:', error)
-      alert('保存中にエラーが発生しました')
-    }
-  }
-
-  // 営業日切り替え時間を取得
-  const loadBusinessDayStartHour = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const { data } = await supabase
-        .from('system_settings')
-        .select('setting_value')
-        .eq('setting_key', 'business_day_start_hour')
-        .eq('store_id', storeId)
-        .single()
-      
-      if (data) {
-        setBusinessDayStartHour(data.setting_value)
-      }
-    } catch (error) {
-      console.error('Error loading business day start hour:', error)
-    }
-  }
-
-
-  // 最新の売上データを取得する関数
-  const getLatestSalesData = async (dateStr: string): Promise<SalesStats> => {
-    try {
-      const storeId = getCurrentStoreId()
-      const matches = dateStr.match(/(\d+)月(\d+)日/)
-      if (!matches) return { totalSales: 0, orderCount: 0, cashSales: 0, cardSales: 0, otherSales: 0, firstTimeCount: 0, returnCount: 0, regularCount: 0 }
-      
-      const month = parseInt(matches[1])
-      const day = parseInt(matches[2])
-      const targetDate = new Date(selectedYear, month - 1, day)
-      const { start, end } = getBusinessDayRangeDates(targetDate, businessDayStartHour)
-
-      const { data: salesData } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          payments(cash_amount, credit_card_amount, other_payment_amount)
-        `)
-        .gte('checkout_datetime', start.toISOString())
-        .lt('checkout_datetime', end.toISOString())
-        .eq('store_id', storeId)
-        .not('checkout_datetime', 'is', null)
-        .is('deleted_at', null)
-
-      const stats: SalesStats = {
-        totalSales: 0,
-        orderCount: salesData?.length || 0,
-        cashSales: 0,
-        cardSales: 0,
-        otherSales: 0,
-        firstTimeCount: 0,
-        returnCount: 0,
-        regularCount: 0
-      }
-
-      if (salesData && salesData.length > 0) {
-        salesData.forEach(sale => {
-          stats.totalSales += sale.total_incl_tax || 0
-          
-          if (sale.payments && sale.payments.length > 0) {
-            const payment = sale.payments[0]
-            stats.cashSales += payment.cash_amount || 0
-            stats.cardSales += payment.credit_card_amount || 0
-            stats.otherSales += payment.other_payment_amount || 0
-          }
-          
-          switch (sale.visit_type) {
-            case '初回':
-              stats.firstTimeCount++
-              break
-            case '再訪':
-              stats.returnCount++
-              break
-            case '常連':
-              stats.regularCount++
-              break
-          }
-        })
-      }
-
-      return stats
-    } catch (error) {
-      console.error('Error getting latest sales data:', error)
-      return { totalSales: 0, orderCount: 0, cashSales: 0, cardSales: 0, otherSales: 0, firstTimeCount: 0, returnCount: 0, regularCount: 0 }
     }
   }
 
   // 現金回収を計算する関数
   const calculateCashReceipt = () => {
-    return dailyReportData.cashReceipt - 
-           dailyReportData.notTransmittedReceipt - 
-           dailyReportData.notTransmittedAmount - 
-           dailyReportData.unpaidAmount - 
-           dailyReportData.expenseAmount - 
+    return dailyReportData.cashReceipt -
+           dailyReportData.notTransmittedReceipt -
+           dailyReportData.notTransmittedAmount -
+           dailyReportData.unpaidAmount -
+           dailyReportData.expenseAmount -
            dailyReportData.dailyPaymentTotal
   }
 
-  // 出勤として扱うステータスを取得
-  const loadActiveAttendanceStatuses = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const { data } = await supabase
-        .from('system_settings')
-        .select('setting_value')
-        .eq('setting_key', 'active_attendance_statuses')
-        .eq('store_id', storeId)
-        .single()
-      
-      if (data && data.setting_value) {
-        const statuses = JSON.parse(data.setting_value)
-        setActiveAttendanceStatuses(statuses)
-      }
-    } catch (error) {
-      console.error('Error loading active attendance statuses:', error)
-      setActiveAttendanceStatuses(['出勤'])
-    }
-  }
-
-  // 営業日の日付範囲を計算（営業日切り替え時間を考慮）
-  const getBusinessDateRange = (dateStr: string) => {
-    const matches = dateStr.match(/(\d+)月(\d+)日/)
-    if (!matches) return { startDate: '', endDate: '' }
-    
-    const month = parseInt(matches[1])
-    const day = parseInt(matches[2])
-    
-    const startDate = new Date(selectedYear, month - 1, day, businessDayStartHour, 0, 0)
-    const endDate = new Date(selectedYear, month - 1, day + 1, businessDayStartHour, 0, 0)
-    
-    return {
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString()
-    }
-  }
-
-  // 勤怠データから内勤・キャストの人数と日払い合計を取得
-  const getAttendanceCountsAndPayments = async (dateStr: string) => {
-    try {
-      const storeId = getCurrentStoreId()
-      
-      const { startDate, endDate } = getBusinessDateRange(dateStr)
-      if (!startDate || !endDate) return { staffCount: 0, castCount: 0, dailyPaymentTotal: 0 }
-      
-      const { data: attendanceData } = await supabase
-        .from('attendance')
-        .select('cast_name, status, daily_payment, check_in_datetime')
-        .eq('store_id', storeId)
-        .gte('check_in_datetime', startDate)
-        .lt('check_in_datetime', endDate)
-        .in('status', activeAttendanceStatuses)
-
-      if (!attendanceData) return { staffCount: 0, castCount: 0, dailyPaymentTotal: 0 }
-
-      // キャスト情報を取得して内勤/キャストを判別
-      const { data: castsData } = await supabase
-        .from('casts')
-        .select('name, employment_type')
-        .eq('store_id', storeId)
-
-      const castMap = new Map()
-      castsData?.forEach(cast => {
-        castMap.set(cast.name, cast.employment_type)
-      })
-
-      let staffCount = 0
-      let castCount = 0
-      let dailyPaymentTotal = 0
-
-      attendanceData.forEach(attendance => {
-        const employmentType = castMap.get(attendance.cast_name)
-        if (employmentType === '内勤') {
-          staffCount++
-        } else {
-          castCount++
-        }
-        dailyPaymentTotal += attendance.daily_payment || 0
-      })
-
-      return { staffCount, castCount, dailyPaymentTotal }
-    } catch (error) {
-      console.error('Error getting attendance counts:', error)
-      return { staffCount: 0, castCount: 0, dailyPaymentTotal: 0 }
-    }
-  }
-
   // 月間合計を計算
-  const monthlyTotal = dailyData.reduce((acc, day) => ({
-    totalSales: acc.totalSales + day.totalSales,
-    orderCount: acc.orderCount + day.orderCount,
-    cashSales: acc.cashSales + day.cashSales,
-    cardSales: acc.cardSales + day.cardSales,
-    otherSales: acc.otherSales + day.otherSales,
-    firstTimeCount: acc.firstTimeCount + day.firstTimeCount,
-    returnCount: acc.returnCount + day.returnCount,
-    regularCount: acc.regularCount + day.regularCount
-  }), {
-    totalSales: 0,
-    orderCount: 0,
-    cashSales: 0,
-    cardSales: 0,
-    otherSales: 0,
-    firstTimeCount: 0,
-    returnCount: 0,
-    regularCount: 0
-  })
+  const monthlyTotal = calculateMonthlyTotal(dailyData)
 
   return (
     <>
@@ -1527,7 +1026,7 @@ useEffect(() => {
                   キャンセル
                 </button>
                 <button
-                  onClick={saveMonthlyTargets}
+                  onClick={() => saveMonthlyTargets(selectedYear, selectedMonth)}
                   style={{
                     padding: '10px 30px',
                     backgroundColor: '#FF9800',
