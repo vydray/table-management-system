@@ -926,14 +926,19 @@ export default function TableLayoutEdit() {
               backgroundColor: '#e0e0e0',
               overflow: 'auto',
               display: 'flex',
-              gap: '10px',
-              padding: '20px',
-              alignItems: zoom > initialZoom ? 'flex-start' : 'center',
-              justifyContent: zoom > initialZoom ? 'flex-start' : 'center'
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px'
             }}
           >
-            {/* 各ページのキャンバス */}
-            {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
+            {/* キャンバスコンテナ - 横並び */}
+            <div style={{
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'flex-start'
+            }}>
+              {/* 各ページのキャンバス */}
+              {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
               <div
                 key={pageNum}
                 id={`canvas-area-${pageNum}`}  // 中括弧で囲む
@@ -1054,6 +1059,7 @@ export default function TableLayoutEdit() {
                   ))}
               </div>
             ))}
+            </div>
           </div>
         </div>
 
