@@ -530,30 +530,24 @@ export default function Home() {
  const adjustLayoutScale = () => {
     const layout = document.getElementById('layout')
     if (!layout) return
-    
+
     // レイアウトの固定サイズ
     const LAYOUT_WIDTH = 2176
     const LAYOUT_HEIGHT = 1600
-    
-    // 画面サイズを取得（少し余白を持たせる）
-    const viewportWidth = window.innerWidth * 0.95
-    const viewportHeight = window.innerHeight * 0.95
-    
-    // モバイル判定（1280px以下は自動スケールしない）
-    if (window.innerWidth <= 1280) {
-      document.documentElement.style.setProperty('--viewport-scale', '1')
-      return
-    }
-    
+
+    // 画面サイズを取得（余白なしでフル活用）
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+
     // 縦横比を保ちながら画面に収まる倍率を計算
     const scaleX = viewportWidth / LAYOUT_WIDTH
     const scaleY = viewportHeight / LAYOUT_HEIGHT
-    const scale = Math.min(scaleX, scaleY, 1) // 最大倍率は1（元のサイズより拡大しない）
-    
+    const scale = Math.min(scaleX, scaleY) // 画面に収まる最適なスケールを計算
+
     // CSS変数として設定
     document.documentElement.style.setProperty('--viewport-scale', scale.toString())
-    
-    console.log(`Layout scale: ${scale.toFixed(2)} (${window.innerWidth}x${window.innerHeight})`)
+
+    console.log(`Layout scale: ${scale.toFixed(3)} (viewport: ${window.innerWidth}x${window.innerHeight}, layout: ${LAYOUT_WIDTH}x${LAYOUT_HEIGHT})`)
   }
 
   // 注文データを取得
