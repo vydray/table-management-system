@@ -48,7 +48,6 @@ export default function Login() {
     <>
       <Head>
         <title>ログイン - テーブル管理システム</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
       <div className="login-container">
@@ -110,10 +109,14 @@ export default function Login() {
 
       <style jsx>{`
         .login-container {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
           display: flex;
           justify-content: center;
           align-items: center;
-          min-height: 100vh;
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
@@ -122,7 +125,7 @@ export default function Login() {
           border-radius: 16px;
           padding: 40px;
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-          width: 100%;
+          width: 90%;
           max-width: 400px;
         }
 
