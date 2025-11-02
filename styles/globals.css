@@ -343,17 +343,18 @@ body.modal-open {
 #modal.modal-new {
   width: 600px;
   height: 800px;
-  top: 400px;  /* (1600-800)/2 */
-  left: 788px; /* (2176-600)/2 */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   padding: 30px;
 }
 
 #modal.modal-edit {
   width: 1400px;
   height: 1000px;
-  top: 300px;  /* (1600-1000)/2 */
-  left: 388px; /* (2176-1400)/2 */
-  transform: scale(0.85);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.85);
   transform-origin: center center;
 }
 
