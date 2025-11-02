@@ -4,9 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.vydray.pos',
   appName: 'POS System',
   webDir: 'out',
-  server: {
-    url: 'https://table-management-system-seven.vercel.app',
-    cleartext: true
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: true
   }
 };
 
