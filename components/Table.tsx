@@ -143,17 +143,17 @@ export const Table: FC<TableProps> = ({
         }
       }}
     >
-      <div className="table-name" style={{ fontSize: `${28 * scale}px`, fontWeight: 'bold' }}>
+      <div className="table-name" style={{ fontSize: `${36 * scale}px`, fontWeight: 'bold' }}>
         {tableId} {data.visit && data.status === 'occupied' ? data.visit : ''}
       </div>
-      <div className="table-info" style={{ fontSize: `${20 * scale}px` }}>
+      <div className="table-info" style={{ fontSize: `${26 * scale}px` }}>
         {data.status === 'empty' ? (
-          <small style={{ fontSize: `${18 * scale}px` }}>空席</small>
+          <small style={{ fontSize: `${24 * scale}px` }}>空席</small>
         ) : (
           <>
-            <strong style={{ fontSize: `${22 * scale}px` }}>{data.name}</strong>
-            <span style={{ fontSize: `${18 * scale}px` }}>推し: {data.oshi}</span>
-            <div className="table-elapsed" style={{ fontSize: `${16 * scale}px` }}>{data.elapsed}</div>
+            <strong style={{ fontSize: `${28 * scale}px` }}>{data.name}</strong>
+            <span style={{ fontSize: `${24 * scale}px` }}>推し: {data.oshi}</span>
+            <div className="table-elapsed" style={{ fontSize: `${26 * scale}px`, fontWeight: 'bold', marginTop: `${4 * scale}px` }}>{data.elapsed}</div>
           </>
         )}
       </div>
