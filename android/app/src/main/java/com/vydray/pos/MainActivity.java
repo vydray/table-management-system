@@ -5,13 +5,23 @@ import android.os.Handler;
 import android.webkit.WebView;
 import android.view.View;
 import android.view.WindowManager;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+    private static final int BLUETOOTH_PERMISSION_REQUEST_CODE = 100;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SiiPrinterPlugin.class);
         super.onCreate(savedInstanceState);
+
+        // Bluetooth権限をリクエスト（Android 12以降）
+        requestBluetoothPermissions();
 
         // システムUIを正しく設定
         getWindow().setFlags(
@@ -68,6 +78,49 @@ public class MainActivity extends BridgeActivity {
             WebView webView = getBridge().getWebView();
             if (webView != null) {
                 webView.requestLayout();
+            }
+        }
+    }
+
+    // Bluetooth権限をリクエスト
+    private void requestBluetoothPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12以降
+            String[] permissions = {
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            };
+
+            boolean allGranted = true;
+            for (String permission : permissions) {
+                if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+
+            if (!allGranted) {
+                ActivityCompat.requestPermissions(this, permissions, BLUETOOTH_PERMISSION_REQUEST_CODE);
+            }
+        } else {
+            // Android 11以前
+            String[] permissions = {
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            };
+
+            boolean allGranted = true;
+            for (String permission : permissions) {
+                if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+
+            if (!allGranted) {
+                ActivityCompat.requestPermissions(this, permissions, BLUETOOTH_PERMISSION_REQUEST_CODE);
             }
         }
     }
