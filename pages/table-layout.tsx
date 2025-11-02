@@ -103,6 +103,16 @@ export default function TableLayoutEdit() {
     loadTables()
   }, [])
 
+  // 整列設定が変更されたら入力欄も同期
+  useEffect(() => {
+    setAlignColsInput(alignCols.toString())
+    setAlignRowsInput(alignRows.toString())
+    setHorizontalSpacingInput(horizontalSpacing.toString())
+    setVerticalSpacingInput(verticalSpacing.toString())
+    setAlignStartXInput(alignStartX.toString())
+    setAlignStartYInput(alignStartY.toString())
+  }, [alignCols, alignRows, horizontalSpacing, verticalSpacing, alignStartX, alignStartY])
+
   const loadTables = async () => {
     setLoading(true)
     const storeId = localStorage.getItem('currentStoreId') || '1'
