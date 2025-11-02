@@ -154,7 +154,7 @@ body.modal-open {
 /* メニューボタン */
 .menu-button {
   position: absolute;
-  left: 25px;
+  left: 50px;
   top: 50%;
   transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.9);
@@ -349,10 +349,12 @@ body.modal-open {
 }
 
 #modal.modal-edit {
-  width: 1600px;
-  height: 1200px;
-  top: 200px;  /* (1600-1200)/2 */
-  left: 288px; /* (2176-1600)/2 */
+  width: 1400px;
+  height: 1000px;
+  top: 300px;  /* (1600-1000)/2 */
+  left: 388px; /* (2176-1400)/2 */
+  transform: scale(0.85);
+  transform-origin: center center;
 }
 
 #modal h3 {
