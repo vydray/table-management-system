@@ -10,9 +10,9 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: true
   },
   server: {
-    url: undefined,
-    cleartext: true,
-    // APK版は login-apk.html から開始
+    // APK版はVercelのサイトを直接読み込む（APIルート経由でログイン）
+    url: 'https://table-management-system-seven.vercel.app',
+    cleartext: false,
     androidScheme: 'https'
   }
 };
