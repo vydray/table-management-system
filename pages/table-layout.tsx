@@ -225,19 +225,6 @@ export default function TableLayoutEdit() {
     }
   }
 
-  // テーブル位置を更新
-  const updateTablePosition = async (tableName: string, top: number, left: number) => {
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    const { error } = await supabase
-      .from('table_status')
-      .update({ position_top: top, position_left: left })
-      .eq('table_name', tableName)
-      .eq('store_id', storeId)
-
-    if (error) {
-      console.error('位置更新エラー:', error)
-    }
-  }
 
   // 自動整列を実行
   const executeAlignment = async () => {
@@ -549,14 +536,32 @@ export default function TableLayoutEdit() {
     if (draggedTable) {
       const table = tables.find(t => t.table_name === draggedTable)
       if (table) {
-        await updateTablePosition(table.table_name, table.position_top, table.position_left)
-        
+        console.log('保存開始:', {
+          table_name: table.table_name,
+          position_top: table.position_top,
+          position_left: table.position_left,
+          page_number: table.page_number
+        })
+
         const storeId = localStorage.getItem('currentStoreId') || '1'
-        await supabase
+
+        // 位置とページ番号を同時に更新
+        const { error } = await supabase
           .from('table_status')
-          .update({ page_number: table.page_number })
+          .update({
+            position_top: table.position_top,
+            position_left: table.position_left,
+            page_number: table.page_number
+          })
           .eq('table_name', table.table_name)
           .eq('store_id', storeId)
+
+        if (error) {
+          console.error('保存エラー:', error)
+          alert(`保存に失敗しました: ${error.message}`)
+        } else {
+          console.log('保存成功:', table.table_name)
+        }
       }
       setDraggedTable(null)
     }
