@@ -46,9 +46,18 @@ export default function TableLayoutEdit() {
   const [alignStartX, setAlignStartX] = useState(100)
   const [alignStartY, setAlignStartY] = useState(100)
   const [alignTarget, setAlignTarget] = useState<'all' | 'current'>('all')
+
+  // 整列機能の入力用state（空欄を許可）
+  const [alignColsInput, setAlignColsInput] = useState('3')
+  const [alignRowsInput, setAlignRowsInput] = useState('3')
+  const [horizontalSpacingInput, setHorizontalSpacingInput] = useState('50')
+  const [verticalSpacingInput, setVerticalSpacingInput] = useState('40')
+  const [alignStartXInput, setAlignStartXInput] = useState('100')
+  const [alignStartYInput, setAlignStartYInput] = useState('100')
   
   // テーブルサイズ設定
   const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
+  const [tableSizeInput, setTableSizeInput] = useState({ width: '130', height: '123' })
   const [isUpdatingSize, setIsUpdatingSize] = useState(false)
   
   // 自動スケール計算用
@@ -699,10 +708,15 @@ export default function TableLayoutEdit() {
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={tableSize.width}
+                  value={tableSizeInput.width}
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9]/g, '')
-                    setTableSize({ ...tableSize, width: val === '' ? 130 : parseInt(val) })
+                    setTableSizeInput({ ...tableSizeInput, width: val })
+                  }}
+                  onBlur={() => {
+                    const val = tableSizeInput.width === '' ? 130 : parseInt(tableSizeInput.width)
+                    setTableSize({ ...tableSize, width: val })
+                    setTableSizeInput({ ...tableSizeInput, width: val.toString() })
                   }}
                   style={{
                     flex: 1,
@@ -719,10 +733,15 @@ export default function TableLayoutEdit() {
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={tableSize.height}
+                  value={tableSizeInput.height}
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9]/g, '')
-                    setTableSize({ ...tableSize, height: val === '' ? 123 : parseInt(val) })
+                    setTableSizeInput({ ...tableSizeInput, height: val })
+                  }}
+                  onBlur={() => {
+                    const val = tableSizeInput.height === '' ? 123 : parseInt(tableSizeInput.height)
+                    setTableSize({ ...tableSize, height: val })
+                    setTableSizeInput({ ...tableSizeInput, height: val.toString() })
                   }}
                   style={{
                     flex: 1,
@@ -1158,11 +1177,15 @@ export default function TableLayoutEdit() {
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={alignCols}
+                    value={alignColsInput}
                     onChange={(e) => {
                       const val = e.target.value.replace(/[^0-9]/g, '')
-                      const num = val === '' ? 1 : Math.max(1, Math.min(10, parseInt(val)))
-                      setAlignCols(num)
+                      setAlignColsInput(val)
+                    }}
+                    onBlur={() => {
+                      const val = alignColsInput === '' ? 1 : Math.max(1, Math.min(10, parseInt(alignColsInput)))
+                      setAlignCols(val)
+                      setAlignColsInput(val.toString())
                     }}
                     style={{
                       width: '100%',
@@ -1180,11 +1203,15 @@ export default function TableLayoutEdit() {
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={alignRows}
+                    value={alignRowsInput}
                     onChange={(e) => {
                       const val = e.target.value.replace(/[^0-9]/g, '')
-                      const num = val === '' ? 1 : Math.max(1, Math.min(10, parseInt(val)))
-                      setAlignRows(num)
+                      setAlignRowsInput(val)
+                    }}
+                    onBlur={() => {
+                      const val = alignRowsInput === '' ? 1 : Math.max(1, Math.min(10, parseInt(alignRowsInput)))
+                      setAlignRows(val)
+                      setAlignRowsInput(val.toString())
                     }}
                     style={{
                       width: '100%',
@@ -1202,11 +1229,15 @@ export default function TableLayoutEdit() {
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={horizontalSpacing}
+                    value={horizontalSpacingInput}
                     onChange={(e) => {
                       const val = e.target.value.replace(/[^0-9]/g, '')
-                      const num = val === '' ? 50 : Math.max(10, Math.min(200, parseInt(val)))
-                      setHorizontalSpacing(num)
+                      setHorizontalSpacingInput(val)
+                    }}
+                    onBlur={() => {
+                      const val = horizontalSpacingInput === '' ? 50 : Math.max(10, Math.min(200, parseInt(horizontalSpacingInput)))
+                      setHorizontalSpacing(val)
+                      setHorizontalSpacingInput(val.toString())
                     }}
                     style={{
                       width: '100%',
@@ -1224,11 +1255,15 @@ export default function TableLayoutEdit() {
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={verticalSpacing}
+                    value={verticalSpacingInput}
                     onChange={(e) => {
                       const val = e.target.value.replace(/[^0-9]/g, '')
-                      const num = val === '' ? 40 : Math.max(10, Math.min(200, parseInt(val)))
-                      setVerticalSpacing(num)
+                      setVerticalSpacingInput(val)
+                    }}
+                    onBlur={() => {
+                      const val = verticalSpacingInput === '' ? 40 : Math.max(10, Math.min(200, parseInt(verticalSpacingInput)))
+                      setVerticalSpacing(val)
+                      setVerticalSpacingInput(val.toString())
                     }}
                     style={{
                       width: '100%',
@@ -1284,11 +1319,15 @@ export default function TableLayoutEdit() {
                     <input
                       type="text"
                       inputMode="numeric"
-                      value={alignStartX}
+                      value={alignStartXInput}
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9]/g, '')
-                        const num = val === '' ? 0 : Math.max(0, Math.min(500, parseInt(val)))
-                        setAlignStartX(num)
+                        setAlignStartXInput(val)
+                      }}
+                      onBlur={() => {
+                        const val = alignStartXInput === '' ? 0 : Math.max(0, Math.min(500, parseInt(alignStartXInput)))
+                        setAlignStartX(val)
+                        setAlignStartXInput(val.toString())
                       }}
                       style={{
                         width: '100%',
@@ -1306,11 +1345,15 @@ export default function TableLayoutEdit() {
                     <input
                       type="text"
                       inputMode="numeric"
-                      value={alignStartY}
+                      value={alignStartYInput}
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9]/g, '')
-                        const num = val === '' ? forbiddenZones.top : Math.max(forbiddenZones.top, Math.min(500, parseInt(val)))
-                        setAlignStartY(num)
+                        setAlignStartYInput(val)
+                      }}
+                      onBlur={() => {
+                        const val = alignStartYInput === '' ? forbiddenZones.top : Math.max(forbiddenZones.top, Math.min(500, parseInt(alignStartYInput)))
+                        setAlignStartY(val)
+                        setAlignStartYInput(val.toString())
                       }}
                       style={{
                         width: '100%',
