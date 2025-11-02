@@ -1608,37 +1608,34 @@ const finishCheckout = () => {
                   ))}
                 </div>
 
-                {/* リストボックス形式のセレクト（複数行表示） */}
-                <select
-                  value={formData.castName}
-                  onChange={(e) => setFormData({ ...formData, castName: e.target.value })}
-                  size={10}
+                {/* カスタムリストボックス（スクロール可能） */}
+                <div
                   style={{
                     width: '100%',
-                    fontSize: '18px',
-                    padding: '8px',
-                    borderRadius: '6px',
+                    flex: 1,
                     border: '2px solid #ddd',
-                    flex: 1
+                    borderRadius: '6px',
+                    overflowY: 'auto',
+                    backgroundColor: 'white'
                   }}
                 >
-                  <option value="">-- 推しを選択 --</option>
-                  {castList
-                    .filter(name => {
+                  {(() => {
+                    const kanaMap: Record<string, string> = {
+                      'あ': 'あいうえお',
+                      'か': 'かきくけこがぎぐげご',
+                      'さ': 'さしすせそざじずぜぞ',
+                      'た': 'たちつてとだぢづでど',
+                      'な': 'なにぬねの',
+                      'は': 'はひふへほばびぶべぼぱぴぷぺぽ',
+                      'ま': 'まみむめも',
+                      'や': 'やゆよ',
+                      'ら': 'らりるれろ',
+                      'わ': 'わをん'
+                    }
+
+                    const filteredCasts = castList.filter(name => {
                       if (!castFilter) return true
                       const firstChar = name.charAt(0)
-                      const kanaMap: Record<string, string> = {
-                        'あ': 'あいうえお',
-                        'か': 'かきくけこがぎぐげご',
-                        'さ': 'さしすせそざじずぜぞ',
-                        'た': 'たちつてとだぢづでど',
-                        'な': 'なにぬねの',
-                        'は': 'はひふへほばびぶべぼぱぴぷぺぽ',
-                        'ま': 'まみむめも',
-                        'や': 'やゆよ',
-                        'ら': 'らりるれろ',
-                        'わ': 'わをん'
-                      }
 
                       // 「その他」フィルター: ひらがな以外の名前を表示
                       if (castFilter === 'その他') {
@@ -1648,10 +1645,44 @@ const finishCheckout = () => {
 
                       return kanaMap[castFilter]?.includes(firstChar)
                     })
-                    .map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                </select>
+
+                    return (
+                      <>
+                        <div
+                          onClick={() => setFormData({ ...formData, castName: '' })}
+                          style={{
+                            padding: '12px 15px',
+                            fontSize: '18px',
+                            cursor: 'pointer',
+                            backgroundColor: formData.castName === '' ? '#FF9800' : 'white',
+                            color: formData.castName === '' ? 'white' : '#999',
+                            borderBottom: '1px solid #eee',
+                            fontStyle: formData.castName === '' ? 'normal' : 'italic'
+                          }}
+                        >
+                          -- 推しを選択 --
+                        </div>
+                        {filteredCasts.map(name => (
+                          <div
+                            key={name}
+                            onClick={() => setFormData({ ...formData, castName: name })}
+                            style={{
+                              padding: '12px 15px',
+                              fontSize: '18px',
+                              cursor: 'pointer',
+                              backgroundColor: formData.castName === name ? '#FF9800' : 'white',
+                              color: formData.castName === name ? 'white' : '#333',
+                              borderBottom: '1px solid #eee',
+                              transition: 'background-color 0.2s'
+                            }}
+                          >
+                            {name}
+                          </div>
+                        ))}
+                      </>
+                    )
+                  })()}
+                </div>
               </div>
             </div>
           ) : (
