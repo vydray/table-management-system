@@ -100,15 +100,15 @@ export const Table: FC<TableProps> = ({
       } ${
         moveMode && data.status === 'occupied' && tableId !== moveFromTable ? 'move-mode' : ''
       }`}
-      style={{ 
+      style={{
         position: 'absolute',
-        top: `${position.top}px`, 
+        top: `${position.top}px`,
         left: `${position.left}px`,
         width: `${tableSize.width}px`,
         height: `${tableSize.height}px`,
         padding: `${5 * scale}px`,
         borderRadius: `${16 * scale}px`,
-        fontSize: `${14 * scale}px`
+        fontSize: `${20 * scale}px`
       }}
       onTouchStart={(e) => {
         e.preventDefault()
@@ -143,17 +143,17 @@ export const Table: FC<TableProps> = ({
         }
       }}
     >
-      <div className="table-name" style={{ fontSize: `${16 * scale}px` }}>
+      <div className="table-name" style={{ fontSize: `${28 * scale}px`, fontWeight: 'bold' }}>
         {tableId} {data.visit && data.status === 'occupied' ? data.visit : ''}
       </div>
-      <div className="table-info" style={{ fontSize: `${12 * scale}px` }}>
+      <div className="table-info" style={{ fontSize: `${20 * scale}px` }}>
         {data.status === 'empty' ? (
-          <small style={{ fontSize: `${11 * scale}px` }}>空席</small>
+          <small style={{ fontSize: `${18 * scale}px` }}>空席</small>
         ) : (
           <>
-            <strong style={{ fontSize: `${13 * scale}px` }}>{data.name}</strong>
-            <span style={{ fontSize: `${11 * scale}px` }}>推し: {data.oshi}</span>
-            <div className="table-elapsed" style={{ fontSize: `${10 * scale}px` }}>{data.elapsed}</div>
+            <strong style={{ fontSize: `${22 * scale}px` }}>{data.name}</strong>
+            <span style={{ fontSize: `${18 * scale}px` }}>推し: {data.oshi}</span>
+            <div className="table-elapsed" style={{ fontSize: `${16 * scale}px` }}>{data.elapsed}</div>
           </>
         )}
       </div>
