@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { createClient } from '@supabase/supabase-js'
-import { getCurrentStoreId } from '../utils/storeContext'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// カスタムフック
+import { useAttendanceData } from '../hooks/useAttendanceData'
+import { useAttendanceRows } from '../hooks/useAttendanceRows'
 
 // 型定義
 interface AttendanceRow {
@@ -21,207 +18,73 @@ interface AttendanceRow {
   daily_payment: number
 }
 
-interface Cast {
-  id: number
-  name: string
-  status?: string
-}
-
 export default function Attendance() {
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([])
-  const [casts, setCasts] = useState<Cast[]>([])
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  
-  // ドロップダウンの表示状態
-  const [showDropdowns, setShowDropdowns] = useState<{[key: string]: boolean}>({})
 
-  // 初期行を5行作成
-  const initializeRows = () => {
-    const rows: AttendanceRow[] = []
-    for (let i = 0; i < 5; i++) {
-      rows.push({
-        id: `new-${Date.now()}-${i}`,
-        cast_name: '',
-        check_in_time: '',
-        check_out_time: '',
-        status: '未設定',
-        late_minutes: 0,
-        break_minutes: 0,
-        daily_payment: 0
-      })
-    }
-    return rows
-  }
+  // カスタムフック - 勤怠データ管理
+  const {
+    attendanceRows,
+    setAttendanceRows,
+    casts,
+    loading,
+    saving,
+    loadCasts,
+    loadAttendance,
+    saveAttendance,
+    deleteRow: deleteRowFromDB
+  } = useAttendanceData()
 
-  // キャスト一覧を取得
-  const loadCasts = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const { data, error } = await supabase
-        .from('casts')
-        .select('id, name, status')
-        .eq('store_id', storeId)
-        .in('status', ['在籍', '体験'])  // 在籍と体験のみ表示
-        .order('name')
+  // カスタムフック - 行管理
+  const {
+    showDropdowns,
+    setShowDropdowns,
+    addRow: addRowHelper,
+    updateRow: updateRowHelper,
+    toggleDropdown,
+    selectCast: selectCastHelper
+  } = useAttendanceRows()
 
-      if (error) throw error
-      setCasts(data || [])
-    } catch (error) {
-      console.error('Error loading casts:', error)
-    }
-  }
-
-  // 勤怠データを読み込む
-  const loadAttendance = async () => {
-    setLoading(true)
-    try {
-      const storeId = getCurrentStoreId()
-      const { data, error } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('store_id', storeId)
-        .eq('date', selectedDate)
-        .order('cast_name')
-
-      if (error) throw error
-
-      if (data && data.length > 0) {
-        // 既存データをフォーマット
-        const formattedData = data.map(item => ({
-          id: item.id.toString(),
-          cast_name: item.cast_name,
-          check_in_time: item.check_in_datetime ? new Date(item.check_in_datetime).toTimeString().slice(0, 5) : '',
-          check_out_time: item.check_out_datetime ? new Date(item.check_out_datetime).toTimeString().slice(0, 5) : '',
-          status: item.status,
-          late_minutes: item.late_minutes,
-          break_minutes: item.break_minutes,
-          daily_payment: item.daily_payment
-        }))
-
-        // 既存データ + 空行で5行になるように調整
-        const emptyRowsCount = Math.max(5 - formattedData.length, 0)
-        const emptyRows = []
-        for (let i = 0; i < emptyRowsCount; i++) {
-          emptyRows.push({
-            id: `new-${Date.now()}-${i}`,
-            cast_name: '',
-            check_in_time: '',
-            check_out_time: '',
-            status: '未設定',
-            late_minutes: 0,
-            break_minutes: 0,
-            daily_payment: 0
-          })
-        }
-
-        setAttendanceRows([...formattedData, ...emptyRows])
-      } else {
-        // データがない場合は初期行を表示
-        setAttendanceRows(initializeRows())
-      }
-    } catch (error) {
-      console.error('Error loading attendance:', error)
-      setAttendanceRows(initializeRows())
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // 行を追加
+  // 行追加ハンドラー
   const addRow = () => {
-    setAttendanceRows([...attendanceRows, {
-      id: `new-${Date.now()}`,
-      cast_name: '',
-      check_in_time: '',
-      check_out_time: '',
-      status: '未設定',
-      late_minutes: 0,
-      break_minutes: 0,
-      daily_payment: 0
-    }])
+    addRowHelper(attendanceRows, setAttendanceRows)
   }
 
-  // 行を削除
+  // 行削除ハンドラー
   const deleteRow = async (index: number) => {
-    const row = attendanceRows[index]
-    
-    // 空の行または新規行の場合は単純に削除
-    if (!row.cast_name || row.id.startsWith('new-')) {
-      const newRows = attendanceRows.filter((_, i) => i !== index)
-      setAttendanceRows(newRows)
-      return
-    }
-
-    // 既存データの場合は確認
-    if (!confirm(`${row.cast_name}の勤怠データを削除しますか？`)) {
-      return
-    }
-
-    try {
-      const storeId = getCurrentStoreId()
-      const { error } = await supabase
-        .from('attendance')
-        .delete()
-        .eq('store_id', storeId)
-        .eq('date', selectedDate)
-        .eq('cast_name', row.cast_name)
-
-      if (error) throw error
-
-      const newRows = attendanceRows.filter((_, i) => i !== index)
-      setAttendanceRows(newRows)
-      alert('削除しました')
-    } catch (error) {
-      console.error('Error deleting attendance:', error)
-      alert('削除に失敗しました')
-    }
+    await deleteRowFromDB(index, selectedDate)
   }
 
-// 行を更新（金額フォーマット対応）
+  // 行更新ハンドラー（金額フォーマット対応）
   const updateRow = (index: number, field: keyof AttendanceRow, value: string | number) => {
-    const newRows = [...attendanceRows]
-    
-    // 日払い金額の場合は特別処理
+    // 日払い金額の場合は数値変換
     if (field === 'daily_payment') {
-      // 数値以外の文字を削除してから数値に変換
       const numericValue = parseInt(value.toString().replace(/[^\d]/g, '') || '0')
-      newRows[index] = { ...newRows[index], [field]: numericValue }
+      updateRowHelper(index, field, numericValue, attendanceRows, setAttendanceRows)
     } else {
-      newRows[index] = { ...newRows[index], [field]: value }
+      updateRowHelper(index, field, value, attendanceRows, setAttendanceRows)
     }
-    
-    setAttendanceRows(newRows)
   }
 
-  // キャスト名の選択
+  // キャスト選択ハンドラー
   const selectCast = (index: number, castName: string) => {
     // 空の選択の場合はそのまま許可
     if (!castName) {
       updateRow(index, 'cast_name', castName)
-      setShowDropdowns({ ...showDropdowns, [index]: false })
       return
     }
-    
+
     // 同じ名前が既に選択されているかチェック
-    const isDuplicate = attendanceRows.some((row, i) => 
+    const isDuplicate = attendanceRows.some((row, i) =>
       i !== index && row.cast_name === castName
     )
-    
+
     if (isDuplicate) {
       alert(`${castName}さんは既に選択されています`)
       return
     }
-    
-    updateRow(index, 'cast_name', castName)
-    setShowDropdowns({ ...showDropdowns, [index]: false })
-  }
 
-  // ドロップダウンの表示/非表示
-  const toggleDropdown = (index: number, show: boolean) => {
-    setShowDropdowns({ ...showDropdowns, [index]: show })
+    selectCastHelper(index, castName, attendanceRows[index].id, attendanceRows, setAttendanceRows)
   }
 
   // 金額をフォーマット（¥とカンマ付き）
@@ -237,77 +100,18 @@ export default function Attendance() {
     updateRow(index, 'daily_payment', numericValue)
   }
 
-  
-
-  // 保存
-  const saveAttendance = async () => {
-    setSaving(true)
-    try {
-      const storeId = getCurrentStoreId()
-      
-      // 入力のある行のみ処理
-      const validRows = attendanceRows.filter(row => row.cast_name.trim() !== '')
-      
-      for (const row of validRows) {
-        // 日時の作成（日付跨ぎ対応）
-        let checkInDatetime = null
-        let checkOutDatetime = null
-        
-        if (row.check_in_time) {
-          checkInDatetime = `${selectedDate} ${row.check_in_time}:00`
-        }
-        
-        if (row.check_out_time) {
-          checkOutDatetime = `${selectedDate} ${row.check_out_time}:00`
-          
-          // 退勤が出勤より早い時間なら翌日として扱う
-          if (row.check_in_time && row.check_out_time < row.check_in_time) {
-            const nextDay = new Date(selectedDate)
-            nextDay.setDate(nextDay.getDate() + 1)
-            checkOutDatetime = `${nextDay.toISOString().split('T')[0]} ${row.check_out_time}:00`
-          }
-        }
-
-        const attendanceData = {
-          store_id: storeId,
-          date: selectedDate,
-          cast_name: row.cast_name,
-          check_in_datetime: checkInDatetime,
-          check_out_datetime: checkOutDatetime,
-          status: row.status,
-          late_minutes: row.late_minutes,
-          break_minutes: row.break_minutes,
-          daily_payment: row.daily_payment,
-          updated_at: new Date().toISOString()
-        }
-
-        // upsert（更新または挿入）
-        const { error } = await supabase
-          .from('attendance')
-          .upsert(attendanceData, {
-            onConflict: 'store_id,date,cast_name'
-          })
-
-        if (error) throw error
-      }
-
-      alert('保存しました')
-      // 再読み込みして最新状態を表示
-      loadAttendance()
-    } catch (error) {
-      console.error('Error saving attendance:', error)
-      alert('保存に失敗しました')
-    } finally {
-      setSaving(false)
-    }
+  // 保存ハンドラー
+  const handleSave = async () => {
+    await saveAttendance(selectedDate)
   }
+
 
   useEffect(() => {
     loadCasts()
   }, [])
 
 useEffect(() => {
-    loadAttendance()
+    loadAttendance(selectedDate)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
 
@@ -646,7 +450,7 @@ useEffect(() => {
                       <td style={{ padding: '8px', position: 'relative' }}>
                         <div className="cast-name-container" style={{ position: 'relative' }}>
                           <div
-                            onClick={() => toggleDropdown(index, !showDropdowns[index])}
+                            onClick={() => toggleDropdown(row.id)}
                             style={{
                               width: '100%',
                               padding: '8px 10px',
@@ -688,7 +492,7 @@ useEffect(() => {
                           </span>
                           
                           {/* ドロップダウンリスト */}
-                          {showDropdowns[index] && (
+                          {showDropdowns[row.id] && (
                             <div style={{
                               position: 'absolute',
                               top: '100%',
@@ -1064,7 +868,7 @@ useEffect(() => {
           </button>
 
           <button
-            onClick={saveAttendance}
+            onClick={handleSave}
             disabled={saving}
             style={{
               padding: '14px 48px',
