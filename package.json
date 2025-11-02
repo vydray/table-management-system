@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "export": "next build && next export",
     "cap:sync": "npx cap sync android",
     "cap:open": "npx cap open android",
     "apk:debug": "cd android && ./gradlew assembleDebug",
