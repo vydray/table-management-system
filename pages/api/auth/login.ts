@@ -20,11 +20,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    console.log('=== ログイン試行 ===')
-    console.log('ユーザー名:', username)
-    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.log('Service Key存在:', !!process.env.SUPABASE_SERVICE_KEY)
-
     // ユーザーをデータベースから検索（パスワードハッシュと店舗IDも取得）
     const { data: user, error } = await supabase
       .from('users')
@@ -32,34 +27,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq('username', username)
       .single()
 
-    console.log('DBエラー:', error)
-    console.log('ユーザー取得:', user ? 'あり' : 'なし')
-
     if (error || !user) {
-      console.log('ユーザーが見つかりません')
       return res.status(401).json({ error: 'ユーザー名またはパスワードが間違っています' })
     }
 
-    // パスワードをハッシュと比較
-    console.log('パスワードハッシュ確認中...')
-    console.log('DBのパスワード（最初の20文字）:', user.password.substring(0, 20))
-
+    // パスワードをハッシュと比較（bcryptハッシュと平文の両方に対応）
     let passwordMatch = false
 
-    // bcryptハッシュの場合
     if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+      // bcryptハッシュの場合
       passwordMatch = await bcrypt.compare(password, user.password)
-      console.log('bcryptで照合:', passwordMatch)
     } else {
-      // 平文の場合（テスト用）
+      // 平文の場合（後方互換性のため）
       passwordMatch = password === user.password
-      console.log('平文で照合:', passwordMatch)
     }
 
-    console.log('パスワード照合結果:', passwordMatch)
-
     if (!passwordMatch) {
-      console.log('パスワードが一致しません')
       return res.status(401).json({ error: 'ユーザー名またはパスワードが間違っています' })
     }
 
