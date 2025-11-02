@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// カスタムフック
+import { useTableLayout } from '../hooks/useTableLayout'
+import { useTableAlignment } from '../hooks/useTableAlignment'
+import { useTableDragDrop } from '../hooks/useTableDragDrop'
 
 interface TableLayout {
   table_name: string
@@ -23,46 +22,87 @@ interface TableLayout {
   entry_time?: string | null
   visit_type?: string | null
 }
-// ScreenRatioとpresetRatiosを削除（この行はコメントとして残してもOK）
 
 export default function TableLayoutEdit() {
   const router = useRouter()
-  const [tables, setTables] = useState<TableLayout[]>([])
-  const [loading, setLoading] = useState(true)
-  const [draggedTable, setDraggedTable] = useState<string | null>(null)
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+
+  // ローカルstate
   const [selectedTable, setSelectedTable] = useState<TableLayout | null>(null)
   const [newTableName, setNewTableName] = useState('')
-  
-  // 画面比率関連の状態（カスタム設定関連を削除）
-  const canvasSize = { width: 2176, height: 1600 } // 固定値
-  
-  // 整列機能用の状態（以下そのまま）
-  const [showAlignModal, setShowAlignModal] = useState(false)
-  const [alignCols, setAlignCols] = useState(3)
-  const [alignRows, setAlignRows] = useState(3)
-  const [horizontalSpacing, setHorizontalSpacing] = useState(50)
-  const [verticalSpacing, setVerticalSpacing] = useState(40)
-  const [alignStartX, setAlignStartX] = useState(100)
-  const [alignStartY, setAlignStartY] = useState(160)
-  const [alignTarget, setAlignTarget] = useState<'all' | 'current'>('all')
-
-  // 整列機能の入力用state（空欄を許可）
-  const [alignColsInput, setAlignColsInput] = useState('3')
-  const [alignRowsInput, setAlignRowsInput] = useState('3')
-  const [horizontalSpacingInput, setHorizontalSpacingInput] = useState('50')
-  const [verticalSpacingInput, setVerticalSpacingInput] = useState('40')
-  const [alignStartXInput, setAlignStartXInput] = useState('100')
-  const [alignStartYInput, setAlignStartYInput] = useState('160')
-  
-  // テーブルサイズ設定
+  const [currentViewPage, setCurrentViewPage] = useState(1)
   const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
   const [tableSizeInput, setTableSizeInput] = useState({ width: '130', height: '123' })
   const [isUpdatingSize, setIsUpdatingSize] = useState(false)
-  
-  // 自動スケール計算用
   const [autoScale, setAutoScale] = useState(1)
   const canvasRef = useRef<HTMLDivElement>(null)
+
+  // 画面比率関連の状態
+  const canvasSize = { width: 2176, height: 1600 }
+
+  // 配置禁止ゾーン（ヘッダー160px + ナビゲーションバー60px）
+  const forbiddenZones = {
+    top: 160,
+    bottom: 60,
+    left: 0,
+    right: 0
+  }
+
+  // カスタムフック - テーブル管理
+  const {
+    tables,
+    setTables,
+    loading,
+    pageCount,
+    loadTables,
+    addNewTable,
+    deleteTable,
+    toggleTableVisibility,
+    updateTableDisplayName,
+    updateAllTableSizes,
+    addPage,
+    deletePage
+  } = useTableLayout()
+
+  // カスタムフック - テーブル整列
+  const {
+    showAlignModal,
+    setShowAlignModal,
+    alignCols,
+    setAlignCols,
+    alignRows,
+    setAlignRows,
+    horizontalSpacing,
+    setHorizontalSpacing,
+    verticalSpacing,
+    setVerticalSpacing,
+    alignStartX,
+    setAlignStartX,
+    alignStartY,
+    setAlignStartY,
+    alignTarget,
+    setAlignTarget,
+    alignColsInput,
+    setAlignColsInput,
+    alignRowsInput,
+    setAlignRowsInput,
+    horizontalSpacingInput,
+    setHorizontalSpacingInput,
+    verticalSpacingInput,
+    setVerticalSpacingInput,
+    alignStartXInput,
+    setAlignStartXInput,
+    alignStartYInput,
+    setAlignStartYInput,
+    executeAlignment
+  } = useTableAlignment()
+
+  // カスタムフック - ドラッグ＆ドロップ
+  const {
+    draggedTable,
+    handleDragStart,
+    handleDragMove,
+    handleDragEnd
+  } = useTableDragDrop()
 
   // 画面サイズに合わせた自動スケールを計算
   useEffect(() => {
@@ -72,10 +112,9 @@ export default function TableLayoutEdit() {
         const containerWidth = container.clientWidth
         const containerHeight = container.clientHeight
 
-        // キャンバスサイズに対する縮小率を計算（マージンを考慮）
         const scaleX = (containerWidth - 40) / canvasSize.width
         const scaleY = (containerHeight - 40) / canvasSize.height
-        const scale = Math.min(scaleX, scaleY, 1) // 最大でも1.0まで
+        const scale = Math.min(scaleX, scaleY, 1)
 
         setAutoScale(scale)
       }
@@ -85,22 +124,21 @@ export default function TableLayoutEdit() {
     window.addEventListener('resize', calculateAutoScale)
     return () => window.removeEventListener('resize', calculateAutoScale)
   }, [canvasSize.width, canvasSize.height])
-  
-  // ページ管理
-  const [pageCount, setPageCount] = useState(1)
-  const [currentViewPage, setCurrentViewPage] = useState(1)
-  
-  // 配置禁止ゾーン（ヘッダー160px + ナビゲーションバー60px）
-  const forbiddenZones = {
-    top: 160,
-    bottom: 60,
-    left: 0,
-    right: 0
-  }
 
   // テーブルデータの読み込み
   useEffect(() => {
-    loadTables()
+    const initTables = async () => {
+      const data = await loadTables()
+      // 最初のテーブルのサイズを初期値として設定
+      if (data && data.length > 0) {
+        const firstTable = data[0]
+        const width = firstTable.table_width || 130
+        const height = firstTable.table_height || 123
+        setTableSize({ width, height })
+        setTableSizeInput({ width: width.toString(), height: height.toString() })
+      }
+    }
+    initTables()
   }, [])
 
   // 整列設定が変更されたら入力欄も同期
@@ -113,337 +151,49 @@ export default function TableLayoutEdit() {
     setAlignStartYInput(alignStartY.toString())
   }, [alignCols, alignRows, horizontalSpacing, verticalSpacing, alignStartX, alignStartY])
 
-  const loadTables = async () => {
-    setLoading(true)
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-
-    const { data, error } = await supabase
-      .from('table_status')
-      .select('*')
-      .eq('store_id', storeId)
-      .order('table_name')
-
-    if (!error && data) {
-      setTables(data.map((table) => ({  // any削除
-        ...table,
-        page_number: table.page_number || 1
-      })))
-
-      const maxPage = Math.max(...data.map((t) => t.page_number || 1), 1)  // any削除
-      setPageCount(maxPage)
-
-      // 最初のテーブルのサイズを初期値として設定
-      if (data.length > 0) {
-        const firstTable = data[0]
-        const width = firstTable.table_width || 130
-        const height = firstTable.table_height || 123
-        setTableSize({ width, height })
-        setTableSizeInput({ width: width.toString(), height: height.toString() })
-      }
-    }
-    setLoading(false)
-  }
-
-  // 新規テーブル追加
-  const addNewTable = async () => {
-    if (!newTableName) return
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    const newTable = {
-      table_name: newTableName,
-      position_top: 100,
-      position_left: 100,
-      table_width: tableSize.width,
-      table_height: tableSize.height,
-      is_visible: true,
-      store_id: storeId,
-      page_number: currentViewPage
-    }
-
-    const { error } = await supabase
-      .from('table_status')
-      .insert(newTable)
-
-    if (!error) {
-      await loadTables()
+  // 新規テーブル追加ハンドラー
+  const handleAddNewTable = async () => {
+    const success = await addNewTable(newTableName, currentViewPage, tableSize)
+    if (success) {
       setNewTableName('')
     }
   }
 
-  // テーブル削除
-  const deleteTable = async (tableName: string) => {
-    if (!confirm(`テーブル「${tableName}」を削除しますか？`)) return  // 括弧追加
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    const { error } = await supabase
-      .from('table_status')
-      .delete()
-      .eq('table_name', tableName)
-      .eq('store_id', storeId)
-
-    if (!error) {
-      await loadTables()
-    }
-  }
-
-  // テーブル表示/非表示切り替え
-  const toggleTableVisibility = async (tableName: string, isVisible: boolean) => {
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    const { error } = await supabase
-      .from('table_status')
-      .update({ is_visible: isVisible })
-      .eq('table_name', tableName)
-      .eq('store_id', storeId)
-
-    if (!error) {
-      setTables(prev => prev.map(t =>
-        t.table_name === tableName ? { ...t, is_visible: isVisible } : t
-      ))
-    }
-  }
-
-  // テーブル表示名の更新
-  const updateTableDisplayName = async () => {
+  // テーブル表示名更新ハンドラー
+  const handleUpdateTableDisplayName = async () => {
     if (!selectedTable) return
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    const displayName = selectedTable.display_name || selectedTable.table_name
-    
-    const { error } = await supabase
-      .from('table_status')
-      .update({ 
-        display_name: displayName,
-        page_number: selectedTable.page_number 
-      })
-      .eq('table_name', selectedTable.table_name)
-      .eq('store_id', storeId)
-
-    if (!error) {
-      setTables(prev => prev.map(t =>
-        t.table_name === selectedTable.table_name 
-          ? { ...t, display_name: displayName, page_number: selectedTable.page_number } 
-          : t
-      ))
+    const success = await updateTableDisplayName(selectedTable)
+    if (success) {
       setSelectedTable(null)
     }
   }
 
 
-  // 自動整列を実行
-  const executeAlignment = async () => {
-    if (alignTarget === 'current') {
-      // 現在のページのみ整列
-      const targetTables = tables.filter(t => t.is_visible && (t.page_number || 1) === currentViewPage)
-
-      if (targetTables.length === 0) {
-        alert('配置するテーブルがありません')
-        return
-      }
-
-      // テーブルサイズは既存のサイズを使用（自動サイズ変更なし）
-      const representativeWidth = targetTables[0]?.table_width || 130
-      const representativeHeight = targetTables[0]?.table_height || 123
-
-      // 利用可能なスペースを計算
-      const availableWidth = canvasSize.width - forbiddenZones.left - forbiddenZones.right
-      const availableHeight = canvasSize.height - forbiddenZones.top - forbiddenZones.bottom
-
-      // 全テーブルの合計幅と高さを計算
-      const totalTablesWidth = representativeWidth * alignCols + horizontalSpacing * (alignCols - 1)
-      const totalTablesHeight = representativeHeight * alignRows + verticalSpacing * (alignRows - 1)
-
-      // 上下左右の余白を均等に配分
-      const startX = forbiddenZones.left + (availableWidth - totalTablesWidth) / 2
-      const startY = forbiddenZones.top + (availableHeight - totalTablesHeight) / 2
-
-      const alignedTables: TableLayout[] = []
-      let tableIndex = 0
-
-      for (let row = 0; row < alignRows; row++) {
-        for (let col = 0; col < alignCols; col++) {
-          if (tableIndex >= targetTables.length) break
-
-          const table = targetTables[tableIndex]
-
-          const newLeft = startX + col * (representativeWidth + horizontalSpacing)
-          const newTop = startY + row * (representativeHeight + verticalSpacing)
-
-          alignedTables.push({
-            ...table,
-            position_left: newLeft,
-            position_top: newTop,
-            page_number: currentViewPage // 現在のページ番号を維持
-          })
-          tableIndex++
-        }
-      }
-
-      // データベース更新
-      const storeId = localStorage.getItem('currentStoreId') || '1'
-      for (const table of alignedTables) {
-        await supabase
-          .from('table_status')
-          .update({
-            position_top: table.position_top,
-            position_left: table.position_left,
-            page_number: table.page_number
-          })
-          .eq('table_name', table.table_name)
-          .eq('store_id', storeId)
-      }
-
+  // 自動整列を実行ハンドラー
+  const handleExecuteAlignment = async () => {
+    const alignedTables = await executeAlignment(tables, currentViewPage, canvasSize, forbiddenZones)
+    if (alignedTables.length > 0) {
       setTables(prev => prev.map(t => {
         const aligned = alignedTables.find(at => at.table_name === t.table_name)
         return aligned ? aligned : t
       }))
-
-      alert(`${alignedTables.length}個のテーブルをページ${currentViewPage}に配置しました`)
-      setShowAlignModal(false)
-
-    } else {
-      // 全ページのテーブルを各ページごとに整列
-      const allVisibleTables = tables.filter(t => t.is_visible)
-
-      if (allVisibleTables.length === 0) {
-        alert('配置するテーブルがありません')
-        return
-      }
-
-      // ページごとにグループ化
-      const tablesByPage = new Map<number, TableLayout[]>()
-      allVisibleTables.forEach(table => {
-        const pageNum = table.page_number || 1
-        if (!tablesByPage.has(pageNum)) {
-          tablesByPage.set(pageNum, [])
-        }
-        tablesByPage.get(pageNum)!.push(table)
-      })
-
-      const allAlignedTables: TableLayout[] = []
-      const storeId = localStorage.getItem('currentStoreId') || '1'
-
-      // 各ページごとに整列
-      for (const [pageNum, pageTables] of tablesByPage.entries()) {
-        const representativeWidth = pageTables[0]?.table_width || 130
-        const representativeHeight = pageTables[0]?.table_height || 123
-
-        // 利用可能なスペースを計算
-        const availableWidth = canvasSize.width - forbiddenZones.left - forbiddenZones.right
-        const availableHeight = canvasSize.height - forbiddenZones.top - forbiddenZones.bottom
-
-        // 全テーブルの合計幅と高さを計算
-        const totalTablesWidth = representativeWidth * alignCols + horizontalSpacing * (alignCols - 1)
-        const totalTablesHeight = representativeHeight * alignRows + verticalSpacing * (alignRows - 1)
-
-        // 上下左右の余白を均等に配分
-        const startX = forbiddenZones.left + (availableWidth - totalTablesWidth) / 2
-        const startY = forbiddenZones.top + (availableHeight - totalTablesHeight) / 2
-
-        let tableIndex = 0
-        for (let row = 0; row < alignRows; row++) {
-          for (let col = 0; col < alignCols; col++) {
-            if (tableIndex >= pageTables.length) break
-
-            const table = pageTables[tableIndex]
-
-            const newLeft = startX + col * (representativeWidth + horizontalSpacing)
-            const newTop = startY + row * (representativeHeight + verticalSpacing)
-
-            const alignedTable = {
-              ...table,
-              position_left: newLeft,
-              position_top: newTop,
-              page_number: pageNum // 既存のページ番号を維持
-            }
-
-            allAlignedTables.push(alignedTable)
-
-            // データベース更新
-            await supabase
-              .from('table_status')
-              .update({
-                position_top: alignedTable.position_top,
-                position_left: alignedTable.position_left,
-                page_number: alignedTable.page_number
-              })
-              .eq('table_name', alignedTable.table_name)
-              .eq('store_id', storeId)
-
-            tableIndex++
-          }
-        }
-      }
-
-      setTables(prev => prev.map(t => {
-        const aligned = allAlignedTables.find(at => at.table_name === t.table_name)
-        return aligned ? aligned : t
-      }))
-
-      alert(`${allAlignedTables.length}個のテーブルを${tablesByPage.size}ページに配置しました`)
-      setShowAlignModal(false)
     }
   }
 
-  // ページ追加
-  const addPage = () => {
-    setPageCount(prev => prev + 1)
-  }
-
-  // ページ削除
-  const deletePage = async (pageNum: number) => {
-    if (pageNum === 1) {
-      alert('ページ1は削除できません')
-      return
-    }
-    
-    const tablesOnPage = tables.filter(t => t.page_number === pageNum)
-    if (tablesOnPage.length > 0) {
-      if (!confirm(`ページ${pageNum}には${tablesOnPage.length}個のテーブルがあります。ページを削除しますか？`)) {
-        return
-      }
-    }
-    
-    setPageCount(prev => Math.max(1, prev - 1))
-    
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    for (const table of tablesOnPage) {
-      await supabase
-        .from('table_status')
-        .update({ page_number: 1 })
-        .eq('table_name', table.table_name)
-        .eq('store_id', storeId)
-    }
-    
-    await loadTables()
-    
-    if (currentViewPage > pageCount - 1) {
-      setCurrentViewPage(pageCount - 1)
-    }
-  }
-
-  // 全テーブルのサイズを更新
-  const updateAllTableSizes = async () => {
+  // 全テーブルのサイズを更新ハンドラー
+  const handleUpdateAllTableSizes = async () => {
     setIsUpdatingSize(true)
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-
-    for (const table of tables) {
-      await supabase
-        .from('table_status')
-        .update({ 
-          table_width: tableSize.width,
-          table_height: tableSize.height
-        })
-        .eq('table_name', table.table_name)
-        .eq('store_id', storeId)
-    }
-
-    setTables(prev => prev.map(t => ({
-      ...t,
-      table_width: tableSize.width,
-      table_height: tableSize.height
-    })))
-
+    await updateAllTableSizes(tableSize)
     setIsUpdatingSize(false)
   }
 
-  // キャンバスのタッチ/マウス操作（ズーム機能削除）
+
+  // ダブルクリックで編集
+  const handleDoubleClick = (table: TableLayout) => {
+    setSelectedTable(table)
+  }
+
+  // キャンバスのイベントハンドラー（空実装）
   const handleCanvasMouseDown = () => {
     // ページクリックのみ対応
   }
@@ -454,132 +204,6 @@ export default function TableLayoutEdit() {
 
   const handleCanvasMouseUp = () => {
     // 何もしない
-  }
-
-  // ドラッグ開始
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent, table: TableLayout) => {
-    e.stopPropagation()
-
-    if ('touches' in e && e.touches.length > 1) return
-    
-    const pageNum = table.page_number || 1
-    const canvas = document.getElementById(`canvas-area-${pageNum}`)  // 括弧追加
-    if (!canvas) return
-    
-    const rect = canvas.getBoundingClientRect()
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-    
-    const actualX = (clientX - rect.left) / autoScale
-    const actualY = (clientY - rect.top) / autoScale
-    
-    setDraggedTable(table.table_name)
-    setDragOffset({
-      x: actualX - table.position_left,
-      y: actualY - table.position_top
-    })
-    
-    if ('touches' in e) {
-      e.preventDefault()
-    }
-  }
-
-  // ドラッグ中
-  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!draggedTable) return
-    e.preventDefault()
-    
-    const table = tables.find(t => t.table_name === draggedTable)
-    if (!table) return
-    
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-    
-    let targetPageNum = table.page_number || 1
-    
-    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
-      const canvas = document.getElementById(`canvas-area-${pageNum}`)  // 括弧追加
-      if (canvas) {
-        const rect = canvas.getBoundingClientRect()
-        if (clientX >= rect.left && clientX <= rect.right &&
-            clientY >= rect.top && clientY <= rect.bottom) {
-          targetPageNum = pageNum
-          break
-        }
-      }
-    }
-    
-    const canvas = document.getElementById(`canvas-area-${targetPageNum}`)  // 括弧追加
-    if (!canvas) return
-    
-    const rect = canvas.getBoundingClientRect()
-    const actualX = (clientX - rect.left) / autoScale
-    const actualY = (clientY - rect.top) / autoScale
-    
-    const minX = forbiddenZones.left
-    const maxX = canvasSize.width - table.table_width - forbiddenZones.right
-    const minY = forbiddenZones.top
-    const maxY = canvasSize.height - table.table_height - forbiddenZones.bottom
-    
-    const newLeft = Math.max(minX, Math.min(actualX - dragOffset.x, maxX))
-    const newTop = Math.max(minY, Math.min(actualY - dragOffset.y, maxY))
-    
-    setTables(prev => prev.map(t => 
-      t.table_name === draggedTable 
-        ? { ...t, position_top: newTop, position_left: newLeft, page_number: targetPageNum }
-        : t
-    ))
-  }
-
-  // ドラッグ終了
-  const handleDragEnd = async () => {
-    if (draggedTable) {
-      const table = tables.find(t => t.table_name === draggedTable)
-      if (table) {
-        // 座標を整数に丸める
-        const posTop = Math.round(table.position_top)
-        const posLeft = Math.round(table.position_left)
-
-        console.log('保存開始:', {
-          table_name: table.table_name,
-          position_top: posTop,
-          position_left: posLeft,
-          page_number: table.page_number
-        })
-
-        const storeId = localStorage.getItem('currentStoreId') || '1'
-
-        // 位置とページ番号を同時に更新
-        const { error } = await supabase
-          .from('table_status')
-          .update({
-            position_top: posTop,
-            position_left: posLeft,
-            page_number: table.page_number
-          })
-          .eq('table_name', table.table_name)
-          .eq('store_id', storeId)
-
-        if (error) {
-          console.error('保存エラー:', error)
-          alert(`保存に失敗しました: ${error.message}`)
-        } else {
-          console.log('保存成功:', table.table_name)
-          // ローカルステートも更新（整数値で）
-          setTables(prev => prev.map(t =>
-            t.table_name === table.table_name
-              ? { ...t, position_top: posTop, position_left: posLeft }
-              : t
-          ))
-        }
-      }
-      setDraggedTable(null)
-    }
-  }
-
-  // ダブルクリックで編集
-  const handleDoubleClick = (table: TableLayout) => {
-    setSelectedTable(table)
   }
 
   return (
@@ -764,7 +388,7 @@ export default function TableLayoutEdit() {
                   }}
                 />
                 <button
-                  onClick={addNewTable}
+                  onClick={handleAddNewTable}
                   style={{
                     padding: '8px 16px',
                     backgroundColor: '#4CAF50',
@@ -837,7 +461,7 @@ export default function TableLayoutEdit() {
                 <span style={{ fontSize: '13px' }}>px</span>
               </div>
               <button
-                onClick={updateAllTableSizes}
+                onClick={handleUpdateAllTableSizes}
                 disabled={isUpdatingSize}
                 style={{
                   width: '100%',
@@ -1044,17 +668,20 @@ export default function TableLayoutEdit() {
                         fontWeight: 'bold',
                         touchAction: 'none'
                       }}
-                      onMouseDown={(e) => handleDragStart(e, table)}
-                      onMouseUp={handleDragEnd}
-                      onTouchStart={(e) => handleDragStart(e, table)}
+                      onMouseDown={(e) => {
+                        const element = e.currentTarget as HTMLElement
+                        handleDragStart(table.table_name, e, element)
+                      }}
+                      onMouseUp={() => handleDragEnd(tables)}
+                      onTouchStart={(e) => {
+                        const element = e.currentTarget as HTMLElement
+                        handleDragStart(table.table_name, e, element)
+                      }}
                       onTouchMove={(e) => {
                         e.preventDefault()
-                        handleDragMove(e)
+                        handleDragMove(e, autoScale, canvasRef.current, tables, setTables)
                       }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault()
-                        handleDragEnd()
-                      }}
+                      onTouchEnd={() => handleDragEnd(tables)}
                     >
                       {table.display_name || table.table_name}
                     </div>
@@ -1128,7 +755,7 @@ export default function TableLayoutEdit() {
               
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
-                  onClick={updateTableDisplayName}
+                  onClick={handleUpdateTableDisplayName}
                   style={{
                     flex: 1,
                     padding: '10px',
@@ -1489,7 +1116,7 @@ export default function TableLayoutEdit() {
               {/* ボタン */}
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button
-                  onClick={executeAlignment}
+                  onClick={handleExecuteAlignment}
                   style={{
                     padding: '10px 20px',
                     backgroundColor: '#4CAF50',
@@ -1534,17 +1161,17 @@ export default function TableLayoutEdit() {
           pointerEvents: draggedTable ? 'auto' : 'none',
           zIndex: draggedTable ? 999 : -1
         }}
-        onMouseMove={handleDragMove}
-        onMouseUp={handleDragEnd}
-        onMouseLeave={handleDragEnd}
+        onMouseMove={(e) => handleDragMove(e, autoScale, canvasRef.current, tables, setTables)}
+        onMouseUp={() => handleDragEnd(tables)}
+        onMouseLeave={() => handleDragEnd(tables)}
         onTouchMove={(e) => {
           if (draggedTable) {
             e.preventDefault()
-            handleDragMove(e)
+            handleDragMove(e, autoScale, canvasRef.current, tables, setTables)
           }
         }}
-        onTouchEnd={handleDragEnd}
-        onTouchCancel={handleDragEnd}
+        onTouchEnd={() => handleDragEnd(tables)}
+        onTouchCancel={() => handleDragEnd(tables)}
       />
     </>
   )
