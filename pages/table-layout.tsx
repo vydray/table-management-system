@@ -931,17 +931,10 @@ export default function TableLayoutEdit() {
               padding: '20px'
             }}
           >
-            {/* キャンバスコンテナ - 横並び */}
-            <div style={{
-              display: 'flex',
-              gap: '10px',
-              alignItems: 'flex-start'
-            }}>
-              {/* 各ページのキャンバス */}
-              {Array.from({ length: pageCount }, (_, i) => i + 1).map(pageNum => (
-              <div
-                key={pageNum}
-                id={`canvas-area-${pageNum}`}  // 中括弧で囲む
+            {/* 現在のページのキャンバスのみ表示 */}
+            <div
+              id={`canvas-area-${currentViewPage}`}
+              key={currentViewPage}
                 style={{
                   minWidth: `${canvasSize.width}px`,
                   width: `${canvasSize.width}px`,
@@ -961,21 +954,21 @@ export default function TableLayoutEdit() {
                 onTouchMove={handleCanvasMouseMove}
                 onTouchEnd={handleCanvasMouseUp}
               >
-                {/* ページ番号表示 */}
-                <div style={{
-                  position: 'absolute',
-                  top: '10px',
-                  left: '10px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                  color: 'white',
-                  padding: '4px 12px',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  zIndex: 10
-                }}>
-                  ページ {pageNum}
-                </div>
+              {/* ページ番号表示 */}
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                zIndex: 10
+              }}>
+                ページ {currentViewPage}
+              </div>
 
                 {/* 配置禁止ゾーン表示 */}
                 <div style={{
@@ -1013,10 +1006,10 @@ export default function TableLayoutEdit() {
                   Androidナビゲーションバーエリア（配置不可）
                 </div>
 
-                {/* テーブル表示 */}
-                {tables
-                  .filter(table => table.is_visible && (table.page_number || 1) === pageNum)
-                  .map(table => (
+              {/* テーブル表示 */}
+              {tables
+                .filter(table => table.is_visible && (table.page_number || 1) === currentViewPage)
+                .map(table => (
                     <div
                       key={table.table_name}
                       onDoubleClick={() => handleDoubleClick(table)}
@@ -1054,11 +1047,9 @@ export default function TableLayoutEdit() {
                         handleDragEnd()
                       }}
                     >
-                      {table.display_name || table.table_name}
-                    </div>
-                  ))}
-              </div>
-            ))}
+                    {table.display_name || table.table_name}
+                  </div>
+                ))}
             </div>
           </div>
         </div>
