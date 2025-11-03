@@ -43,7 +43,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
   serviceTax,  // eslint-disable-line @typescript-eslint/no-unused-vars
   total,  // eslint-disable-line @typescript-eslint/no-unused-vars
   roundedTotal,
-  roundingAdjustment,
+  roundingAdjustment,  // eslint-disable-line @typescript-eslint/no-unused-vars
   formData,
   cardFeeRate,
   onNumberClick,
@@ -157,16 +157,6 @@ export const PaymentModal: FC<PaymentModalProps> = ({
                 fontSize: `${14 * layoutScale}px`
               }}>
                 カード手数料 (+{cardFeeRate}%): +¥{cardFee.toLocaleString()}
-              </div>
-            )}
-
-            {roundingAdjustment !== 0 && (
-              <div style={{
-                marginBottom: `${10 * layoutScale}px`,
-                color: roundingAdjustment < 0 ? '#d32f2f' : '#388e3c',
-                fontSize: `${14 * layoutScale}px`
-              }}>
-                端数調整: {roundingAdjustment < 0 ? '' : '+'}¥{roundingAdjustment.toLocaleString()}
               </div>
             )}
 
