@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { useProductData } from '../../hooks/useProductData'
 import { useProductCategory } from '../../hooks/useProductCategory'
 import { useProductModal } from '../../hooks/useProductModal'
+import { useProductHandlers } from '../../hooks/useProductHandlers'
 
 export default function ProductManagement() {
   // フックを使用
@@ -37,39 +38,18 @@ export default function ProductManagement() {
     closeModal
   } = useProductModal()
 
-  // 商品追加のラッパー関数
-  const addProduct = async () => {
-    const success = await addProductData(
-      newProductName,
-      newProductPrice,
-      newProductCategory!,
-      newProductNeedsCast
-    )
-
-    if (success) {
-      setNewProductName('')
-      setNewProductPrice('')
-      setNewProductCategory(null)
-      setNewProductNeedsCast(false)
-    }
-  }
-
-  // 商品更新のラッパー関数
-  const updateProduct = async () => {
-    if (!editingProduct) return
-
-    const success = await updateProductData(
-      editingProduct.id,
-      newProductName,
-      newProductPrice,
-      editingProduct.category_id,
-      newProductNeedsCast
-    )
-
-    if (success) {
-      closeModal()
-    }
-  }
+  const {
+    addProduct,
+    updateProduct
+  } = useProductHandlers(
+    addProductData,
+    updateProductData,
+    setNewProductName,
+    setNewProductPrice,
+    setNewProductCategory,
+    setNewProductNeedsCast,
+    closeModal
+  )
 
   useEffect(() => {
     loadCategories()
@@ -207,7 +187,7 @@ export default function ProductManagement() {
         </div>
 
         <button
-          onClick={addProduct}
+          onClick={() => addProduct(newProductName, newProductPrice, newProductCategory, newProductNeedsCast)}
           style={{
             width: '100%',
             padding: '12px',
@@ -484,7 +464,7 @@ export default function ProductManagement() {
                 キャンセル
               </button>
               <button
-                onClick={updateProduct}
+                onClick={() => updateProduct(editingProduct, newProductName, newProductPrice, newProductNeedsCast)}
                 style={{
                   padding: '10px 20px',
                   backgroundColor: '#2196F3',
