@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { useCastData, Cast } from '../../hooks/useCastData'
+import { useCastData } from '../../hooks/useCastData'
 import { useCastModal } from '../../hooks/useCastModal'
 import { useCastSearch } from '../../hooks/useCastSearch'
 import { usePositionData } from '../../hooks/usePositionData'
+import { useCastHandlers } from '../../hooks/useCastHandlers'
 
 export default function CastManagement() {
   // フックを使用
@@ -53,93 +54,32 @@ export default function CastManagement() {
     filteredCasts
   } = useCastSearch(casts)
 
-  // ステータスの背景色を取得
-  const getStatusColor = (status: string | null) => {
-    switch (status) {
-      case '在籍':
-        return '#e6f7e6'
-      case '体験':
-        return '#fff7e6'
-      case '退店':
-        return '#f0f0f0'
-      default:
-        return '#ffffff'
-    }
-  }
-
-  // 役職追加のラッパー関数
-  const addPosition = async () => {
-    const success = await addPositionData(newPositionName)
-    if (success) {
-      setNewPositionName('')
-      closePositionModal()
-    }
-  }
-
-  // 新規キャスト追加のラッパー関数
-  const handleAddNewCast = async () => {
-    if (!editingCast) return
-    const success = await addNewCast(editingCast)
-    if (success) {
-      closeCastModal()
-    }
-  }
-
-  // キャスト更新のラッパー関数
-  const handleUpdateCast = async () => {
-    if (!editingCast) return
-    const success = await updateCast(editingCast)
-    if (success) {
-      closeCastModal()
-    }
-  }
-
-  // キャスト削除のラッパー関数
-  const handleDeleteCast = async () => {
-    if (!editingCast) return
-    const success = await deleteCast(editingCast)
-    if (success) {
-      closeCastModal()
-    }
-  }
-
-  // ステータス更新のラッパー関数（退店モーダル処理を含む）
-  const handleUpdateCastStatus = async (cast: Cast, newStatus: string) => {
-    if (newStatus === '退店') {
-      openRetirementModal(cast)
-      return
-    }
-    await updateCastStatus(cast, newStatus)
-  }
-
-  // 退店処理のラッパー関数
-  const confirmRetirement = async () => {
-    if (!retirementCast || !retirementDate) return
-    const success = await retireCast(retirementCast, retirementDate)
-    if (success) {
-      closeRetirementModal()
-    }
-  }
-
-  // UIヘルパー：楽観的UI更新付きの役職更新
-  const handleUpdateCastPosition = async (cast: Cast, newPosition: string) => {
-    const success = await updateCastPosition(cast, newPosition)
-    if (success) {
-      setCasts(prev => prev.map(c =>
-        c.id === cast.id ? { ...c, attributes: newPosition } : c
-      ))
-    }
-  }
-
-  // UIヘルパー：楽観的UI更新付きのPOS表示切り替え
-  const handleToggleCastShowInPos = async (cast: Cast) => {
-    const success = await toggleCastShowInPos(cast)
-    if (success) {
-      setCasts(prev => prev.map(c =>
-        c.id === cast.id ? { ...c, show_in_pos: !cast.show_in_pos } : c
-      ))
-    }
-  }
+  const {
+    getStatusColor,
+    addPosition,
+    handleAddNewCast,
+    handleUpdateCast,
+    handleDeleteCast,
+    handleUpdateCastStatus,
+    confirmRetirement,
+    handleUpdateCastPosition,
+    handleToggleCastShowInPos
+  } = useCastHandlers(
+    addNewCast,
+    updateCast,
+    deleteCast,
+    updateCastStatus,
+    retireCast,
+    updateCastPosition,
+    toggleCastShowInPos,
+    addPositionData,
+    setCasts,
+    closeCastModal,
+    closePositionModal,
+    closeRetirementModal,
+    openRetirementModal,
+    setNewPositionName
+  )
 
   // 初回読み込み
   useEffect(() => {
@@ -524,7 +464,7 @@ export default function CastManagement() {
                 キャンセル
               </button>
               <button
-                onClick={confirmRetirement}
+                onClick={() => confirmRetirement(retirementCast, retirementDate)}
                 style={{
                   padding: '8px 20px',
                   backgroundColor: '#ff4444',
@@ -590,7 +530,7 @@ export default function CastManagement() {
                   }}
                 />
                 <button
-                  onClick={addPosition}
+                  onClick={() => addPosition(newPositionName)}
                   style={{
                     padding: '8px 20px',
                     backgroundColor: '#4CAF50',
@@ -939,7 +879,7 @@ export default function CastManagement() {
               <div>
                 {!isNewCast && editingCast?.id && (
                   <button
-                    onClick={handleDeleteCast}
+                    onClick={() => handleDeleteCast(editingCast)}
                     style={{
                       padding: '8px 20px',
                       backgroundColor: '#ff4444',
@@ -972,7 +912,7 @@ export default function CastManagement() {
                   キャンセル
                 </button>
                 <button
-                  onClick={isNewCast ? handleAddNewCast : handleUpdateCast}
+                  onClick={isNewCast ? () => handleAddNewCast(editingCast) : () => handleUpdateCast(editingCast)}
                   style={{
                     padding: '8px 20px',
                     backgroundColor: '#007aff',
