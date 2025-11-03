@@ -15,6 +15,7 @@ export const useSystemSettings = () => {
   const [roundingUnit, setRoundingUnit] = useState(100)
   const [registerAmount, setRegisterAmount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   // 全設定を読み込み
   const loadAllSettings = async () => {
@@ -102,6 +103,13 @@ export const useSystemSettings = () => {
 
   // 全設定を保存
   const saveSettings = async () => {
+    // 連打防止
+    if (saving) {
+      console.log('Already saving, skipping...')
+      return
+    }
+
+    setSaving(true)
     try {
       const storeId = getCurrentStoreId()
 
@@ -126,40 +134,45 @@ export const useSystemSettings = () => {
       for (const setting of settingsToSave) {
         console.log('Saving setting:', setting.setting_key, '=', setting.setting_value)
 
-        // 既存のレコードを確認
-        const { data: existing } = await supabase
-          .from('system_settings')
-          .select('id')
-          .eq('store_id', storeId)
-          .eq('setting_key', setting.setting_key)
-          .single()
-
-        let error
-        if (existing) {
-          // 更新
-          const result = await supabase
+        try {
+          // 既存のレコードを確認
+          const { data: existing } = await supabase
             .from('system_settings')
-            .update({
-              setting_value: setting.setting_value
-            })
+            .select('id')
             .eq('store_id', storeId)
             .eq('setting_key', setting.setting_key)
-          error = result.error
-        } else {
-          // 挿入
-          const result = await supabase
-            .from('system_settings')
-            .insert({
-              store_id: storeId,
-              setting_key: setting.setting_key,
-              setting_value: setting.setting_value
-            })
-          error = result.error
-        }
+            .single()
 
-        if (error) {
-          console.error('Supabase error:', error)
-          throw error
+          let error
+          if (existing) {
+            // 更新
+            const result = await supabase
+              .from('system_settings')
+              .update({
+                setting_value: setting.setting_value
+              })
+              .eq('store_id', storeId)
+              .eq('setting_key', setting.setting_key)
+            error = result.error
+          } else {
+            // 挿入
+            const result = await supabase
+              .from('system_settings')
+              .insert({
+                store_id: storeId,
+                setting_key: setting.setting_key,
+                setting_value: setting.setting_value
+              })
+            error = result.error
+          }
+
+          if (error) {
+            console.error('Supabase error for', setting.setting_key, ':', error)
+            throw new Error(`${setting.setting_key}の保存に失敗: ${error.message}`)
+          }
+        } catch (settingError: any) {
+          console.error('Error saving setting:', setting.setting_key, settingError)
+          throw new Error(`${setting.setting_key}の保存に失敗: ${settingError.message}`)
         }
       }
 
@@ -167,6 +180,8 @@ export const useSystemSettings = () => {
     } catch (error: any) {
       console.error('Error saving system settings:', error)
       alert(`保存に失敗しました: ${error?.message || '不明なエラー'}`)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -184,6 +199,7 @@ export const useSystemSettings = () => {
     registerAmount,
     setRegisterAmount,
     loading,
+    saving,
     loadAllSettings,
     saveSettings
   }

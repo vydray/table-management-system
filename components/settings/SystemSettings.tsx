@@ -16,6 +16,7 @@ export default function SystemSettings() {
     registerAmount,
     setRegisterAmount,
     loading,
+    saving,
     loadAllSettings,
     saveSettings
   } = useSystemSettings()
@@ -239,18 +240,20 @@ export default function SystemSettings() {
       }}>
         <button
           onClick={saveSettings}
+          disabled={saving}
           style={{
             padding: '12px 40px',
-            backgroundColor: '#FF9800',
+            backgroundColor: saving ? '#ccc' : '#FF9800',
             color: 'white',
             border: 'none',
             borderRadius: '5px',
-            cursor: 'pointer',
+            cursor: saving ? 'not-allowed' : 'pointer',
             fontSize: '16px',
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            opacity: saving ? 0.6 : 1
           }}
         >
-          保存
+          {saving ? '保存中...' : '保存'}
         </button>
       </div>
     </div>
