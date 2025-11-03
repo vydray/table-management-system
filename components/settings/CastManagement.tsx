@@ -85,6 +85,7 @@ export default function CastManagement() {
   useEffect(() => {
     loadCasts()
     loadPositions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

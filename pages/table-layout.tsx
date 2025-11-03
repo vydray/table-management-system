@@ -119,6 +119,7 @@ export default function TableLayoutEdit() {
       }
     }
     initTables()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 整列設定が変更されたら入力欄も同期
@@ -129,6 +130,7 @@ export default function TableLayoutEdit() {
     setVerticalSpacingInput(verticalSpacing.toString())
     setAlignStartXInput(alignStartX.toString())
     setAlignStartYInput(alignStartY.toString())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alignCols, alignRows, horizontalSpacing, verticalSpacing, alignStartX, alignStartY])
 
   // 新規テーブル追加ハンドラー

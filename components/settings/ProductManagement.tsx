@@ -54,6 +54,7 @@ export default function ProductManagement() {
   useEffect(() => {
     loadCategories()
     loadProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // フィルタリングされた商品リスト

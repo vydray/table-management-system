@@ -30,6 +30,7 @@ export default function App({ Component, pageProps }: AppProps) {
     if (router.isReady) {
       checkAuth()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady, router.pathname])
 
   // 認証チェック中は何も表示しない（白い画面を防ぐ）

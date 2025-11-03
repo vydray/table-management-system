@@ -48,6 +48,7 @@ export default function ReceiptSettings() {
     }
     loadData()
     checkPrinterConnection()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 保存処理のラッパー関数（ロゴアップロード + 設定保存を統合）
