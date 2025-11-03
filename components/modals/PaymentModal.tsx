@@ -21,7 +21,6 @@ interface PaymentModalProps {
     castName: string
     guestName: string
   }
-  selectedPaymentMethod: 'cash' | 'card' | 'other' | null
   cardFeeRate: number
   onNumberClick: (num: string) => void
   onQuickAmount: (amount: number) => void
@@ -29,7 +28,6 @@ interface PaymentModalProps {
   onClearNumber: () => void
   onChangeActiveInput: (input: 'cash' | 'card' | 'other') => void
   onChangeOtherMethod: (value: string) => void
-  onSelectPaymentMethod: (method: 'cash' | 'card' | 'other') => void
   onCompleteCheckout: () => void
   onClose: () => void
 }
@@ -46,7 +44,6 @@ export const PaymentModal: FC<PaymentModalProps> = ({
   roundedTotal,
   roundingAdjustment,
   formData,
-  selectedPaymentMethod,
   cardFeeRate,
   onNumberClick,
   onQuickAmount,
@@ -54,7 +51,6 @@ export const PaymentModal: FC<PaymentModalProps> = ({
   onClearNumber,
   onChangeActiveInput,
   onChangeOtherMethod,
-  onSelectPaymentMethod,
   onCompleteCheckout,
   onClose
 }) => {
@@ -64,9 +60,9 @@ export const PaymentModal: FC<PaymentModalProps> = ({
   const change = totalPaid - roundedTotal
   const isShortage = totalPaid > 0 && totalPaid < roundedTotal
 
-  // カード手数料の計算
-  const cardFee = selectedPaymentMethod === 'card' && cardFeeRate > 0
-    ? Math.floor(total * (cardFeeRate / 100))
+  // カード手数料の計算（カード金額のみに適用）
+  const cardFee = paymentData.card > 0 && cardFeeRate > 0
+    ? Math.floor(paymentData.card * (cardFeeRate / 100))
     : 0
 
   return (
@@ -182,68 +178,6 @@ export const PaymentModal: FC<PaymentModalProps> = ({
             </div>
           </div>
 
-          {/* 支払い方法選択ボタン */}
-          <div style={{ marginBottom: `${20 * layoutScale}px` }}>
-            <h4 style={{ marginBottom: `${10 * layoutScale}px`, fontSize: `${16 * layoutScale}px` }}>
-              支払い方法を選択:
-            </h4>
-            <div style={{ display: 'flex', gap: `${10 * layoutScale}px` }}>
-              <button
-                onClick={() => onSelectPaymentMethod('cash')}
-                style={{
-                  flex: 1,
-                  padding: `${12 * layoutScale}px`,
-                  backgroundColor: selectedPaymentMethod === 'cash' ? '#4CAF50' : '#f0f0f0',
-                  color: selectedPaymentMethod === 'cash' ? 'white' : '#333',
-                  border: selectedPaymentMethod === 'cash' ? '2px solid #4CAF50' : '1px solid #ddd',
-                  borderRadius: '5px',
-                  fontSize: `${16 * layoutScale}px`,
-                  cursor: 'pointer',
-                  fontWeight: selectedPaymentMethod === 'cash' ? 'bold' : 'normal'
-                }}
-              >
-                現金
-              </button>
-              <button
-                onClick={() => onSelectPaymentMethod('card')}
-                style={{
-                  flex: 1,
-                  padding: `${12 * layoutScale}px`,
-                  backgroundColor: selectedPaymentMethod === 'card' ? '#2196F3' : '#f0f0f0',
-                  color: selectedPaymentMethod === 'card' ? 'white' : '#333',
-                  border: selectedPaymentMethod === 'card' ? '2px solid #2196F3' : '1px solid #ddd',
-                  borderRadius: '5px',
-                  fontSize: `${16 * layoutScale}px`,
-                  cursor: 'pointer',
-                  fontWeight: selectedPaymentMethod === 'card' ? 'bold' : 'normal'
-                }}
-              >
-                カード
-                {cardFeeRate > 0 && (
-                  <div style={{ fontSize: `${12 * layoutScale}px`, marginTop: '2px' }}>
-                    (+{cardFeeRate}%)
-                  </div>
-                )}
-              </button>
-              <button
-                onClick={() => onSelectPaymentMethod('other')}
-                style={{
-                  flex: 1,
-                  padding: `${12 * layoutScale}px`,
-                  backgroundColor: selectedPaymentMethod === 'other' ? '#FF9800' : '#f0f0f0',
-                  color: selectedPaymentMethod === 'other' ? 'white' : '#333',
-                  border: selectedPaymentMethod === 'other' ? '2px solid #FF9800' : '1px solid #ddd',
-                  borderRadius: '5px',
-                  fontSize: `${16 * layoutScale}px`,
-                  cursor: 'pointer',
-                  fontWeight: selectedPaymentMethod === 'other' ? 'bold' : 'normal'
-                }}
-              >
-                その他
-              </button>
-            </div>
-          </div>
-
           {/* 支払い方法入力 */}
           <div style={{ marginBottom: `${20 * layoutScale}px` }}>
             <h4 style={{ marginBottom: `${15 * layoutScale}px`, fontSize: `${18 * layoutScale}px` }}>
@@ -280,6 +214,11 @@ export const PaymentModal: FC<PaymentModalProps> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: `${10 * layoutScale}px` }}>
                 <label style={{ width: `${80 * layoutScale}px`, fontSize: `${14 * layoutScale}px` }}>
                   カード
+                  {cardFeeRate > 0 && (
+                    <span style={{ fontSize: `${11 * layoutScale}px`, color: '#2196F3', marginLeft: '4px' }}>
+                      (+{cardFeeRate}%)
+                    </span>
+                  )}
                 </label>
                 <span style={{ fontSize: `${16 * layoutScale}px` }}>¥</span>
                 <input
