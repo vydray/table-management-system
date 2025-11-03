@@ -61,7 +61,7 @@ export const usePrinting = () => {
     formData: FormData,
     tables: Tables,
     orderItems: OrderItem[],
-    systemSettings: SystemSettings,
+    systemSettings: SystemSettings, // eslint-disable-line @typescript-eslint/no-unused-vars
     paymentData: PaymentData,
     getRoundedTotalAmount: () => number,
     getRoundingAdjustmentAmount: () => number
@@ -73,6 +73,21 @@ export const usePrinting = () => {
           router.push('/settings?tab=receipt')
         }
         return
+      }
+
+      // 印刷時にデータベースから最新の設定を取得
+      const storeId = getCurrentStoreId()
+      const { data: settings } = await supabase
+        .from('system_settings')
+        .select('setting_key, setting_value')
+        .eq('store_id', storeId)
+
+      const latestSettings = {
+        consumptionTaxRate: settings?.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10,
+        serviceChargeRate: settings?.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15,
+        roundingUnit: settings?.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
+        roundingMethod: settings?.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
+        cardFeeRate: Number(settings?.find(s => s.setting_key === 'card_fee_rate')?.setting_value || 0) / 100
       }
 
       const now = new Date()
@@ -88,8 +103,8 @@ export const usePrinting = () => {
       // カード手数料の計算（PaymentModalと同じロジック：残りの金額に対して適用）
       const roundedTotal = getRoundedTotalAmount()
       const remainingAmount = roundedTotal - paymentData.cash - paymentData.other
-      const cardFee = paymentData.card > 0 && systemSettings.cardFeeRate > 0 && remainingAmount > 0
-        ? Math.floor(remainingAmount * (systemSettings.cardFeeRate / 100))
+      const cardFee = paymentData.card > 0 && latestSettings.cardFeeRate > 0 && remainingAmount > 0
+        ? Math.floor(remainingAmount * (latestSettings.cardFeeRate / 100))
         : 0
 
       const orderData = {
@@ -99,13 +114,13 @@ export const usePrinting = () => {
         elapsedTime: tables[currentTable]?.elapsed || '0分',
         orderItems: orderItems,
         subtotal: calculateSubtotal(orderItems),
-        serviceTax: calculateServiceTax(calculateSubtotal(orderItems), systemSettings.serviceChargeRate),
+        serviceTax: calculateServiceTax(calculateSubtotal(orderItems), latestSettings.serviceChargeRate),
         roundedTotal: getRoundedTotalAmount(),
         roundingAdjustment: getRoundingAdjustmentAmount(),
-        cardFeeRate: Math.round(systemSettings.cardFeeRate * 100), // 整数に変換（0.1 → 10）
+        cardFeeRate: Math.round(latestSettings.cardFeeRate * 100), // 整数に変換（0.1 → 10）
         cardFee: cardFee,
-        roundingUnit: systemSettings.roundingUnit,
-        roundingMethod: systemSettings.roundingMethod,
+        roundingUnit: latestSettings.roundingUnit,
+        roundingMethod: latestSettings.roundingMethod,
         paymentCash: paymentData.cash,
         paymentCard: paymentData.card,
         paymentOther: paymentData.other,
@@ -130,7 +145,7 @@ export const usePrinting = () => {
     currentTable: string,
     formData: FormData,
     orderItems: OrderItem[],
-    systemSettings: SystemSettings,
+    systemSettings: SystemSettings, // eslint-disable-line @typescript-eslint/no-unused-vars
     paymentData: PaymentData,
     checkoutResult: CheckoutResult | null,
     getRoundedTotalAmount: () => number,
@@ -143,6 +158,20 @@ export const usePrinting = () => {
 
       if (receiptTo === null) {
         return false
+      }
+
+      // 印刷時にデータベースから最新の設定を取得
+      const { data: settings } = await supabase
+        .from('system_settings')
+        .select('setting_key, setting_value')
+        .eq('store_id', storeId)
+
+      const latestSettings = {
+        consumptionTaxRate: settings?.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10,
+        serviceChargeRate: settings?.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15,
+        roundingUnit: settings?.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
+        roundingMethod: settings?.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
+        cardFeeRate: Number(settings?.find(s => s.setting_key === 'card_fee_rate')?.setting_value || 0) / 100
       }
 
       const { data: receiptSettings } = await supabase
@@ -183,15 +212,15 @@ export const usePrinting = () => {
         })
 
         const subtotal = calculateSubtotal(orderItems)
-        const serviceTax = calculateServiceTax(subtotal, systemSettings.serviceChargeRate)
-        const consumptionTax = Math.floor((subtotal + serviceTax) * systemSettings.consumptionTaxRate)
+        const serviceTax = calculateServiceTax(subtotal, latestSettings.serviceChargeRate)
+        const consumptionTax = Math.floor((subtotal + serviceTax) * latestSettings.consumptionTaxRate)
 
         const roundedTotal = getRoundedTotalAmount()
 
         // カード手数料の計算（PaymentModalと同じロジック：残りの金額に対して適用）
         const remainingAmount = roundedTotal - paymentData.cash - paymentData.other
-        const cardFee = paymentData.card > 0 && systemSettings.cardFeeRate > 0 && remainingAmount > 0
-          ? Math.floor(remainingAmount * (systemSettings.cardFeeRate / 100))
+        const cardFee = paymentData.card > 0 && latestSettings.cardFeeRate > 0 && remainingAmount > 0
+          ? Math.floor(remainingAmount * (latestSettings.cardFeeRate / 100))
           : 0
 
         const totalWithCardFee = roundedTotal + cardFee
@@ -217,7 +246,7 @@ export const usePrinting = () => {
           consumptionTax: consumptionTax,
           roundingAdjustment: getRoundingAdjustmentAmount(),
           roundedTotal: roundedTotal,
-          cardFeeRate: Math.round(systemSettings.cardFeeRate * 100), // 整数に変換（0.1 → 10）
+          cardFeeRate: Math.round(latestSettings.cardFeeRate * 100), // 整数に変換（0.1 → 10）
           cardFee: cardFee,
           paymentCash: paymentData.cash,
           paymentCard: paymentData.card,
