@@ -1,11 +1,14 @@
 // components/settings/ReceiptSettings.tsx
 import { useEffect } from 'react'
+import { useRouter } from 'next/router'
 import { useReceiptSettingsData } from '../../hooks/useReceiptSettingsData'
 import { useLogoUpload } from '../../hooks/useLogoUpload'
 import { useReceiptTemplate } from '../../hooks/useReceiptTemplate'
 import { usePrinterConnection } from '../../hooks/usePrinterConnection'
 
 export default function ReceiptSettings() {
+  const router = useRouter()
+
   // フックを使用
   const {
     settings,
@@ -50,6 +53,20 @@ export default function ReceiptSettings() {
     checkPrinterConnection()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // プリンター設定セクションへの自動スクロール
+  useEffect(() => {
+    const { scroll } = router.query
+    if (scroll === 'printer') {
+      // 少し遅延を入れてからスクロール（レンダリング完了を待つ）
+      setTimeout(() => {
+        const printerSection = document.getElementById('printer-settings')
+        if (printerSection) {
+          printerSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 300)
+    }
+  }, [router.query])
 
   // 保存処理のラッパー関数（ロゴアップロード + 設定保存を統合）
   const handleSaveSettings = async () => {
@@ -644,8 +661,8 @@ export default function ReceiptSettings() {
       </div>
 
       {/* プリンター設定 */}
-      <div style={{ marginBottom: '40px' }}>
-        <h3 style={{ 
+      <div id="printer-settings" style={{ marginBottom: '40px' }}>
+        <h3 style={{
           fontSize: '18px',
           fontWeight: 'bold',
           marginBottom: '20px',
