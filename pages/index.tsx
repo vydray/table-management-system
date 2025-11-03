@@ -1650,7 +1650,7 @@ const finishCheckout = () => {
           /* 3. POSコンテナのレイアウト調整 */
           #modal.modal-edit .pos-container {
             display: flex !important;
-            flex-direction: row !important;
+            flex-direction: row-reverse !important;
             gap: 10px !important;
             padding: 10px !important;
             height: calc(100% - 100px) !important;

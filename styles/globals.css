@@ -1346,8 +1346,8 @@ label {
   #modal.modal-edit .pos-container {
     display: -webkit-flex !important;
     display: flex !important;
-    -webkit-flex-direction: row !important;
-    flex-direction: row !important;
+    -webkit-flex-direction: row-reverse !important;
+    flex-direction: row-reverse !important;
   }
 }
 
@@ -1402,7 +1402,7 @@ label {
   #modal.modal-edit .pos-container {
     flex: 1;
     display: flex !important;
-    flex-direction: row !important;
+    flex-direction: row-reverse !important;
     gap: 15px !important;
     padding: 15px !important;
     overflow: auto !important;
