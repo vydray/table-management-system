@@ -707,7 +707,6 @@ const finishCheckout = () => {
   <span style={{
     position: 'absolute',
     left: '170px',
-    fontSize: '24px',
     fontWeight: 'bold',
     color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
     zIndex: 100
@@ -718,10 +717,9 @@ const finishCheckout = () => {
   {/* タイトルは中央に */}
   📋 テーブル管理システム
   
-  <span style={{ 
-    position: 'absolute', 
-    right: '20px', 
-    fontSize: '24px',
+  <span style={{
+    position: 'absolute',
+    right: '20px',
     fontFamily: 'monospace'
   }}>
     {currentTime}

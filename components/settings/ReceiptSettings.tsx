@@ -1,14 +1,11 @@
 // components/settings/ReceiptSettings.tsx
 import { useEffect } from 'react'
-import { useRouter } from 'next/router'
 import { useReceiptSettingsData } from '../../hooks/useReceiptSettingsData'
 import { useLogoUpload } from '../../hooks/useLogoUpload'
 import { useReceiptTemplate } from '../../hooks/useReceiptTemplate'
 import { usePrinterConnection } from '../../hooks/usePrinterConnection'
 
 export default function ReceiptSettings() {
-  const router = useRouter()
-
   // フックを使用
   const {
     settings,
