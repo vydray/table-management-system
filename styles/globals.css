@@ -537,12 +537,13 @@ body.modal-open {
 /* POSコンテナ */
 .pos-container {
   display: flex;
+  flex-direction: row-reverse;
   gap: 30px;
   padding: 30px;
   height: 100%;
 }
 
-/* 左側セクション（商品選択） */
+/* 商品選択セクション（右側に表示） */
 .left-section {
   width: 700px;
   height: 600px;
@@ -649,7 +650,7 @@ body.modal-open {
   font-size: 13px;
 }
 
-/* 右側セクション（注文リスト） */
+/* 注文リストセクション（左側に表示） */
 .right-section {
   width: 500px;
   border: 1px solid #ddd;

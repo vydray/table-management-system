@@ -179,8 +179,8 @@ export const useReportData = () => {
             const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
             return sum + (payment?.other_payment_amount || 0)
           }, 0)
-          const firstTimeCount = orders.filter(order => order.visit_type === '初来店').length
-          const returnCount = orders.filter(order => order.visit_type === '再来店').length
+          const firstTimeCount = orders.filter(order => order.visit_type === '初回').length
+          const returnCount = orders.filter(order => order.visit_type === '再訪').length
           const regularCount = orders.filter(order => order.visit_type === '常連').length
 
           monthlyResults.push({
