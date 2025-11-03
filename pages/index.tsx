@@ -234,6 +234,9 @@ export default function Home() {
 
   // 初期化（統合版）
   useEffect(() => {
+    // ページ読み込み時に modal-open クラスを確実に削除（他ページからの遷移時のクリーンアップ）
+    document.body.classList.remove('modal-open')
+
     // ログインチェック
     const isLoggedIn = localStorage.getItem('isLoggedIn')
 

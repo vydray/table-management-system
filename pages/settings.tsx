@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 import Head from 'next/head'
 import CastManagement from '../components/settings/CastManagement'
 import CategoryManagement from '../components/settings/CategoryManagement'
@@ -27,6 +28,21 @@ import {
 export default function Settings() {
   const router = useRouter()
   const { activeMenu, setActiveMenu, menuItems, getActiveMenuLabel } = useSettingsMenu()
+
+  // URLクエリパラメータでタブを切り替え
+  useEffect(() => {
+    const { tab } = router.query
+    if (tab && typeof tab === 'string') {
+      setActiveMenu(tab)
+    }
+  }, [router.query, setActiveMenu])
+
+  // クリーンアップ: ページアンマウント時にmodal-openクラスを削除
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('modal-open')
+    }
+  }, [])
 
   return (
     <>
