@@ -4,9 +4,7 @@ import Head from 'next/head'
 import { ProductSection } from '../components/ProductSection'
 import { OrderSection } from '../components/OrderSection'
 import { TableData } from '../types'
-import { createClient } from '@supabase/supabase-js'
 import { getCurrentStoreId } from '../utils/storeContext'
-import { printer } from '../utils/bluetoothPrinter'
 import { calculateSubtotal, calculateServiceTax, getRoundedTotal, getRoundingAdjustment } from '../utils/calculations'
 import { getJapanTimeString } from '../utils/dateTime'
 
@@ -22,22 +20,11 @@ import { usePayment } from '../hooks/usePayment'
 import { useTableManagement } from '../hooks/useTableManagement'
 import { useOrderManagement } from '../hooks/useOrderManagement'
 import { useProductManagement } from '../hooks/useProductManagement'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-// チェックアウト結果の型定義
-interface CheckoutResult {
-  receiptNumber?: string
-  orderId?: number
-  status?: string
-  message?: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: Record<string, any>
-}
-
+import { useSystemConfig } from '../hooks/useSystemConfig'
+import { useModalState } from '../hooks/useModalState'
+import { useCurrentTime } from '../hooks/useCurrentTime'
+import { usePrinting } from '../hooks/usePrinting'
+import { useCheckout } from '../hooks/useCheckout'
 
 export default function Home() {
   const router = useRouter()
@@ -93,14 +80,38 @@ export default function Home() {
     getCurrentCategoryShowOshiFirst
   } = useProductManagement()
 
-  // ローカル状態（カスタムフックに移動していない状態）
-  const [showModal, setShowModal] = useState(false)
-  const [modalMode, setModalMode] = useState<'new' | 'edit'>('new')
-  const [currentTime, setCurrentTime] = useState('')
-  const [showMenu, setShowMenu] = useState(false)
+  // カスタムフック - システム設定
+  const {
+    systemSettings,
+    loadSystemConfig
+  } = useSystemConfig()
 
-  // 会計モーダル用の状態（カスタムフックを使用）
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  // カスタムフック - モーダル状態
+  const {
+    showModal,
+    setShowModal,
+    modalMode,
+    setModalMode,
+    showPaymentModal,
+    setShowPaymentModal,
+    isProcessingCheckout,
+    setIsProcessingCheckout,
+    showReceiptConfirm,
+    setShowReceiptConfirm,
+    checkoutResult,
+    setCheckoutResult
+  } = useModalState()
+
+  // カスタムフック - 現在時刻
+  const currentTime = useCurrentTime()
+
+  // カスタムフック - 印刷
+  const { printOrderSlip: printOrderSlipFromHook, printReceipt } = usePrinting()
+
+  // カスタムフック - 会計処理
+  const { executeCheckout } = useCheckout()
+
+  // カスタムフック - 支払い
   const {
     paymentData,
     activePaymentInput,
@@ -113,13 +124,8 @@ export default function Home() {
     setOtherMethod
   } = usePayment()
 
-  // システム設定の状態
-  const [systemSettings, setSystemSettings] = useState({
-    consumptionTaxRate: 0.10,
-    serviceChargeRate: 0.15,
-    roundingUnit: 100,
-    roundingMethod: 0
-  })
+  // ローカル状態
+  const [showMenu, setShowMenu] = useState(false)
 
   // フォームの状態
   const [formData, setFormData] = useState({
@@ -135,11 +141,6 @@ export default function Home() {
 
   // 50音フィルター用の状態
   const [castFilter, setCastFilter] = useState('')
-
-  // ローディングと領収書確認用の状態
-  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false)
-  const [showReceiptConfirm, setShowReceiptConfirm] = useState(false)
-  const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null)
 
   // 合計金額を計算する関数
   const getTotal = () => {
@@ -158,73 +159,17 @@ export default function Home() {
     return getRoundingAdjustment(getTotal(), getRoundedTotalAmount())
   }
 
+  // 会計伝票印刷のラッパー関数
   const printOrderSlip = async () => {
-    try {
-      // プリンター接続を確認
-      const isConnected = await printer.checkConnection();
-      if (!isConnected) {
-        if (confirm('プリンターが接続されていません。設定画面で接続しますか？')) {
-          router.push('/settings?tab=receipt');
-        }
-        return;
-      }
-
-      // 現在の時刻を取得
-      const now = new Date();
-      const timestamp = now.toLocaleString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
-
-      // 印刷データを準備
-      const orderData = {
-        tableName: currentTable,
-        guestName: formData.guestName || '（未入力）',
-        castName: formData.castName || '（未選択）',
-        elapsedTime: tables[currentTable]?.elapsed || '0分',
-        orderItems: orderItems,
-        subtotal: calculateSubtotal(orderItems),
-        serviceTax: calculateServiceTax(calculateSubtotal(orderItems), systemSettings.serviceChargeRate),
-        roundedTotal: getRoundedTotalAmount(),
-        roundingAdjustment: getRoundingAdjustmentAmount(),
-        timestamp: timestamp
-      };
-
-      // 印刷実行
-      await printer.printOrderSlip(orderData);
-      alert('会計伝票を印刷しました');
-    } catch (error) {
-      console.error('Print error:', error);
-      // エラーオブジェクトの型チェック
-      if (error instanceof Error) {
-        alert('印刷に失敗しました: ' + error.message);
-      } else {
-        alert('印刷に失敗しました: Unknown error');
-      }
-    }
-  };
-
-  // システム設定を取得
-  const loadSystemSettings = async () => {
-    const storeId = getCurrentStoreId()
-    const { data: settings } = await supabase
-      .from('system_settings')
-      .select('setting_key, setting_value')
-      .eq('store_id', storeId)
-    
-    if (settings) {
-      const settingsObj = {
-        consumptionTaxRate: settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10,
-        serviceChargeRate: settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15,
-        roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
-        roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0
-      }
-      setSystemSettings(settingsObj)
-    }
+    await printOrderSlipFromHook(
+      currentTable,
+      formData,
+      tables,
+      orderItems,
+      systemSettings,
+      getRoundedTotalAmount,
+      getRoundingAdjustmentAmount
+    )
   }
 
   
@@ -260,58 +205,42 @@ export default function Home() {
   useEffect(() => {
     // ログインチェック
     const isLoggedIn = localStorage.getItem('isLoggedIn')
-    
+
     if (isLoggedIn) {
       // ログイン済みの場合のみデータを読み込む
       loadTableLayouts()
-      loadSystemSettings()
+      loadSystemConfig()
       loadData()
       loadCastList()
       loadProducts()
       loadAttendingCastCount()
     }
-    
-    const updateTime = () => {
-      const now = new Date()
-      const year = now.getFullYear()
-      const month = String(now.getMonth() + 1).padStart(2, '0')
-      const date = String(now.getDate()).padStart(2, '0')
-      const hours = now.getHours().toString().padStart(2, '0')
-      const minutes = now.getMinutes().toString().padStart(2, '0')
-      const seconds = now.getSeconds().toString().padStart(2, '0')
-      setCurrentTime(`${year}/${month}/${date} ${hours}:${minutes}:${seconds}`)
-    }
-    
-    updateTime()
-    
-    const timeInterval = setInterval(updateTime, 1000)
-    
+
     // ログイン済みの場合のみデータ更新間隔を設定
     let dataInterval: NodeJS.Timeout | undefined
     if (isLoggedIn) {
       dataInterval = setInterval(loadData, 10000)
     }
-    
+
    // レイアウトスケール調整（初回実行）
     adjustLayoutScale()
-    
+
     // リサイズイベントの設定
     const handleResize = () => {
       adjustLayoutScale()
     }
-    
+
     window.addEventListener('resize', handleResize)
     window.addEventListener('orientationchange', () => {
       setTimeout(adjustLayoutScale, 100)  // orientation変更後は少し待つ
     })
 
     return () => {
-      clearInterval(timeInterval)
       if (dataInterval) {
         clearInterval(dataInterval)
       }
 
-            // ===== クリーンアップも追加 ===== //
+      // ===== クリーンアップも追加 ===== //
       window.removeEventListener('resize', handleResize)
       window.removeEventListener('orientationchange', adjustLayoutScale)
     }
@@ -524,47 +453,27 @@ const handleMenuClick = (item: string) => {
 const completeCheckout = async () => {
   const totalPaid = paymentData.cash + paymentData.card + paymentData.other
   const roundedTotal = getRoundedTotalAmount()
-  
+
   if (totalPaid < roundedTotal) {
     alert('支払金額が不足しています')
     return
   }
-  
+
   if (!confirm(`${currentTable} を会計完了にしますか？`)) return
-  
+
   // ローディング開始
   setIsProcessingCheckout(true)
-  
+
   try {
-    const checkoutTime = getJapanTimeString(new Date())
-    const storeId = getCurrentStoreId()
-    
-    // まずAPIで会計処理を実行
-    const response = await fetch('/api/tables/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        tableId: currentTable,
-        checkoutTime,
-        orderItems: orderItems,
-        guestName: formData.guestName,
-        castName: formData.castName,
-        visitType: formData.visitType,
-        paymentCash: paymentData.cash,
-        paymentCard: paymentData.card,
-        paymentOther: paymentData.other,
-        paymentOtherMethod: paymentData.otherMethod,
-        totalAmount: getRoundedTotalAmount(),
-        storeId: storeId
-      })
-    })
-    
-    const result = await response.json()
-    
-    if (!response.ok) {
-      throw new Error(result.error || 'Checkout failed')
-    }
-    
+    // 会計処理を実行
+    const result = await executeCheckout(
+      currentTable,
+      orderItems,
+      formData,
+      paymentData,
+      getRoundedTotalAmount()
+    )
+
     const updatedTables = { ...tables }
     updatedTables[currentTable] = {
       ...updatedTables[currentTable],
@@ -576,26 +485,26 @@ const completeCheckout = async () => {
       status: 'empty'
     }
     setTables(updatedTables)
-    
+
     // 現在の卓数を更新
     const occupied = Object.values(updatedTables).filter(table => table.status !== 'empty').length
     setOccupiedTableCount(occupied)
 
     // 結果を保存
     setCheckoutResult(result)
-    
+
     // 会計モーダルを先に閉じる
     document.body.classList.remove('modal-open')
     setShowPaymentModal(false)
-    
+
     // ローディングを一旦終了してから領収書確認モーダルを表示
     setIsProcessingCheckout(false)
-    
+
     // 少し遅延を入れて領収書確認モーダルを表示
     setTimeout(() => {
       setShowReceiptConfirm(true)
     }, 100)
-    
+
   } catch (error) {
     console.error('Error checkout:', error)
     alert('会計処理に失敗しました')
@@ -606,120 +515,29 @@ const completeCheckout = async () => {
 // 領収書印刷処理（別関数として定義）
 const handleReceiptPrint = async () => {
   setShowReceiptConfirm(false)
-  
+
   // 印刷処理開始時にローディングを表示
   setIsProcessingCheckout(true)
-  
+
   try {
-    const storeId = getCurrentStoreId()
-    
-    // 宛名と但し書きの入力
-    const receiptTo = prompt('宛名を入力してください（空欄可）:', formData.guestName || '') || ''
-    
-    // キャンセルされた場合
-    if (receiptTo === null) {
+    const success = await printReceipt(
+      currentTable,
+      formData,
+      orderItems,
+      systemSettings,
+      paymentData,
+      checkoutResult,
+      getRoundedTotalAmount,
+      getRoundingAdjustmentAmount
+    )
+
+    if (!success) {
+      // キャンセルされた場合
       setIsProcessingCheckout(false)
       finishCheckout()
-      return
     }
-    
-    // 設定から但し書きテンプレートを取得
-    const { data: receiptSettings } = await supabase
-      .from('receipt_settings')
-      .select('*')
-      .eq('store_id', storeId)
-      .single();
-    
-    // デフォルトの但し書きを取得
-    let defaultReceiptNote = 'お品代として';
-    if (receiptSettings?.receipt_templates && Array.isArray(receiptSettings.receipt_templates)) {
-      const defaultTemplate = receiptSettings.receipt_templates.find((t: { is_default: boolean }) => t.is_default);
-      if (defaultTemplate) {
-        defaultReceiptNote = defaultTemplate.text;
-      }
-    }
-    
-    const receiptNote = prompt('但し書きを入力してください:', defaultReceiptNote) || defaultReceiptNote;
-    
-    // 新しく接続を確立
-    await printer.enable();
-    
-    // ペアリング済みデバイスを取得
-    const devices = await printer.getPairedDevices();
-    const mpb20 = devices.find(device => 
-      device.name && device.name.toUpperCase().includes('MP-B20')
-    );
-    
-    if (mpb20) {
-      // 接続
-      await printer.connect(mpb20.address);
-      
-      // 少し待機
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // 印刷データを準備
-      const now = new Date();
-      const timestamp = now.toLocaleString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
-      
-      const subtotal = calculateSubtotal(orderItems);
-      const serviceTax = calculateServiceTax(subtotal, systemSettings.serviceChargeRate);
-      const consumptionTax = Math.floor((subtotal + serviceTax) * systemSettings.consumptionTaxRate);
-      
-      // 領収書印刷（設定値を使用）
-      await printer.printReceipt({
-        // 店舗情報（設定から取得）
-        storeName: receiptSettings?.store_name || '店舗名',
-        storeAddress: receiptSettings?.store_address || '',
-        storePhone: receiptSettings?.store_phone || '',
-        storePostalCode: receiptSettings?.store_postal_code || '',
-        storeRegistrationNumber: receiptSettings?.store_registration_number || '',
-        
-        // 領収書情報
-        receiptNumber: checkoutResult?.receiptNumber || `R${Date.now()}`,
-        receiptTo: receiptTo,  // 宛名
-        receiptNote: receiptNote,  // 但し書き
-        
-        // 収入印紙設定（設定から取得）
-        showRevenueStamp: receiptSettings?.show_revenue_stamp ?? true,
-        revenueStampThreshold: receiptSettings?.revenue_stamp_threshold || 50000,
-        
-        // 会計情報
-        tableName: currentTable,
-        guestName: formData.guestName || '（未入力）',
-        castName: formData.castName || '（未選択）',
-        timestamp: timestamp,
-        orderItems: orderItems,
-        subtotal: subtotal,
-        serviceTax: serviceTax,
-        consumptionTax: consumptionTax,
-        roundingAdjustment: getRoundingAdjustmentAmount(),
-        roundedTotal: getRoundedTotalAmount(),
-        paymentCash: paymentData.cash,
-        paymentCard: paymentData.card,
-        paymentOther: paymentData.other,
-        paymentOtherMethod: paymentData.otherMethod,
-        change: (paymentData.cash + paymentData.card + paymentData.other) - getRoundedTotalAmount()
-      });
-      
-      // 印刷後に切断
-      await printer.disconnect();
-      
-    } else {
-      alert('MP-B20が見つかりません。');
-    }
-  } catch (printError) {
-    console.error('領収書印刷エラー:', printError);
-    const errorMessage = printError instanceof Error 
-      ? printError.message 
-      : '不明なエラーが発生しました';
-    alert('領収書印刷に失敗しました。\n' + errorMessage);
+  } catch (error) {
+    console.error('領収書印刷エラー:', error)
   } finally {
     // 会計処理を完了
     finishCheckout()
