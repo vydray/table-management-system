@@ -126,15 +126,36 @@ export const useSystemSettings = () => {
       for (const setting of settingsToSave) {
         console.log('Saving setting:', setting.setting_key, '=', setting.setting_value)
 
-        const { error } = await supabase
+        // 既存のレコードを確認
+        const { data: existing } = await supabase
           .from('system_settings')
-          .upsert({
-            store_id: storeId,
-            setting_key: setting.setting_key,
-            setting_value: setting.setting_value
-          }, {
-            onConflict: 'store_id,setting_key'
-          })
+          .select('id')
+          .eq('store_id', storeId)
+          .eq('setting_key', setting.setting_key)
+          .single()
+
+        let error
+        if (existing) {
+          // 更新
+          const result = await supabase
+            .from('system_settings')
+            .update({
+              setting_value: setting.setting_value
+            })
+            .eq('store_id', storeId)
+            .eq('setting_key', setting.setting_key)
+          error = result.error
+        } else {
+          // 挿入
+          const result = await supabase
+            .from('system_settings')
+            .insert({
+              store_id: storeId,
+              setting_key: setting.setting_key,
+              setting_value: setting.setting_value
+            })
+          error = result.error
+        }
 
         if (error) {
           console.error('Supabase error:', error)

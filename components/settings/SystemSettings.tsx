@@ -33,7 +33,7 @@ export default function SystemSettings() {
     <div style={{
       height: '100%',
       overflowY: 'auto',
-      paddingBottom: '0',
+      paddingBottom: 'calc(80px + env(safe-area-inset-bottom))',
       WebkitOverflowScrolling: 'touch',
       msOverflowStyle: '-ms-autohiding-scrollbar'
     }}>
