@@ -357,14 +357,14 @@ export const PaymentModal: FC<PaymentModalProps> = ({
             <div style={{ marginBottom: `${10 * layoutScale}px`, fontSize: `${16 * layoutScale}px` }}>
               支払合計: ¥{totalPaid.toLocaleString()}
             </div>
-            {totalPaid >= roundedTotal && (
+            {totalPaid >= totalWithCardFee && (
               <div style={{ fontSize: `${20 * layoutScale}px`, color: '#4CAF50', fontWeight: 'bold' }}>
                 おつり: ¥{change.toLocaleString()}
               </div>
             )}
             {isShortage && (
               <div style={{ color: '#f44336', fontSize: `${16 * layoutScale}px` }}>
-                不足: ¥{(roundedTotal - totalPaid).toLocaleString()}
+                不足: ¥{(totalWithCardFee - totalPaid).toLocaleString()}
               </div>
             )}
           </div>
