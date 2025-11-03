@@ -84,7 +84,8 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
               appearance: 'auto',
               touchAction: 'manipulation',
               position: 'relative',
-              zIndex: 1
+              zIndex: 9999,
+              pointerEvents: 'auto'
             }}
           >
             <option value="">-- 選択 --</option>
@@ -119,7 +120,8 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
               appearance: 'auto',
               touchAction: 'manipulation',
               position: 'relative',
-              zIndex: 1
+              zIndex: 9999,
+              pointerEvents: 'auto'
             }}
           >
             <option value="">-- 選択 --</option>

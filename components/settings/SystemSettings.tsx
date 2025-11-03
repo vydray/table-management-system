@@ -169,7 +169,8 @@ export default function SystemSettings() {
               appearance: 'auto',
               touchAction: 'manipulation',
               position: 'relative',
-              zIndex: 1
+              zIndex: 9999,
+              pointerEvents: 'auto'
             }}
           >
             {Array.from({ length: 24 }, (_, i) => (

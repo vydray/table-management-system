@@ -795,7 +795,13 @@ export default function CastManagement() {
                     borderRadius: '6px',
                     fontSize: '14px',
                     backgroundColor: '#fff',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    WebkitAppearance: 'menulist',
+                    appearance: 'auto',
+                    touchAction: 'manipulation',
+                    position: 'relative',
+                    zIndex: 9999,
+                    pointerEvents: 'auto'
                   }}
                 >
                   <option value="">未設定</option>
@@ -824,7 +830,13 @@ export default function CastManagement() {
                     borderRadius: '6px',
                     fontSize: '14px',
                     backgroundColor: '#fff',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    WebkitAppearance: 'menulist',
+                    appearance: 'auto',
+                    touchAction: 'manipulation',
+                    position: 'relative',
+                    zIndex: 9999,
+                    pointerEvents: 'auto'
                   }}
                 >
                   <option value="在籍">在籍</option>

@@ -479,7 +479,8 @@ body.modal-open {
   appearance: auto;
   touch-action: manipulation;
   position: relative;
-  z-index: 1;
+  z-index: 9999;
+  pointer-events: auto;
 }
 
 .date-select:nth-of-type(1) { width: 80px; }
@@ -499,7 +500,8 @@ body.modal-open {
   appearance: auto;
   touch-action: manipulation;
   position: relative;
-  z-index: 1;
+  z-index: 9999;
+  pointer-events: auto;
 }
 
 .guest-input {
