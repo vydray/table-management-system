@@ -25,7 +25,7 @@ export const calculateConsumptionTax = (amount: number, rate: number): number =>
  * 端数処理を適用した合計金額を計算
  * @param amount 元の金額
  * @param roundingUnit 端数処理の単位（例: 100円単位）
- * @param roundingMethod 0: 切り捨て, 1: 切り上げ, 2: 四捨五入
+ * @param roundingMethod 0: 切り上げ, 1: 切り捨て, 2: 四捨五入
  */
 export const getRoundedTotal = (
   amount: number,
@@ -35,10 +35,10 @@ export const getRoundedTotal = (
   if (roundingUnit <= 0) return amount
 
   switch (roundingMethod) {
-    case 0: // 切り捨て
-      return Math.floor(amount / roundingUnit) * roundingUnit
-    case 1: // 切り上げ
+    case 0: // 切り上げ
       return Math.ceil(amount / roundingUnit) * roundingUnit
+    case 1: // 切り捨て
+      return Math.floor(amount / roundingUnit) * roundingUnit
     case 2: // 四捨五入
       return Math.round(amount / roundingUnit) * roundingUnit
     default:

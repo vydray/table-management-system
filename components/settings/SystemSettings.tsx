@@ -119,7 +119,7 @@ export default function SystemSettings() {
       </div>
 
       <div style={{ marginBottom: '30px' }}>
-        <label style={{ 
+        <label style={{
           display: 'block',
           fontSize: '16px',
           fontWeight: 'bold',
@@ -127,21 +127,24 @@ export default function SystemSettings() {
         }}>
           端数単位
         </label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <input
-            type="number"
-            value={roundingUnit === 0 ? '' : roundingUnit}
-            onChange={(e) => setRoundingUnit(e.target.value === '' ? 0 : Number(e.target.value))}
-            style={{
-              padding: '10px',
-              fontSize: '16px',
-              border: '1px solid #ddd',
-              borderRadius: '5px',
-              width: '100px'
-            }}
-          />
-          <span style={{ fontSize: '16px' }}>円</span>
-        </div>
+        <select
+          value={roundingUnit}
+          onChange={(e) => setRoundingUnit(Number(e.target.value))}
+          style={{
+            padding: '10px',
+            fontSize: '16px',
+            border: '1px solid #ddd',
+            borderRadius: '5px',
+            width: '200px',
+            backgroundColor: 'white',
+            cursor: 'pointer'
+          }}
+        >
+          <option value={1}>1円単位</option>
+          <option value={10}>10円単位</option>
+          <option value={100}>100円単位</option>
+          <option value={1000}>1000円単位</option>
+        </select>
       </div>
 
       <div style={{ marginBottom: '30px' }}>
@@ -262,6 +265,45 @@ export default function SystemSettings() {
           {saving ? '保存中...' : '保存'}
         </button>
       </div>
+
+      {/* 保存中のオーバーレイ */}
+      {saving && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            fontSize: '24px',
+            color: 'white',
+            marginBottom: '20px'
+          }}>
+            保存中...
+          </div>
+          <div style={{
+            width: '50px',
+            height: '50px',
+            border: '5px solid rgba(255, 255, 255, 0.3)',
+            borderTop: '5px solid white',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   )
 }
