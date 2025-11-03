@@ -188,26 +188,16 @@ export default function Home() {
     return subtotal + serviceTax
   }
 
-  // カード手数料を計算（カード金額のみに適用）
-  const getCardFee = () => {
-    if (paymentData.card > 0 && systemSettings.cardFeeRate > 0) {
-      return Math.floor(paymentData.card * systemSettings.cardFeeRate)
-    }
-    return 0
-  }
-
-  // 端数処理を適用した合計金額を取得（カード手数料込み）
+  // 端数処理を適用した合計金額を取得（カード手数料は含まない）
   const getRoundedTotalAmount = () => {
     const total = getTotal()
-    const cardFee = getCardFee()
-    return getRoundedTotal(total + cardFee, systemSettings.roundingUnit, systemSettings.roundingMethod)
+    return getRoundedTotal(total, systemSettings.roundingUnit, systemSettings.roundingMethod)
   }
 
   // 端数調整額を取得
   const getRoundingAdjustmentAmount = () => {
     const total = getTotal()
-    const cardFee = getCardFee()
-    return getRoundingAdjustment(total + cardFee, getRoundedTotalAmount())
+    return getRoundingAdjustment(total, getRoundedTotalAmount())
   }
 
   // 支払い方法ボタンのハンドラー

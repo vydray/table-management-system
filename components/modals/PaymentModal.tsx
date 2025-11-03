@@ -58,14 +58,15 @@ export const PaymentModal: FC<PaymentModalProps> = ({
 }) => {
   if (!isOpen) return null
 
-  const totalPaid = paymentData.cash + paymentData.card + paymentData.other
-  const change = totalPaid - roundedTotal
-  const isShortage = totalPaid > 0 && totalPaid < roundedTotal
-
   // カード手数料の計算（カード金額のみに適用）
   const cardFee = paymentData.card > 0 && cardFeeRate > 0
     ? Math.floor(paymentData.card * (cardFeeRate / 100))
     : 0
+
+  const totalPaid = paymentData.cash + paymentData.card + paymentData.other
+  const totalWithCardFee = roundedTotal + cardFee
+  const change = totalPaid - totalWithCardFee
+  const isShortage = totalPaid > 0 && totalPaid < totalWithCardFee
 
   return (
     <>
