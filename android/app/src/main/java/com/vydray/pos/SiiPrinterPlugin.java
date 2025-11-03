@@ -496,16 +496,16 @@ public class SiiPrinterPlugin extends Plugin {
         }
 
         switch (roundingMethod) {
-            case 0: // 切り捨て
+            case 0: // 切り上げ
+                return amount - remainder + roundingUnit;
+            case 1: // 切り捨て
                 return amount - remainder;
-            case 1: // 四捨五入
+            case 2: // 四捨五入
                 if (remainder >= roundingUnit / 2.0) {
                     return amount - remainder + roundingUnit;
                 } else {
                     return amount - remainder;
                 }
-            case 2: // 切り上げ
-                return amount - remainder + roundingUnit;
             default:
                 return amount;
         }
