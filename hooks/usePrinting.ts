@@ -68,7 +68,7 @@ export const usePrinting = () => {
       const isConnected = await printer.checkConnection()
       if (!isConnected) {
         if (confirm('プリンターが接続されていません。設定画面で接続しますか？')) {
-          router.push('/settings?tab=receipt&scroll=printer')
+          router.push('/settings?tab=receipt')
         }
         return
       }

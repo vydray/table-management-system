@@ -12,9 +12,9 @@ export default function ReceiptDetail({ selectedReceipt, orderItems, onDelete }:
   const router = useRouter()
   const { printReceipt: printReceiptFromHook, printSlip: printSlipFromHook } = useReceiptPrint()
 
-  // 設定画面へのナビゲーション（プリンター設定セクションまでスクロール）
+  // 設定画面へのナビゲーション
   const navigateToPrinterSettings = () => {
-    router.push('/settings?tab=receipt&scroll=printer')
+    router.push('/settings?tab=receipt')
   }
 
   // 領収書印刷のラッパー

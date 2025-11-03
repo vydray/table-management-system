@@ -54,23 +54,6 @@ export default function ReceiptSettings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // プリンター設定セクションへの自動スクロール
-  useEffect(() => {
-    const { scroll } = router.query
-    if (scroll === 'printer') {
-      // 少し遅延を入れてからスクロール（レンダリング完了を待つ）
-      setTimeout(() => {
-        const printerSection = document.getElementById('printer-settings')
-        if (printerSection) {
-          // ヘッダーやナビゲーションを考慮して、要素の少し上にスクロール
-          const yOffset = -20 // 上に20pxのオフセットを追加（戻るボタンが見える程度）
-          const y = printerSection.getBoundingClientRect().top + window.pageYOffset + yOffset
-          window.scrollTo({ top: y, behavior: 'smooth' })
-        }
-      }, 300)
-    }
-  }, [router.query])
-
   // 保存処理のラッパー関数（ロゴアップロード + 設定保存を統合）
   const handleSaveSettings = async () => {
     try {
@@ -106,6 +89,126 @@ export default function ReceiptSettings() {
       }}>
         レシート設定
       </h2>
+
+      {/* プリンター設定 */}
+      <div id="printer-settings" style={{ marginBottom: '40px' }}>
+        <h3 style={{
+          fontSize: '18px',
+          fontWeight: 'bold',
+          marginBottom: '20px',
+          paddingBottom: '10px',
+          borderBottom: '2px solid #f0f0f0'
+        }}>
+          プリンター設定
+        </h3>
+
+        <div style={{ marginBottom: '20px' }}>
+          <p style={{
+            marginBottom: '15px',
+            fontSize: '14px',
+            color: '#666'
+          }}>
+            Bluetooth対応のレシートプリンター（MP-B20）と接続します
+          </p>
+
+          {/* 接続状態の表示 */}
+          {printerConnected && (
+            <div style={{
+              padding: '10px',
+              backgroundColor: '#e8f5e9',
+              borderRadius: '5px',
+              marginBottom: '15px',
+              fontSize: '14px',
+              color: '#2e7d32'
+            }}>
+              ✓ MP-B20に接続済み
+              {printerAddress && <span style={{ marginLeft: '10px', fontSize: '12px', color: '#666' }}>({printerAddress})</span>}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {!printerConnected ? (
+              // 未接続時：接続ボタンを表示
+              <button
+                onClick={connectBluetoothPrinter}
+                disabled={isConnecting}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: isConnecting ? '#ccc' : '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '14px',
+                  cursor: isConnecting ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isConnecting ? '接続中...' : '🔗 MP-B20接続'}
+              </button>
+            ) : (
+              // 接続済み時：切断ボタンを表示
+              <button
+                onClick={disconnectPrinter}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                🔌 接続を切断
+              </button>
+            )}
+
+            <button
+              onClick={handleTestPrint}
+              disabled={!printerConnected}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: printerConnected ? '#FF9800' : '#ccc',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: '14px',
+                cursor: printerConnected ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              🖨️ 直接印刷テスト
+            </button>
+
+            {/* 再確認ボタン（デバッグ用） */}
+            <button
+              onClick={checkPrinterConnection}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#9E9E9E',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              title="接続状態を再確認"
+            >
+              🔄 状態確認
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* 店舗情報 */}
       <div style={{ marginBottom: '40px' }}>
@@ -662,127 +765,6 @@ export default function ReceiptSettings() {
           </p>
         </div>
       </div>
-
-      {/* プリンター設定 */}
-      <div id="printer-settings" style={{ marginBottom: '40px' }}>
-        <h3 style={{
-          fontSize: '18px',
-          fontWeight: 'bold',
-          marginBottom: '20px',
-          paddingBottom: '10px',
-          borderBottom: '2px solid #f0f0f0'
-        }}>
-          プリンター設定
-        </h3>
-        
-        <div style={{ marginBottom: '20px' }}>
-          <p style={{ 
-            marginBottom: '15px',
-            fontSize: '14px',
-            color: '#666'
-          }}>
-            Bluetooth対応のレシートプリンター（MP-B20）と接続します
-          </p>
-          
-          {/* 接続状態の表示 */}
-          {printerConnected && (
-            <div style={{
-              padding: '10px',
-              backgroundColor: '#e8f5e9',
-              borderRadius: '5px',
-              marginBottom: '15px',
-              fontSize: '14px',
-              color: '#2e7d32'
-            }}>
-              ✓ MP-B20に接続済み
-              {printerAddress && <span style={{ marginLeft: '10px', fontSize: '12px', color: '#666' }}>({printerAddress})</span>}
-            </div>
-          )}
-          
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {!printerConnected ? (
-              // 未接続時：接続ボタンを表示
-              <button
-                onClick={connectBluetoothPrinter}
-                disabled={isConnecting}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: isConnecting ? '#ccc' : '#2196F3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  fontSize: '14px',
-                  cursor: isConnecting ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                {isConnecting ? '接続中...' : '🔗 MP-B20接続'}
-              </button>
-            ) : (
-              // 接続済み時：切断ボタンを表示
-              <button
-                onClick={disconnectPrinter}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#f44336',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                🔌 接続を切断
-              </button>
-            )}
-            
-            <button
-              onClick={handleTestPrint}
-              disabled={!printerConnected}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: printerConnected ? '#FF9800' : '#ccc',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                fontSize: '14px',
-                cursor: printerConnected ? 'pointer' : 'not-allowed',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              🖨️ 直接印刷テスト
-            </button>
-            
-            {/* 再確認ボタン（デバッグ用） */}
-            <button
-              onClick={checkPrinterConnection}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#9E9E9E',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                fontSize: '14px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              title="接続状態を再確認"
-            >
-              🔄 状態確認
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* レシート番号 */}
       <div style={{ marginBottom: '40px' }}>
         <h3 style={{ 
