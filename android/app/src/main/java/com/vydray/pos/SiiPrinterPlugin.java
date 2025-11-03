@@ -247,9 +247,20 @@ public class SiiPrinterPlugin extends Plugin {
             // お支払い方法による金額（カード手数料が設定されている場合のみ表示）
             if (cardFeeRate > 0) {
                 // カード支払い時の金額を計算
+                Log.d(TAG, "=== Card Payment Calculation Debug ===");
+                Log.d(TAG, "roundedTotal: " + roundedTotal);
+                Log.d(TAG, "cardFeeRate: " + cardFeeRate);
+                Log.d(TAG, "roundingUnit: " + roundingUnit);
+                Log.d(TAG, "roundingMethod: " + roundingMethod);
+
                 int calculatedCardFee = (int) Math.round(roundedTotal * cardFeeRate / 100.0);
+                Log.d(TAG, "calculatedCardFee: " + calculatedCardFee);
+
                 int cardAmountBeforeRounding = roundedTotal + calculatedCardFee;
+                Log.d(TAG, "cardAmountBeforeRounding: " + cardAmountBeforeRounding);
+
                 int cardAmount = applyRounding(cardAmountBeforeRounding, roundingUnit, roundingMethod);
+                Log.d(TAG, "cardAmount (after rounding): " + cardAmount);
 
                 receipt.append("\n【お支払い方法】\n");
                 receipt.append(String.format("現金の場合:        ¥%,d\n", roundedTotal));
