@@ -7,6 +7,7 @@ import CashCountModal from '../components/report/CashCountModal'
 import { useReportData } from '../hooks/useReportData'
 import { useDailyReport } from '../hooks/useDailyReport'
 import { useReportSettings } from '../hooks/useReportSettings'
+import { useDailyReportOperations } from '../hooks/useDailyReportOperations'
 
 export default function Report() {
   const router = useRouter()
@@ -14,10 +15,6 @@ export default function Report() {
   // ローカルstate（日付選択）
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-
-  // 現金回収計算用の状態
-  const [showCashCountModal, setShowCashCountModal] = useState(false)
-  const [calculatedCashReceipt, setCalculatedCashReceipt] = useState<number | null>(null)
 
   // カスタムフック - レポートデータ
   const {
@@ -59,11 +56,29 @@ export default function Report() {
     saveMonthlyTargets
   } = useReportSettings()
 
-  // 現金計算完了時の処理
-  const handleCashCountComplete = (totalCash: number) => {
-    setCalculatedCashReceipt(totalCash)
-    setShowCashCountModal(false)
-  }
+  // カスタムフック - 日報操作
+  const {
+    calculatedCashReceipt,
+    showCashCountModal,
+    setShowCashCountModal,
+    calculateCashReceipt,
+    handleCashCountComplete,
+    openDailyReport,
+    updateToLatestData
+  } = useDailyReportOperations(
+    selectedYear,
+    selectedMonth,
+    selectedDate,
+    businessDayStartHour,
+    activeAttendanceStatuses,
+    getLatestSalesData,
+    getAttendanceCountsAndPayments,
+    loadDailyReport,
+    setDailyReportData,
+    setSelectedDate,
+    setShowDailyReportModal,
+    loadMonthlyData
+  )
 
   // 初期読み込み
   useEffect(() => {
@@ -74,85 +89,6 @@ export default function Report() {
     loadRegisterAmount()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedYear, selectedMonth])
-
-  // 日別詳細を開く（リアルタイム対応）
-  const openDailyReport = async (day: { date: string; totalSales: number; orderCount: number; cashSales: number; cardSales: number; otherSales: number; firstTimeCount: number; returnCount: number; regularCount: number }) => {
-    setSelectedDate(day.date)
-    setCalculatedCashReceipt(null) // 現金計算結果をリセット
-
-    // 常に最新の売上データを取得
-    const latestSalesData = await getLatestSalesData(day.date, businessDayStartHour)
-
-    // 勤怠データから人数と日払いを取得
-    const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(day.date, activeAttendanceStatuses)
-
-    // 日付を解析して業務日を取得
-    const matches = day.date.match(/(\d+)月(\d+)日/)
-    if (matches) {
-      const month = parseInt(matches[1])
-      const dayNum = parseInt(matches[2])
-      const businessDate = new Date(selectedYear, month - 1, dayNum).toISOString().slice(0, 10)
-
-      // 保存されたデータ（調整項目とSNS）を読み込む
-      await loadDailyReport(businessDate)
-
-      // loadDailyReportで読み込まれたデータに最新の売上データを上書き
-      setDailyReportData(prev => ({
-        ...prev,
-        date: day.date,
-        totalReceipt: latestSalesData.orderCount,
-        totalSales: latestSalesData.totalSales,
-        cashReceipt: latestSalesData.cashSales,
-        cardReceipt: latestSalesData.cardSales,
-        payPayReceipt: 0,
-        otherSales: latestSalesData.otherSales,
-        balance: latestSalesData.totalSales,
-        staffCount: staffCount,
-        castCount: castCount,
-        dailyPaymentTotal: prev.dailyPaymentTotal || dailyPaymentTotal
-      }))
-    }
-
-    setShowDailyReportModal(true)
-  }
-
-  // 最新データを取得
-  const updateToLatestData = async () => {
-    if (!selectedDate) return
-
-    try {
-      const latestSalesData = await getLatestSalesData(selectedDate, businessDayStartHour)
-      const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(selectedDate, activeAttendanceStatuses)
-
-      setDailyReportData(prev => ({
-        ...prev,
-        totalReceipt: latestSalesData.orderCount,
-        totalSales: latestSalesData.totalSales,
-        cashReceipt: latestSalesData.cashSales,
-        cardReceipt: latestSalesData.cardSales,
-        otherSales: latestSalesData.otherSales,
-        balance: latestSalesData.totalSales,
-        staffCount: staffCount,
-        castCount: castCount,
-        dailyPaymentTotal: prev.dailyPaymentTotal > 0 ? prev.dailyPaymentTotal : dailyPaymentTotal
-      }))
-
-      await loadMonthlyData(selectedYear, selectedMonth, businessDayStartHour, activeAttendanceStatuses)
-    } catch (error) {
-      console.error('Error updating data:', error)
-      alert('データの更新中にエラーが発生しました')
-    }
-  }
-
-  // 現金回収を計算する関数
-  const calculateCashReceipt = () => {
-    return dailyReportData.cashReceipt -
-           dailyReportData.notTransmittedReceipt -
-           dailyReportData.notTransmittedAmount -
-           dailyReportData.unpaidAmount -
-           dailyReportData.expenseAmount -
-           dailyReportData.dailyPaymentTotal
-  }
 
   // 月間合計を計算
   const monthlyTotal = calculateMonthlyTotal(dailyData)
@@ -547,7 +483,7 @@ export default function Report() {
                             </button>
                           </td>
                           <td style={{ backgroundColor: '#fff', padding: '12px', textAlign: 'right', border: '1px solid #999', fontWeight: 'bold', fontSize: '16px' }}>
-                            ¥{(calculatedCashReceipt !== null ? calculatedCashReceipt : calculateCashReceipt()).toLocaleString()}-
+                            ¥{(calculatedCashReceipt !== null ? calculatedCashReceipt : calculateCashReceipt(dailyReportData)).toLocaleString()}-
                           </td>
                         </tr>
                         <tr>

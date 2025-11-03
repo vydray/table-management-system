@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-interface DailyReportData {
+export interface DailyReportData {
   date: string
   eventName: string
   weather?: string
