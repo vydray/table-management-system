@@ -218,20 +218,24 @@ export default function Home() {
     setActivePaymentInput(method)
 
     if (method === 'cash') {
-      // 現金ボタン: 合計金額を自動入力
-      setPaymentAmount('cash', roundedTotal)
+      // 現金ボタン: カードやその他に金額が入っていない場合のみ満額入力
+      if (paymentData.card === 0 && paymentData.other === 0) {
+        setPaymentAmount('cash', roundedTotal)
+      }
     } else if (method === 'card') {
-      // カードボタン: (合計金額 - 現金入力額) + カード手数料
+      // カードボタン: (合計 - 現金) + カード手数料、端数処理を適用
       const cashPaid = paymentData.cash
       const remaining = roundedTotal - cashPaid
 
       if (remaining > 0) {
-        // カード金額にカード手数料を加算
-        const cardAmountWithFee = Math.ceil(remaining + remaining * systemSettings.cardFeeRate)
-        setPaymentAmount('card', cardAmountWithFee)
+        // カード手数料を加算
+        const cardWithFee = remaining + Math.floor(remaining * systemSettings.cardFeeRate)
+        // 端数処理を適用
+        const roundedCardAmount = getRoundedTotal(cardWithFee, systemSettings.roundingUnit, systemSettings.roundingMethod)
+        setPaymentAmount('card', roundedCardAmount)
       }
     } else if (method === 'other') {
-      // その他ボタン: (合計金額 - 現金 - カード)
+      // その他ボタン: (合計 - 現金 - カード)
       const cashPaid = paymentData.cash
       const cardPaid = paymentData.card
       const cardFee = cardPaid > 0 ? Math.floor(cardPaid * systemSettings.cardFeeRate) : 0
