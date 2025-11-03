@@ -1028,6 +1028,7 @@ const finishCheckout = () => {
 
                 {/* カスタムリストボックス（スクロール可能） */}
                 <div
+                  className="hide-scrollbar"
                   style={{
                     width: '100%',
                     flex: 1,

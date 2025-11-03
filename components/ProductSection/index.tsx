@@ -123,34 +123,20 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           height: auto !important;
         }
         
-        /* スクロールバーのスタイル */
+        /* スクロールバーを非表示 */
+        .category-column,
+        .product-column,
+        .cast-column,
+        :global(.cast-list) {
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE/Edge */
+        }
+
         .category-column::-webkit-scrollbar,
         .product-column::-webkit-scrollbar,
         .cast-column::-webkit-scrollbar,
         :global(.cast-list)::-webkit-scrollbar {
-          width: 6px;
-        }
-        
-        .category-column::-webkit-scrollbar-track,
-        .product-column::-webkit-scrollbar-track,
-        .cast-column::-webkit-scrollbar-track,
-        :global(.cast-list)::-webkit-scrollbar-track {
-          background: #f1f1f1;
-        }
-        
-        .category-column::-webkit-scrollbar-thumb,
-        .product-column::-webkit-scrollbar-thumb,
-        .cast-column::-webkit-scrollbar-thumb,
-        :global(.cast-list)::-webkit-scrollbar-thumb {
-          background: #888;
-          border-radius: 4px;
-        }
-        
-        .category-column::-webkit-scrollbar-thumb:hover,
-        .product-column::-webkit-scrollbar-thumb:hover,
-        .cast-column::-webkit-scrollbar-thumb:hover,
-        :global(.cast-list)::-webkit-scrollbar-thumb:hover {
-          background: #555;
+          display: none; /* Chrome, Safari, Opera */
         }
         
         /* Androidタブレット用の調整 */

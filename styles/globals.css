@@ -512,6 +512,16 @@ body.modal-open {
   min-width: 150px;
 }
 
+/* スクロールバー非表示 */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 /* POSコンテナ */
 .pos-container {
   display: flex;
