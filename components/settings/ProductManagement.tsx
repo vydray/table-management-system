@@ -75,32 +75,6 @@ export default function ProductManagement() {
   }}>
     <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 'bold' }}>商品管理</h2>
 
-      {/* カテゴリー選択 */}
-      <div style={{ marginBottom: '30px' }}>
-        <label style={{ display: 'block', marginBottom: '10px', fontSize: '14px' }}>
-          カテゴリーで絞り込み
-        </label>
-        <select
-          value={selectedCategory || ''}
-          onChange={(e) => setSelectedCategory(Number(e.target.value))}
-          style={{
-            width: '300px',
-            padding: '10px',
-            fontSize: '16px',
-            border: '1px solid #ddd',
-            borderRadius: '5px',
-            backgroundColor: 'white'
-          }}
-        >
-          <option value="">-- 全て表示 --</option>
-          {categories.map(category => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {/* 新規商品追加セクション */}
       <div style={{
         backgroundColor: '#f5f5f5',
@@ -230,6 +204,28 @@ export default function ProductManagement() {
           >
             ↑ 並び替え
           </button>
+
+          {/* カテゴリー選択 */}
+          <select
+            value={selectedCategory || ''}
+            onChange={(e) => setSelectedCategory(Number(e.target.value))}
+            style={{
+              padding: '8px 12px',
+              fontSize: '14px',
+              border: '1px solid #ddd',
+              borderRadius: '5px',
+              backgroundColor: 'white',
+              cursor: 'pointer',
+              marginLeft: 'auto'
+            }}
+          >
+            <option value="">-- 全て表示 --</option>
+            {categories.map(category => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* テーブルヘッダー */}

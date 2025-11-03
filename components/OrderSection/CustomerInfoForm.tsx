@@ -79,7 +79,12 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
               border: '1px solid #ddd',
               borderRadius: '4px',
               fontSize: '14px',
-              backgroundColor: 'white'
+              backgroundColor: 'white',
+              WebkitAppearance: 'menulist',
+              appearance: 'auto',
+              touchAction: 'manipulation',
+              position: 'relative',
+              zIndex: 1
             }}
           >
             <option value="">-- 選択 --</option>
@@ -109,7 +114,12 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
               border: '1px solid #ddd',
               borderRadius: '4px',
               fontSize: '14px',
-              backgroundColor: 'white'
+              backgroundColor: 'white',
+              WebkitAppearance: 'menulist',
+              appearance: 'auto',
+              touchAction: 'manipulation',
+              position: 'relative',
+              zIndex: 1
             }}
           >
             <option value="">-- 選択 --</option>
