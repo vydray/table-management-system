@@ -213,23 +213,30 @@ export default function Home() {
         setPaymentAmount('cash', roundedTotal)
       }
     } else if (method === 'card') {
-      // カードボタン: (合計 - 現金) + カード手数料、端数処理を適用
+      // カードボタン: 残りの金額（小計 - 現金 - その他）を入力
       const cashPaid = paymentData.cash
-      const remaining = roundedTotal - cashPaid
+      const otherPaid = paymentData.other
+      const remaining = roundedTotal - cashPaid - otherPaid
 
       if (remaining > 0) {
-        // カード手数料を加算
-        const cardWithFee = remaining + Math.floor(remaining * systemSettings.cardFeeRate)
-        // 端数処理を適用
-        const roundedCardAmount = getRoundedTotal(cardWithFee, systemSettings.roundingUnit, systemSettings.roundingMethod)
-        setPaymentAmount('card', roundedCardAmount)
+        setPaymentAmount('card', remaining)
       }
     } else if (method === 'other') {
-      // その他ボタン: (合計 - 現金 - カード)
+      // その他ボタン: PaymentModal内で計算される totalWithCardFee を使用
+      // まず、現時点での残り金額を計算
       const cashPaid = paymentData.cash
       const cardPaid = paymentData.card
-      const cardFee = cardPaid > 0 ? Math.floor(cardPaid * systemSettings.cardFeeRate) : 0
-      const totalWithCardFee = roundedTotal + cardFee
+
+      // カード手数料を計算
+      const remainingForCardFee = roundedTotal - cashPaid
+      const cardFee = cardPaid > 0 && systemSettings.cardFeeRate > 0 && remainingForCardFee > 0
+        ? Math.floor(remainingForCardFee * systemSettings.cardFeeRate)
+        : 0
+
+      // カード手数料を含めた合計を端数処理
+      const totalWithCardFeeBeforeRounding = roundedTotal + cardFee
+      const totalWithCardFee = getRoundedTotal(totalWithCardFeeBeforeRounding, systemSettings.roundingUnit, systemSettings.roundingMethod)
+
       const remaining = totalWithCardFee - cashPaid - cardPaid
 
       if (remaining > 0) {
@@ -569,7 +576,21 @@ const completeCheckout = async () => {
   const totalPaid = paymentData.cash + paymentData.card + paymentData.other
   const roundedTotal = getRoundedTotalAmount()
 
-  if (totalPaid < roundedTotal) {
+  // カード手数料を計算
+  const remainingAmount = roundedTotal - paymentData.cash - paymentData.other
+  const cardFee = paymentData.card > 0 && systemSettings.cardFeeRate > 0 && remainingAmount > 0
+    ? Math.floor(remainingAmount * systemSettings.cardFeeRate)
+    : 0
+
+  // カード手数料を含めた合計金額に端数処理を適用
+  const totalWithCardFeeBeforeRounding = roundedTotal + cardFee
+  const totalWithCardFee = getRoundedTotal(
+    totalWithCardFeeBeforeRounding,
+    systemSettings.roundingUnit,
+    systemSettings.roundingMethod
+  )
+
+  if (totalPaid < totalWithCardFee) {
     alert('支払金額が不足しています')
     return
   }
@@ -1614,6 +1635,10 @@ const finishCheckout = () => {
         roundingAdjustment={getRoundingAdjustmentAmount()}
         formData={formData}
         cardFeeRate={systemSettings.cardFeeRate * 100}
+        systemSettings={{
+          roundingUnit: systemSettings.roundingUnit,
+          roundingMethod: systemSettings.roundingMethod
+        }}
         onNumberClick={handleNumberClick}
         onQuickAmount={handleQuickAmount}
         onDeleteNumber={handleDeleteNumber}

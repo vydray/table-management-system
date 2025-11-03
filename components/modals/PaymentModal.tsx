@@ -1,5 +1,6 @@
 import { FC } from 'react'
 import { NumberPad } from './NumberPad'
+import { getRoundedTotal } from '../../utils/calculations'
 
 interface PaymentModalProps {
   isOpen: boolean
@@ -22,6 +23,10 @@ interface PaymentModalProps {
     guestName: string
   }
   cardFeeRate: number
+  systemSettings: {
+    roundingUnit: number
+    roundingMethod: number
+  }
   onNumberClick: (num: string) => void
   onQuickAmount: (amount: number) => void
   onDeleteNumber: () => void
@@ -46,6 +51,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
   roundingAdjustment,  // eslint-disable-line @typescript-eslint/no-unused-vars
   formData,
   cardFeeRate,
+  systemSettings,
   onNumberClick,
   onQuickAmount,
   onDeleteNumber,
@@ -64,8 +70,15 @@ export const PaymentModal: FC<PaymentModalProps> = ({
     ? Math.floor(remainingAmount * (cardFeeRate / 100))
     : 0
 
+  // カード手数料を含めた合計金額に端数処理を適用
+  const totalWithCardFeeBeforeRounding = roundedTotal + cardFee
+  const totalWithCardFee = getRoundedTotal(
+    totalWithCardFeeBeforeRounding,
+    systemSettings.roundingUnit,
+    systemSettings.roundingMethod
+  )
+
   const totalPaid = paymentData.cash + paymentData.card + paymentData.other
-  const totalWithCardFee = roundedTotal + cardFee
   const change = totalPaid - totalWithCardFee
   const isShortage = totalPaid > 0 && totalPaid < totalWithCardFee
 
@@ -168,7 +181,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
               paddingTop: `${10 * layoutScale}px`,
               textAlign: 'center'
             }}>
-              合計金額: ¥{(roundedTotal + cardFee).toLocaleString()}
+              合計金額: ¥{totalWithCardFee.toLocaleString()}
             </div>
           </div>
 
