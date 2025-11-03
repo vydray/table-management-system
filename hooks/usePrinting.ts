@@ -85,9 +85,11 @@ export const usePrinting = () => {
         hour12: false
       })
 
-      // カード手数料の計算
-      const cardFee = paymentData.card > 0 && systemSettings.cardFeeRate > 0
-        ? Math.floor(paymentData.card * (systemSettings.cardFeeRate / 100))
+      // カード手数料の計算（PaymentModalと同じロジック：残りの金額に対して適用）
+      const roundedTotal = getRoundedTotalAmount()
+      const remainingAmount = roundedTotal - paymentData.cash - paymentData.other
+      const cardFee = paymentData.card > 0 && systemSettings.cardFeeRate > 0 && remainingAmount > 0
+        ? Math.floor(remainingAmount * (systemSettings.cardFeeRate / 100))
         : 0
 
       const orderData = {
@@ -100,7 +102,7 @@ export const usePrinting = () => {
         serviceTax: calculateServiceTax(calculateSubtotal(orderItems), systemSettings.serviceChargeRate),
         roundedTotal: getRoundedTotalAmount(),
         roundingAdjustment: getRoundingAdjustmentAmount(),
-        cardFeeRate: systemSettings.cardFeeRate,
+        cardFeeRate: Math.round(systemSettings.cardFeeRate * 100), // 整数に変換（0.1 → 10）
         cardFee: cardFee,
         paymentCash: paymentData.cash,
         paymentCard: paymentData.card,
@@ -182,12 +184,14 @@ export const usePrinting = () => {
         const serviceTax = calculateServiceTax(subtotal, systemSettings.serviceChargeRate)
         const consumptionTax = Math.floor((subtotal + serviceTax) * systemSettings.consumptionTaxRate)
 
-        // カード手数料の計算（カード金額のみに適用）
-        const cardFee = paymentData.card > 0 && systemSettings.cardFeeRate > 0
-          ? Math.floor(paymentData.card * (systemSettings.cardFeeRate / 100))
+        const roundedTotal = getRoundedTotalAmount()
+
+        // カード手数料の計算（PaymentModalと同じロジック：残りの金額に対して適用）
+        const remainingAmount = roundedTotal - paymentData.cash - paymentData.other
+        const cardFee = paymentData.card > 0 && systemSettings.cardFeeRate > 0 && remainingAmount > 0
+          ? Math.floor(remainingAmount * (systemSettings.cardFeeRate / 100))
           : 0
 
-        const roundedTotal = getRoundedTotalAmount()
         const totalWithCardFee = roundedTotal + cardFee
 
         await printer.printReceipt({
@@ -211,7 +215,7 @@ export const usePrinting = () => {
           consumptionTax: consumptionTax,
           roundingAdjustment: getRoundingAdjustmentAmount(),
           roundedTotal: roundedTotal,
-          cardFeeRate: systemSettings.cardFeeRate,
+          cardFeeRate: Math.round(systemSettings.cardFeeRate * 100), // 整数に変換（0.1 → 10）
           cardFee: cardFee,
           paymentCash: paymentData.cash,
           paymentCard: paymentData.card,
