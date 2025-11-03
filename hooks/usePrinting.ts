@@ -62,6 +62,7 @@ export const usePrinting = () => {
     tables: Tables,
     orderItems: OrderItem[],
     systemSettings: SystemSettings,
+    paymentData: PaymentData,
     getRoundedTotalAmount: () => number,
     getRoundingAdjustmentAmount: () => number
   ) => {
@@ -84,6 +85,11 @@ export const usePrinting = () => {
         hour12: false
       })
 
+      // カード手数料の計算
+      const cardFee = paymentData.card > 0 && systemSettings.cardFeeRate > 0
+        ? Math.floor(paymentData.card * (systemSettings.cardFeeRate / 100))
+        : 0
+
       const orderData = {
         tableName: currentTable,
         guestName: formData.guestName || '（未入力）',
@@ -94,6 +100,12 @@ export const usePrinting = () => {
         serviceTax: calculateServiceTax(calculateSubtotal(orderItems), systemSettings.serviceChargeRate),
         roundedTotal: getRoundedTotalAmount(),
         roundingAdjustment: getRoundingAdjustmentAmount(),
+        cardFeeRate: systemSettings.cardFeeRate,
+        cardFee: cardFee,
+        paymentCash: paymentData.cash,
+        paymentCard: paymentData.card,
+        paymentOther: paymentData.other,
+        paymentOtherMethod: paymentData.otherMethod,
         timestamp: timestamp
       }
 

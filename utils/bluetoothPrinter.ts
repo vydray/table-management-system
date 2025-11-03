@@ -218,13 +218,19 @@ export class BluetoothPrinter {
     serviceTax: number
     roundedTotal: number
     roundingAdjustment: number
+    cardFeeRate?: number  // カード手数料率（%）
+    cardFee?: number  // カード手数料
+    paymentCash?: number  // 現金支払い
+    paymentCard?: number  // カード支払い
+    paymentOther?: number  // その他支払い
+    paymentOtherMethod?: string  // その他支払い方法
     timestamp: string
   }): Promise<void> {
     const plugin = this.getPlugin();
     if (!plugin) {
       throw new Error('SiiPrinter plugin not available');
     }
-    
+
     try {
       await plugin.printOrderSlip({
         tableName: orderData.tableName,
@@ -236,6 +242,12 @@ export class BluetoothPrinter {
         serviceTax: orderData.serviceTax,
         roundedTotal: orderData.roundedTotal,
         roundingAdjustment: orderData.roundingAdjustment,
+        cardFeeRate: orderData.cardFeeRate,
+        cardFee: orderData.cardFee,
+        paymentCash: orderData.paymentCash,
+        paymentCard: orderData.paymentCard,
+        paymentOther: orderData.paymentOther,
+        paymentOtherMethod: orderData.paymentOtherMethod,
         timestamp: orderData.timestamp
       });
       console.log('Order slip printed successfully');

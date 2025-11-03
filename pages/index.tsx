@@ -246,6 +246,7 @@ export default function Home() {
       tables,
       orderItems,
       systemSettings,
+      paymentData,
       getRoundedTotalAmount,
       getRoundingAdjustmentAmount
     )
