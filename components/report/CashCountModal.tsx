@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useCashCount } from '../../hooks/useCashCount'
 
 interface CashCountModalProps {
@@ -30,6 +31,20 @@ export default function CashCountModal({
 
   const total = calculateTotal()
   const cashCollection = total - registerAmount
+
+  // 入力フィールドへの参照
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  // エンターキーで次のフィールドに移動
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      const nextIndex = index + 1
+      if (nextIndex < inputRefs.current.length) {
+        inputRefs.current[nextIndex]?.focus()
+      }
+    }
+  }
 
   // 完了処理
   const handleComplete = async () => {
@@ -128,9 +143,12 @@ export default function CashCountModal({
                   <td style={{ padding: '10px' }}>1万円札</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
+                      ref={(el) => { inputRefs.current[0] = el }}
                       type="number"
-                      value={bills.tenThousand === 0 ? '' : bills.tenThousand}
+                      inputMode="numeric"
+                      value={bills.tenThousand}
                       onChange={(e) => setBills({...bills, tenThousand: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onKeyDown={(e) => handleKeyDown(e, 0)}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -150,9 +168,12 @@ export default function CashCountModal({
                   <td style={{ padding: '10px' }}>5千円札</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
+                      ref={(el) => { inputRefs.current[1] = el }}
                       type="number"
-                      value={bills.fiveThousand === 0 ? '' : bills.fiveThousand}
+                      inputMode="numeric"
+                      value={bills.fiveThousand}
                       onChange={(e) => setBills({...bills, fiveThousand: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onKeyDown={(e) => handleKeyDown(e, 1)}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -172,9 +193,12 @@ export default function CashCountModal({
                   <td style={{ padding: '10px' }}>2千円札</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
+                      ref={(el) => { inputRefs.current[2] = el }}
                       type="number"
-                      value={bills.twoThousand === 0 ? '' : bills.twoThousand}
+                      inputMode="numeric"
+                      value={bills.twoThousand}
                       onChange={(e) => setBills({...bills, twoThousand: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onKeyDown={(e) => handleKeyDown(e, 2)}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -194,9 +218,12 @@ export default function CashCountModal({
                   <td style={{ padding: '10px' }}>千円札</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
+                      ref={(el) => { inputRefs.current[3] = el }}
                       type="number"
-                      value={bills.thousand === 0 ? '' : bills.thousand}
+                      inputMode="numeric"
+                      value={bills.thousand}
                       onChange={(e) => setBills({...bills, thousand: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onKeyDown={(e) => handleKeyDown(e, 3)}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -245,9 +272,12 @@ export default function CashCountModal({
                   <td style={{ padding: '10px' }}>500円玉</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
+                      ref={(el) => { inputRefs.current[4] = el }}
                       type="number"
-                      value={coins.fiveHundred === 0 ? '' : coins.fiveHundred}
+                      inputMode="numeric"
+                      value={coins.fiveHundred}
                       onChange={(e) => setCoins({...coins, fiveHundred: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onKeyDown={(e) => handleKeyDown(e, 4)}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -267,9 +297,12 @@ export default function CashCountModal({
                   <td style={{ padding: '10px' }}>100円玉</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
+                      ref={(el) => { inputRefs.current[5] = el }}
                       type="number"
-                      value={coins.hundred === 0 ? '' : coins.hundred}
+                      inputMode="numeric"
+                      value={coins.hundred}
                       onChange={(e) => setCoins({...coins, hundred: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onKeyDown={(e) => handleKeyDown(e, 5)}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -289,9 +322,12 @@ export default function CashCountModal({
                   <td style={{ padding: '10px' }}>50円玉</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
+                      ref={(el) => { inputRefs.current[6] = el }}
                       type="number"
-                      value={coins.fifty === 0 ? '' : coins.fifty}
+                      inputMode="numeric"
+                      value={coins.fifty}
                       onChange={(e) => setCoins({...coins, fifty: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onKeyDown={(e) => handleKeyDown(e, 6)}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -311,9 +347,12 @@ export default function CashCountModal({
                   <td style={{ padding: '10px' }}>10円玉</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
+                      ref={(el) => { inputRefs.current[7] = el }}
                       type="number"
-                      value={coins.ten === 0 ? '' : coins.ten}
+                      inputMode="numeric"
+                      value={coins.ten}
                       onChange={(e) => setCoins({...coins, ten: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onKeyDown={(e) => handleKeyDown(e, 7)}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -333,9 +372,12 @@ export default function CashCountModal({
                   <td style={{ padding: '10px' }}>5円玉</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
+                      ref={(el) => { inputRefs.current[8] = el }}
                       type="number"
-                      value={coins.five === 0 ? '' : coins.five}
+                      inputMode="numeric"
+                      value={coins.five}
                       onChange={(e) => setCoins({...coins, five: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onKeyDown={(e) => handleKeyDown(e, 8)}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -355,9 +397,12 @@ export default function CashCountModal({
                   <td style={{ padding: '10px' }}>1円玉</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
+                      ref={(el) => { inputRefs.current[9] = el }}
                       type="number"
-                      value={coins.one === 0 ? '' : coins.one}
+                      inputMode="numeric"
+                      value={coins.one}
                       onChange={(e) => setCoins({...coins, one: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onKeyDown={(e) => handleKeyDown(e, 9)}
                       style={{
                         width: '80px',
                         padding: '5px',
