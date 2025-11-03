@@ -54,10 +54,10 @@ export const useReportData = () => {
 
       const { data: orders } = await supabase
         .from('orders')
-        .select('*')
+        .select('*, payments(*)')
         .eq('store_id', storeId)
-        .gte('checkout_time', start)
-        .lt('checkout_time', end)
+        .gte('checkout_datetime', start)
+        .lt('checkout_datetime', end)
 
       if (!orders || orders.length === 0) {
         return {
@@ -72,13 +72,22 @@ export const useReportData = () => {
         }
       }
 
-      const totalSales = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0)
-      const cashSales = orders.reduce((sum, order) => sum + (order.payment_cash || 0), 0)
-      const cardSales = orders.reduce((sum, order) => sum + (order.payment_card || 0), 0)
-      const otherSales = orders.reduce((sum, order) => sum + (order.payment_other || 0), 0)
+      const totalSales = orders.reduce((sum, order) => sum + (order.total_incl_tax || 0), 0)
+      const cashSales = orders.reduce((sum, order) => {
+        const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
+        return sum + (payment?.cash_amount || 0)
+      }, 0)
+      const cardSales = orders.reduce((sum, order) => {
+        const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
+        return sum + (payment?.credit_card_amount || 0)
+      }, 0)
+      const otherSales = orders.reduce((sum, order) => {
+        const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
+        return sum + (payment?.other_payment_amount || 0)
+      }, 0)
 
-      const firstTimeCount = orders.filter(order => order.visit_type === '初来店').length
-      const returnCount = orders.filter(order => order.visit_type === '再来店').length
+      const firstTimeCount = orders.filter(order => order.visit_type === '初回').length
+      const returnCount = orders.filter(order => order.visit_type === '再訪').length
       const regularCount = orders.filter(order => order.visit_type === '常連').length
 
       return {
@@ -151,16 +160,25 @@ export const useReportData = () => {
 
         const { data: orders } = await supabase
           .from('orders')
-          .select('*')
+          .select('*, payments(*)')
           .eq('store_id', storeId)
-          .gte('checkout_time', start)
-          .lt('checkout_time', end)
+          .gte('checkout_datetime', start)
+          .lt('checkout_datetime', end)
 
         if (orders && orders.length > 0) {
-          const totalSales = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0)
-          const cashSales = orders.reduce((sum, order) => sum + (order.payment_cash || 0), 0)
-          const cardSales = orders.reduce((sum, order) => sum + (order.payment_card || 0), 0)
-          const otherSales = orders.reduce((sum, order) => sum + (order.payment_other || 0), 0)
+          const totalSales = orders.reduce((sum, order) => sum + (order.total_incl_tax || 0), 0)
+          const cashSales = orders.reduce((sum, order) => {
+            const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
+            return sum + (payment?.cash_amount || 0)
+          }, 0)
+          const cardSales = orders.reduce((sum, order) => {
+            const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
+            return sum + (payment?.credit_card_amount || 0)
+          }, 0)
+          const otherSales = orders.reduce((sum, order) => {
+            const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
+            return sum + (payment?.other_payment_amount || 0)
+          }, 0)
           const firstTimeCount = orders.filter(order => order.visit_type === '初来店').length
           const returnCount = orders.filter(order => order.visit_type === '再来店').length
           const regularCount = orders.filter(order => order.visit_type === '常連').length
