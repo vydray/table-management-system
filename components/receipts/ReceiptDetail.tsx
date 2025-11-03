@@ -150,11 +150,15 @@ export default function ReceiptDetail({ selectedReceipt, orderItems, onDelete }:
         </div>
 
         <div className="no-print" style={{
+          flexShrink: 0,
           padding: '20px',
+          paddingBottom: 'calc(20px + env(safe-area-inset-bottom))',
           borderTop: '1px solid #e0e0e0',
+          backgroundColor: '#fff',
           display: 'flex',
           gap: '10px',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.1)'
         }}>
           {!selectedReceipt.deleted_at && (
             <>
