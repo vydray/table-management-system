@@ -15,6 +15,8 @@ export default function SystemSettings() {
     setRoundingUnit,
     registerAmount,
     setRegisterAmount,
+    cardFeeRate,
+    setCardFeeRate,
     loading,
     saving,
     loadAllSettings,
@@ -65,7 +67,7 @@ export default function SystemSettings() {
       </div>
 
       <div style={{ marginBottom: '30px' }}>
-        <label style={{ 
+        <label style={{
           display: 'block',
           fontSize: '16px',
           fontWeight: 'bold',
@@ -88,6 +90,39 @@ export default function SystemSettings() {
           />
           <span style={{ fontSize: '16px' }}>%</span>
         </div>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <label style={{
+          display: 'block',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          marginBottom: '10px'
+        }}>
+          カード手数料率
+        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <input
+            type="number"
+            value={cardFeeRate === 0 ? '' : cardFeeRate}
+            onChange={(e) => setCardFeeRate(e.target.value === '' ? 0 : Number(e.target.value))}
+            style={{
+              padding: '10px',
+              fontSize: '16px',
+              border: '1px solid #ddd',
+              borderRadius: '5px',
+              width: '100px'
+            }}
+          />
+          <span style={{ fontSize: '16px' }}>%</span>
+        </div>
+        <p style={{
+          color: '#666',
+          fontSize: '13px',
+          margin: '5px 0'
+        }}>
+          カード支払い時に加算される手数料の割合
+        </p>
       </div>
 
       <div style={{ marginBottom: '30px' }}>

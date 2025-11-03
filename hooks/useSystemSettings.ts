@@ -14,6 +14,7 @@ export const useSystemSettings = () => {
   const [roundingType, setRoundingType] = useState('四捨五入')
   const [roundingUnit, setRoundingUnit] = useState(100)
   const [registerAmount, setRegisterAmount] = useState(0)
+  const [cardFeeRate, setCardFeeRate] = useState(0)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -97,6 +98,18 @@ export const useSystemSettings = () => {
       if (registerData) {
         setRegisterAmount(Number(registerData.setting_value))
       }
+
+      // カード手数料率を取得
+      const { data: cardFeeData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('store_id', storeId)
+        .eq('setting_key', 'card_fee_rate')
+        .single()
+
+      if (cardFeeData) {
+        setCardFeeRate(Number(cardFeeData.setting_value))
+      }
     } catch (error) {
       console.error('Error loading system settings:', error)
     } finally {
@@ -139,7 +152,8 @@ export const useSystemSettings = () => {
         { setting_key: 'service_fee_rate', setting_value: String(serviceFeeRate) },
         { setting_key: 'rounding_method', setting_value: String(roundingMethodValue) },
         { setting_key: 'rounding_unit', setting_value: String(roundingUnit) },
-        { setting_key: 'register_amount', setting_value: String(registerAmount) }
+        { setting_key: 'register_amount', setting_value: String(registerAmount) },
+        { setting_key: 'card_fee_rate', setting_value: String(cardFeeRate) }
       ]
 
       for (const setting of settingsToSave) {
@@ -209,6 +223,8 @@ export const useSystemSettings = () => {
     setRoundingUnit,
     registerAmount,
     setRegisterAmount,
+    cardFeeRate,
+    setCardFeeRate,
     loading,
     saving,
     loadAllSettings,

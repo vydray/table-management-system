@@ -133,6 +133,7 @@ export default function Home() {
   // ローカル状態
   const [showMenu, setShowMenu] = useState(false)
   const [attendingCasts, setAttendingCasts] = useState<string[]>([])
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'card' | 'other' | null>(null)
 
   // フォームの状態
   const [formData, setFormData] = useState({
@@ -187,14 +188,24 @@ export default function Home() {
     return subtotal + serviceTax
   }
 
-  // 端数処理を適用した合計金額を取得
+  // 端数処理を適用した合計金額を取得（カード手数料込み）
   const getRoundedTotalAmount = () => {
-    return getRoundedTotal(getTotal(), systemSettings.roundingUnit, systemSettings.roundingMethod)
+    let total = getTotal()
+    // カード支払いが選択されている場合、手数料を加算
+    if (selectedPaymentMethod === 'card' && systemSettings.cardFeeRate > 0) {
+      total = Math.floor(total * (1 + systemSettings.cardFeeRate))
+    }
+    return getRoundedTotal(total, systemSettings.roundingUnit, systemSettings.roundingMethod)
   }
 
   // 端数調整額を取得
   const getRoundingAdjustmentAmount = () => {
-    return getRoundingAdjustment(getTotal(), getRoundedTotalAmount())
+    let total = getTotal()
+    // カード支払いが選択されている場合、手数料を加算
+    if (selectedPaymentMethod === 'card' && systemSettings.cardFeeRate > 0) {
+      total = Math.floor(total * (1 + systemSettings.cardFeeRate))
+    }
+    return getRoundingAdjustment(total, getRoundedTotalAmount())
   }
 
   // 会計伝票印刷のラッパー関数
@@ -519,7 +530,24 @@ const handleMenuClick = (item: string) => {
   const checkout = async () => {
     // 会計モーダルを表示
     resetPaymentData()
+    setSelectedPaymentMethod(null)
     setShowPaymentModal(true)
+  }
+
+  // 支払い方法選択ハンドラー
+  const handleSelectPaymentMethod = (method: 'cash' | 'card' | 'other') => {
+    setSelectedPaymentMethod(method)
+    // 選択された支払い方法にアクティブな入力を切り替え
+    if (method === 'cash') {
+      resetPaymentData()
+      setActivePaymentInput('cash')
+    } else if (method === 'card') {
+      resetPaymentData()
+      setActivePaymentInput('card')
+    } else if (method === 'other') {
+      resetPaymentData()
+      setActivePaymentInput('other')
+    }
   }
 
 // 会計完了処理（修正版）
@@ -1571,16 +1599,20 @@ const finishCheckout = () => {
         roundedTotal={getRoundedTotalAmount()}
         roundingAdjustment={getRoundingAdjustmentAmount()}
         formData={formData}
+        selectedPaymentMethod={selectedPaymentMethod}
+        cardFeeRate={systemSettings.cardFeeRate * 100}
         onNumberClick={handleNumberClick}
         onQuickAmount={handleQuickAmount}
         onDeleteNumber={handleDeleteNumber}
         onClearNumber={handleClearNumber}
         onChangeActiveInput={setActivePaymentInput}
         onChangeOtherMethod={setOtherMethod}
+        onSelectPaymentMethod={handleSelectPaymentMethod}
         onCompleteCheckout={completeCheckout}
         onClose={() => {
           document.body.classList.remove('modal-open')
           setShowPaymentModal(false)
+          setSelectedPaymentMethod(null)
         }}
       />
       

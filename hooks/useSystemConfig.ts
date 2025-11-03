@@ -12,6 +12,7 @@ interface SystemSettings {
   serviceChargeRate: number
   roundingUnit: number
   roundingMethod: number
+  cardFeeRate: number
 }
 
 export const useSystemConfig = () => {
@@ -19,7 +20,8 @@ export const useSystemConfig = () => {
     consumptionTaxRate: 0.10,
     serviceChargeRate: 0.15,
     roundingUnit: 100,
-    roundingMethod: 0
+    roundingMethod: 0,
+    cardFeeRate: 0
   })
 
   const loadSystemConfig = async () => {
@@ -35,7 +37,8 @@ export const useSystemConfig = () => {
           consumptionTaxRate: settings.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10,
           serviceChargeRate: settings.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15,
           roundingUnit: settings.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
-          roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0
+          roundingMethod: settings.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
+          cardFeeRate: Number(settings.find(s => s.setting_key === 'card_fee_rate')?.setting_value || 0) / 100
         }
         setSystemSettings(settingsObj)
       }
