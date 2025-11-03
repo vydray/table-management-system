@@ -95,10 +95,20 @@ export const useReceiptsData = () => {
 
   // 伝票を削除（論理削除）
   const deleteReceipt = async (receiptId: string) => {
-    if (!confirm('この伝票を削除してもよろしいですか？')) return
+    if (!confirm('この伝票を削除してもよろしいですか？')) return false
 
     try {
       const userId = getCurrentUserId()
+
+      // ユーザーIDのチェック
+      if (!userId || userId === 0) {
+        console.error('User ID not found')
+        alert('ユーザー情報が取得できません。再ログインしてください。')
+        return false
+      }
+
+      console.log('Deleting receipt:', receiptId, 'by user:', userId)
+
       const { error } = await supabase
         .from('orders')
         .update({
@@ -107,14 +117,17 @@ export const useReceiptsData = () => {
         })
         .eq('id', receiptId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
 
       alert('伝票を削除しました')
       setSelectedReceipt(null)
       return true
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting receipt:', error)
-      alert('削除に失敗しました')
+      alert(`削除に失敗しました: ${error?.message || '不明なエラー'}`)
       return false
     }
   }
