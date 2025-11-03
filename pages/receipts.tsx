@@ -7,6 +7,14 @@ import ReceiptDetail from '../components/receipts/ReceiptDetail'
 // カスタムフック
 import { useReceiptsData } from '../hooks/useReceiptsData'
 
+// スタイル
+import {
+  containerStyle,
+  headerStyle,
+  backButtonStyle,
+  headerTitleStyle
+} from '../styles/settingsStyles'
+
 export default function Receipts() {
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
@@ -62,42 +70,13 @@ export default function Receipts() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: '#f5f5f5'
-      }}>
+      <div style={containerStyle}>
         {/* ヘッダー */}
-        <div style={{
-          backgroundColor: '#607D8B',
-          color: 'white',
-          padding: '15px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '20px'
-        }}>
-          <button
-            onClick={() => router.push('/')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'white',
-              fontSize: '20px',
-              cursor: 'pointer',
-              padding: '5px',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-          >
+        <div style={headerStyle}>
+          <button onClick={() => router.push('/')} style={backButtonStyle}>
             ←
           </button>
-          <h1 style={{ 
-            margin: 0, 
-            fontSize: '18px',
-            fontWeight: 'normal',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
+          <h1 style={headerTitleStyle}>
             📋 伝票管理
           </h1>
         </div>

@@ -162,25 +162,13 @@ export default function ReceiptDetail({ selectedReceipt, orderItems, onDelete }:
                 onClick={handlePrintSlip}
                 style={{
                   padding: '12px 32px',
-                  backgroundColor: '#2196F3',
+                  backgroundColor: '#FF9800',
                   color: '#fff',
                   border: 'none',
-                  borderRadius: '10px',
+                  borderRadius: '5px',
                   fontSize: '16px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 2px 8px rgba(33, 150, 243, 0.2)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#1976D2'
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(33, 150, 243, 0.3)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#2196F3'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(33, 150, 243, 0.2)'
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
                 }}
               >
                 🖨️ 伝票印刷
@@ -189,25 +177,13 @@ export default function ReceiptDetail({ selectedReceipt, orderItems, onDelete }:
                 onClick={handlePrintReceipt}
                 style={{
                   padding: '12px 32px',
-                  backgroundColor: '#4CAF50',
+                  backgroundColor: '#FF9800',
                   color: '#fff',
                   border: 'none',
-                  borderRadius: '10px',
+                  borderRadius: '5px',
                   fontSize: '16px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 2px 8px rgba(76, 175, 80, 0.2)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#388E3C'
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.3)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#4CAF50'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(76, 175, 80, 0.2)'
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
                 }}
               >
                 🧾 領収書印刷
@@ -221,22 +197,10 @@ export default function ReceiptDetail({ selectedReceipt, orderItems, onDelete }:
               backgroundColor: '#f44336',
               color: '#fff',
               border: 'none',
-              borderRadius: '10px',
+              borderRadius: '5px',
               fontSize: '16px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              boxShadow: '0 2px 8px rgba(244, 67, 54, 0.2)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#d32f2f'
-              e.currentTarget.style.transform = 'translateY(-1px)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(244, 67, 54, 0.3)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f44336'
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(244, 67, 54, 0.2)'
+              fontWeight: 'bold',
+              cursor: 'pointer'
             }}
           >
             🗑️ 削除
