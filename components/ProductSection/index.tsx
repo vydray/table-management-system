@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { CategoryList } from './CategoryList'
 import { ProductList } from './ProductList'
 import { CastSelector } from './CastSelector'
-import { ProductCategories, ProductItem } from '../../types'
+import { ProductCategories } from '../../types'
+import { useProductSelection } from '../../hooks/useProductSelection'
+import { useCastListSort } from '../../hooks/useCastListSort'
 
 interface ProductSectionProps {
   productCategories: ProductCategories
@@ -25,47 +27,13 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   onSelectCategory,
   onAddProduct
 }) => {
-  const [localSelectedProduct, setLocalSelectedProduct] = useState<{ name: string; price: number; needsCast: boolean } | null>(null)
-  
-  // カテゴリーが変更されたらキャスト選択をリセット
-  useEffect(() => {
-    setLocalSelectedProduct(null)
-  }, [selectedCategory])
-  
-  // 外部からの selectedProduct の変更を反映
-  useEffect(() => {
-    if (selectedProduct && selectedProduct.needsCast) {
-      setLocalSelectedProduct(selectedProduct)
-    }
-  }, [selectedProduct])
+  const {
+    localSelectedProduct,
+    handleProductSelect,
+    handleCastSelect
+  } = useProductSelection(selectedCategory, selectedProduct, onAddProduct)
 
-  // 商品選択時の処理
-  const handleProductSelect = (productName: string, productData: ProductItem) => {
-    if (productData.needsCast) {
-      setLocalSelectedProduct({ name: productName, price: productData.price, needsCast: true })
-    } else {
-      onAddProduct(productName, productData.price, false)
-    }
-  }
-
-  const handleCastSelect = (castName: string) => {
-    if (localSelectedProduct) {
-      onAddProduct(localSelectedProduct.name, localSelectedProduct.price, true, castName)
-    }
-  }
-
-  // キャストリストをソート（推し優先表示設定に基づく）
-  const getSortedCastList = () => {
-    if (!currentOshi || !castList.includes(currentOshi)) {
-      return castList
-    }
-
-    if (showOshiFirst) {
-      return [currentOshi, ...castList.filter(name => name !== currentOshi)]
-    }
-
-    return castList
-  }
+  const { sortedCastList } = useCastListSort(castList, currentOshi, showOshiFirst)
 
   return (
     <div className="left-section">
@@ -91,7 +59,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
         <div className="cast-column">
           {localSelectedProduct && localSelectedProduct.needsCast && (
             <CastSelector
-              castList={getSortedCastList()}
+              castList={sortedCastList}
               selectedProduct={localSelectedProduct}
               onSelectCast={handleCastSelect}
               currentOshi={currentOshi}
