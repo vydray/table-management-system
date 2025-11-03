@@ -11,6 +11,7 @@ interface ProductSectionProps {
   selectedCategory: string
   selectedProduct: { name: string; price: number; needsCast: boolean } | null
   castList: string[]
+  attendingCasts: string[]
   currentOshi?: string
   showOshiFirst?: boolean
   onSelectCategory: (category: string) => void
@@ -22,6 +23,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   selectedCategory,
   selectedProduct,
   castList,
+  attendingCasts,
   currentOshi,
   showOshiFirst = false,
   onSelectCategory,
@@ -60,6 +62,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
           {localSelectedProduct && localSelectedProduct.needsCast && (
             <CastSelector
               castList={sortedCastList}
+              attendingCasts={attendingCasts}
               selectedProduct={localSelectedProduct}
               onSelectCast={handleCastSelect}
               currentOshi={currentOshi}

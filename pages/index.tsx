@@ -6,7 +6,13 @@ import { OrderSection } from '../components/OrderSection'
 import { TableData } from '../types'
 import { getCurrentStoreId } from '../utils/storeContext'
 import { calculateSubtotal, calculateServiceTax, getRoundedTotal, getRoundingAdjustment } from '../utils/calculations'
-import { getJapanTimeString } from '../utils/dateTime'
+import { getJapanTimeString, getDateString } from '../utils/dateTime'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 // 新しいコンポーネントのインポート
 import { LoadingOverlay } from '../components/LoadingOverlay'
@@ -126,6 +132,7 @@ export default function Home() {
 
   // ローカル状態
   const [showMenu, setShowMenu] = useState(false)
+  const [attendingCasts, setAttendingCasts] = useState<string[]>([])
 
   // フォームの状態
   const [formData, setFormData] = useState({
@@ -141,6 +148,30 @@ export default function Home() {
 
   // 50音フィルター用の状態
   const [castFilter, setCastFilter] = useState('')
+
+  // 出勤中のキャストを取得
+  const loadAttendingCasts = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+      const today = getDateString(new Date())
+
+      const { data, error } = await supabase
+        .from('attendance')
+        .select('cast_name')
+        .eq('store_id', storeId)
+        .eq('date', today)
+        .neq('cast_name', '')
+
+      if (error) throw error
+
+      // 重複を除いてキャスト名の配列を作成
+      const castNames = [...new Set(data?.map(row => row.cast_name) || [])]
+      setAttendingCasts(castNames)
+    } catch (error) {
+      console.error('Error loading attending casts:', error)
+      setAttendingCasts([])
+    }
+  }
 
   // 合計金額を計算する関数
   const getTotal = () => {
@@ -214,6 +245,7 @@ export default function Home() {
       loadCastList()
       loadProducts()
       loadAttendingCastCount()
+      loadAttendingCasts()
     }
 
     // ログイン済みの場合のみデータ更新間隔を設定
@@ -588,7 +620,7 @@ const finishCheckout = () => {
   // モーダルを開く（修正版）
   const openModal = (table: TableData) => {
   setCurrentTable(table.table)
-  
+
   if (table.status === 'empty') {
     setModalMode('new')
     const now = new Date()
@@ -619,10 +651,13 @@ const finishCheckout = () => {
     setOrderItems([])
     loadOrderItems(table.table)
   }
-  
+
+  // 出勤中のキャストを読み込む
+  loadAttendingCasts()
+
   // bodyにクラスを追加
   document.body.classList.add('modal-open')
-  
+
   setShowModal(true)
   setSelectedCategory('')
   setSelectedProduct(null)
@@ -1130,6 +1165,7 @@ const finishCheckout = () => {
                     selectedCategory={selectedCategory}
                     selectedProduct={selectedProduct}
                     castList={castList}
+                    attendingCasts={attendingCasts}
                     currentOshi={formData.castName}
                     showOshiFirst={getCurrentCategoryShowOshiFirst(selectedCategory)}
                     onSelectCategory={(category) => {
