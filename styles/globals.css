@@ -1050,7 +1050,13 @@ label {
   body.modal-open #layout {
     pointer-events: none;
   }
-  
+
+  /* select要素だけはタッチイベントを受け付ける */
+  body.modal-open #layout select {
+    pointer-events: auto !important;
+    z-index: 99999 !important;
+  }
+
   /* モーダル本体 - 中央配置修正 */
   #modal.modal-edit {
     position: fixed !important;
