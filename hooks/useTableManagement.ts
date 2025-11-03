@@ -94,10 +94,10 @@ export const useTableManagement = () => {
         })
       }
 
-      // 取得したデータで更新（tablePositionsに存在するテーブルのみ）
+      // 取得したデータで更新（tableMapに存在するテーブルのみ）
       data.forEach(item => {
-        // tablePositionsに定義されているテーブルのみ処理
-        if (!(item.table in tablePositions)) {
+        // tableMapに定義されているテーブルのみ処理
+        if (!(item.table in tableMap)) {
           console.warn(`未定義のテーブル「${item.table}」をスキップしました`)
           return
         }

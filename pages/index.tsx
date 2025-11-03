@@ -282,46 +282,6 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 滞在時間の自動更新
-  useEffect(() => {
-    const updateElapsedTime = () => {
-      setTables(prevTables => {
-        const updatedTables = { ...prevTables }
-        let hasChanges = false
-
-        Object.keys(updatedTables).forEach(tableKey => {
-          const table = updatedTables[tableKey]
-          if (table.status !== 'empty' && table.time) {
-            try {
-              const startTime = new Date(table.time.replace(' ', 'T'))
-              const now = new Date()
-              const diffMs = now.getTime() - startTime.getTime()
-              const diffMinutes = Math.floor(diffMs / (1000 * 60))
-              const newElapsed = `${diffMinutes}分`
-
-              if (table.elapsed !== newElapsed) {
-                updatedTables[tableKey] = { ...table, elapsed: newElapsed }
-                hasChanges = true
-              }
-            } catch (error) {
-              console.error('Error calculating elapsed time:', error)
-            }
-          }
-        })
-
-        return hasChanges ? updatedTables : prevTables
-      })
-    }
-
-    // 初回実行
-    updateElapsedTime()
-
-    // 1分ごとに更新
-    const interval = setInterval(updateElapsedTime, 60000)
-
-    return () => clearInterval(interval)
-  }, [setTables])
-
   // ビューポート高さの動的設定（Android対応）
   useEffect(() => {
     const setViewportHeight = () => {
