@@ -1,98 +1,57 @@
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import { getCurrentStoreId } from '../../utils/storeContext'
-
-// Supabaseクライアントをモジュール外で一度だけ初期化
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-// getCurrentStoreIdの結果を数値に変換するヘルパー関数
-const getStoreIdAsNumber = (): number => {
-  const storeId = getCurrentStoreId()
-  // デバッグ用ログ
-  console.log('getCurrentStoreId result:', storeId)
-  
-  // 文字列または数値として処理
-  let numericId: number
-  if (typeof storeId === 'string') {
-    numericId = parseInt(storeId)
-  } else if (typeof storeId === 'number') {
-    numericId = storeId
-  } else {
-    console.error('Invalid store ID type:', typeof storeId, storeId)
-    numericId = 1
-  }
-  
-  console.log('Store ID conversion:', { original: storeId, numeric: numericId })
-  
-  if (isNaN(numericId) || numericId <= 0) {
-    console.error('Invalid store ID:', storeId)
-    return 1
-  }
-  
-  return numericId
-}
-
-// キャストの型定義（正しいカラム名）
-interface Cast {
-  id: number
-  store_id: number
-  name: string | null
-  line_number: string | null
-  twitter: string | null
-  password: string | null
-  instagram: string | null
-  password2: string | null
-  photo: string | null
-  attributes: string | null
-  is_writer: boolean | null
-  submission_date: string | null
-  back_number: string | null
-  status: string | null
-  sales_previous_day: string | null
-  cast_point: number | null
-  show_in_pos: boolean | null
-  birthday: string | null
-  created_at: string | null
-  updated_at: string | null
-  resignation_date: string | null
-  attendance_certificate: boolean | null
-  residence_record: boolean | null
-  contract_documents: boolean | null
-  submission_contract: string | null
-  employee_name: string | null
-  experience_date: string | null
-  hire_date: string | null
-}
-
-// 役職の型定義
-interface Position {
-  id: number
-  store_id: number
-  name: string
-  display_order: number
-  is_active: boolean
-}
+import { useEffect } from 'react'
+import { useCastData, Cast } from '../../hooks/useCastData'
+import { useCastModal } from '../../hooks/useCastModal'
+import { useCastSearch } from '../../hooks/useCastSearch'
+import { usePositionData } from '../../hooks/usePositionData'
 
 export default function CastManagement() {
-  const [casts, setCasts] = useState<Cast[]>([])
-  const [positions, setPositions] = useState<Position[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filteredCasts, setFilteredCasts] = useState<Cast[]>([])
-  const [showCastModal, setShowCastModal] = useState(false)
-  const [editingCast, setEditingCast] = useState<Cast | null>(null)
-  const [showPositionModal, setShowPositionModal] = useState(false)
-  const [newPositionName, setNewPositionName] = useState('')
-  const [showRetirementModal, setShowRetirementModal] = useState(false)
-  const [retirementDate, setRetirementDate] = useState('')
-  const [retirementCast, setRetirementCast] = useState<Cast | null>(null)
-  const [isNewCast, setIsNewCast] = useState(false)
+  // フックを使用
+  const {
+    casts,
+    setCasts,
+    loadCasts,
+    addNewCast,
+    updateCast,
+    deleteCast,
+    updateCastPosition,
+    updateCastStatus,
+    retireCast,
+    toggleCastShowInPos
+  } = useCastData()
+
+  const {
+    positions,
+    loadPositions,
+    addPosition: addPositionData,
+    deletePosition: deletePositionData
+  } = usePositionData()
+
+  const {
+    showCastModal,
+    editingCast,
+    setEditingCast,
+    isNewCast,
+    showPositionModal,
+    newPositionName,
+    setNewPositionName,
+    showRetirementModal,
+    retirementDate,
+    setRetirementDate,
+    retirementCast,
+    openEditModal,
+    openNewCastModal,
+    closeCastModal,
+    openPositionModal,
+    closePositionModal,
+    openRetirementModal,
+    closeRetirementModal
+  } = useCastModal()
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    filteredCasts
+  } = useCastSearch(casts)
 
   // ステータスの背景色を取得
   const getStatusColor = (status: string | null) => {
@@ -108,437 +67,85 @@ export default function CastManagement() {
     }
   }
 
-  // 役職一覧を読み込む
-  const loadPositions = async () => {
-    try {
-      const storeId = getStoreIdAsNumber()
-      const { data, error } = await supabase
-        .from('cast_positions')
-        .select('*')
-        .eq('store_id', storeId)
-        .eq('is_active', true)
-        .order('display_order')
-
-      if (error) throw error
-      setPositions(data || [])
-    } catch (error) {
-      console.error('Failed to load positions:', error)
-    }
-  }
-
-  // 役職を追加
+  // 役職追加のラッパー関数
   const addPosition = async () => {
-    if (!newPositionName.trim()) return
-
-    try {
-      const storeId = getStoreIdAsNumber()
-      const maxOrder = Math.max(...positions.map(p => p.display_order), 0)
-      
-      const { error } = await supabase
-        .from('cast_positions')
-        .insert({
-          store_id: storeId,
-          name: newPositionName,
-          display_order: maxOrder + 10,
-          is_active: true
-        })
-
-      if (error) throw error
-      
+    const success = await addPositionData(newPositionName)
+    if (success) {
       setNewPositionName('')
-      loadPositions()
-      alert('役職を追加しました')
-    } catch (error) {
-      console.error('Failed to add position:', error)
-      alert('役職の追加に失敗しました')
+      closePositionModal()
     }
   }
 
-  // 役職を削除（非アクティブ化）
-  const deletePosition = async (id: number) => {
-    if (!confirm('この役職を削除しますか？')) return
-
-    try {
-      const storeId = getStoreIdAsNumber()
-      const { error } = await supabase
-        .from('cast_positions')
-        .update({ is_active: false })
-        .eq('id', id)
-        .eq('store_id', storeId)
-
-      if (error) throw error
-      
-      loadPositions()
-      alert('役職を削除しました')
-    } catch (error) {
-      console.error('Failed to delete position:', error)
-      alert('役職の削除に失敗しました')
+  // 新規キャスト追加のラッパー関数
+  const handleAddNewCast = async () => {
+    if (!editingCast) return
+    const success = await addNewCast(editingCast)
+    if (success) {
+      closeCastModal()
     }
   }
 
-  // キャスト一覧を読み込む
-  const loadCasts = async () => {
-    try {
-      const storeId = getStoreIdAsNumber()
-      console.log('Loading casts for store_id:', storeId)
-      
-      if (!storeId || storeId === 0) {
-        console.error('Invalid store_id, cannot load casts')
-        return
-      }
-      
-      const { data, error } = await supabase
-        .from('casts')
-        .select('*')
-        .eq('store_id', storeId)
-        .order('id')
-
-      if (error) {
-        console.error('Failed to load casts:', error)
-        throw error
-      }
-      
-      console.log('Loaded casts:', data)
-      setCasts(data || [])
-    } catch (error) {
-      console.error('Failed to load casts:', error)
-      // エラーの詳細を表示しない（ユーザーには関係ない技術的な内容のため）
+  // キャスト更新のラッパー関数
+  const handleUpdateCast = async () => {
+    if (!editingCast) return
+    const success = await updateCast(editingCast)
+    if (success) {
+      closeCastModal()
     }
   }
 
-  // 新規キャスト追加
-  const addNewCast = async () => {
-  if (!editingCast) return
-  
-  try {
-    // 既に同じ名前のキャストが存在するかチェック
-    const isDuplicate = casts.some(c => 
-      c.name && 
-      c.name.toLowerCase() === (editingCast.name || '').toLowerCase()
-    )
-    
-    if (isDuplicate) {
-      alert(`「${editingCast.name}」は既に登録されています`)
-      return
-    }
-    
-    const storeId = getStoreIdAsNumber()
-    console.log('Current store_id:', storeId)
-    
-    if (!storeId || storeId === 0) {
-      alert('店舗情報が取得できません。ページを再読み込みしてください。')
-      return
-    }
-    
-    // 必須フィールドを含む新規キャストデータ
-    const newCast = {
-      name: editingCast.name || '新規キャスト',
-      store_id: storeId,
-      status: editingCast.status || '体験',
-      show_in_pos: editingCast.show_in_pos ?? false,
-      attributes: editingCast.attributes || null,
-      twitter: editingCast.twitter || null,
-      instagram: editingCast.instagram || null,
-      birthday: editingCast.birthday || null,
-      experience_date: editingCast.experience_date || null,
-      hire_date: editingCast.hire_date || null
-    }
-    
-    console.log('新規キャスト追加:', newCast)
-    
-    const { data, error } = await supabase
-      .from('casts')
-      .insert(newCast)
-      .select()
-      .single()
-    
-    if (error) {
-      console.error('Supabase insert error:', error)
-      console.error('Error details:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      })
-      throw error
-    }
-    
-    console.log('追加成功:', data)
-    
-    alert('新規キャストを追加しました')
-    await loadCasts()
-    setShowCastModal(false)
-    setEditingCast(null)
-    setIsNewCast(false)
-  } catch (error) {
-    console.error('Failed to add new cast:', error)
-    alert('キャストの追加に失敗しました: ' + (error as Error).message)
-  }
-}
-
-  // キャストを完全削除
-  const deleteCast = async () => {
-    if (!editingCast || !editingCast.id) return
-    
-    if (!confirm(`${editingCast.name}を完全に削除しますか？\n\n※この操作は取り消せません`)) return
-    
-    try {
-      const storeId = getStoreIdAsNumber()
-      
-      // Supabaseから完全削除
-      const { error } = await supabase
-        .from('casts')
-        .delete()
-        .eq('id', editingCast.id)
-        .eq('store_id', storeId)
-
-      if (error) throw error
-      
-      alert('キャストを削除しました')
-      await loadCasts()
-      setShowCastModal(false)
-      setEditingCast(null)
-    } catch (error) {
-      console.error('Failed to delete cast:', error)
-      alert('削除に失敗しました')
+  // キャスト削除のラッパー関数
+  const handleDeleteCast = async () => {
+    if (!editingCast) return
+    const success = await deleteCast(editingCast)
+    if (success) {
+      closeCastModal()
     }
   }
 
-  // キャストの役職を更新
-  const updateCastPosition = async (cast: Cast, newPosition: string) => {
-    try {
-      const storeId = getStoreIdAsNumber()
-      
-      const { error } = await supabase
-        .from('casts')
-        .update({ 
-          attributes: newPosition,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', cast.id)
-        .eq('store_id', storeId)
-
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-      
-      setCasts(prev => prev.map(c => 
-        c.id === cast.id ? { ...c, attributes: newPosition } : c
-      ))
-      
-      console.log(`${cast.name}の役職を更新しました`)
-    } catch (error) {
-      console.error('Error updating position:', error)
-      alert('役職の更新に失敗しました')
-    }
-  }
-
-  // キャストのステータスを更新
-  const updateCastStatus = async (cast: Cast, newStatus: string) => {
-    // 退店を選択した場合は退店日設定モーダルを表示
+  // ステータス更新のラッパー関数（退店モーダル処理を含む）
+  const handleUpdateCastStatus = async (cast: Cast, newStatus: string) => {
     if (newStatus === '退店') {
-      setRetirementCast(cast)
-      setRetirementDate(new Date().toISOString().split('T')[0])
-      setShowRetirementModal(true)
+      openRetirementModal(cast)
       return
     }
-
-    try {
-      const storeId = getStoreIdAsNumber()
-      
-      const updateData: Record<string, unknown> = {
-        status: newStatus,
-        updated_at: new Date().toISOString()
-      }
-      
-      // 退店以外のステータスに変更する場合は退店日をクリア
-      if (newStatus !== '退店') {
-        updateData.resignation_date = null
-      }
-      
-      const { error } = await supabase
-        .from('casts')
-        .update(updateData)
-        .eq('id', cast.id)
-        .eq('store_id', storeId)
-
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-      
-      // 更新されたキャストの状態を定義
-      const updatedCast = { 
-        ...cast, 
-        status: newStatus, 
-        resignation_date: (updateData.resignation_date as string | null) || null 
-      }
-      
-      setCasts(prev => prev.map(c => 
-        c.id === cast.id ? { ...updatedCast } : c
-      ))
-      
-      console.log(`${cast.name}のステータスを更新しました`)
-    } catch (error) {
-      console.error('Error updating status:', error)
-      alert('ステータス更新に失敗しました')
-    }
+    await updateCastStatus(cast, newStatus)
   }
 
-  // 退店処理
+  // 退店処理のラッパー関数
   const confirmRetirement = async () => {
     if (!retirementCast || !retirementDate) return
+    const success = await retireCast(retirementCast, retirementDate)
+    if (success) {
+      closeRetirementModal()
+    }
+  }
 
-    try {
-      const storeId = getStoreIdAsNumber()
-      
-      const { error } = await supabase
-        .from('casts')
-        .update({ 
-          status: '退店',
-          resignation_date: retirementDate,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', retirementCast.id)
-        .eq('store_id', storeId)
-
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-      
-      // 更新されたキャストの状態を定義
-      const updatedCast = { ...retirementCast, status: '退店', resignation_date: retirementDate }
-      
-      setCasts(prev => prev.map(c => 
-        c.id === retirementCast.id ? { ...updatedCast } : c
+  // UIヘルパー：楽観的UI更新付きの役職更新
+  const handleUpdateCastPosition = async (cast: Cast, newPosition: string) => {
+    const success = await updateCastPosition(cast, newPosition)
+    if (success) {
+      setCasts(prev => prev.map(c =>
+        c.id === cast.id ? { ...c, attributes: newPosition } : c
       ))
-      
-      setShowRetirementModal(false)
-      setRetirementCast(null)
-      setRetirementDate('')
-      alert('退店処理が完了しました')
-    } catch (error) {
-      console.error('Error updating retirement:', error)
-      alert('退店処理に失敗しました')
     }
   }
 
-  // キャストのPOS表示を切り替える関数
-  const toggleCastShowInPos = async (cast: Cast) => {
-    try {
-      const storeId = getStoreIdAsNumber()
-      const newValue = !cast.show_in_pos
-      
-      const { error } = await supabase
-        .from('casts')
-        .update({ 
-          show_in_pos: newValue,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', cast.id)
-        .eq('store_id', storeId)
-
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-      
-      setCasts(prev => prev.map(c => 
-        c.id === cast.id ? { ...c, show_in_pos: newValue } : c
+  // UIヘルパー：楽観的UI更新付きのPOS表示切り替え
+  const handleToggleCastShowInPos = async (cast: Cast) => {
+    const success = await toggleCastShowInPos(cast)
+    if (success) {
+      setCasts(prev => prev.map(c =>
+        c.id === cast.id ? { ...c, show_in_pos: !cast.show_in_pos } : c
       ))
-      
-      console.log(`${cast.name}のPOS表示を更新しました`)
-    } catch (error) {
-      console.error('Error toggling show_in_pos:', error)
-      alert('更新に失敗しました')
     }
   }
-
-  // キャスト情報を更新する関数
-  const updateCast = async () => {
-  if (!editingCast) return
-
-  try {
-    // 編集中のキャスト以外に同じ名前が存在するかチェック
-    const isDuplicate = casts.some(c => 
-      c.id !== editingCast.id &&
-      c.name && 
-      c.name.toLowerCase() === (editingCast.name || '').toLowerCase()
-    )
-    
-    if (isDuplicate) {
-      alert(`「${editingCast.name}」は既に登録されています`)
-      return
-    }
-    
-    const storeId = getStoreIdAsNumber()
-    
-    const updateData: Record<string, unknown> = {
-      name: editingCast.name || '',
-      twitter: editingCast.twitter || '',
-      instagram: editingCast.instagram || '',
-      attributes: editingCast.attributes || '',
-      status: editingCast.status || '',
-      show_in_pos: editingCast.show_in_pos ?? true,
-      birthday: editingCast.birthday || null,
-      resignation_date: editingCast.resignation_date,
-      attendance_certificate: editingCast.attendance_certificate || false,
-      residence_record: editingCast.residence_record || false,
-      contract_documents: editingCast.contract_documents || false,
-      submission_contract: editingCast.submission_contract || '',
-      employee_name: editingCast.employee_name || '',
-      experience_date: editingCast.experience_date || null,
-      hire_date: editingCast.hire_date || null,
-      sales_previous_day: editingCast.sales_previous_day || '無',
-      updated_at: new Date().toISOString()
-    }
-    
-    const { error } = await supabase
-      .from('casts')
-      .update(updateData)
-      .eq('id', editingCast.id)
-      .eq('store_id', storeId)
-
-    if (error) throw error
-    
-    alert('キャスト情報を更新しました')
-    await loadCasts()
-    setShowCastModal(false)
-    setEditingCast(null)
-  } catch (error) {
-    console.error('Failed to update cast:', error)
-    alert('更新に失敗しました')
-  }
-}
 
   // 初回読み込み
   useEffect(() => {
-    // コンポーネントマウント時に読み込み
-    const initializeData = async () => {
-      console.log('Initializing CastManagement component')
-      await loadCasts()
-      await loadPositions()
-    }
-    
-    initializeData()
+    loadCasts()
+    loadPositions()
   }, [])
-
-  // 検索処理
-  useEffect(() => {
-    const filtered = casts.filter(cast => {
-      const name = cast.name || ''
-      const position = cast.attributes || ''
-      const status = cast.status || ''
-      const searchLower = searchTerm.toLowerCase()
-      
-      return name.toLowerCase().includes(searchLower) ||
-             position.toLowerCase().includes(searchLower) ||
-             status.toLowerCase().includes(searchLower)
-    })
-    setFilteredCasts(filtered)
-  }, [casts, searchTerm])
 
   return (
   <div style={{
@@ -557,40 +164,36 @@ export default function CastManagement() {
         <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>キャスト管理</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
-            onClick={() => {
-              setEditingCast({
-                id: 0,
-                store_id: getStoreIdAsNumber(),
-                name: '',
-                line_number: null,
-                twitter: null,
-                password: null,
-                instagram: null,
-                password2: null,
-                photo: null,
-                attributes: null,
-                is_writer: null,
-                submission_date: null,
-                back_number: null,
-                status: '体験',
-                sales_previous_day: null,
-                cast_point: null,
-                show_in_pos: false,
-                birthday: null,
-                created_at: null,
-                updated_at: null,
-                resignation_date: null,
-                attendance_certificate: null,
-                residence_record: null,
-                contract_documents: null,
-                submission_contract: null,
-                employee_name: null,
-                experience_date: null,
-                hire_date: null
-              })
-              setIsNewCast(true)
-              setShowCastModal(true)
-            }}
+            onClick={() => openNewCastModal({
+              id: 0,
+              store_id: 0,
+              name: '',
+              line_number: null,
+              twitter: null,
+              password: null,
+              instagram: null,
+              password2: null,
+              photo: null,
+              attributes: null,
+              is_writer: null,
+              submission_date: null,
+              back_number: null,
+              status: '体験',
+              sales_previous_day: null,
+              cast_point: null,
+              show_in_pos: false,
+              birthday: null,
+              created_at: null,
+              updated_at: null,
+              resignation_date: null,
+              attendance_certificate: null,
+              residence_record: null,
+              contract_documents: null,
+              submission_contract: null,
+              employee_name: null,
+              experience_date: null,
+              hire_date: null
+            })}
             style={{
               padding: '8px 16px',
               backgroundColor: '#2196F3',
@@ -605,7 +208,7 @@ export default function CastManagement() {
             新規追加
           </button>
           <button
-            onClick={() => setShowPositionModal(true)}
+            onClick={openPositionModal}
             style={{
               padding: '8px 16px',
               backgroundColor: '#4CAF50',
@@ -735,7 +338,7 @@ export default function CastManagement() {
                   }}>
                     <select
                       value={cast.attributes || ''}
-                      onChange={(e) => updateCastPosition(cast, e.target.value)}
+                      onChange={(e) => handleUpdateCastPosition(cast, e.target.value)}
                       style={{
                         width: '100%',
                         maxWidth: '150px',
@@ -755,12 +358,12 @@ export default function CastManagement() {
                       ))}
                     </select>
                   </td>
-                  <td style={{ 
+                  <td style={{
                     padding: '12px 16px'
                   }}>
                     <select
                       value={cast.status || '在籍'}
-                      onChange={(e) => updateCastStatus(cast, e.target.value)}
+                      onChange={(e) => handleUpdateCastStatus(cast, e.target.value)}
                       style={{
                         width: '100%',
                         maxWidth: '120px',
@@ -793,7 +396,7 @@ export default function CastManagement() {
                       <input
                         type="checkbox"
                         checked={cast.show_in_pos || false}
-                        onChange={() => toggleCastShowInPos(cast)}
+                        onChange={() => handleToggleCastShowInPos(cast)}
                         style={{
                           opacity: 0,
                           width: 0,
@@ -831,11 +434,7 @@ export default function CastManagement() {
                     textAlign: 'center'
                   }}>
                     <button
-                      onClick={() => {
-                        setEditingCast(cast)
-                        setIsNewCast(false)
-                        setShowCastModal(true)
-                      }}
+                      onClick={() => openEditModal(cast)}
                       style={{
                         padding: '6px 16px',
                         backgroundColor: '#007aff',
@@ -910,11 +509,7 @@ export default function CastManagement() {
               gap: '12px' 
             }}>
               <button
-                onClick={() => {
-                  setShowRetirementModal(false)
-                  setRetirementCast(null)
-                  setRetirementDate('')
-                }}
+                onClick={closeRetirementModal}
                 style={{
                   padding: '8px 20px',
                   backgroundColor: '#f0f0f0',
@@ -1021,7 +616,7 @@ export default function CastManagement() {
                   }}>
                     <span>{pos.name}</span>
                     <button
-                      onClick={() => deletePosition(pos.id)}
+                      onClick={() => deletePositionData(pos.id)}
                       style={{
                         padding: '4px 12px',
                         backgroundColor: '#ff4444',
@@ -1046,7 +641,7 @@ export default function CastManagement() {
               gap: '12px' 
             }}>
               <button
-                onClick={() => setShowPositionModal(false)}
+                onClick={closePositionModal}
                 style={{
                   padding: '8px 20px',
                   backgroundColor: '#f0f0f0',
@@ -1344,7 +939,7 @@ export default function CastManagement() {
               <div>
                 {!isNewCast && editingCast?.id && (
                   <button
-                    onClick={deleteCast}
+                    onClick={handleDeleteCast}
                     style={{
                       padding: '8px 20px',
                       backgroundColor: '#ff4444',
@@ -1362,11 +957,7 @@ export default function CastManagement() {
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button
-                  onClick={() => {
-                    setShowCastModal(false)
-                    setEditingCast(null)
-                    setIsNewCast(false)
-                  }}
+                  onClick={closeCastModal}
                   style={{
                     padding: '8px 20px',
                     backgroundColor: '#f0f0f0',
@@ -1381,7 +972,7 @@ export default function CastManagement() {
                   キャンセル
                 </button>
                 <button
-                  onClick={isNewCast ? addNewCast : updateCast}
+                  onClick={isNewCast ? handleAddNewCast : handleUpdateCast}
                   style={{
                     padding: '8px 20px',
                     backgroundColor: '#007aff',
