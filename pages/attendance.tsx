@@ -12,8 +12,7 @@ import {
   containerStyle,
   headerStyle,
   backButtonStyle,
-  headerTitleStyle,
-  contentAreaStyle
+  headerTitleStyle
 } from '../styles/settingsStyles'
 
 export default function Attendance() {
@@ -124,7 +123,13 @@ export default function Attendance() {
         }
       `}</style>
 
-      <div style={containerStyle}>
+      <div style={{
+        ...containerStyle,
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
         {/* ヘッダー */}
         <div style={headerStyle}>
           <button onClick={() => router.push('/')} style={backButtonStyle}>
@@ -137,18 +142,20 @@ export default function Attendance() {
 
         {/* コンテンツエリア */}
         <div className="attendance-page" style={{
-          ...contentAreaStyle,
-          padding: '20px',
-          height: 'calc(100vh - 54px)',
+          flex: 1,
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          backgroundColor: 'white',
+          overflow: 'hidden'
         }}>
-          {/* 日付選択 */}
+          {/* 日付選択 - 固定 */}
           <div style={{
-            marginBottom: '20px',
+            padding: '20px 20px 12px 20px',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px'
+            gap: '12px',
+            flexShrink: 0,
+            borderBottom: '1px solid #e0e0e0'
           }}>
             <span style={{
               fontSize: '16px',
@@ -174,19 +181,16 @@ export default function Attendance() {
             />
           </div>
 
-          {/* テーブル */}
+          {/* テーブル - スクロール可能 */}
           <div style={{
             flex: 1,
-            backgroundColor: '#fff',
-            borderRadius: '10px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
+            overflowY: 'auto',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch'
           }}>
           {loading ? (
-            <div style={{ 
-              flex: 1,
+            <div style={{
+              height: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -196,12 +200,6 @@ export default function Attendance() {
               読み込み中...
             </div>
           ) : (
-            <div style={{ 
-              flex: 1,
-              overflowX: 'auto',
-              overflowY: 'auto',
-              WebkitOverflowScrolling: 'touch'
-            }}>
               <table style={{
                 width: '100%',
                 borderCollapse: 'collapse',
@@ -699,20 +697,21 @@ export default function Attendance() {
                   ))}
                 </tbody>
               </table>
-            </div>
           )}
-        </div>
+          </div>
 
-        {/* ボタンエリア */}
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderTop: '1px solid #e0e0e0',
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: '12px',
-          boxShadow: '0 -1px 3px rgba(0,0,0,0.05)'
-        }}>
+          {/* ボタンエリア - 固定 */}
+          <div style={{
+            backgroundColor: '#fff',
+            padding: '16px 20px',
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+            borderTop: '1px solid #e0e0e0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexShrink: 0,
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.1)'
+          }}>
           <button
             onClick={addRow}
             style={{
@@ -767,7 +766,7 @@ export default function Attendance() {
           >
             {saving ? '保存中...' : '保存'}
           </button>
-        </div>
+          </div>
         </div>
       </div>
     </>
