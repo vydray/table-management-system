@@ -129,8 +129,8 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       type="number"
-                      value={bills.tenThousand}
-                      onChange={(e) => setBills({...bills, tenThousand: Number(e.target.value)})}
+                      value={bills.tenThousand === 0 ? '' : bills.tenThousand}
+                      onChange={(e) => setBills({...bills, tenThousand: e.target.value === '' ? 0 : Number(e.target.value)})}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -151,8 +151,8 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       type="number"
-                      value={bills.fiveThousand}
-                      onChange={(e) => setBills({...bills, fiveThousand: Number(e.target.value)})}
+                      value={bills.fiveThousand === 0 ? '' : bills.fiveThousand}
+                      onChange={(e) => setBills({...bills, fiveThousand: e.target.value === '' ? 0 : Number(e.target.value)})}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -173,8 +173,8 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       type="number"
-                      value={bills.twoThousand}
-                      onChange={(e) => setBills({...bills, twoThousand: Number(e.target.value)})}
+                      value={bills.twoThousand === 0 ? '' : bills.twoThousand}
+                      onChange={(e) => setBills({...bills, twoThousand: e.target.value === '' ? 0 : Number(e.target.value)})}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -195,8 +195,8 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       type="number"
-                      value={bills.thousand}
-                      onChange={(e) => setBills({...bills, thousand: Number(e.target.value)})}
+                      value={bills.thousand === 0 ? '' : bills.thousand}
+                      onChange={(e) => setBills({...bills, thousand: e.target.value === '' ? 0 : Number(e.target.value)})}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -246,8 +246,8 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       type="number"
-                      value={coins.fiveHundred}
-                      onChange={(e) => setCoins({...coins, fiveHundred: Number(e.target.value)})}
+                      value={coins.fiveHundred === 0 ? '' : coins.fiveHundred}
+                      onChange={(e) => setCoins({...coins, fiveHundred: e.target.value === '' ? 0 : Number(e.target.value)})}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -268,8 +268,8 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       type="number"
-                      value={coins.hundred}
-                      onChange={(e) => setCoins({...coins, hundred: Number(e.target.value)})}
+                      value={coins.hundred === 0 ? '' : coins.hundred}
+                      onChange={(e) => setCoins({...coins, hundred: e.target.value === '' ? 0 : Number(e.target.value)})}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -290,8 +290,8 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       type="number"
-                      value={coins.fifty}
-                      onChange={(e) => setCoins({...coins, fifty: Number(e.target.value)})}
+                      value={coins.fifty === 0 ? '' : coins.fifty}
+                      onChange={(e) => setCoins({...coins, fifty: e.target.value === '' ? 0 : Number(e.target.value)})}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -312,8 +312,8 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       type="number"
-                      value={coins.ten}
-                      onChange={(e) => setCoins({...coins, ten: Number(e.target.value)})}
+                      value={coins.ten === 0 ? '' : coins.ten}
+                      onChange={(e) => setCoins({...coins, ten: e.target.value === '' ? 0 : Number(e.target.value)})}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -334,8 +334,8 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       type="number"
-                      value={coins.five}
-                      onChange={(e) => setCoins({...coins, five: Number(e.target.value)})}
+                      value={coins.five === 0 ? '' : coins.five}
+                      onChange={(e) => setCoins({...coins, five: e.target.value === '' ? 0 : Number(e.target.value)})}
                       style={{
                         width: '80px',
                         padding: '5px',
@@ -356,8 +356,8 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       type="number"
-                      value={coins.one}
-                      onChange={(e) => setCoins({...coins, one: Number(e.target.value)})}
+                      value={coins.one === 0 ? '' : coins.one}
+                      onChange={(e) => setCoins({...coins, one: e.target.value === '' ? 0 : Number(e.target.value)})}
                       style={{
                         width: '80px',
                         padding: '5px',
