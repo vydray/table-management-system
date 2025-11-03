@@ -9,6 +9,15 @@ import { useDailyReport } from '../hooks/useDailyReport'
 import { useReportSettings } from '../hooks/useReportSettings'
 import { useDailyReportOperations } from '../hooks/useDailyReportOperations'
 
+// スタイル
+import {
+  containerStyle,
+  headerStyle,
+  backButtonStyle,
+  headerTitleStyle,
+  contentAreaStyle
+} from '../styles/settingsStyles'
+
 export default function Report() {
   const router = useRouter()
 
@@ -100,51 +109,21 @@ export default function Report() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: '#f5f5f5'
-      }}>
+      <div style={containerStyle}>
         {/* ヘッダー */}
-        <div style={{
-          backgroundColor: '#2196F3',
-          color: 'white',
-          padding: '15px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '20px'
-        }}>
-          <button
-            onClick={() => router.push('/')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'white',
-              fontSize: '20px',
-              cursor: 'pointer',
-              padding: '5px',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-          >
+        <div style={headerStyle}>
+          <button onClick={() => router.push('/')} style={backButtonStyle}>
             ←
           </button>
-          <h1 style={{ 
-            margin: 0, 
-            fontSize: '18px',
-            fontWeight: 'normal',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
+          <h1 style={headerTitleStyle}>
             📊 レポート
           </h1>
         </div>
 
         {/* コンテンツ */}
-        <div style={{ 
-          height: 'calc(100vh - 54px)',
-          overflow: 'auto',
-          padding: '20px'
+        <div style={{
+          ...contentAreaStyle,
+          height: 'calc(100vh - 54px)'
         }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
             {/* 年月選択 */}
@@ -846,12 +825,13 @@ export default function Report() {
                     onClick={() => setShowDailyReportModal(false)}
                     style={{
                       padding: '10px 20px',
-                      backgroundColor: '#666',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
+                      backgroundColor: 'white',
+                      color: '#FF9800',
+                      border: '2px solid #FF9800',
+                      borderRadius: '5px',
                       cursor: 'pointer',
-                      fontSize: '16px'
+                      fontSize: '16px',
+                      fontWeight: 'bold'
                     }}
                   >
                     閉じる
@@ -860,10 +840,10 @@ export default function Report() {
                     onClick={saveDailyReport}
                     style={{
                       padding: '10px 30px',
-                      backgroundColor: '#4CAF50',
+                      backgroundColor: '#FF9800',
                       color: 'white',
                       border: 'none',
-                      borderRadius: '4px',
+                      borderRadius: '5px',
                       cursor: 'pointer',
                       fontSize: '16px',
                       fontWeight: 'bold'
@@ -952,11 +932,12 @@ export default function Report() {
                   onClick={() => setShowTargetSetting(false)}
                   style={{
                     padding: '10px 20px',
-                    backgroundColor: '#666',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
+                    backgroundColor: 'white',
+                    color: '#FF9800',
+                    border: '2px solid #FF9800',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
                   }}
                 >
                   キャンセル
@@ -968,7 +949,7 @@ export default function Report() {
                     backgroundColor: '#FF9800',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '4px',
+                    borderRadius: '5px',
                     cursor: 'pointer',
                     fontWeight: 'bold'
                   }}
