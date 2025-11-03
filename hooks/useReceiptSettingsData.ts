@@ -134,6 +134,7 @@ export const useReceiptSettingsData = () => {
       if (error) throw error
 
       await loadSettings()
+      alert('設定を保存しました')
       return true
     } catch (error) {
       console.error('Error saving settings:', error)

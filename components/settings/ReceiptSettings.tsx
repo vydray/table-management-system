@@ -807,11 +807,17 @@ export default function ReceiptSettings() {
 
       {/* 保存ボタン */}
       <div style={{
-        position: 'sticky',
-        bottom: '60px',
+        position: 'fixed',
+        bottom: 0,
+        left: '220px',
+        right: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '20px',
+        paddingBottom: 'calc(20px + env(safe-area-inset-bottom))',
         backgroundColor: 'white',
-        padding: '20px 0',
-        borderTop: '1px solid #eee',
+        borderTop: '1px solid #e0e0e0',
+        boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
         zIndex: 10
       }}>
         <button
