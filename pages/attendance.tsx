@@ -19,6 +19,12 @@ export default function Attendance() {
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
+  // 時間選択用のドロップダウン表示状態
+  const [showCheckInDropdowns, setShowCheckInDropdowns] = useState<{[key: string]: boolean}>({})
+  const [showCheckOutDropdowns, setShowCheckOutDropdowns] = useState<{[key: string]: boolean}>({})
+  const [showLateDropdowns, setShowLateDropdowns] = useState<{[key: string]: boolean}>({})
+  const [showBreakDropdowns, setShowBreakDropdowns] = useState<{[key: string]: boolean}>({})
+
   // カスタムフック - 勤怠データ管理
   const {
     attendanceRows,
@@ -64,6 +70,10 @@ export default function Attendance() {
     selectedDate
   )
 
+  // 遅刻・休憩の選択肢
+  const lateMinutesOptions = [0, 15, 30, 45, 60, 90, 120]
+  const breakMinutesOptions = [0, 30, 60, 90, 120, 150, 180]
+
   useEffect(() => {
     loadCasts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,6 +83,24 @@ export default function Attendance() {
     loadAttendance(selectedDate)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
+
+  // ドロップダウン外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.time-dropdown-container')) {
+        setShowCheckInDropdowns({})
+        setShowCheckOutDropdowns({})
+        setShowLateDropdowns({})
+        setShowBreakDropdowns({})
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [])
 
   return (
     <>
@@ -87,37 +115,37 @@ export default function Attendance() {
           overflow: auto !important;
           position: static !important;
         }
-        
+
         /* テーブルのフォントサイズを強制 */
         .attendance-page table {
           font-size: 14px !important;
         }
-        
+
         .attendance-page td,
         .attendance-page th {
           font-size: 14px !important;
         }
-        
+
         .attendance-page select,
         .attendance-page input {
           font-size: 14px !important;
         }
-        
+
         /* スクロールバーのスタイル */
         .attendance-page ::-webkit-scrollbar {
           width: 8px;
           height: 8px;
         }
-        
+
         .attendance-page ::-webkit-scrollbar-track {
           background: #f1f1f1;
         }
-        
+
         .attendance-page ::-webkit-scrollbar-thumb {
           background: #888;
           border-radius: 4px;
         }
-        
+
         .attendance-page ::-webkit-scrollbar-thumb:hover {
           background: #555;
         }
@@ -206,16 +234,16 @@ export default function Attendance() {
                 tableLayout: 'fixed',
                 fontSize: '14px'
               }}>
-                <thead style={{ 
+                <thead style={{
                   position: 'sticky',
                   top: 0,
                   backgroundColor: '#f8f8f8',
                   zIndex: 10
                 }}>
                   <tr>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      textAlign: 'left', 
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'left',
                       fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
@@ -225,9 +253,9 @@ export default function Attendance() {
                     }}>
                       名前
                     </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      textAlign: 'center', 
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
                       fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
@@ -237,9 +265,9 @@ export default function Attendance() {
                     }}>
                       出勤
                     </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      textAlign: 'center', 
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
                       fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
@@ -249,9 +277,9 @@ export default function Attendance() {
                     }}>
                       退勤
                     </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      textAlign: 'center', 
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
                       fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
@@ -261,9 +289,9 @@ export default function Attendance() {
                     }}>
                       状況
                     </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      textAlign: 'center', 
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
                       fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
@@ -273,9 +301,9 @@ export default function Attendance() {
                     }}>
                       遅刻
                     </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      textAlign: 'center', 
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
                       fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
@@ -285,9 +313,9 @@ export default function Attendance() {
                     }}>
                       休憩
                     </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      textAlign: 'center', 
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
                       fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
@@ -297,9 +325,9 @@ export default function Attendance() {
                     }}>
                       日払
                     </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      textAlign: 'center', 
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
                       fontSize: '13px',
                       fontWeight: '600',
                       color: '#333',
@@ -313,13 +341,14 @@ export default function Attendance() {
                 </thead>
                 <tbody>
                   {attendanceRows.map((row, index) => (
-                    <tr key={row.id} style={{ 
+                    <tr key={row.id} style={{
                       borderBottom: '1px solid #f0f0f0',
                       transition: 'background-color 0.2s'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
+                      {/* キャスト名 */}
                       <td style={{ padding: '8px', position: 'relative' }}>
                         <div className="cast-name-container" style={{ position: 'relative' }}>
                           <div
@@ -350,8 +379,7 @@ export default function Attendance() {
                           >
                             {row.cast_name || 'キャストを選択'}
                           </div>
-                          
-                          {/* ドロップダウン矢印 */}
+
                           <span style={{
                             position: 'absolute',
                             right: '10px',
@@ -363,8 +391,7 @@ export default function Attendance() {
                           }}>
                             ▼
                           </span>
-                          
-                          {/* ドロップダウンリスト */}
+
                           {showDropdowns[row.id] && (
                             <div style={{
                               position: 'absolute',
@@ -380,7 +407,7 @@ export default function Attendance() {
                               zIndex: 1000,
                               boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                             }}>
-{casts.length === 0 ? (
+                              {casts.length === 0 ? (
                                 <div style={{
                                   padding: '10px 12px',
                                   fontSize: '14px',
@@ -391,7 +418,6 @@ export default function Attendance() {
                                 </div>
                               ) : (
                                 <>
-                                  {/* 未選択オプション */}
                                   <div
                                     onClick={() => selectCast(index, '')}
                                     style={{
@@ -408,11 +434,10 @@ export default function Attendance() {
                                     -- 未選択 --
                                   </div>
                                   {casts.map(cast => {
-                                    // 既に選択されているかチェック
-                                    const isAlreadySelected = attendanceRows.some((row, i) => 
+                                    const isAlreadySelected = attendanceRows.some((row, i) =>
                                       i !== index && row.cast_name === cast.name
                                     )
-                                    
+
                                     return (
                                       <div
                                         key={cast.id}
@@ -454,88 +479,182 @@ export default function Attendance() {
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '8px' }}>
-                        <select
-                          value={row.check_in_time}
-                          onChange={(e) => updateRow(index, 'check_in_time', e.target.value)}
-                          size={typeof window !== 'undefined' && window.innerWidth <= 1024 ? 10 : 1}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            border: '1px solid #d0d0d0',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            backgroundColor: '#fff',
-                            color: '#000',
-                            outline: 'none',
-                            textAlign: 'center',
-                            WebkitAppearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
-                            appearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            boxSizing: 'border-box',
-                            overflowY: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'auto' : 'visible',
-                            maxHeight: typeof window !== 'undefined' && window.innerWidth <= 1024 ? '250px' : 'none',
-                            position: 'relative',
-                            zIndex: 9999,
-                            pointerEvents: 'auto',
-                            touchAction: 'manipulation'
-                          }}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = '#007AFF'
-                            e.currentTarget.style.backgroundColor = '#f8f8f8'
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.borderColor = '#d0d0d0'
-                            e.currentTarget.style.backgroundColor = '#fff'
-                          }}
-                        >
-                          {timeOptions.map(time => (
-                            <option key={time} value={time}>{time || '--:--'}</option>
-                          ))}
-                        </select>
+
+                      {/* 出勤時間 */}
+                      <td style={{ padding: '8px', position: 'relative' }}>
+                        <div className="time-dropdown-container" style={{ position: 'relative' }}>
+                          <div
+                            onClick={() => setShowCheckInDropdowns({ [row.id]: !showCheckInDropdowns[row.id] })}
+                            style={{
+                              width: '100%',
+                              padding: '8px 10px',
+                              paddingRight: '30px',
+                              border: '1px solid #d0d0d0',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              backgroundColor: '#fff',
+                              color: row.check_in_time ? '#000' : '#999',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              boxSizing: 'border-box',
+                              textAlign: 'center',
+                              userSelect: 'none',
+                              WebkitUserSelect: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#007AFF'
+                              e.currentTarget.style.backgroundColor = '#f8f8f8'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#d0d0d0'
+                              e.currentTarget.style.backgroundColor = '#fff'
+                            }}
+                          >
+                            {row.check_in_time || '--:--'}
+                          </div>
+
+                          <span style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                            color: '#666',
+                            fontSize: '12px'
+                          }}>
+                            ▼
+                          </span>
+
+                          {showCheckInDropdowns[row.id] && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              maxHeight: '300px',
+                              overflowY: 'auto',
+                              backgroundColor: '#fff',
+                              border: '1px solid #007AFF',
+                              borderRadius: '6px',
+                              marginTop: '2px',
+                              zIndex: 1000,
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                            }}>
+                              {timeOptions.map(time => (
+                                <div
+                                  key={time}
+                                  onClick={() => {
+                                    updateRow(index, 'check_in_time', time)
+                                    setShowCheckInDropdowns({})
+                                  }}
+                                  style={{
+                                    padding: '10px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    borderBottom: '1px solid #f0f0f0',
+                                    transition: 'background-color 0.2s',
+                                    textAlign: 'center',
+                                    color: time ? '#000' : '#999'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  {time || '--:--'}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </td>
-                      <td style={{ padding: '8px' }}>
-                        <select
-                          value={row.check_out_time}
-                          onChange={(e) => updateRow(index, 'check_out_time', e.target.value)}
-                          size={typeof window !== 'undefined' && window.innerWidth <= 1024 ? 10 : 1}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            border: '1px solid #d0d0d0',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            backgroundColor: '#fff',
-                            color: '#000',
-                            outline: 'none',
-                            textAlign: 'center',
-                            WebkitAppearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
-                            appearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            boxSizing: 'border-box',
-                            overflowY: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'auto' : 'visible',
-                            maxHeight: typeof window !== 'undefined' && window.innerWidth <= 1024 ? '250px' : 'none',
-                            position: 'relative',
-                            zIndex: 9999,
-                            pointerEvents: 'auto',
-                            touchAction: 'manipulation'
-                          }}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = '#007AFF'
-                            e.currentTarget.style.backgroundColor = '#f8f8f8'
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.borderColor = '#d0d0d0'
-                            e.currentTarget.style.backgroundColor = '#fff'
-                          }}
-                        >
-                          {timeOptions.map(time => (
-                            <option key={time} value={time}>{time || '--:--'}</option>
-                          ))}
-                        </select>
+
+                      {/* 退勤時間 */}
+                      <td style={{ padding: '8px', position: 'relative' }}>
+                        <div className="time-dropdown-container" style={{ position: 'relative' }}>
+                          <div
+                            onClick={() => setShowCheckOutDropdowns({ [row.id]: !showCheckOutDropdowns[row.id] })}
+                            style={{
+                              width: '100%',
+                              padding: '8px 10px',
+                              paddingRight: '30px',
+                              border: '1px solid #d0d0d0',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              backgroundColor: '#fff',
+                              color: row.check_out_time ? '#000' : '#999',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              boxSizing: 'border-box',
+                              textAlign: 'center',
+                              userSelect: 'none',
+                              WebkitUserSelect: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#007AFF'
+                              e.currentTarget.style.backgroundColor = '#f8f8f8'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#d0d0d0'
+                              e.currentTarget.style.backgroundColor = '#fff'
+                            }}
+                          >
+                            {row.check_out_time || '--:--'}
+                          </div>
+
+                          <span style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                            color: '#666',
+                            fontSize: '12px'
+                          }}>
+                            ▼
+                          </span>
+
+                          {showCheckOutDropdowns[row.id] && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              maxHeight: '300px',
+                              overflowY: 'auto',
+                              backgroundColor: '#fff',
+                              border: '1px solid #007AFF',
+                              borderRadius: '6px',
+                              marginTop: '2px',
+                              zIndex: 1000,
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                            }}>
+                              {timeOptions.map(time => (
+                                <div
+                                  key={time}
+                                  onClick={() => {
+                                    updateRow(index, 'check_out_time', time)
+                                    setShowCheckOutDropdowns({})
+                                  }}
+                                  style={{
+                                    padding: '10px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    borderBottom: '1px solid #f0f0f0',
+                                    transition: 'background-color 0.2s',
+                                    textAlign: 'center',
+                                    color: time ? '#000' : '#999'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  {time || '--:--'}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </td>
+
+                      {/* 状況 */}
                       <td style={{ padding: '8px' }}>
                         <select
                           value={row.status}
@@ -546,12 +665,12 @@ export default function Attendance() {
                             border: '1px solid #d0d0d0',
                             borderRadius: '6px',
                             fontSize: '14px',
-                            backgroundColor: row.status === '出勤' ? '#e6f7e6' : 
-                                           row.status === '当欠' ? '#ffe6e6' : 
-                                           row.status === '無欠' ? '#ffe6e6' : 
-                                           row.status === '遅刻' ? '#fff7e6' : 
-                                           row.status === '早退' ? '#fff7e6' : 
-                                           row.status === '公欠' ? '#e6e6ff' : 
+                            backgroundColor: row.status === '出勤' ? '#e6f7e6' :
+                                           row.status === '当欠' ? '#ffe6e6' :
+                                           row.status === '無欠' ? '#ffe6e6' :
+                                           row.status === '遅刻' ? '#fff7e6' :
+                                           row.status === '早退' ? '#fff7e6' :
+                                           row.status === '公欠' ? '#e6e6ff' :
                                            row.status === '事前欠' ? '#f0e6ff' : '#fff',
                             color: '#000',
                             outline: 'none',
@@ -575,96 +694,180 @@ export default function Attendance() {
                           <option value="事前欠">事前欠</option>
                         </select>
                       </td>
-                      <td style={{ padding: '8px' }}>
-                        <select
-                          value={row.late_minutes}
-                          onChange={(e) => updateRow(index, 'late_minutes', Number(e.target.value))}
-                          size={typeof window !== 'undefined' && window.innerWidth <= 1024 ? 7 : 1}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            border: '1px solid #d0d0d0',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            backgroundColor: '#fff',
-                            color: '#000',
-                            outline: 'none',
-                            textAlign: 'center',
-                            WebkitAppearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
-                            appearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            boxSizing: 'border-box',
-                            overflowY: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'auto' : 'visible',
-                            maxHeight: typeof window !== 'undefined' && window.innerWidth <= 1024 ? '180px' : 'none',
-                            position: 'relative',
-                            zIndex: 9999,
-                            pointerEvents: 'auto',
-                            touchAction: 'manipulation'
-                          }}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = '#007AFF'
-                            e.currentTarget.style.backgroundColor = '#f8f8f8'
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.borderColor = '#d0d0d0'
-                            e.currentTarget.style.backgroundColor = '#fff'
-                          }}
-                        >
-                          <option value={0}>0分</option>
-                          <option value={15}>15分</option>
-                          <option value={30}>30分</option>
-                          <option value={45}>45分</option>
-                          <option value={60}>60分</option>
-                          <option value={90}>90分</option>
-                          <option value={120}>120分</option>
-                        </select>
+
+                      {/* 遅刻 */}
+                      <td style={{ padding: '8px', position: 'relative' }}>
+                        <div className="time-dropdown-container" style={{ position: 'relative' }}>
+                          <div
+                            onClick={() => setShowLateDropdowns({ [row.id]: !showLateDropdowns[row.id] })}
+                            style={{
+                              width: '100%',
+                              padding: '8px 10px',
+                              paddingRight: '30px',
+                              border: '1px solid #d0d0d0',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              backgroundColor: '#fff',
+                              color: '#000',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              boxSizing: 'border-box',
+                              textAlign: 'center',
+                              userSelect: 'none',
+                              WebkitUserSelect: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#007AFF'
+                              e.currentTarget.style.backgroundColor = '#f8f8f8'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#d0d0d0'
+                              e.currentTarget.style.backgroundColor = '#fff'
+                            }}
+                          >
+                            {row.late_minutes}分
+                          </div>
+
+                          <span style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                            color: '#666',
+                            fontSize: '12px'
+                          }}>
+                            ▼
+                          </span>
+
+                          {showLateDropdowns[row.id] && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              maxHeight: '200px',
+                              overflowY: 'auto',
+                              backgroundColor: '#fff',
+                              border: '1px solid #007AFF',
+                              borderRadius: '6px',
+                              marginTop: '2px',
+                              zIndex: 1000,
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                            }}>
+                              {lateMinutesOptions.map(minutes => (
+                                <div
+                                  key={minutes}
+                                  onClick={() => {
+                                    updateRow(index, 'late_minutes', minutes)
+                                    setShowLateDropdowns({})
+                                  }}
+                                  style={{
+                                    padding: '10px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    borderBottom: '1px solid #f0f0f0',
+                                    transition: 'background-color 0.2s',
+                                    textAlign: 'center'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  {minutes}分
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </td>
-                      <td style={{ padding: '8px' }}>
-                        <select
-                          value={row.break_minutes}
-                          onChange={(e) => updateRow(index, 'break_minutes', Number(e.target.value))}
-                          size={typeof window !== 'undefined' && window.innerWidth <= 1024 ? 7 : 1}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            border: '1px solid #d0d0d0',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            backgroundColor: '#fff',
-                            color: '#000',
-                            outline: 'none',
-                            textAlign: 'center',
-                            WebkitAppearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
-                            appearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            boxSizing: 'border-box',
-                            overflowY: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'auto' : 'visible',
-                            maxHeight: typeof window !== 'undefined' && window.innerWidth <= 1024 ? '180px' : 'none',
-                            position: 'relative',
-                            zIndex: 9999,
-                            pointerEvents: 'auto',
-                            touchAction: 'manipulation'
-                          }}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = '#007AFF'
-                            e.currentTarget.style.backgroundColor = '#f8f8f8'
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.borderColor = '#d0d0d0'
-                            e.currentTarget.style.backgroundColor = '#fff'
-                          }}
-                        >
-                          <option value={0}>0分</option>
-                          <option value={30}>30分</option>
-                          <option value={60}>60分</option>
-                          <option value={90}>90分</option>
-                          <option value={120}>120分</option>
-                          <option value={150}>150分</option>
-                          <option value={180}>180分</option>
-                        </select>
+
+                      {/* 休憩 */}
+                      <td style={{ padding: '8px', position: 'relative' }}>
+                        <div className="time-dropdown-container" style={{ position: 'relative' }}>
+                          <div
+                            onClick={() => setShowBreakDropdowns({ [row.id]: !showBreakDropdowns[row.id] })}
+                            style={{
+                              width: '100%',
+                              padding: '8px 10px',
+                              paddingRight: '30px',
+                              border: '1px solid #d0d0d0',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              backgroundColor: '#fff',
+                              color: '#000',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              boxSizing: 'border-box',
+                              textAlign: 'center',
+                              userSelect: 'none',
+                              WebkitUserSelect: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#007AFF'
+                              e.currentTarget.style.backgroundColor = '#f8f8f8'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#d0d0d0'
+                              e.currentTarget.style.backgroundColor = '#fff'
+                            }}
+                          >
+                            {row.break_minutes}分
+                          </div>
+
+                          <span style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                            color: '#666',
+                            fontSize: '12px'
+                          }}>
+                            ▼
+                          </span>
+
+                          {showBreakDropdowns[row.id] && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              maxHeight: '200px',
+                              overflowY: 'auto',
+                              backgroundColor: '#fff',
+                              border: '1px solid #007AFF',
+                              borderRadius: '6px',
+                              marginTop: '2px',
+                              zIndex: 1000,
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                            }}>
+                              {breakMinutesOptions.map(minutes => (
+                                <div
+                                  key={minutes}
+                                  onClick={() => {
+                                    updateRow(index, 'break_minutes', minutes)
+                                    setShowBreakDropdowns({})
+                                  }}
+                                  style={{
+                                    padding: '10px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    borderBottom: '1px solid #f0f0f0',
+                                    transition: 'background-color 0.2s',
+                                    textAlign: 'center'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  {minutes}分
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </td>
+
+                      {/* 日払 */}
                       <td style={{ padding: '8px' }}>
                         <input
                           type="text"
@@ -695,6 +898,8 @@ export default function Attendance() {
                           }}
                         />
                       </td>
+
+                      {/* 削除 */}
                       <td style={{ padding: '8px', textAlign: 'center' }}>
                         <button
                           onClick={() => deleteRow(index)}
