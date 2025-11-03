@@ -30,6 +30,7 @@ interface OrderSectionProps {
   }>) => void
   /* ここまで変更 */
   castList?: string[]
+  attendingCasts?: string[]
   // 追加
   subtotal: number
   serviceTax: number
@@ -49,6 +50,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
   onUpdateFormData,
   /* ここまで変更 */
   castList = [],
+  attendingCasts = [],
   // 追加したpropsを受け取る
   subtotal,
   serviceTax,
@@ -64,6 +66,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
         castName={formData.castName}
         visitType={formData.visitType}
         castList={castList}
+        attendingCasts={attendingCasts}
         onUpdateFormData={onUpdateFormData}
       />
 

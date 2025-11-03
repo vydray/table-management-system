@@ -5,6 +5,7 @@ interface CustomerInfoFormProps {
   castName: string
   visitType: string
   castList: string[]
+  attendingCasts: string[]
   onUpdateFormData: (updates: Partial<{
     guestName: string
     castName: string
@@ -17,9 +18,11 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
   castName,
   visitType,
   castList,
+  attendingCasts,
   onUpdateFormData
 }) => {
   const [showCastDropdown, setShowCastDropdown] = useState(false)
+  const [castFilter, setCastFilter] = useState<'all' | 'attending'>('all')
 
   // ドロップダウン外クリックで閉じる
   useEffect(() => {
@@ -128,8 +131,6 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
                 top: '100%',
                 left: 0,
                 right: 0,
-                maxHeight: '300px',
-                overflowY: 'auto',
                 backgroundColor: '#fff',
                 border: '1px solid #007AFF',
                 borderRadius: '4px',
@@ -137,29 +138,58 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
                 zIndex: 10000,
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
               }}>
-                <div
-                  onClick={() => {
-                    onUpdateFormData({ castName: '' })
-                    setShowCastDropdown(false)
-                  }}
-                  style={{
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    borderBottom: '1px solid #f0f0f0',
-                    transition: 'background-color 0.2s',
-                    color: '#999'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  -- 選択 --
+                {/* フィルターボタン */}
+                <div style={{
+                  display: 'flex',
+                  gap: '5px',
+                  padding: '8px',
+                  backgroundColor: '#f5f5f5',
+                  borderBottom: '1px solid #ddd'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setCastFilter('all')}
+                    style={{
+                      flex: 1,
+                      padding: '6px 12px',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      backgroundColor: castFilter === 'all' ? '#007AFF' : 'white',
+                      color: castFilter === 'all' ? 'white' : '#333',
+                      border: '2px solid #007AFF',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    全
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCastFilter('attending')}
+                    style={{
+                      flex: 1,
+                      padding: '6px 12px',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      backgroundColor: castFilter === 'attending' ? '#007AFF' : 'white',
+                      color: castFilter === 'attending' ? 'white' : '#333',
+                      border: '2px solid #007AFF',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    出勤
+                  </button>
                 </div>
-                {castList.map(name => (
+
+                {/* キャストリスト */}
+                <div style={{
+                  maxHeight: '250px',
+                  overflowY: 'auto'
+                }}>
                   <div
-                    key={name}
                     onClick={() => {
-                      onUpdateFormData({ castName: name })
+                      onUpdateFormData({ castName: '' })
                       setShowCastDropdown(false)
                     }}
                     style={{
@@ -167,14 +197,35 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
                       cursor: 'pointer',
                       fontSize: '14px',
                       borderBottom: '1px solid #f0f0f0',
-                      transition: 'background-color 0.2s'
+                      transition: 'background-color 0.2s',
+                      color: '#999'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
-                    {name}
+                    -- 選択 --
                   </div>
-                ))}
+                  {(castFilter === 'all' ? castList : attendingCasts).map(name => (
+                    <div
+                      key={name}
+                      onClick={() => {
+                        onUpdateFormData({ castName: name })
+                        setShowCastDropdown(false)
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        borderBottom: '1px solid #f0f0f0',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      {name}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

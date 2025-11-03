@@ -1544,6 +1544,7 @@ const finishCheckout = () => {
                     }}
                     /* ここまで変更 */
                     castList={castList}
+                    attendingCasts={attendingCasts}
                     subtotal={calculateSubtotal(orderItems)}
                     serviceTax={calculateServiceTax(calculateSubtotal(orderItems), systemSettings.serviceChargeRate)}
                     roundedTotal={getRoundedTotalAmount()}
