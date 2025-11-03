@@ -1,6 +1,11 @@
-// SystemSettings.tsx用の一時的なスタブ
-// TODO: SystemSettings.tsxの最適化時に完全実装する
 import { useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
+import { getCurrentStoreId } from '../utils/storeContext'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export const useSystemSettings = () => {
   const [businessDayStartHour, setBusinessDayStartHour] = useState(18)
@@ -11,14 +16,123 @@ export const useSystemSettings = () => {
   const [registerAmount, setRegisterAmount] = useState(0)
   const [loading, setLoading] = useState(false)
 
+  // 全設定を読み込み
   const loadAllSettings = async () => {
     setLoading(true)
-    // TODO: 実装が必要
-    setLoading(false)
+    try {
+      const storeId = getCurrentStoreId()
+
+      // 営業日開始時刻を取得
+      const { data: businessDayData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('store_id', storeId)
+        .eq('setting_key', 'business_day_start_hour')
+        .single()
+
+      if (businessDayData) {
+        setBusinessDayStartHour(Number(businessDayData.setting_value))
+      }
+
+      // 消費税率を取得
+      const { data: taxData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('store_id', storeId)
+        .eq('setting_key', 'tax_rate')
+        .single()
+
+      if (taxData) {
+        setTaxRate(Number(taxData.setting_value))
+      }
+
+      // サービス料率を取得
+      const { data: serviceFeeData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('store_id', storeId)
+        .eq('setting_key', 'service_fee_rate')
+        .single()
+
+      if (serviceFeeData) {
+        setServiceFeeRate(Number(serviceFeeData.setting_value))
+      }
+
+      // 端数処理を取得
+      const { data: roundingTypeData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('store_id', storeId)
+        .eq('setting_key', 'rounding_type')
+        .single()
+
+      if (roundingTypeData) {
+        setRoundingType(roundingTypeData.setting_value)
+      }
+
+      // 端数単位を取得
+      const { data: roundingUnitData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('store_id', storeId)
+        .eq('setting_key', 'rounding_unit')
+        .single()
+
+      if (roundingUnitData) {
+        setRoundingUnit(Number(roundingUnitData.setting_value))
+      }
+
+      // レジ金を取得
+      const { data: registerData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('store_id', storeId)
+        .eq('setting_key', 'register_amount')
+        .single()
+
+      if (registerData) {
+        setRegisterAmount(Number(registerData.setting_value))
+      }
+    } catch (error) {
+      console.error('Error loading system settings:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
+  // 全設定を保存
   const saveSettings = async () => {
-    // TODO: 実装が必要
+    try {
+      const storeId = getCurrentStoreId()
+
+      const settingsToSave = [
+        { setting_key: 'business_day_start_hour', setting_value: String(businessDayStartHour) },
+        { setting_key: 'tax_rate', setting_value: String(taxRate) },
+        { setting_key: 'service_fee_rate', setting_value: String(serviceFeeRate) },
+        { setting_key: 'rounding_type', setting_value: roundingType },
+        { setting_key: 'rounding_unit', setting_value: String(roundingUnit) },
+        { setting_key: 'register_amount', setting_value: String(registerAmount) }
+      ]
+
+      for (const setting of settingsToSave) {
+        const { error } = await supabase
+          .from('system_settings')
+          .upsert({
+            store_id: storeId,
+            setting_key: setting.setting_key,
+            setting_value: setting.setting_value
+          }, {
+            onConflict: 'store_id,setting_key'
+          })
+
+        if (error) throw error
+      }
+
+      alert('設定を保存しました')
+    } catch (error) {
+      console.error('Error saving system settings:', error)
+      alert('保存に失敗しました')
+    }
   }
 
   return {
