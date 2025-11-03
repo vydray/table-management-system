@@ -63,7 +63,7 @@ export default function ReceiptSettings() {
         const printerSection = document.getElementById('printer-settings')
         if (printerSection) {
           // ヘッダーやナビゲーションを考慮して、要素の少し上にスクロール
-          const yOffset = -100 // 上に100pxのオフセットを追加
+          const yOffset = -20 // 上に20pxのオフセットを追加（戻るボタンが見える程度）
           const y = printerSection.getBoundingClientRect().top + window.pageYOffset + yOffset
           window.scrollTo({ top: y, behavior: 'smooth' })
         }
