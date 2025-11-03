@@ -129,7 +129,7 @@ export const useReceiptSettingsData = () => {
           revenue_stamp_threshold: settings.revenue_stamp_threshold,
           receipt_templates: settings.receipt_templates,
           updated_at: new Date().toISOString()
-        })
+        }, { onConflict: 'store_id' })
 
       if (error) {
         console.error('Supabase upsert error:', error)
