@@ -158,12 +158,20 @@ public class SiiPrinterPlugin extends Plugin {
             String castName = call.getString("castName", "");
             String elapsedTime = call.getString("elapsedTime", "");
             String timestamp = call.getString("timestamp", "");
-            
+
             int subtotal = call.getInt("subtotal", 0);
             int serviceTax = call.getInt("serviceTax", 0);
             int roundedTotal = call.getInt("roundedTotal", 0);
             int roundingAdjustment = call.getInt("roundingAdjustment", 0);
-            
+
+            // カード手数料と支払い方法
+            int cardFeeRate = call.getInt("cardFeeRate", 0);
+            int cardFee = call.getInt("cardFee", 0);
+            int paymentCash = call.getInt("paymentCash", 0);
+            int paymentCard = call.getInt("paymentCard", 0);
+            int paymentOther = call.getInt("paymentOther", 0);
+            String paymentOtherMethod = call.getString("paymentOtherMethod", "");
+
             JSArray orderItems = call.getArray("orderItems");
             
             // 日本語対応
@@ -228,12 +236,26 @@ public class SiiPrinterPlugin extends Plugin {
             }
             
             receipt.append("================================\n");
-            
+
             // 合計金額
             receipt.append(String.format("合計金額:          ¥%,d\n", roundedTotal));
-            
+
+            // カード手数料がある場合
+            if (cardFeeRate > 0 && cardFee > 0) {
+                receipt.append(String.format("カード手数料(%d%%):  ¥%,d\n", cardFeeRate, cardFee));
+                receipt.append(String.format("お支払い合計:      ¥%,d\n", roundedTotal + cardFee));
+            }
+
             receipt.append("================================\n");
-            
+
+            // 支払い内訳（カード手数料が設定されている場合のみ表示）
+            if (cardFeeRate > 0) {
+                receipt.append("\n【お支払い内訳】\n");
+                receipt.append(String.format("現金:              ¥%,d\n", paymentCash));
+                receipt.append(String.format("カード:            ¥%,d\n", paymentCard));
+                receipt.append("================================\n");
+            }
+
             // 一括で印刷
             printerManager.sendText(receipt.toString());
             
@@ -268,6 +290,8 @@ public class SiiPrinterPlugin extends Plugin {
             int consumptionTax = call.getInt("consumptionTax", 0);
             int roundingAdjustment = call.getInt("roundingAdjustment", 0);
             int roundedTotal = call.getInt("roundedTotal", 0);
+            int cardFeeRate = call.getInt("cardFeeRate", 0);
+            int cardFee = call.getInt("cardFee", 0);
             int paymentCash = call.getInt("paymentCash", 0);
             int paymentCard = call.getInt("paymentCard", 0);
             int paymentOther = call.getInt("paymentOther", 0);
@@ -388,19 +412,14 @@ public class SiiPrinterPlugin extends Plugin {
             receipt.append("\n");
             receipt.append("上記正に領収いたしました\n");
             receipt.append("\n");
-            
-            // 支払い方法の記載（必要に応じて）
-            if (paymentCard > 0 || paymentOther > 0) {
-                receipt.append("【お支払い方法】\n");
-                if (paymentCash > 0) {
-                    receipt.append(String.format("現金:     ¥%,d\n", paymentCash));
-                }
-                if (paymentCard > 0) {
-                    receipt.append(String.format("カード:   ¥%,d\n", paymentCard));
-                }
-                if (paymentOther > 0) {
-                    String method = paymentOtherMethod.isEmpty() ? "その他" : paymentOtherMethod;
-                    receipt.append(String.format("%s: ¥%,d\n", method, paymentOther));
+
+            // 支払い内訳（カード手数料が設定されている場合のみ表示）
+            if (cardFeeRate > 0) {
+                receipt.append("【お支払い内訳】\n");
+                receipt.append(String.format("現金:              ¥%,d\n", paymentCash));
+                receipt.append(String.format("カード:            ¥%,d\n", paymentCard));
+                if (cardFee > 0) {
+                    receipt.append(String.format("カード手数料(%d%%):  ¥%,d\n", cardFeeRate, cardFee));
                 }
                 receipt.append("\n");
             }
