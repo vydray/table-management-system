@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { useSwipeToDelete } from '../../hooks/useSwipeToDelete'
 
 interface OrderItem {
   name: string
@@ -13,18 +14,18 @@ interface OrderTableProps {
   onItemDelete: (index: number) => void
 }
 
-export const OrderTable: React.FC<OrderTableProps> = ({ 
-  orderItems, 
-  onItemClick, 
-  onItemDelete 
+export const OrderTable: React.FC<OrderTableProps> = ({
+  orderItems,
+  onItemClick,
+  onItemDelete
 }) => {
-  const [swipeStates, setSwipeStates] = useState<{
-    [key: number]: {
-      translateX: number
-      isSwiping: boolean
-      startX: number
-    }
-  }>({})
+  const {
+    getSwipeState,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    handleMouseLeave
+  } = useSwipeToDelete(onItemDelete)
 
   return (
     <div className="order-table">
@@ -36,11 +37,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
       </div>
       <div className="order-table-body">
         {orderItems.map((item, index) => {
-          const swipeState = swipeStates[index] || { 
-            translateX: 0, 
-            isSwiping: false, 
-            startX: 0 
-          }
+          const swipeState = getSwipeState(index)
           
           return (
             <div 
@@ -62,106 +59,17 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                 }}
                 onTouchStart={(e) => {
                   const touch = e.touches[0]
-                  setSwipeStates(prev => ({
-                    ...prev,
-                    [index]: { 
-                      ...prev[index], 
-                      startX: touch.clientX, 
-                      isSwiping: true, 
-                      translateX: 0 
-                    }
-                  }))
+                  handleTouchStart(index, touch.clientX)
                 }}
                 onTouchMove={(e) => {
-                  if (!swipeStates[index]?.isSwiping) return
                   const touch = e.touches[0]
-                  const diffX = touch.clientX - (swipeStates[index]?.startX || 0)
-                  if (diffX < 0) {
-                    setSwipeStates(prev => ({
-                      ...prev,
-                      [index]: { 
-                        ...prev[index], 
-                        translateX: Math.max(diffX, -100) 
-                      }
-                    }))
-                  }
+                  handleTouchMove(index, touch.clientX)
                 }}
-                onTouchEnd={() => {
-                  const currentState = swipeStates[index]
-                  if (currentState?.translateX < -50) {
-                    onItemDelete(index)
-                    setSwipeStates(prev => {
-                      const newStates = { ...prev }
-                      delete newStates[index]
-                      return newStates
-                    })
-                  } else {
-                    setSwipeStates(prev => ({
-                      ...prev,
-                      [index]: { 
-                        translateX: 0, 
-                        isSwiping: false, 
-                        startX: 0 
-                      }
-                    }))
-                  }
-                }}
-                onMouseDown={(e) => {
-                  setSwipeStates(prev => ({
-                    ...prev,
-                    [index]: { 
-                      ...prev[index], 
-                      startX: e.clientX, 
-                      isSwiping: true, 
-                      translateX: 0 
-                    }
-                  }))
-                }}
-                onMouseMove={(e) => {
-                  if (!swipeStates[index]?.isSwiping) return
-                  const diffX = e.clientX - (swipeStates[index]?.startX || 0)
-                  if (diffX < 0) {
-                    setSwipeStates(prev => ({
-                      ...prev,
-                      [index]: { 
-                        ...prev[index], 
-                        translateX: Math.max(diffX, -100) 
-                      }
-                    }))
-                  }
-                }}
-                onMouseUp={() => {
-                  const currentState = swipeStates[index]
-                  if (currentState?.translateX < -50) {
-                    onItemDelete(index)
-                    setSwipeStates(prev => {
-                      const newStates = { ...prev }
-                      delete newStates[index]
-                      return newStates
-                    })
-                  } else {
-                    setSwipeStates(prev => ({
-                      ...prev,
-                      [index]: { 
-                        translateX: 0, 
-                        isSwiping: false, 
-                        startX: 0 
-                      }
-                    }))
-                  }
-                }}
-                onMouseLeave={() => {
-                  if (swipeStates[index]?.isSwiping) {
-                    setSwipeStates(prev => ({
-                      ...prev,
-                      [index]: { 
-                        translateX: 0, 
-                        isSwiping: false, 
-                        startX: 0 
-                      }
-                    }))
-                  }
-                }}
+                onTouchEnd={() => handleTouchEnd(index)}
+                onMouseDown={(e) => handleTouchStart(index, e.clientX)}
+                onMouseMove={(e) => handleTouchMove(index, e.clientX)}
+                onMouseUp={() => handleTouchEnd(index)}
+                onMouseLeave={() => handleMouseLeave(index)}
               >
                 <span className="col-name">{item.name}</span>
                 <span className="col-cast">{item.cast || ''}</span>
