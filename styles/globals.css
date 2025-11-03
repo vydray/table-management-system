@@ -705,9 +705,10 @@ body.modal-open {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 9999;
+  z-index: 100000;
   overflow: visible;
   -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
 }
 
 .item-detail-content {
@@ -720,6 +721,9 @@ body.modal-open {
   transition: top 0.3s ease-out;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+  position: relative;
+  z-index: 100001;
+  pointer-events: auto;
 }
 
 .item-detail-content h3 {
@@ -1052,9 +1056,13 @@ label {
   }
 
   /* select要素だけはタッチイベントを受け付ける */
-  body.modal-open #layout select {
+  body.modal-open #layout select,
+  #modal select,
+  #modal.modal-edit select,
+  #modal.modal-new select {
     pointer-events: auto !important;
     z-index: 99999 !important;
+    position: relative !important;
   }
 
   /* モーダル本体 - 中央配置修正 */
