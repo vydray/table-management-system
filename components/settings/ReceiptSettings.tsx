@@ -62,7 +62,10 @@ export default function ReceiptSettings() {
       setTimeout(() => {
         const printerSection = document.getElementById('printer-settings')
         if (printerSection) {
-          printerSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          // ヘッダーやナビゲーションを考慮して、要素の少し上にスクロール
+          const yOffset = -100 // 上に100pxのオフセットを追加
+          const y = printerSection.getBoundingClientRect().top + window.pageYOffset + yOffset
+          window.scrollTo({ top: y, behavior: 'smooth' })
         }
       }, 300)
     }
