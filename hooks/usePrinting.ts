@@ -104,6 +104,8 @@ export const usePrinting = () => {
         roundingAdjustment: getRoundingAdjustmentAmount(),
         cardFeeRate: Math.round(systemSettings.cardFeeRate * 100), // 整数に変換（0.1 → 10）
         cardFee: cardFee,
+        roundingUnit: systemSettings.roundingUnit,
+        roundingMethod: systemSettings.roundingMethod,
         paymentCash: paymentData.cash,
         paymentCard: paymentData.card,
         paymentOther: paymentData.other,

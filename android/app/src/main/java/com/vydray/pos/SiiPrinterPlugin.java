@@ -167,6 +167,8 @@ public class SiiPrinterPlugin extends Plugin {
             // カード手数料と支払い方法
             int cardFeeRate = call.getInt("cardFeeRate", 0);
             int cardFee = call.getInt("cardFee", 0);
+            int roundingUnit = call.getInt("roundingUnit", 1);
+            int roundingMethod = call.getInt("roundingMethod", 0);
             int paymentCash = call.getInt("paymentCash", 0);
             int paymentCard = call.getInt("paymentCard", 0);
             int paymentOther = call.getInt("paymentOther", 0);
@@ -240,19 +242,19 @@ public class SiiPrinterPlugin extends Plugin {
             // 合計金額
             receipt.append(String.format("合計金額:          ¥%,d\n", roundedTotal));
 
-            // カード手数料がある場合
-            if (cardFeeRate > 0 && cardFee > 0) {
-                receipt.append(String.format("カード手数料(%d%%):  ¥%,d\n", cardFeeRate, cardFee));
-                receipt.append(String.format("お支払い合計:      ¥%,d\n", roundedTotal + cardFee));
-            }
-
             receipt.append("================================\n");
 
-            // 支払い内訳（カード手数料が設定されている場合のみ表示）
+            // お支払い方法による金額（カード手数料が設定されている場合のみ表示）
             if (cardFeeRate > 0) {
-                receipt.append("\n【お支払い内訳】\n");
-                receipt.append(String.format("現金:              ¥%,d\n", paymentCash));
-                receipt.append(String.format("カード:            ¥%,d\n", paymentCard));
+                // カード支払い時の金額を計算
+                int calculatedCardFee = (int) Math.round(roundedTotal * cardFeeRate / 100.0);
+                int cardAmountBeforeRounding = roundedTotal + calculatedCardFee;
+                int cardAmount = applyRounding(cardAmountBeforeRounding, roundingUnit, roundingMethod);
+
+                receipt.append("\n【お支払い方法】\n");
+                receipt.append(String.format("現金の場合:        ¥%,d\n", roundedTotal));
+                receipt.append(String.format("カードの場合:      ¥%,d\n", cardAmount));
+                receipt.append(String.format("  (カード手数料%d%%含む)\n", cardFeeRate));
                 receipt.append("================================\n");
             }
 
@@ -467,6 +469,34 @@ public class SiiPrinterPlugin extends Plugin {
             call.resolve();
         } catch (Exception e) {
             call.reject("Failed to print receipt: " + e.getMessage(), e);
+        }
+    }
+
+    // 端数処理を適用するヘルパーメソッド
+    private int applyRounding(int amount, int roundingUnit, int roundingMethod) {
+        if (roundingUnit <= 1) {
+            return amount;
+        }
+
+        int remainder = amount % roundingUnit;
+
+        if (remainder == 0) {
+            return amount;
+        }
+
+        switch (roundingMethod) {
+            case 0: // 切り捨て
+                return amount - remainder;
+            case 1: // 四捨五入
+                if (remainder >= roundingUnit / 2.0) {
+                    return amount - remainder + roundingUnit;
+                } else {
+                    return amount - remainder;
+                }
+            case 2: // 切り上げ
+                return amount - remainder + roundingUnit;
+            default:
+                return amount;
         }
     }
 }

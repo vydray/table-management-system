@@ -220,6 +220,8 @@ export class BluetoothPrinter {
     roundingAdjustment: number
     cardFeeRate?: number  // カード手数料率（%）
     cardFee?: number  // カード手数料
+    roundingUnit?: number  // 端数単位
+    roundingMethod?: number  // 端数処理方法
     paymentCash?: number  // 現金支払い
     paymentCard?: number  // カード支払い
     paymentOther?: number  // その他支払い
