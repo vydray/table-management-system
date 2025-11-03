@@ -83,11 +83,11 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          flex: 1,
+          flex: 1.5,
           position: 'relative'
         }}>
           <span style={{
-            minWidth: '80px',
+            minWidth: '50px',
             fontWeight: 'bold',
             fontSize: '14px'
           }}>推し：</span>

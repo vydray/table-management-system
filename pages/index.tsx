@@ -965,7 +965,7 @@ const finishCheckout = () => {
                       cursor: 'pointer',
                       userSelect: 'none',
                       WebkitUserSelect: 'none',
-                      minWidth: '70px',
+                      minWidth: '90px',
                       textAlign: 'center'
                     }}
                   >
@@ -1032,7 +1032,7 @@ const finishCheckout = () => {
                       cursor: 'pointer',
                       userSelect: 'none',
                       WebkitUserSelect: 'none',
-                      minWidth: '60px',
+                      minWidth: '80px',
                       textAlign: 'center'
                     }}
                   >
@@ -1099,7 +1099,7 @@ const finishCheckout = () => {
                       cursor: 'pointer',
                       userSelect: 'none',
                       WebkitUserSelect: 'none',
-                      minWidth: '60px',
+                      minWidth: '80px',
                       textAlign: 'center'
                     }}
                   >
@@ -1166,7 +1166,7 @@ const finishCheckout = () => {
                       cursor: 'pointer',
                       userSelect: 'none',
                       WebkitUserSelect: 'none',
-                      minWidth: '50px',
+                      minWidth: '70px',
                       textAlign: 'center'
                     }}
                   >
@@ -1235,7 +1235,7 @@ const finishCheckout = () => {
                       cursor: 'pointer',
                       userSelect: 'none',
                       WebkitUserSelect: 'none',
-                      minWidth: '50px',
+                      minWidth: '70px',
                       textAlign: 'center'
                     }}
                   >
