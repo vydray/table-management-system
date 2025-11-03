@@ -246,6 +246,8 @@ export class BluetoothPrinter {
         roundingAdjustment: orderData.roundingAdjustment,
         cardFeeRate: orderData.cardFeeRate,
         cardFee: orderData.cardFee,
+        roundingUnit: orderData.roundingUnit,
+        roundingMethod: orderData.roundingMethod,
         paymentCash: orderData.paymentCash,
         paymentCard: orderData.paymentCard,
         paymentOther: orderData.paymentOther,
