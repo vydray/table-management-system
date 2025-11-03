@@ -7,6 +7,15 @@ import { useAttendanceData } from '../hooks/useAttendanceData'
 import { useAttendanceRows } from '../hooks/useAttendanceRows'
 import { useAttendanceHandlers } from '../hooks/useAttendanceHandlers'
 
+// スタイル
+import {
+  containerStyle,
+  headerStyle,
+  backButtonStyle,
+  headerTitleStyle,
+  contentAreaStyle
+} from '../styles/settingsStyles'
+
 export default function Attendance() {
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
@@ -115,84 +124,35 @@ export default function Attendance() {
         }
       `}</style>
 
-      <div className="attendance-page" style={{
-        width: '100%',
-        maxWidth: '1280px',
-        height: '100vh',
-        maxHeight: '800px',
-        margin: '0 auto',
-        backgroundColor: '#f2f2f7',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative'
-      }}>
+      <div style={containerStyle}>
         {/* ヘッダー */}
-        <div style={{
-          backgroundColor: '#fff',
-          borderBottom: '1px solid #e0e0e0',
-          padding: '20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <button
-              onClick={() => router.push('/')}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '24px',
-                cursor: 'pointer',
-                padding: '8px',
-                color: '#007AFF',
-                borderRadius: '8px',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              ← 戻る
-            </button>
-            <h1 style={{ 
-              margin: 0, 
-              fontSize: '24px', 
-              fontWeight: '600',
-              color: '#000'
-            }}>
-              勤怠登録
-            </h1>
-          </div>
-
-          <div style={{ 
-            fontSize: '18px', 
-            fontWeight: '500',
-            color: '#000'
-          }}>
-            {new Date(selectedDate).toLocaleDateString('ja-JP', { 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric',
-              weekday: 'short'
-            })}
-          </div>
+        <div style={headerStyle}>
+          <button onClick={() => router.push('/')} style={backButtonStyle}>
+            ←
+          </button>
+          <h1 style={headerTitleStyle}>
+            👥 勤怠登録
+          </h1>
         </div>
 
-        {/* 日付選択 */}
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '16px 20px',
-          borderBottom: '1px solid #e0e0e0',
-          marginBottom: '16px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+        {/* コンテンツエリア */}
+        <div className="attendance-page" style={{
+          ...contentAreaStyle,
+          padding: '20px',
+          height: 'calc(100vh - 54px)',
+          display: 'flex',
+          flexDirection: 'column'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ 
+          {/* 日付選択 */}
+          <div style={{
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <span style={{
               fontSize: '16px',
-              color: '#000',
+              color: '#333',
               fontWeight: '500'
             }}>
               日付:
@@ -202,35 +162,28 @@ export default function Attendance() {
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               style={{
-                padding: '8px 16px',
+                padding: '10px 16px',
                 fontSize: '16px',
-                border: '2px solid #e0e0e0',
-                borderRadius: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '5px',
                 outline: 'none',
                 cursor: 'pointer',
-                backgroundColor: '#f8f8f8',
-                color: '#000',
-                fontWeight: '500',
-                WebkitAppearance: 'none',
-                transition: 'border-color 0.2s'
+                backgroundColor: 'white',
+                color: '#333'
               }}
-              onFocus={(e) => e.currentTarget.style.borderColor = '#007AFF'}
-              onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
             />
           </div>
-        </div>
 
-        {/* テーブル */}
-        <div style={{
-          flex: 1,
-          backgroundColor: '#fff',
-          margin: '0 16px',
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
+          {/* テーブル */}
+          <div style={{
+            flex: 1,
+            backgroundColor: '#fff',
+            borderRadius: '10px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
           {loading ? (
             <div style={{ 
               flex: 1,
@@ -763,27 +716,24 @@ export default function Attendance() {
           <button
             onClick={addRow}
             style={{
-              padding: '14px 28px',
-              backgroundColor: '#f0f0f0',
-              border: 'none',
-              borderRadius: '10px',
+              padding: '12px 28px',
+              backgroundColor: 'white',
+              border: '2px solid #FF9800',
+              borderRadius: '5px',
               cursor: 'pointer',
               fontSize: '16px',
-              fontWeight: '600',
-              color: '#007AFF',
+              fontWeight: 'bold',
+              color: '#FF9800',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              transition: 'all 0.2s',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              transition: 'all 0.2s'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#e0e0e0'
-              e.currentTarget.style.transform = 'translateY(-1px)'
+              e.currentTarget.style.backgroundColor = '#FFF3E0'
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f0f0f0'
-              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.backgroundColor = 'white'
             }}
           >
             <span style={{ fontSize: '20px' }}>+</span> 行を追加
@@ -793,35 +743,31 @@ export default function Attendance() {
             onClick={handleSave}
             disabled={saving}
             style={{
-              padding: '14px 48px',
-              backgroundColor: saving ? '#c0c0c0' : '#007AFF',
-              color: '#fff',
+              padding: '12px 40px',
+              backgroundColor: saving ? '#c0c0c0' : '#FF9800',
+              color: 'white',
               border: 'none',
-              borderRadius: '10px',
+              borderRadius: '5px',
               cursor: saving ? 'not-allowed' : 'pointer',
               fontSize: '16px',
-              fontWeight: '600',
+              fontWeight: 'bold',
               transition: 'all 0.2s',
-              opacity: saving ? 0.7 : 1,
-              boxShadow: '0 2px 8px rgba(0,122,255,0.3)'
+              opacity: saving ? 0.7 : 1
             }}
             onMouseEnter={(e) => {
               if (!saving) {
-                e.currentTarget.style.backgroundColor = '#0051D5'
-                e.currentTarget.style.transform = 'translateY(-1px)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,122,255,0.4)'
+                e.currentTarget.style.backgroundColor = '#F57C00'
               }
             }}
             onMouseLeave={(e) => {
               if (!saving) {
-                e.currentTarget.style.backgroundColor = '#007AFF'
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,122,255,0.3)'
+                e.currentTarget.style.backgroundColor = '#FF9800'
               }
             }}
           >
             {saving ? '保存中...' : '保存'}
           </button>
+        </div>
         </div>
       </div>
     </>
