@@ -213,13 +213,22 @@ export default function Home() {
         setPaymentAmount('cash', roundedTotal)
       }
     } else if (method === 'card') {
-      // カードボタン: 残りの金額（小計 - 現金 - その他）を入力
+      // カードボタン: 残りの金額にカード手数料を加算して端数処理
       const cashPaid = paymentData.cash
       const otherPaid = paymentData.other
       const remaining = roundedTotal - cashPaid - otherPaid
 
       if (remaining > 0) {
-        setPaymentAmount('card', remaining)
+        // カード手数料を計算
+        const cardFee = systemSettings.cardFeeRate > 0
+          ? Math.floor(remaining * systemSettings.cardFeeRate)
+          : 0
+
+        // カード手数料を含めた金額を端数処理
+        const cardAmountWithFee = remaining + cardFee
+        const roundedCardAmount = getRoundedTotal(cardAmountWithFee, systemSettings.roundingUnit, systemSettings.roundingMethod)
+
+        setPaymentAmount('card', roundedCardAmount)
       }
     } else if (method === 'other') {
       // その他ボタン: PaymentModal内で計算される totalWithCardFee を使用
