@@ -164,7 +164,12 @@ export default function SystemSettings() {
               borderRadius: '5px',
               width: '120px',
               backgroundColor: 'white',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              WebkitAppearance: 'menulist',
+              appearance: 'auto',
+              touchAction: 'manipulation',
+              position: 'relative',
+              zIndex: 1
             }}
           >
             {Array.from({ length: 24 }, (_, i) => (
