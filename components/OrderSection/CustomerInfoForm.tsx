@@ -81,12 +81,14 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
               borderRadius: '4px',
               fontSize: '14px',
               backgroundColor: 'white',
-              WebkitAppearance: 'menulist',
-              appearance: 'auto',
+              WebkitAppearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'menulist',
+              appearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'auto',
               touchAction: 'manipulation',
               position: 'relative',
               zIndex: 9999,
-              pointerEvents: 'auto'
+              pointerEvents: 'auto',
+              overflowY: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'auto' : 'visible',
+              maxHeight: typeof window !== 'undefined' && window.innerWidth <= 1024 ? '200px' : 'none'
             }}
           >
             <option value="">-- 選択 --</option>

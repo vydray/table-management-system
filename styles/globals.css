@@ -484,12 +484,15 @@ body.modal-open {
 }
 
 /* size属性が設定されている場合（タブレット用） */
-.date-select[size]:not([size="1"]),
-.time-select[size]:not([size="1"]) {
-  -webkit-appearance: listbox;
-  appearance: listbox;
-  overflow-y: auto;
-  height: auto;
+@media screen and (max-width: 1200px) {
+  .date-select[size]:not([size="1"]),
+  .time-select[size]:not([size="1"]) {
+    -webkit-appearance: listbox !important;
+    appearance: listbox !important;
+    overflow-y: auto !important;
+    max-height: 200px !important;
+    height: auto !important;
+  }
 }
 
 .date-select:nth-of-type(1) { width: 80px; }

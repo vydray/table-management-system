@@ -1130,6 +1130,10 @@ const finishCheckout = () => {
                       updateTableInfo(true)
                     }}
                     size={window.innerWidth <= 1024 ? 5 : 1}
+                    style={{
+                      maxHeight: window.innerWidth <= 1024 ? '150px' : 'none',
+                      overflowY: window.innerWidth <= 1024 ? 'auto' : 'visible'
+                    }}
                   >
                     {[2024, 2025].map(year => (
                       <option key={year} value={year}>{year}年</option>
@@ -1143,6 +1147,10 @@ const finishCheckout = () => {
                       updateTableInfo(true)
                     }}
                     size={window.innerWidth <= 1024 ? 8 : 1}
+                    style={{
+                      maxHeight: window.innerWidth <= 1024 ? '200px' : 'none',
+                      overflowY: window.innerWidth <= 1024 ? 'auto' : 'visible'
+                    }}
                   >
                     {[...Array(12)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>{i + 1}月</option>
@@ -1156,6 +1164,10 @@ const finishCheckout = () => {
                       updateTableInfo(true)
                     }}
                     size={window.innerWidth <= 1024 ? 10 : 1}
+                    style={{
+                      maxHeight: window.innerWidth <= 1024 ? '250px' : 'none',
+                      overflowY: window.innerWidth <= 1024 ? 'auto' : 'visible'
+                    }}
                   >
                     {[...Array(31)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>{i + 1}日</option>
@@ -1169,6 +1181,10 @@ const finishCheckout = () => {
                     }}
                     className="time-select"
                     size={window.innerWidth <= 1024 ? 10 : 1}
+                    style={{
+                      maxHeight: window.innerWidth <= 1024 ? '250px' : 'none',
+                      overflowY: window.innerWidth <= 1024 ? 'auto' : 'visible'
+                    }}
                   >
                     {[...Array(24)].map((_, i) => (
                       <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
@@ -1183,6 +1199,10 @@ const finishCheckout = () => {
                     }}
                     className="time-select"
                     size={window.innerWidth <= 1024 ? 8 : 1}
+                    style={{
+                      maxHeight: window.innerWidth <= 1024 ? '200px' : 'none',
+                      overflowY: window.innerWidth <= 1024 ? 'auto' : 'visible'
+                    }}
                   >
                     {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(min => (
                       <option key={min} value={min}>{min.toString().padStart(2, '0')}</option>
