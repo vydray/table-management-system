@@ -66,7 +66,7 @@ export const contentAreaStyle: CSSProperties = {
   flex: 1,
   backgroundColor: 'white',
   padding: '30px 40px',
-  paddingBottom: '100px',
+  paddingBottom: 'calc(100px + env(safe-area-inset-bottom))',
   overflowY: 'auto',
   height: 'calc(100vh - 54px)',
   WebkitOverflowScrolling: 'touch',

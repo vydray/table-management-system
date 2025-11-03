@@ -105,6 +105,15 @@ export const useSystemSettings = () => {
     try {
       const storeId = getCurrentStoreId()
 
+      // 店舗IDのチェック
+      if (!storeId || storeId === 0) {
+        console.error('Store ID not found')
+        alert('店舗情報が取得できません。再ログインしてください。')
+        return
+      }
+
+      console.log('Saving settings for store:', storeId)
+
       const settingsToSave = [
         { setting_key: 'business_day_start_hour', setting_value: String(businessDayStartHour) },
         { setting_key: 'tax_rate', setting_value: String(taxRate) },
@@ -115,6 +124,8 @@ export const useSystemSettings = () => {
       ]
 
       for (const setting of settingsToSave) {
+        console.log('Saving setting:', setting.setting_key, '=', setting.setting_value)
+
         const { error } = await supabase
           .from('system_settings')
           .upsert({
@@ -125,13 +136,16 @@ export const useSystemSettings = () => {
             onConflict: 'store_id,setting_key'
           })
 
-        if (error) throw error
+        if (error) {
+          console.error('Supabase error:', error)
+          throw error
+        }
       }
 
       alert('設定を保存しました')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving system settings:', error)
-      alert('保存に失敗しました')
+      alert(`保存に失敗しました: ${error?.message || '不明なエラー'}`)
     }
   }
 

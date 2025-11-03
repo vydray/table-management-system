@@ -33,7 +33,7 @@ export default function SystemSettings() {
     <div style={{
       height: '100%',
       overflowY: 'auto',
-      paddingBottom: '50px',
+      paddingBottom: '0',
       WebkitOverflowScrolling: 'touch',
       msOverflowStyle: '-ms-autohiding-scrollbar'
     }}>
@@ -223,10 +223,19 @@ export default function SystemSettings() {
         </p>
       </div>
 
-      <div style={{ 
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: '220px',
+        right: 0,
         display: 'flex',
         justifyContent: 'center',
-        marginTop: '40px'
+        padding: '20px',
+        paddingBottom: 'calc(20px + env(safe-area-inset-bottom))',
+        backgroundColor: 'white',
+        borderTop: '1px solid #e0e0e0',
+        boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
+        zIndex: 10
       }}>
         <button
           onClick={saveSettings}
