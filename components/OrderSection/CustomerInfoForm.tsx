@@ -73,6 +73,7 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
           <select
             value={castName}
             onChange={(e) => onUpdateFormData({ castName: e.target.value })}
+            size={typeof window !== 'undefined' && window.innerWidth <= 1024 ? Math.min(10, castList.length + 1) : 1}
             style={{
               flex: 1,
               padding: '6px 10px',

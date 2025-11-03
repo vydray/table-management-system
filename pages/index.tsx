@@ -1122,50 +1122,67 @@ const finishCheckout = () => {
                   }}>
                     入店日時：
                   </span>
-                  <select className="date-select" value={formData.editYear} onChange={(e) => {
-                    setFormData({ ...formData, editYear: parseInt(e.target.value) })
-                    updateTableInfo(true)
-                  }}>
+                  <select
+                    className="date-select"
+                    value={formData.editYear}
+                    onChange={(e) => {
+                      setFormData({ ...formData, editYear: parseInt(e.target.value) })
+                      updateTableInfo(true)
+                    }}
+                    size={window.innerWidth <= 1024 ? 5 : 1}
+                  >
                     {[2024, 2025].map(year => (
                       <option key={year} value={year}>{year}年</option>
                     ))}
                   </select>
-                  <select className="date-select" value={formData.editMonth} onChange={(e) => {
-                    setFormData({ ...formData, editMonth: parseInt(e.target.value) })
-                    updateTableInfo(true)
-                  }}>
+                  <select
+                    className="date-select"
+                    value={formData.editMonth}
+                    onChange={(e) => {
+                      setFormData({ ...formData, editMonth: parseInt(e.target.value) })
+                      updateTableInfo(true)
+                    }}
+                    size={window.innerWidth <= 1024 ? 8 : 1}
+                  >
                     {[...Array(12)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>{i + 1}月</option>
                     ))}
                   </select>
-                  <select className="date-select" value={formData.editDate} onChange={(e) => {
-                    setFormData({ ...formData, editDate: parseInt(e.target.value) })
-                    updateTableInfo(true)
-                  }}>
+                  <select
+                    className="date-select"
+                    value={formData.editDate}
+                    onChange={(e) => {
+                      setFormData({ ...formData, editDate: parseInt(e.target.value) })
+                      updateTableInfo(true)
+                    }}
+                    size={window.innerWidth <= 1024 ? 10 : 1}
+                  >
                     {[...Array(31)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>{i + 1}日</option>
                     ))}
                   </select>
-                  <select 
+                  <select
                     value={formData.editHour}
                     onChange={(e) => {
                       setFormData({ ...formData, editHour: parseInt(e.target.value) })
                       updateTableInfo(true)
                     }}
                     className="time-select"
+                    size={window.innerWidth <= 1024 ? 10 : 1}
                   >
                     {[...Array(24)].map((_, i) => (
                       <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
                     ))}
                   </select>
                   <span>:</span>
-                  <select 
+                  <select
                     value={formData.editMinute}
                     onChange={(e) => {
                       setFormData({ ...formData, editMinute: parseInt(e.target.value) })
                       updateTableInfo(true)
                     }}
                     className="time-select"
+                    size={window.innerWidth <= 1024 ? 8 : 1}
                   >
                     {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(min => (
                       <option key={min} value={min}>{min.toString().padStart(2, '0')}</option>
