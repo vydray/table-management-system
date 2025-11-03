@@ -272,6 +272,8 @@ export class BluetoothPrinter {
     consumptionTax: number
     roundingAdjustment: number
     roundedTotal: number
+    cardFeeRate?: number  // カード手数料率（%）
+    cardFee?: number  // カード手数料
     paymentCash: number
     paymentCard: number
     paymentOther: number

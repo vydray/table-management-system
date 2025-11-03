@@ -21,6 +21,7 @@ interface SystemSettings {
   serviceChargeRate: number
   roundingUnit: number
   roundingMethod: number
+  cardFeeRate: number
 }
 
 interface FormData {
@@ -169,6 +170,14 @@ export const usePrinting = () => {
         const serviceTax = calculateServiceTax(subtotal, systemSettings.serviceChargeRate)
         const consumptionTax = Math.floor((subtotal + serviceTax) * systemSettings.consumptionTaxRate)
 
+        // カード手数料の計算（カード金額のみに適用）
+        const cardFee = paymentData.card > 0 && systemSettings.cardFeeRate > 0
+          ? Math.floor(paymentData.card * (systemSettings.cardFeeRate / 100))
+          : 0
+
+        const roundedTotal = getRoundedTotalAmount()
+        const totalWithCardFee = roundedTotal + cardFee
+
         await printer.printReceipt({
           storeName: receiptSettings?.store_name || '店舗名',
           storeAddress: receiptSettings?.store_address || '',
@@ -189,12 +198,14 @@ export const usePrinting = () => {
           serviceTax: serviceTax,
           consumptionTax: consumptionTax,
           roundingAdjustment: getRoundingAdjustmentAmount(),
-          roundedTotal: getRoundedTotalAmount(),
+          roundedTotal: roundedTotal,
+          cardFeeRate: systemSettings.cardFeeRate,
+          cardFee: cardFee,
           paymentCash: paymentData.cash,
           paymentCard: paymentData.card,
           paymentOther: paymentData.other,
           paymentOtherMethod: paymentData.otherMethod,
-          change: (paymentData.cash + paymentData.card + paymentData.other) - getRoundedTotalAmount()
+          change: (paymentData.cash + paymentData.card + paymentData.other) - totalWithCardFee
         })
 
         await printer.disconnect()
