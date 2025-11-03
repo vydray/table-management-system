@@ -6,6 +6,7 @@ import Head from 'next/head'
 import { useTableLayout } from '../hooks/useTableLayout'
 import { useTableAlignment } from '../hooks/useTableAlignment'
 import { useTableDragDrop } from '../hooks/useTableDragDrop'
+import { useAutoScale } from '../hooks/useAutoScale'
 
 interface TableLayout {
   table_name: string
@@ -33,11 +34,11 @@ export default function TableLayoutEdit() {
   const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
   const [tableSizeInput, setTableSizeInput] = useState({ width: '130', height: '123' })
   const [isUpdatingSize, setIsUpdatingSize] = useState(false)
-  const [autoScale, setAutoScale] = useState(1)
   const canvasRef = useRef<HTMLDivElement>(null)
 
   // 画面比率関連の状態
   const canvasSize = { width: 2176, height: 1600 }
+  const autoScale = useAutoScale(canvasRef, canvasSize)
 
   // 配置禁止ゾーン（ヘッダー160px + ナビゲーションバー60px）
   const forbiddenZones = {
@@ -103,27 +104,6 @@ export default function TableLayoutEdit() {
     handleDragMove,
     handleDragEnd
   } = useTableDragDrop()
-
-  // 画面サイズに合わせた自動スケールを計算
-  useEffect(() => {
-    const calculateAutoScale = () => {
-      if (canvasRef.current) {
-        const container = canvasRef.current
-        const containerWidth = container.clientWidth
-        const containerHeight = container.clientHeight
-
-        const scaleX = (containerWidth - 40) / canvasSize.width
-        const scaleY = (containerHeight - 40) / canvasSize.height
-        const scale = Math.min(scaleX, scaleY, 1)
-
-        setAutoScale(scale)
-      }
-    }
-
-    calculateAutoScale()
-    window.addEventListener('resize', calculateAutoScale)
-    return () => window.removeEventListener('resize', calculateAutoScale)
-  }, [canvasSize.width, canvasSize.height])
 
   // テーブルデータの読み込み
   useEffect(() => {
