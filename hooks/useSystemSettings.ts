@@ -59,16 +59,19 @@ export const useSystemSettings = () => {
         setServiceFeeRate(Number(serviceFeeData.setting_value))
       }
 
-      // 端数処理を取得
-      const { data: roundingTypeData } = await supabase
+      // 端数処理を取得（rounding_methodとして数値で保存されている）
+      const { data: roundingMethodData } = await supabase
         .from('system_settings')
         .select('setting_value')
         .eq('store_id', storeId)
-        .eq('setting_key', 'rounding_type')
+        .eq('setting_key', 'rounding_method')
         .single()
 
-      if (roundingTypeData) {
-        setRoundingType(roundingTypeData.setting_value)
+      if (roundingMethodData) {
+        const method = Number(roundingMethodData.setting_value)
+        // 数値から文字列に変換: 0=切り上げ, 1=切り捨て, 2=四捨五入
+        const typeMap = ['切り上げ', '切り捨て', '四捨五入']
+        setRoundingType(typeMap[method] || '四捨五入')
       }
 
       // 端数単位を取得
@@ -122,11 +125,19 @@ export const useSystemSettings = () => {
 
       console.log('Saving settings for store:', storeId)
 
+      // 端数処理の文字列を数値に変換: 切り上げ=0, 切り捨て=1, 四捨五入=2
+      const roundingMethodMap: { [key: string]: number } = {
+        '切り上げ': 0,
+        '切り捨て': 1,
+        '四捨五入': 2
+      }
+      const roundingMethodValue = roundingMethodMap[roundingType] ?? 2
+
       const settingsToSave = [
         { setting_key: 'business_day_start_hour', setting_value: String(businessDayStartHour) },
         { setting_key: 'tax_rate', setting_value: String(taxRate) },
         { setting_key: 'service_fee_rate', setting_value: String(serviceFeeRate) },
-        { setting_key: 'rounding_type', setting_value: roundingType },
+        { setting_key: 'rounding_method', setting_value: String(roundingMethodValue) },
         { setting_key: 'rounding_unit', setting_value: String(roundingUnit) },
         { setting_key: 'register_amount', setting_value: String(registerAmount) }
       ]
