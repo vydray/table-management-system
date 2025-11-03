@@ -58,9 +58,10 @@ export const PaymentModal: FC<PaymentModalProps> = ({
 }) => {
   if (!isOpen) return null
 
-  // カード手数料の計算（カード金額のみに適用）
-  const cardFee = paymentData.card > 0 && cardFeeRate > 0
-    ? Math.floor(paymentData.card * (cardFeeRate / 100))
+  // カード手数料の計算（残りの支払額に対して適用）
+  const remainingAmount = roundedTotal - paymentData.cash - paymentData.other
+  const cardFee = paymentData.card > 0 && cardFeeRate > 0 && remainingAmount > 0
+    ? Math.floor(remainingAmount * (cardFeeRate / 100))
     : 0
 
   const totalPaid = paymentData.cash + paymentData.card + paymentData.other
