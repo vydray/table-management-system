@@ -50,8 +50,8 @@ export default function SystemSettings() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <input
             type="number"
-            value={taxRate}
-            onChange={(e) => setTaxRate(Number(e.target.value))}
+            value={taxRate === 0 ? '' : taxRate}
+            onChange={(e) => setTaxRate(e.target.value === '' ? 0 : Number(e.target.value))}
             style={{
               padding: '10px',
               fontSize: '16px',
@@ -76,8 +76,8 @@ export default function SystemSettings() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <input
             type="number"
-            value={serviceFeeRate}
-            onChange={(e) => setServiceFeeRate(Number(e.target.value))}
+            value={serviceFeeRate === 0 ? '' : serviceFeeRate}
+            onChange={(e) => setServiceFeeRate(e.target.value === '' ? 0 : Number(e.target.value))}
             style={{
               padding: '10px',
               fontSize: '16px',
@@ -130,8 +130,8 @@ export default function SystemSettings() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <input
             type="number"
-            value={roundingUnit}
-            onChange={(e) => setRoundingUnit(Number(e.target.value))}
+            value={roundingUnit === 0 ? '' : roundingUnit}
+            onChange={(e) => setRoundingUnit(e.target.value === '' ? 0 : Number(e.target.value))}
             style={{
               padding: '10px',
               fontSize: '16px',
@@ -207,8 +207,8 @@ export default function SystemSettings() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <input
             type="number"
-            value={registerAmount}
-            onChange={(e) => setRegisterAmount(Number(e.target.value))}
+            value={registerAmount === 0 ? '' : registerAmount}
+            onChange={(e) => setRegisterAmount(e.target.value === '' ? 0 : Number(e.target.value))}
             step="1000"
             style={{
               padding: '10px',

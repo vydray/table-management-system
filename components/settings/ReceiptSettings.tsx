@@ -543,8 +543,8 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="number"
-              value={settings.revenue_stamp_threshold}
-              onChange={(e) => setSettings({ ...settings, revenue_stamp_threshold: parseInt(e.target.value) || 50000 })}
+              value={settings.revenue_stamp_threshold === 0 ? '' : settings.revenue_stamp_threshold}
+              onChange={(e) => setSettings({ ...settings, revenue_stamp_threshold: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
               style={{
                 width: '200px',
                 padding: '10px',
@@ -785,8 +785,8 @@ export default function ReceiptSettings() {
           </label>
           <input
             type="number"
-            value={settings.current_receipt_number}
-            onChange={(e) => setSettings({ ...settings, current_receipt_number: parseInt(e.target.value) || 1 })}
+            value={settings.current_receipt_number === 0 ? '' : settings.current_receipt_number}
+            onChange={(e) => setSettings({ ...settings, current_receipt_number: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
             style={{
               width: '200px',
               padding: '10px',
