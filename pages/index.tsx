@@ -404,22 +404,34 @@ const handleMenuClick = (item: string) => {
   // テーブル情報更新（silent: 自動保存時はメッセージを出さない）
   const updateTableInfo = async (silent: boolean = false) => {
     try {
+      // バリデーション: 必須項目チェック
+      if (!silent) {
+        if (!formData.visitType) {
+          alert('来店種別を選択してください')
+          return
+        }
+        if (!formData.castName) {
+          alert('推しを選択してください')
+          return
+        }
+      }
+
       let timeStr: string
-      
+
       if (modalMode === 'new') {
         const now = new Date()
         const minutes = now.getMinutes()
         const roundedMinutes = Math.round(minutes / 5) * 5
-        
+
         now.setMinutes(roundedMinutes)
         now.setSeconds(0)
         now.setMilliseconds(0)
-        
+
         if (roundedMinutes === 60) {
           now.setMinutes(0)
           now.setHours(now.getHours() + 1)
         }
-        
+
         timeStr = getJapanTimeString(now)
       } else {
         const selectedTime = new Date(
@@ -438,25 +450,25 @@ const handleMenuClick = (item: string) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tableId: currentTable,
-          guestName: formData.guestName,
+          guestName: formData.guestName || '無記名',  // 空の場合は「無記名」とする
           castName: formData.castName,
           timeStr,
           visitType: formData.visitType,
           storeId: storeId  // 店舗IDを追加
         })
       })
-      
+
       // 卓数を更新するためにテーブル状態を再取得
       const updatedTables = { ...tables }
       updatedTables[currentTable] = {
         ...updatedTables[currentTable],
-        name: formData.guestName,
+        name: formData.guestName || '無記名',  // 空の場合は「無記名」とする
         oshi: formData.castName,
-        status: formData.guestName ? 'occupied' : 'empty',
+        status: 'occupied',  // 必ず占有状態にする
         time: timeStr
       }
       setTables(updatedTables)
-      
+
       // 現在の卓数を計算
       const occupied = Object.values(updatedTables).filter(table => table.status !== 'empty').length
       setOccupiedTableCount(occupied)

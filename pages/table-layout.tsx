@@ -9,7 +9,11 @@ import { useTableDragDrop } from '../hooks/useTableDragDrop'
 import { useAutoScale } from '../hooks/useAutoScale'
 
 // スタイル
-import { headerStyle } from '../styles/settingsStyles'
+import {
+  headerStyle,
+  backButtonStyle,
+  headerTitleStyle
+} from '../styles/settingsStyles'
 
 interface TableLayout {
   table_name: string
@@ -207,57 +211,38 @@ export default function TableLayoutEdit() {
         overflow: 'hidden'
       }}>
         {/* ヘッダー */}
-        <div style={{
-          ...headerStyle,
-          justifyContent: 'space-between',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 'normal' }}>
+        <div style={headerStyle}>
+          <button onClick={() => router.push('/')} style={backButtonStyle}>
+            ←
+          </button>
+          <h1 style={{ ...headerTitleStyle, flex: 1 }}>
             🎨 テーブル配置編集
           </h1>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={() => {
-                // モーダルを開く際に現在の値を入力欄にセット
-                setAlignColsInput(alignCols.toString())
-                setAlignRowsInput(alignRows.toString())
-                setHorizontalSpacingInput(horizontalSpacing.toString())
-                setVerticalSpacingInput(verticalSpacing.toString())
-                setAlignStartXInput(alignStartX.toString())
-                setAlignStartYInput(alignStartY.toString())
-                setShowAlignModal(true)
-              }}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                backgroundColor: 'white',
-                color: '#FF9800',
-                border: '2px solid white',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              ⚡ 自動整列
-            </button>
-            <button
-              onClick={() => router.push('/')}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                backgroundColor: 'transparent',
-                color: 'white',
-                border: '2px solid white',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              ホームに戻る
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              // モーダルを開く際に現在の値を入力欄にセット
+              setAlignColsInput(alignCols.toString())
+              setAlignRowsInput(alignRows.toString())
+              setHorizontalSpacingInput(horizontalSpacing.toString())
+              setVerticalSpacingInput(verticalSpacing.toString())
+              setAlignStartXInput(alignStartX.toString())
+              setAlignStartYInput(alignStartY.toString())
+              setShowAlignModal(true)
+            }}
+            style={{
+              padding: '8px 16px',
+              fontSize: '14px',
+              backgroundColor: 'white',
+              color: '#FF9800',
+              border: '2px solid white',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            ⚡ 自動整列
+          </button>
         </div>
         
         {/* ページコントロール */}
