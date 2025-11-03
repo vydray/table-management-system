@@ -900,9 +900,9 @@ const finishCheckout = () => {
 >
   ×
 </button>
-          <h3 style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <h3 style={{
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'space-between',
             margin: 0,
             padding: window.innerWidth <= 1024 ? '12px 15px' : '20px',
@@ -922,26 +922,397 @@ const finishCheckout = () => {
                 </span>
               )}
             </div>
-            {modalMode === 'edit' && orderItems.length > 0 && (
-              <button
-                onClick={printOrderSlip}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#2196f3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px'
-                }}
-              >
-                🖨️ 会計伝票印刷
-              </button>
-            )}
           </h3>
+
+          {/* 入店日時と会計伝票印刷ボタンのエリア（editモードのみ） */}
+          {modalMode === 'edit' && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 15px',
+              backgroundColor: '#f5f5f5',
+              borderBottom: '1px solid #ddd',
+              gap: '15px',
+              flexWrap: 'wrap'
+            }}>
+              {/* 入店日時エリア */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flex: 1,
+                minWidth: '300px'
+              }}>
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  whiteSpace: 'nowrap'
+                }}>
+                  入店日時：
+                </span>
+
+                {/* 年 */}
+                <div className="datetime-dropdown-container" style={{ position: 'relative' }}>
+                  <div
+                    onClick={() => setShowYearDropdown(!showYearDropdown)}
+                    style={{
+                      padding: '6px 20px 6px 10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      minWidth: '70px',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {formData.editYear}年
+                  </div>
+                  <span style={{
+                    position: 'absolute',
+                    right: '6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    fontSize: '10px'
+                  }}>▼</span>
+                  {showYearDropdown && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '150px',
+                      overflowY: 'auto',
+                      backgroundColor: '#fff',
+                      border: '1px solid #007AFF',
+                      borderRadius: '4px',
+                      marginTop: '2px',
+                      zIndex: 10000,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }}>
+                      {[2024, 2025, 2026].map(year => (
+                        <div
+                          key={year}
+                          onClick={() => {
+                            setFormData({ ...formData, editYear: year })
+                            updateTableInfo(true)
+                            setShowYearDropdown(false)
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            textAlign: 'center',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          {year}年
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 月 */}
+                <div className="datetime-dropdown-container" style={{ position: 'relative' }}>
+                  <div
+                    onClick={() => setShowMonthDropdown(!showMonthDropdown)}
+                    style={{
+                      padding: '6px 20px 6px 10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      minWidth: '60px',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {formData.editMonth}月
+                  </div>
+                  <span style={{
+                    position: 'absolute',
+                    right: '6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    fontSize: '10px'
+                  }}>▼</span>
+                  {showMonthDropdown && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      backgroundColor: '#fff',
+                      border: '1px solid #007AFF',
+                      borderRadius: '4px',
+                      marginTop: '2px',
+                      zIndex: 10000,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }}>
+                      {[...Array(12)].map((_, i) => (
+                        <div
+                          key={i + 1}
+                          onClick={() => {
+                            setFormData({ ...formData, editMonth: i + 1 })
+                            updateTableInfo(true)
+                            setShowMonthDropdown(false)
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            textAlign: 'center',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          {i + 1}月
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 日 */}
+                <div className="datetime-dropdown-container" style={{ position: 'relative' }}>
+                  <div
+                    onClick={() => setShowDateDropdown(!showDateDropdown)}
+                    style={{
+                      padding: '6px 20px 6px 10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      minWidth: '60px',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {formData.editDate}日
+                  </div>
+                  <span style={{
+                    position: 'absolute',
+                    right: '6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    fontSize: '10px'
+                  }}>▼</span>
+                  {showDateDropdown && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '250px',
+                      overflowY: 'auto',
+                      backgroundColor: '#fff',
+                      border: '1px solid #007AFF',
+                      borderRadius: '4px',
+                      marginTop: '2px',
+                      zIndex: 10000,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }}>
+                      {[...Array(31)].map((_, i) => (
+                        <div
+                          key={i + 1}
+                          onClick={() => {
+                            setFormData({ ...formData, editDate: i + 1 })
+                            updateTableInfo(true)
+                            setShowDateDropdown(false)
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            textAlign: 'center',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          {i + 1}日
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 時 */}
+                <div className="datetime-dropdown-container" style={{ position: 'relative' }}>
+                  <div
+                    onClick={() => setShowHourDropdown(!showHourDropdown)}
+                    style={{
+                      padding: '6px 20px 6px 10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      minWidth: '50px',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {formData.editHour.toString().padStart(2, '0')}
+                  </div>
+                  <span style={{
+                    position: 'absolute',
+                    right: '6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    fontSize: '10px'
+                  }}>▼</span>
+                  {showHourDropdown && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '250px',
+                      overflowY: 'auto',
+                      backgroundColor: '#fff',
+                      border: '1px solid #007AFF',
+                      borderRadius: '4px',
+                      marginTop: '2px',
+                      zIndex: 10000,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }}>
+                      {[...Array(24)].map((_, i) => (
+                        <div
+                          key={i}
+                          onClick={() => {
+                            setFormData({ ...formData, editHour: i })
+                            updateTableInfo(true)
+                            setShowHourDropdown(false)
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            textAlign: 'center',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          {i.toString().padStart(2, '0')}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <span>:</span>
+
+                {/* 分 */}
+                <div className="datetime-dropdown-container" style={{ position: 'relative' }}>
+                  <div
+                    onClick={() => setShowMinuteDropdown(!showMinuteDropdown)}
+                    style={{
+                      padding: '6px 20px 6px 10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      minWidth: '50px',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {formData.editMinute.toString().padStart(2, '0')}
+                  </div>
+                  <span style={{
+                    position: 'absolute',
+                    right: '6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    fontSize: '10px'
+                  }}>▼</span>
+                  {showMinuteDropdown && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      backgroundColor: '#fff',
+                      border: '1px solid #007AFF',
+                      borderRadius: '4px',
+                      marginTop: '2px',
+                      zIndex: 10000,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }}>
+                      {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(min => (
+                        <div
+                          key={min}
+                          onClick={() => {
+                            setFormData({ ...formData, editMinute: min })
+                            updateTableInfo(true)
+                            setShowMinuteDropdown(false)
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            textAlign: 'center',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          {min.toString().padStart(2, '0')}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 会計伝票印刷ボタン */}
+              {orderItems.length > 0 && (
+                <button
+                  onClick={printOrderSlip}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#2196f3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  🖨️ 会計伝票印刷
+                </button>
+              )}
+            </div>
+          )}
 
           {modalMode === 'new' ? (
             <div id="form-fields" style={{ padding: '20px', display: 'flex', gap: '20px', height: 'calc(100% - 80px)' }}>
@@ -1134,362 +1505,6 @@ const finishCheckout = () => {
           ) : (
                       <div id="details">
               <div className="order-section">
-
-                {/* 入店日時エリア - カスタムドロップダウン */}
-                <div className="datetime-edit" style={{
-                  fontSize: window.innerWidth <= 1024 ? '14px' : '16px',
-                  padding: window.innerWidth <= 1024 ? '10px 15px' : '15px 20px',
-                  justifyContent: 'center',
-                  borderBottom: '1px solid #ddd',
-                  marginBottom: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <span className="label-text" style={{
-                    fontSize: window.innerWidth <= 1024 ? '14px' : '16px'
-                  }}>
-                    入店日時：
-                  </span>
-
-                  {/* 年 */}
-                  <div className="datetime-dropdown-container" style={{ position: 'relative' }}>
-                    <div
-                      onClick={() => setShowYearDropdown(!showYearDropdown)}
-                      style={{
-                        padding: '6px 20px 6px 10px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        backgroundColor: 'white',
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        minWidth: '70px',
-                        textAlign: 'center'
-                      }}
-                    >
-                      {formData.editYear}年
-                    </div>
-                    <span style={{
-                      position: 'absolute',
-                      right: '6px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      pointerEvents: 'none',
-                      fontSize: '10px'
-                    }}>▼</span>
-                    {showYearDropdown && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        maxHeight: '150px',
-                        overflowY: 'auto',
-                        backgroundColor: '#fff',
-                        border: '1px solid #007AFF',
-                        borderRadius: '4px',
-                        marginTop: '2px',
-                        zIndex: 10000,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                      }}>
-                        {[2024, 2025, 2026].map(year => (
-                          <div
-                            key={year}
-                            onClick={() => {
-                              setFormData({ ...formData, editYear: year })
-                              updateTableInfo(true)
-                              setShowYearDropdown(false)
-                            }}
-                            style={{
-                              padding: '8px 12px',
-                              cursor: 'pointer',
-                              fontSize: '14px',
-                              textAlign: 'center',
-                              transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          >
-                            {year}年
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 月 */}
-                  <div className="datetime-dropdown-container" style={{ position: 'relative' }}>
-                    <div
-                      onClick={() => setShowMonthDropdown(!showMonthDropdown)}
-                      style={{
-                        padding: '6px 20px 6px 10px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        backgroundColor: 'white',
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        minWidth: '60px',
-                        textAlign: 'center'
-                      }}
-                    >
-                      {formData.editMonth}月
-                    </div>
-                    <span style={{
-                      position: 'absolute',
-                      right: '6px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      pointerEvents: 'none',
-                      fontSize: '10px'
-                    }}>▼</span>
-                    {showMonthDropdown && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        backgroundColor: '#fff',
-                        border: '1px solid #007AFF',
-                        borderRadius: '4px',
-                        marginTop: '2px',
-                        zIndex: 10000,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                      }}>
-                        {[...Array(12)].map((_, i) => (
-                          <div
-                            key={i + 1}
-                            onClick={() => {
-                              setFormData({ ...formData, editMonth: i + 1 })
-                              updateTableInfo(true)
-                              setShowMonthDropdown(false)
-                            }}
-                            style={{
-                              padding: '8px 12px',
-                              cursor: 'pointer',
-                              fontSize: '14px',
-                              textAlign: 'center',
-                              transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          >
-                            {i + 1}月
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 日 */}
-                  <div className="datetime-dropdown-container" style={{ position: 'relative' }}>
-                    <div
-                      onClick={() => setShowDateDropdown(!showDateDropdown)}
-                      style={{
-                        padding: '6px 20px 6px 10px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        backgroundColor: 'white',
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        minWidth: '60px',
-                        textAlign: 'center'
-                      }}
-                    >
-                      {formData.editDate}日
-                    </div>
-                    <span style={{
-                      position: 'absolute',
-                      right: '6px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      pointerEvents: 'none',
-                      fontSize: '10px'
-                    }}>▼</span>
-                    {showDateDropdown && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        maxHeight: '250px',
-                        overflowY: 'auto',
-                        backgroundColor: '#fff',
-                        border: '1px solid #007AFF',
-                        borderRadius: '4px',
-                        marginTop: '2px',
-                        zIndex: 10000,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                      }}>
-                        {[...Array(31)].map((_, i) => (
-                          <div
-                            key={i + 1}
-                            onClick={() => {
-                              setFormData({ ...formData, editDate: i + 1 })
-                              updateTableInfo(true)
-                              setShowDateDropdown(false)
-                            }}
-                            style={{
-                              padding: '8px 12px',
-                              cursor: 'pointer',
-                              fontSize: '14px',
-                              textAlign: 'center',
-                              transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          >
-                            {i + 1}日
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 時 */}
-                  <div className="datetime-dropdown-container" style={{ position: 'relative' }}>
-                    <div
-                      onClick={() => setShowHourDropdown(!showHourDropdown)}
-                      style={{
-                        padding: '6px 20px 6px 10px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        backgroundColor: 'white',
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        minWidth: '50px',
-                        textAlign: 'center'
-                      }}
-                    >
-                      {formData.editHour.toString().padStart(2, '0')}
-                    </div>
-                    <span style={{
-                      position: 'absolute',
-                      right: '6px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      pointerEvents: 'none',
-                      fontSize: '10px'
-                    }}>▼</span>
-                    {showHourDropdown && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        maxHeight: '250px',
-                        overflowY: 'auto',
-                        backgroundColor: '#fff',
-                        border: '1px solid #007AFF',
-                        borderRadius: '4px',
-                        marginTop: '2px',
-                        zIndex: 10000,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                      }}>
-                        {[...Array(24)].map((_, i) => (
-                          <div
-                            key={i}
-                            onClick={() => {
-                              setFormData({ ...formData, editHour: i })
-                              updateTableInfo(true)
-                              setShowHourDropdown(false)
-                            }}
-                            style={{
-                              padding: '8px 12px',
-                              cursor: 'pointer',
-                              fontSize: '14px',
-                              textAlign: 'center',
-                              transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          >
-                            {i.toString().padStart(2, '0')}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <span>:</span>
-
-                  {/* 分 */}
-                  <div className="datetime-dropdown-container" style={{ position: 'relative' }}>
-                    <div
-                      onClick={() => setShowMinuteDropdown(!showMinuteDropdown)}
-                      style={{
-                        padding: '6px 20px 6px 10px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        backgroundColor: 'white',
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        minWidth: '50px',
-                        textAlign: 'center'
-                      }}
-                    >
-                      {formData.editMinute.toString().padStart(2, '0')}
-                    </div>
-                    <span style={{
-                      position: 'absolute',
-                      right: '6px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      pointerEvents: 'none',
-                      fontSize: '10px'
-                    }}>▼</span>
-                    {showMinuteDropdown && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        backgroundColor: '#fff',
-                        border: '1px solid #007AFF',
-                        borderRadius: '4px',
-                        marginTop: '2px',
-                        zIndex: 10000,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                      }}>
-                        {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(min => (
-                          <div
-                            key={min}
-                            onClick={() => {
-                              setFormData({ ...formData, editMinute: min })
-                              updateTableInfo(true)
-                              setShowMinuteDropdown(false)
-                            }}
-                            style={{
-                              padding: '8px 12px',
-                              cursor: 'pointer',
-                              fontSize: '14px',
-                              textAlign: 'center',
-                              transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          >
-                            {min.toString().padStart(2, '0')}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
                 <div className="pos-container" style={{
                   transform: 'scale(1)',
                   transformOrigin: 'top left',
