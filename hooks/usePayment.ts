@@ -68,6 +68,13 @@ export const usePayment = () => {
     }))
   }
 
+  const setPaymentAmount = (type: 'cash' | 'card' | 'other', amount: number) => {
+    setPaymentData(prev => ({
+      ...prev,
+      [type]: amount
+    }))
+  }
+
   return {
     paymentData,
     activePaymentInput,
@@ -77,6 +84,7 @@ export const usePayment = () => {
     handleDeleteNumber,
     handleClearNumber,
     resetPaymentData,
-    setOtherMethod
+    setOtherMethod,
+    setPaymentAmount
   }
 }

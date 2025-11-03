@@ -28,6 +28,7 @@ interface PaymentModalProps {
   onClearNumber: () => void
   onChangeActiveInput: (input: 'cash' | 'card' | 'other') => void
   onChangeOtherMethod: (value: string) => void
+  onPaymentMethodClick: (method: 'cash' | 'card' | 'other') => void
   onCompleteCheckout: () => void
   onClose: () => void
 }
@@ -51,6 +52,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
   onClearNumber,
   onChangeActiveInput,
   onChangeOtherMethod,
+  onPaymentMethodClick,
   onCompleteCheckout,
   onClose
 }) => {
@@ -276,6 +278,65 @@ export const PaymentModal: FC<PaymentModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* 支払い方法ボタン */}
+          <div style={{
+            marginBottom: `${20 * layoutScale}px`,
+            display: 'flex',
+            gap: `${10 * layoutScale}px`
+          }}>
+            <button
+              onClick={() => onPaymentMethodClick('cash')}
+              style={{
+                flex: 1,
+                padding: `${12 * layoutScale}px`,
+                backgroundColor: activePaymentInput === 'cash' ? '#4CAF50' : '#e0e0e0',
+                color: activePaymentInput === 'cash' ? 'white' : '#333',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: `${14 * layoutScale}px`,
+                cursor: 'pointer',
+                fontWeight: activePaymentInput === 'cash' ? 'bold' : 'normal',
+                transition: 'all 0.2s'
+              }}
+            >
+              現金
+            </button>
+            <button
+              onClick={() => onPaymentMethodClick('card')}
+              style={{
+                flex: 1,
+                padding: `${12 * layoutScale}px`,
+                backgroundColor: activePaymentInput === 'card' ? '#2196F3' : '#e0e0e0',
+                color: activePaymentInput === 'card' ? 'white' : '#333',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: `${14 * layoutScale}px`,
+                cursor: 'pointer',
+                fontWeight: activePaymentInput === 'card' ? 'bold' : 'normal',
+                transition: 'all 0.2s'
+              }}
+            >
+              カード
+            </button>
+            <button
+              onClick={() => onPaymentMethodClick('other')}
+              style={{
+                flex: 1,
+                padding: `${12 * layoutScale}px`,
+                backgroundColor: activePaymentInput === 'other' ? '#FF9800' : '#e0e0e0',
+                color: activePaymentInput === 'other' ? 'white' : '#333',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: `${14 * layoutScale}px`,
+                cursor: 'pointer',
+                fontWeight: activePaymentInput === 'other' ? 'bold' : 'normal',
+                transition: 'all 0.2s'
+              }}
+            >
+              その他
+            </button>
+          </div>
 
           {/* 支払い方法入力 */}
           <div style={{ marginBottom: `${20 * layoutScale}px` }}>

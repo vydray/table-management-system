@@ -127,7 +127,8 @@ export default function Home() {
     handleDeleteNumber,
     handleClearNumber,
     resetPaymentData,
-    setOtherMethod
+    setOtherMethod,
+    setPaymentAmount
   } = usePayment()
 
   // ローカル状態
@@ -207,6 +208,40 @@ export default function Home() {
     const total = getTotal()
     const cardFee = getCardFee()
     return getRoundingAdjustment(total + cardFee, getRoundedTotalAmount())
+  }
+
+  // 支払い方法ボタンのハンドラー
+  const handlePaymentMethodClick = (method: 'cash' | 'card' | 'other') => {
+    const total = getTotal()
+    const roundedTotal = getRoundedTotal(total, systemSettings.roundingUnit, systemSettings.roundingMethod)
+
+    setActivePaymentInput(method)
+
+    if (method === 'cash') {
+      // 現金ボタン: 合計金額を自動入力
+      setPaymentAmount('cash', roundedTotal)
+    } else if (method === 'card') {
+      // カードボタン: (合計金額 - 現金入力額) + カード手数料
+      const cashPaid = paymentData.cash
+      const remaining = roundedTotal - cashPaid
+
+      if (remaining > 0) {
+        // カード金額にカード手数料を加算
+        const cardAmountWithFee = Math.ceil(remaining + remaining * systemSettings.cardFeeRate)
+        setPaymentAmount('card', cardAmountWithFee)
+      }
+    } else if (method === 'other') {
+      // その他ボタン: (合計金額 - 現金 - カード)
+      const cashPaid = paymentData.cash
+      const cardPaid = paymentData.card
+      const cardFee = cardPaid > 0 ? Math.floor(cardPaid * systemSettings.cardFeeRate) : 0
+      const totalWithCardFee = roundedTotal + cardFee
+      const remaining = totalWithCardFee - cashPaid - cardPaid
+
+      if (remaining > 0) {
+        setPaymentAmount('other', remaining)
+      }
+    }
   }
 
   // 会計伝票印刷のラッパー関数
@@ -1590,6 +1625,7 @@ const finishCheckout = () => {
         onClearNumber={handleClearNumber}
         onChangeActiveInput={setActivePaymentInput}
         onChangeOtherMethod={setOtherMethod}
+        onPaymentMethodClick={handlePaymentMethodClick}
         onCompleteCheckout={completeCheckout}
         onClose={() => {
           document.body.classList.remove('modal-open')
