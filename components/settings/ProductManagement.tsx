@@ -1,210 +1,73 @@
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import { getCurrentStoreId } from '../../utils/storeContext'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-interface Category {
-  id: number
-  name: string
-  display_order: number
-}
-
-interface Product {
-  id: number
-  name: string
-  price: number
-  category_id: number
-  display_order: number
-  is_active: boolean
-  needs_cast?: boolean
-  discount_rate?: number
-  store_id: number
-}
+import { useEffect, useMemo } from 'react'
+import { useProductData } from '../../hooks/useProductData'
+import { useProductCategory } from '../../hooks/useProductCategory'
+import { useProductModal } from '../../hooks/useProductModal'
 
 export default function ProductManagement() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [products, setProducts] = useState<Product[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [newProductName, setNewProductName] = useState('')
-  const [newProductPrice, setNewProductPrice] = useState('')
-  const [newProductCategory, setNewProductCategory] = useState<number | null>(null)
-  const [newProductNeedsCast, setNewProductNeedsCast] = useState(false)
+  // フックを使用
+  const {
+    products,
+    loadProducts,
+    addProduct: addProductData,
+    updateProduct: updateProductData,
+    deleteProduct: deleteProductData,
+    toggleCast,
+    toggleActive
+  } = useProductData()
 
-  // カテゴリーを読み込む
-  const loadCategories = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const { data, error } = await supabase
-        .from('product_categories')
-        .select('*')
-        .eq('store_id', storeId)
-        .order('display_order')
+  const {
+    categories,
+    selectedCategory,
+    setSelectedCategory,
+    loadCategories
+  } = useProductCategory()
 
-      if (error) throw error
-      setCategories(data || [])
-      // 初期状態では全商品を表示（カテゴリー選択なし）
-    } catch (error) {
-      console.error('Error loading categories:', error)
-    }
-  }
+  const {
+    showEditModal,
+    editingProduct,
+    newProductName,
+    setNewProductName,
+    newProductPrice,
+    setNewProductPrice,
+    newProductCategory,
+    setNewProductCategory,
+    newProductNeedsCast,
+    setNewProductNeedsCast,
+    openEditModal,
+    closeModal
+  } = useProductModal()
 
-  // 商品を読み込む
-  const loadProducts = async () => {
-    try {
-      const storeId = getCurrentStoreId()
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('store_id', storeId)
-        .order('display_order')
-
-      if (error) throw error
-      setProducts(data || [])
-    } catch (error) {
-      console.error('Error loading products:', error)
-    }
-  }
-
-  // 商品を追加
+  // 商品追加のラッパー関数
   const addProduct = async () => {
-  if (!newProductName || !newProductPrice || !newProductCategory) return
-
-  try {
-    const storeId = getCurrentStoreId()
-    
-    // 同じカテゴリー内で同じ名前の商品が既に存在するかチェック
-    const isDuplicate = products.some(p => 
-      p.category_id === newProductCategory && 
-      p.name.toLowerCase() === newProductName.toLowerCase()
+    const success = await addProductData(
+      newProductName,
+      newProductPrice,
+      newProductCategory!,
+      newProductNeedsCast
     )
-    
-    if (isDuplicate) {
-      alert(`「${newProductName}」は既に登録されています`)
-      return
+
+    if (success) {
+      setNewProductName('')
+      setNewProductPrice('')
+      setNewProductCategory(null)
+      setNewProductNeedsCast(false)
     }
-    
-    const categoryProducts = products.filter(p => p.category_id === newProductCategory)
-    const maxDisplayOrder = categoryProducts.length > 0
-      ? Math.max(...categoryProducts.map(p => p.display_order))
-      : 0
-    
-    const { error } = await supabase
-      .from('products')
-      .insert({
-        name: newProductName,
-        price: parseInt(newProductPrice),
-        category_id: newProductCategory,
-        display_order: maxDisplayOrder + 1,
-        store_id: storeId,
-        is_active: true,
-        needs_cast: newProductNeedsCast,
-        discount_rate: 0
-      })
-
-    if (error) throw error
-
-    setNewProductName('')
-    setNewProductPrice('')
-    setNewProductCategory(null)
-    setNewProductNeedsCast(false)
-    loadProducts()
-  } catch (error) {
-    console.error('Error adding product:', error)
-    alert('商品の追加に失敗しました')
   }
-}
 
-  // 商品を更新
+  // 商品更新のラッパー関数
   const updateProduct = async () => {
-  if (!editingProduct || !newProductName || !newProductPrice) return
+    if (!editingProduct) return
 
-  try {
-    // 編集中の商品と同じカテゴリー内で、編集中の商品以外に同じ名前が存在するかチェック
-    const isDuplicate = products.some(p => 
-      p.id !== editingProduct.id &&
-      p.category_id === editingProduct.category_id && 
-      p.name.toLowerCase() === newProductName.toLowerCase()
+    const success = await updateProductData(
+      editingProduct.id,
+      newProductName,
+      newProductPrice,
+      editingProduct.category_id,
+      newProductNeedsCast
     )
-    
-    if (isDuplicate) {
-      alert(`「${newProductName}」は既に登録されています`)
-      return
-    }
-    
-    const { error } = await supabase
-      .from('products')
-      .update({
-        name: newProductName,
-        price: parseInt(newProductPrice),
-        needs_cast: newProductNeedsCast
-      })
-      .eq('id', editingProduct.id)
 
-    if (error) throw error
-
-    setEditingProduct(null)
-    setNewProductName('')
-    setNewProductPrice('')
-    setNewProductNeedsCast(false)
-    setShowEditModal(false)
-    loadProducts()
-  } catch (error) {
-    console.error('Error updating product:', error)
-    alert('商品の更新に失敗しました')
-  }
-}
-
-  // 商品を削除
-  const deleteProduct = async (productId: number) => {
-    if (!confirm('この商品を削除しますか？')) return
-
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId)
-
-      if (error) throw error
-      loadProducts()
-    } catch (error) {
-      console.error('Error deleting product:', error)
-      alert('商品の削除に失敗しました')
-    }
-  }
-
-  // キャスト表示を切り替え
-  const toggleCast = async (productId: number, currentValue: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('products')
-        .update({ needs_cast: !currentValue })
-        .eq('id', productId)
-
-      if (error) throw error
-      loadProducts()
-    } catch (error) {
-      console.error('Error toggling cast:', error)
-    }
-  }
-
-  // 商品の有効/無効を切り替え
-  const toggleActive = async (productId: number, currentValue: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('products')
-        .update({ is_active: !currentValue })
-        .eq('id', productId)
-
-      if (error) throw error
-      loadProducts()
-    } catch (error) {
-      console.error('Error toggling active:', error)
+    if (success) {
+      closeModal()
     }
   }
 
@@ -213,9 +76,12 @@ export default function ProductManagement() {
     loadProducts()
   }, [])
 
-  const filteredProducts = selectedCategory
-    ? products.filter(p => p.category_id === selectedCategory)
-    : products // 全商品を表示
+  // フィルタリングされた商品リスト
+  const filteredProducts = useMemo(() => {
+    return selectedCategory
+      ? products.filter(p => p.category_id === selectedCategory)
+      : products
+  }, [selectedCategory, products])
 
   return (
   <div style={{ 
@@ -488,13 +354,7 @@ export default function ProductManagement() {
                 justifyContent: 'center'
               }}>
                 <button
-                  onClick={() => {
-                    setEditingProduct(product)
-                    setNewProductName(product.name)
-                    setNewProductPrice(product.price.toString())
-                    setNewProductNeedsCast(product.needs_cast || false)
-                    setShowEditModal(true)
-                  }}
+                  onClick={() => openEditModal(product)}
                   style={{
                     padding: '5px 15px',
                     backgroundColor: '#2196F3',
@@ -508,7 +368,7 @@ export default function ProductManagement() {
                   編集
                 </button>
                 <button
-                  onClick={() => deleteProduct(product.id)}
+                  onClick={() => deleteProductData(product.id)}
                   style={{
                     padding: '5px 15px',
                     backgroundColor: '#f44336',
@@ -610,13 +470,7 @@ export default function ProductManagement() {
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
-                onClick={() => {
-                  setShowEditModal(false)
-                  setEditingProduct(null)
-                  setNewProductName('')
-                  setNewProductPrice('')
-                  setNewProductNeedsCast(false)
-                }}
+                onClick={closeModal}
                 style={{
                   padding: '10px 20px',
                   backgroundColor: '#ccc',

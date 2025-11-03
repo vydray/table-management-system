@@ -81,7 +81,6 @@ export const useProductData = () => {
 
       if (error) throw error
 
-      alert('商品を追加しました')
       await loadProducts()
       return true
     } catch (error) {
@@ -104,6 +103,18 @@ export const useProductData = () => {
     try {
       const storeId = getCurrentStoreId()
 
+      // 編集中の商品と同じカテゴリー内で、編集中の商品以外に同じ名前が存在するかチェック
+      const isDuplicate = products.some(p =>
+        p.id !== productId &&
+        p.category_id === categoryId &&
+        p.name.toLowerCase() === name.toLowerCase()
+      )
+
+      if (isDuplicate) {
+        alert(`「${name}」は既に登録されています`)
+        return false
+      }
+
       const { error } = await supabase
         .from('products')
         .update({
@@ -117,7 +128,6 @@ export const useProductData = () => {
 
       if (error) throw error
 
-      alert('商品を更新しました')
       await loadProducts()
       return true
     } catch (error) {
@@ -141,7 +151,6 @@ export const useProductData = () => {
 
       if (error) throw error
 
-      alert('商品を削除しました')
       await loadProducts()
       return true
     } catch (error) {
