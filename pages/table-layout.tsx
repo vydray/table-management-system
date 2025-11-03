@@ -8,6 +8,9 @@ import { useTableAlignment } from '../hooks/useTableAlignment'
 import { useTableDragDrop } from '../hooks/useTableDragDrop'
 import { useAutoScale } from '../hooks/useAutoScale'
 
+// スタイル
+import { headerStyle } from '../styles/settingsStyles'
+
 interface TableLayout {
   table_name: string
   position_top: number
@@ -205,16 +208,11 @@ export default function TableLayoutEdit() {
       }}>
         {/* ヘッダー */}
         <div style={{
-          display: 'flex',
+          ...headerStyle,
           justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '16px',
-          backgroundColor: '#FF9800',
-          color: 'white',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          minHeight: '60px'
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
-          <h1 style={{ margin: 0, fontSize: '24px' }}>
+          <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 'normal' }}>
             🎨 テーブル配置編集
           </h1>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -231,12 +229,13 @@ export default function TableLayoutEdit() {
               }}
               style={{
                 padding: '8px 16px',
-                fontSize: '16px',
-                backgroundColor: '#4CAF50',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
+                fontSize: '14px',
+                backgroundColor: 'white',
+                color: '#FF9800',
+                border: '2px solid white',
+                borderRadius: '5px',
                 cursor: 'pointer',
+                fontWeight: 'bold',
                 whiteSpace: 'nowrap'
               }}
             >
@@ -246,12 +245,13 @@ export default function TableLayoutEdit() {
               onClick={() => router.push('/')}
               style={{
                 padding: '8px 16px',
-                fontSize: '16px',
+                fontSize: '14px',
                 backgroundColor: 'transparent',
                 color: 'white',
                 border: '2px solid white',
-                borderRadius: '6px',
+                borderRadius: '5px',
                 cursor: 'pointer',
+                fontWeight: 'bold',
                 whiteSpace: 'nowrap'
               }}
             >
@@ -273,12 +273,13 @@ export default function TableLayoutEdit() {
             onClick={addPage}
             style={{
               padding: '8px 16px',
-              backgroundColor: '#4CAF50',
+              backgroundColor: '#FF9800',
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: '5px',
               cursor: 'pointer',
               fontSize: '14px',
+              fontWeight: 'bold',
               display: 'flex',
               alignItems: 'center',
               gap: '4px'
@@ -373,12 +374,13 @@ export default function TableLayoutEdit() {
                   onClick={handleAddNewTable}
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#4CAF50',
+                    backgroundColor: '#FF9800',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '4px',
+                    borderRadius: '5px',
                     cursor: 'pointer',
                     fontSize: '14px',
+                    fontWeight: 'bold',
                     whiteSpace: 'nowrap'
                   }}
                 >
@@ -497,11 +499,12 @@ export default function TableLayoutEdit() {
                       style={{
                         padding: '4px 8px',
                         fontSize: '12px',
-                        backgroundColor: '#2196F3',
+                        backgroundColor: '#FF9800',
                         color: 'white',
                         border: 'none',
                         borderRadius: '4px',
                         cursor: 'pointer',
+                        fontWeight: 'bold',
                         whiteSpace: 'nowrap'
                       }}
                     >
@@ -741,12 +744,13 @@ export default function TableLayoutEdit() {
                   style={{
                     flex: 1,
                     padding: '10px',
-                    backgroundColor: '#4CAF50',
+                    backgroundColor: '#FF9800',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '4px',
+                    borderRadius: '5px',
                     cursor: 'pointer',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    fontWeight: 'bold'
                   }}
                 >
                   保存
@@ -756,12 +760,13 @@ export default function TableLayoutEdit() {
                   style={{
                     flex: 1,
                     padding: '10px',
-                    backgroundColor: '#757575',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
+                    backgroundColor: 'white',
+                    color: '#FF9800',
+                    border: '2px solid #FF9800',
+                    borderRadius: '5px',
                     cursor: 'pointer',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    fontWeight: 'bold'
                   }}
                 >
                   キャンセル
@@ -986,12 +991,13 @@ export default function TableLayoutEdit() {
                   style={{
                     width: '100%',
                     padding: '8px',
-                    backgroundColor: '#2196F3',
+                    backgroundColor: '#FF9800',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '4px',
+                    borderRadius: '5px',
                     cursor: 'pointer',
                     fontSize: '13px',
+                    fontWeight: 'bold',
                     marginTop: '10px'
                   }}
                 >
@@ -1101,10 +1107,10 @@ export default function TableLayoutEdit() {
                   onClick={handleExecuteAlignment}
                   style={{
                     padding: '10px 20px',
-                    backgroundColor: '#4CAF50',
+                    backgroundColor: '#FF9800',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '5px',
                     cursor: 'pointer',
                     fontSize: '14px',
                     fontWeight: 'bold'
@@ -1116,12 +1122,13 @@ export default function TableLayoutEdit() {
                   onClick={() => setShowAlignModal(false)}
                   style={{
                     padding: '10px 20px',
-                    backgroundColor: '#f44336',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
+                    backgroundColor: 'white',
+                    color: '#FF9800',
+                    border: '2px solid #FF9800',
+                    borderRadius: '5px',
                     cursor: 'pointer',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    fontWeight: 'bold'
                   }}
                 >
                   キャンセル
