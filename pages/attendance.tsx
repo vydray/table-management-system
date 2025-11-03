@@ -458,6 +458,7 @@ export default function Attendance() {
                         <select
                           value={row.check_in_time}
                           onChange={(e) => updateRow(index, 'check_in_time', e.target.value)}
+                          size={typeof window !== 'undefined' && window.innerWidth <= 1024 ? 10 : 1}
                           style={{
                             width: '100%',
                             padding: '8px 10px',
@@ -468,10 +469,17 @@ export default function Attendance() {
                             color: '#000',
                             outline: 'none',
                             textAlign: 'center',
-                            WebkitAppearance: 'none',
+                            WebkitAppearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
+                            appearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
-                            boxSizing: 'border-box'
+                            boxSizing: 'border-box',
+                            overflowY: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'auto' : 'visible',
+                            maxHeight: typeof window !== 'undefined' && window.innerWidth <= 1024 ? '250px' : 'none',
+                            position: 'relative',
+                            zIndex: 9999,
+                            pointerEvents: 'auto',
+                            touchAction: 'manipulation'
                           }}
                           onFocus={(e) => {
                             e.currentTarget.style.borderColor = '#007AFF'
@@ -491,6 +499,7 @@ export default function Attendance() {
                         <select
                           value={row.check_out_time}
                           onChange={(e) => updateRow(index, 'check_out_time', e.target.value)}
+                          size={typeof window !== 'undefined' && window.innerWidth <= 1024 ? 10 : 1}
                           style={{
                             width: '100%',
                             padding: '8px 10px',
@@ -501,10 +510,17 @@ export default function Attendance() {
                             color: '#000',
                             outline: 'none',
                             textAlign: 'center',
-                            WebkitAppearance: 'none',
+                            WebkitAppearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
+                            appearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
-                            boxSizing: 'border-box'
+                            boxSizing: 'border-box',
+                            overflowY: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'auto' : 'visible',
+                            maxHeight: typeof window !== 'undefined' && window.innerWidth <= 1024 ? '250px' : 'none',
+                            position: 'relative',
+                            zIndex: 9999,
+                            pointerEvents: 'auto',
+                            touchAction: 'manipulation'
                           }}
                           onFocus={(e) => {
                             e.currentTarget.style.borderColor = '#007AFF'
@@ -563,6 +579,7 @@ export default function Attendance() {
                         <select
                           value={row.late_minutes}
                           onChange={(e) => updateRow(index, 'late_minutes', Number(e.target.value))}
+                          size={typeof window !== 'undefined' && window.innerWidth <= 1024 ? 7 : 1}
                           style={{
                             width: '100%',
                             padding: '8px 10px',
@@ -573,10 +590,17 @@ export default function Attendance() {
                             color: '#000',
                             outline: 'none',
                             textAlign: 'center',
-                            WebkitAppearance: 'none',
+                            WebkitAppearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
+                            appearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
-                            boxSizing: 'border-box'
+                            boxSizing: 'border-box',
+                            overflowY: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'auto' : 'visible',
+                            maxHeight: typeof window !== 'undefined' && window.innerWidth <= 1024 ? '180px' : 'none',
+                            position: 'relative',
+                            zIndex: 9999,
+                            pointerEvents: 'auto',
+                            touchAction: 'manipulation'
                           }}
                           onFocus={(e) => {
                             e.currentTarget.style.borderColor = '#007AFF'
@@ -600,6 +624,7 @@ export default function Attendance() {
                         <select
                           value={row.break_minutes}
                           onChange={(e) => updateRow(index, 'break_minutes', Number(e.target.value))}
+                          size={typeof window !== 'undefined' && window.innerWidth <= 1024 ? 7 : 1}
                           style={{
                             width: '100%',
                             padding: '8px 10px',
@@ -610,10 +635,17 @@ export default function Attendance() {
                             color: '#000',
                             outline: 'none',
                             textAlign: 'center',
-                            WebkitAppearance: 'none',
+                            WebkitAppearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
+                            appearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'none',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
-                            boxSizing: 'border-box'
+                            boxSizing: 'border-box',
+                            overflowY: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'auto' : 'visible',
+                            maxHeight: typeof window !== 'undefined' && window.innerWidth <= 1024 ? '180px' : 'none',
+                            position: 'relative',
+                            zIndex: 9999,
+                            pointerEvents: 'auto',
+                            touchAction: 'manipulation'
                           }}
                           onFocus={(e) => {
                             e.currentTarget.style.borderColor = '#007AFF'
