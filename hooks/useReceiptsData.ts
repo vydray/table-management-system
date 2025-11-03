@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { getCurrentStoreId } from '../utils/storeContext'
+import { getCurrentStoreId, getCurrentUserId } from '../utils/storeContext'
 import { getBusinessDayRangeDates } from '../utils/dateTime'
 import { Receipt, OrderItem } from '../types/receipt'
 
@@ -98,11 +98,12 @@ export const useReceiptsData = () => {
     if (!confirm('この伝票を削除してもよろしいですか？')) return
 
     try {
+      const userId = getCurrentUserId()
       const { error } = await supabase
         .from('orders')
         .update({
           deleted_at: new Date().toISOString(),
-          deleted_by: 1 // TODO: 実際のユーザーIDを使用
+          deleted_by: userId
         })
         .eq('id', receiptId)
 

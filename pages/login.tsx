@@ -26,6 +26,7 @@ export default function Login() {
       if (res.ok) {
         localStorage.setItem('isLoggedIn', 'true')
         localStorage.setItem('username', data.username)
+        localStorage.setItem('userId', data.userId.toString())
         localStorage.setItem('currentStoreId', data.storeId.toString())
         localStorage.setItem('userRole', data.role)
 

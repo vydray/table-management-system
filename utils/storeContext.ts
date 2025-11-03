@@ -1,4 +1,28 @@
-// 店舗IDを管理するユーティリティ
+// 店舗IDとユーザーIDを管理するユーティリティ
+
+// 現在のユーザーIDを取得
+export const getCurrentUserId = (): number => {
+  // サーバーサイドレンダリング対応
+  if (typeof window === 'undefined') {
+    return 0
+  }
+
+  // localStorageからユーザーIDを取得
+  const userId = localStorage.getItem('userId')
+
+  if (userId) {
+    const id = parseInt(userId, 10)
+    if (!isNaN(id) && id > 0) {
+      return id
+    }
+  }
+
+  // ユーザーIDが設定されていない場合
+  console.warn('ユーザーIDが設定されていません')
+
+  // エラー判定用に0を返す
+  return 0
+}
 
 // 現在の店舗IDを取得
 export const getCurrentStoreId = (): number => {
@@ -55,9 +79,10 @@ export const logout = () => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('isLoggedIn')
     localStorage.removeItem('username')
+    localStorage.removeItem('userId')
     localStorage.removeItem('currentStoreId')
     localStorage.removeItem('userRole')
-    
+
     window.location.href = '/login'
   }
 }
