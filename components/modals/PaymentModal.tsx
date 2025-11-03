@@ -41,7 +41,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
   activePaymentInput,
   subtotal,  // eslint-disable-line @typescript-eslint/no-unused-vars
   serviceTax,  // eslint-disable-line @typescript-eslint/no-unused-vars
-  total,
+  total,  // eslint-disable-line @typescript-eslint/no-unused-vars
   roundedTotal,
   roundingAdjustment,
   formData,
@@ -137,7 +137,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
             }}>
               <div>
                 <strong style={{ fontSize: `${16 * layoutScale}px` }}>
-                  小計：¥{total.toLocaleString()}
+                  小計：¥{roundedTotal.toLocaleString()}
                 </strong>
               </div>
               <div style={{
@@ -177,7 +177,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
               paddingTop: `${10 * layoutScale}px`,
               textAlign: 'center'
             }}>
-              合計金額: ¥{roundedTotal.toLocaleString()}
+              合計金額: ¥{(roundedTotal + cardFee).toLocaleString()}
             </div>
           </div>
 
