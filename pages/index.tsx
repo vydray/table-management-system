@@ -708,7 +708,7 @@ const finishCheckout = () => {
     position: 'absolute',
     left: '170px',
     fontWeight: 'bold',
-    fontSize: '36px',
+    fontSize: '24px',
     color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
     zIndex: 100
   }}>
@@ -721,7 +721,7 @@ const finishCheckout = () => {
   <span style={{
     position: 'absolute',
     right: '20px',
-    fontSize: '36px',
+    fontSize: '24px',
     fontFamily: 'monospace'
   }}>
     {currentTime}
