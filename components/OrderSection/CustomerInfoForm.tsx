@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
 interface CustomerInfoFormProps {
   guestName: string
@@ -19,6 +19,23 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
   castList,
   onUpdateFormData
 }) => {
+  const [showCastDropdown, setShowCastDropdown] = useState(false)
+
+  // ドロップダウン外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.cast-dropdown-container')) {
+        setShowCastDropdown(false)
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [])
+
   return (
     <div style={{
       padding: '15px',
@@ -63,39 +80,104 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          flex: 1
+          flex: 1,
+          position: 'relative'
         }}>
           <span style={{
             minWidth: '80px',
             fontWeight: 'bold',
             fontSize: '14px'
           }}>推し：</span>
-          <select
-            value={castName}
-            onChange={(e) => onUpdateFormData({ castName: e.target.value })}
-            size={typeof window !== 'undefined' && window.innerWidth <= 1024 ? Math.min(10, castList.length + 1) : 1}
-            style={{
-              flex: 1,
-              padding: '6px 10px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              fontSize: '14px',
-              backgroundColor: 'white',
-              WebkitAppearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'menulist',
-              appearance: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'listbox' : 'auto',
-              touchAction: 'manipulation',
-              position: 'relative',
-              zIndex: 9999,
-              pointerEvents: 'auto',
-              overflowY: typeof window !== 'undefined' && window.innerWidth <= 1024 ? 'auto' : 'visible',
-              maxHeight: typeof window !== 'undefined' && window.innerWidth <= 1024 ? '200px' : 'none'
-            }}
-          >
-            <option value="">-- 選択 --</option>
-            {castList.map(name => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
+          <div className="cast-dropdown-container" style={{ flex: 1, position: 'relative' }}>
+            <div
+              onClick={() => setShowCastDropdown(!showCastDropdown)}
+              style={{
+                width: '100%',
+                padding: '6px 10px',
+                paddingRight: '30px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                backgroundColor: 'white',
+                color: castName ? '#000' : '#999',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
+              }}
+            >
+              {castName || '-- 選択 --'}
+            </div>
+
+            <span style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              pointerEvents: 'none',
+              color: '#666',
+              fontSize: '12px'
+            }}>
+              ▼
+            </span>
+
+            {showCastDropdown && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                maxHeight: '300px',
+                overflowY: 'auto',
+                backgroundColor: '#fff',
+                border: '1px solid #007AFF',
+                borderRadius: '4px',
+                marginTop: '2px',
+                zIndex: 10000,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}>
+                <div
+                  onClick={() => {
+                    onUpdateFormData({ castName: '' })
+                    setShowCastDropdown(false)
+                  }}
+                  style={{
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    borderBottom: '1px solid #f0f0f0',
+                    transition: 'background-color 0.2s',
+                    color: '#999'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  -- 選択 --
+                </div>
+                {castList.map(name => (
+                  <div
+                    key={name}
+                    onClick={() => {
+                      onUpdateFormData({ castName: name })
+                      setShowCastDropdown(false)
+                    }}
+                    style={{
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      borderBottom: '1px solid #f0f0f0',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    {name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 来店種別 */}
