@@ -131,14 +131,18 @@ export const useReceiptSettingsData = () => {
           updated_at: new Date().toISOString()
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase upsert error:', error)
+        throw error
+      }
 
       await loadSettings()
       alert('設定を保存しました')
       return true
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving settings:', error)
-      alert('設定の保存に失敗しました')
+      const errorMessage = error?.message || error?.toString() || '不明なエラー'
+      alert(`設定の保存に失敗しました\n${errorMessage}`)
       return false
     } finally {
       setIsLoading(false)

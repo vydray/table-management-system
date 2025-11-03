@@ -58,9 +58,16 @@ export default function ReceiptSettings() {
       const logoUrl = await uploadLogo()
 
       // 設定を保存（ロゴURLを渡す）
-      await saveSettings(logoUrl || undefined)
+      const result = await saveSettings(logoUrl || undefined)
+
+      // saveSettingsから返される結果をチェック
+      if (!result) {
+        // saveSettings内で既にエラーメッセージが表示されているので、ここでは何もしない
+        return
+      }
     } catch (error) {
       console.error('保存エラー:', error)
+      alert('設定の保存に失敗しました')
     }
   }
 
@@ -75,6 +82,7 @@ export default function ReceiptSettings() {
       borderRadius: '10px',
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       padding: '30px',
+      paddingBottom: '120px',
       maxWidth: '800px',
       margin: '0 auto'
     }}>
