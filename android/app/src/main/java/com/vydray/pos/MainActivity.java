@@ -32,8 +32,8 @@ public class MainActivity extends BridgeActivity {
             public void run() {
                 WebView webView = getBridge().getWebView();
                 if (webView != null) {
-                    // ハードウェアアクセラレーションを使用してパフォーマンスを向上
-                    webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                    // ソフトウェアレンダリングでIME互換性を優先（GPU MALIエラーを回避）
+                    webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 
                     // WebSettingsで追加設定
                     android.webkit.WebSettings settings = webView.getSettings();
