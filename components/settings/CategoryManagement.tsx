@@ -72,6 +72,7 @@ export default function CategoryManagement() {
         <input
           type="text"
           inputMode="text"
+              lang="ja"
           placeholder="カテゴリー名"
           value={newCategoryName}
           onChange={(e) => setNewCategoryName(e.target.value)}
@@ -266,6 +267,7 @@ export default function CategoryManagement() {
             <input
               type="text"
               inputMode="text"
+              lang="ja"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               style={{

@@ -725,6 +725,7 @@ export default function Report() {
                           <input
                             type="text"
                             inputMode="text"
+                            lang="ja"
                             value={dailyReportData.eventName}
                             onChange={(e) => setDailyReportData({...dailyReportData, eventName: e.target.value})}
                             placeholder="無し"
