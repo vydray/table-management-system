@@ -16,7 +16,6 @@ import android.view.inputmethod.InputMethodManager;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
-import com.capacitorjs.plugins.keyboard.KeyboardPlugin;
 
 public class MainActivity extends BridgeActivity {
     private static final int BLUETOOTH_PERMISSION_REQUEST_CODE = 100;
@@ -24,7 +23,6 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SiiPrinterPlugin.class);
-        registerPlugin(KeyboardPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Bluetooth権限をリクエスト（Android 12以降）
