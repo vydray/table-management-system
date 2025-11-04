@@ -62,6 +62,10 @@ public class MainActivity extends BridgeActivity {
                     webView.setFocusable(true);
                     webView.setFocusableInTouchMode(true);
 
+                    // WebViewの追加設定
+                    settings.setBuiltInZoomControls(false);
+                    settings.setDisplayZoomControls(false);
+
                     // console.logをlogcatに出力
                     webView.setWebChromeClient(new WebChromeClient() {
                         @Override

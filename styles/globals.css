@@ -18,11 +18,14 @@ input, textarea, select {
   -webkit-user-select: auto !important;
   touch-action: auto !important;
   pointer-events: auto !important;
+  -webkit-touch-callout: default !important;
 }
 
-/* モーダルが開いていない時のみタッチを無効化 */
-body:not(.modal-open) {
-  touch-action: none;
+/* フォーカスされた入力フィールドでタッチイベントを完全に許可 */
+input:focus, textarea:focus, select:focus {
+  touch-action: manipulation !important;
+  -webkit-user-select: auto !important;
+  user-select: auto !important;
 }
 
 /* モーダルが開いている時はタッチを許可 */
