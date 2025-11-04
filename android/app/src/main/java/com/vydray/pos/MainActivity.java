@@ -3,6 +3,8 @@ package com.vydray.pos;
 import android.os.Bundle;
 import android.os.Handler;
 import android.webkit.WebView;
+import android.webkit.WebChromeClient;
+import android.webkit.ConsoleMessage;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -10,6 +12,7 @@ import android.content.Context;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
@@ -55,6 +58,17 @@ public class MainActivity extends BridgeActivity {
                     settings.setJavaScriptEnabled(true);
                     settings.setDomStorageEnabled(true);
                     settings.setDatabaseEnabled(true);
+
+                    // console.logをlogcatに出力
+                    webView.setWebChromeClient(new WebChromeClient() {
+                        @Override
+                        public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+                            Log.d("WebViewConsole", consoleMessage.message() + " -- From line "
+                                    + consoleMessage.lineNumber() + " of "
+                                    + consoleMessage.sourceId());
+                            return true;
+                        }
+                    });
 
                     // キーボード入力を確実に受け取る
                     webView.requestFocus();
