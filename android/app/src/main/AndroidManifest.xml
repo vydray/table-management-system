@@ -18,8 +18,7 @@
             android:launchMode="singleTask"
             android:exported="true"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustPan|stateVisible"
-            android:imeOptions="flagNoExtractUi">
+            android:windowSoftInputMode="adjustResize">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

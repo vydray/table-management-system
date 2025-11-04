@@ -7,8 +7,6 @@ import android.webkit.WebChromeClient;
 import android.webkit.ConsoleMessage;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
-import android.content.Context;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -49,10 +47,6 @@ public class MainActivity extends BridgeActivity {
                 if (webView != null) {
                     webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
-                    // IME（入力メソッド）を有効化
-                    webView.setFocusable(true);
-                    webView.setFocusableInTouchMode(true);
-
                     // WebSettingsで追加設定
                     android.webkit.WebSettings settings = webView.getSettings();
                     settings.setJavaScriptEnabled(true);
@@ -67,20 +61,6 @@ public class MainActivity extends BridgeActivity {
                                     + consoleMessage.lineNumber() + " of "
                                     + consoleMessage.sourceId());
                             return true;
-                        }
-                    });
-
-                    // キーボード入力を確実に受け取る
-                    webView.requestFocus();
-
-                    // IMEを強制的に有効化
-                    webView.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                            if (imm != null) {
-                                imm.restartInput(webView);
-                            }
                         }
                     });
 
