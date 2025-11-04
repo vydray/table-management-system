@@ -13,6 +13,7 @@ export default function Login() {
   const handleInputFocus = async () => {
     try {
       // Capacitorがネイティブ環境で利用可能な場合のみKeyboardプラグインを使用
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
         const { Keyboard } = await import('@capacitor/keyboard')
         await Keyboard.show()
