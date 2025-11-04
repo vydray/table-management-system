@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { Keyboard } from '@capacitor/keyboard'
 
 export default function Login() {
   const router = useRouter()
@@ -13,7 +12,11 @@ export default function Login() {
   // 入力フィールドにフォーカスが当たったときにキーボードを表示
   const handleInputFocus = async () => {
     try {
-      await Keyboard.show()
+      // Capacitorがネイティブ環境で利用可能な場合のみKeyboardプラグインを使用
+      if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+        const { Keyboard } = await import('@capacitor/keyboard')
+        await Keyboard.show()
+      }
     } catch (error) {
       console.log('Keyboard API not available or error:', error)
     }
