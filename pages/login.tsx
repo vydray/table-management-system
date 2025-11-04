@@ -9,20 +9,6 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // 入力フィールドにフォーカスが当たったときにキーボードを表示
-  const handleInputFocus = async () => {
-    try {
-      // Capacitorがネイティブ環境で利用可能な場合のみKeyboardプラグインを使用
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
-        const { Keyboard } = await import('@capacitor/keyboard')
-        await Keyboard.show()
-      }
-    } catch (error) {
-      console.log('Keyboard API not available or error:', error)
-    }
-  }
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -80,7 +66,6 @@ export default function Login() {
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                onFocus={handleInputFocus}
                 placeholder="ユーザー名を入力"
                 required
                 disabled={loading}
@@ -95,7 +80,6 @@ export default function Login() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onFocus={handleInputFocus}
                 placeholder="パスワードを入力"
                 required
                 disabled={loading}
