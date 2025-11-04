@@ -48,6 +48,15 @@ public class MainActivity extends BridgeActivity {
                     webView.setFocusable(true);
                     webView.setFocusableInTouchMode(true);
 
+                    // WebSettingsで追加設定
+                    android.webkit.WebSettings settings = webView.getSettings();
+                    settings.setJavaScriptEnabled(true);
+                    settings.setDomStorageEnabled(true);
+                    settings.setDatabaseEnabled(true);
+
+                    // キーボード入力を確実に受け取る
+                    webView.requestFocus();
+
                     webView.requestLayout();
                     webView.invalidate();
 
