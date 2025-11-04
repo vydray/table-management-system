@@ -61,6 +61,8 @@ export default function Login() {
               <label htmlFor="username">ユーザー名</label>
               <input
                 type="text"
+                inputMode="text"
+                lang="ja"
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
