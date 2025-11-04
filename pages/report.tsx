@@ -724,6 +724,7 @@ export default function Report() {
                         <div style={{ backgroundColor: '#fff', padding: '8px', border: '1px solid #999' }}>
                           <input
                             type="text"
+                            inputMode="text"
                             value={dailyReportData.eventName}
                             onChange={(e) => setDailyReportData({...dailyReportData, eventName: e.target.value})}
                             placeholder="無し"

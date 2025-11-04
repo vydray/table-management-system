@@ -198,6 +198,7 @@ export default function AttendanceStatus() {
             
             <input
               type="text"
+              inputMode="text"
               placeholder="ステータス名"
               value={newStatusName}
               onChange={(e) => setNewStatusName(e.target.value)}
@@ -292,6 +293,7 @@ export default function AttendanceStatus() {
             
             <input
               type="text"
+              inputMode="text"
               placeholder="ステータス名"
               value={newStatusName}
               onChange={(e) => setNewStatusName(e.target.value)}

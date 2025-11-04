@@ -244,6 +244,7 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="text"
+              inputMode="text"
               value={settings.store_name}
               onChange={(e) => setSettings({ ...settings, store_name: e.target.value })}
               placeholder="例：○○店"
@@ -268,6 +269,7 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="text"
+              inputMode="text"
               value={settings.store_postal_code}
               onChange={(e) => setSettings({ ...settings, store_postal_code: e.target.value })}
               placeholder="例：123-4567"
@@ -293,6 +295,7 @@ export default function ReceiptSettings() {
           </label>
           <input
             type="text"
+              inputMode="text"
             value={settings.store_address}
             onChange={(e) => setSettings({ ...settings, store_address: e.target.value })}
             placeholder="例：東京都渋谷区○○1-2-3 ○○ビル4F"
@@ -323,6 +326,7 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="text"
+              inputMode="text"
               value={settings.store_phone}
               onChange={(e) => setSettings({ ...settings, store_phone: e.target.value })}
               placeholder="例：03-1234-5678"
@@ -378,6 +382,7 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="text"
+              inputMode="text"
               value={settings.business_hours}
               onChange={(e) => setSettings({ ...settings, business_hours: e.target.value })}
               placeholder="例：18:00-24:00"
@@ -402,6 +407,7 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="text"
+              inputMode="text"
               value={settings.closed_days}
               onChange={(e) => setSettings({ ...settings, closed_days: e.target.value })}
               placeholder="例：日曜日・祝日"
@@ -438,6 +444,7 @@ export default function ReceiptSettings() {
           }}>
             <input
               type="text"
+              inputMode="text"
               value={template.name}
               onChange={(e) => updateTemplate(index, 'name', e.target.value)}
               placeholder="表示名"
@@ -451,6 +458,7 @@ export default function ReceiptSettings() {
             />
             <input
               type="text"
+              inputMode="text"
               value={template.text}
               onChange={(e) => updateTemplate(index, 'text', e.target.value)}
               placeholder="但し書き内容"
@@ -699,6 +707,7 @@ export default function ReceiptSettings() {
               </label>
               <input
                 type="text"
+              inputMode="text"
                 value={settings.invoice_number}
                 onChange={(e) => setSettings({ ...settings, invoice_number: e.target.value })}
                 placeholder="T1234567890123"
@@ -724,6 +733,7 @@ export default function ReceiptSettings() {
               </label>
               <input
                 type="text"
+              inputMode="text"
                 value={settings.store_registration_number}
                 onChange={(e) => setSettings({ ...settings, store_registration_number: e.target.value })}
                 placeholder="例：T1234567890123"

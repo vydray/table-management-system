@@ -170,6 +170,7 @@ export default function CastManagement() {
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
+          inputMode="text"
           placeholder="名前、役職、ステータスで検索..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -519,6 +520,7 @@ export default function CastManagement() {
               <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                 <input
                   type="text"
+                  inputMode="text"
                   value={newPositionName}
                   onChange={(e) => setNewPositionName(e.target.value)}
                   placeholder="新しい役職名"
@@ -644,6 +646,7 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
+                  inputMode="text"
                   value={editingCast.name || ''}
                   onChange={(e) => setEditingCast({...editingCast, name: e.target.value})}
                   style={{
@@ -667,6 +670,7 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
+                  inputMode="text"
                   value={editingCast.twitter || ''}
                   onChange={(e) => setEditingCast({...editingCast, twitter: e.target.value})}
                   style={{
@@ -690,6 +694,7 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
+                  inputMode="text"
                   value={editingCast.instagram || ''}
                   onChange={(e) => setEditingCast({...editingCast, instagram: e.target.value})}
                   style={{

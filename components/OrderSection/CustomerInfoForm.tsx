@@ -59,6 +59,7 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
         }}>お客様：</span>
         <input
           type="text"
+          inputMode="text"
           value={guestName}
           onChange={(e) => onUpdateFormData({ guestName: e.target.value })}
           placeholder="お客様名を入力"

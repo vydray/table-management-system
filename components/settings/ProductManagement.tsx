@@ -117,6 +117,7 @@ export default function ProductManagement() {
           </label>
           <input
             type="text"
+            inputMode="text"
             placeholder="商品名"
             value={newProductName}
             onChange={(e) => setNewProductName(e.target.value)}
@@ -403,6 +404,7 @@ export default function ProductManagement() {
               </label>
               <input
                 type="text"
+                inputMode="text"
                 value={newProductName}
                 onChange={(e) => setNewProductName(e.target.value)}
                 style={{
