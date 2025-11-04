@@ -3,14 +3,11 @@ package com.vydray.pos;
 import android.os.Bundle;
 import android.os.Handler;
 import android.webkit.WebView;
-import android.webkit.WebChromeClient;
-import android.webkit.ConsoleMessage;
 import android.view.View;
 import android.view.WindowManager;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
@@ -26,44 +23,26 @@ public class MainActivity extends BridgeActivity {
         // Bluetooth権限をリクエスト（Android 12以降）
         requestBluetoothPermissions();
 
+        // システムUIを正しく設定
+        getWindow().setFlags(
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        );
+
+        // ステータスバーとナビゲーションバーを考慮したレイアウト
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        );
+
         // Force WebView to render properly on initial load
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
                 WebView webView = getBridge().getWebView();
                 if (webView != null) {
-                    // ハードウェアアクセラレーションでIME候補表示を優先
                     webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-
-                    // WebSettingsで追加設定
-                    android.webkit.WebSettings settings = webView.getSettings();
-                    settings.setJavaScriptEnabled(true);
-                    settings.setDomStorageEnabled(true);
-                    settings.setDatabaseEnabled(true);
-
-                    // IME（日本語入力）のための設定
-                    settings.setDefaultTextEncodingName("UTF-8");
-                    settings.setSupportMultipleWindows(false);
-
-                    // キーボード表示を明示的に許可
-                    webView.setFocusable(true);
-                    webView.setFocusableInTouchMode(true);
-
-                    // WebViewの追加設定
-                    settings.setBuiltInZoomControls(false);
-                    settings.setDisplayZoomControls(false);
-
-                    // console.logをlogcatに出力
-                    webView.setWebChromeClient(new WebChromeClient() {
-                        @Override
-                        public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-                            Log.d("WebViewConsole", consoleMessage.message() + " -- From line "
-                                    + consoleMessage.lineNumber() + " of "
-                                    + consoleMessage.sourceId());
-                            return true;
-                        }
-                    });
-
                     webView.requestLayout();
                     webView.invalidate();
 
