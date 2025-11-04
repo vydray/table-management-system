@@ -255,7 +255,10 @@ export default function TableLayoutEdit() {
           gap: '20px'
         }}>
           <button
-            onClick={addPage}
+            onClick={() => {
+              addPage()
+              setCurrentViewPage(pageCount + 1)
+            }}
             style={{
               padding: '8px 16px',
               backgroundColor: '#FF9800',
