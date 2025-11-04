@@ -4,7 +4,6 @@ import { useCastModal } from '../../hooks/useCastModal'
 import { useCastSearch } from '../../hooks/useCastSearch'
 import { usePositionData } from '../../hooks/usePositionData'
 import { useCastHandlers } from '../../hooks/useCastHandlers'
-import { useCompositionInput } from '../../hooks/useCompositionInput'
 
 export default function CastManagement() {
   // フックを使用
@@ -81,9 +80,6 @@ export default function CastManagement() {
     openRetirementModal,
     setNewPositionName
   )
-
-  // IME対応入力フック
-  const { compositionProps, handleChange } = useCompositionInput()
 
   // 初回読み込み
   useEffect(() => {
@@ -174,16 +170,9 @@ export default function CastManagement() {
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
-          inputMode="text"
-          lang="ja"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
           placeholder="名前、役職、ステータスで検索..."
           value={searchTerm}
-          onChange={handleChange((value) => setSearchTerm(value))}
-          onCompositionStart={compositionProps.onCompositionStart}
-          onCompositionEnd={compositionProps.onCompositionEnd((value) => setSearchTerm(value))}
+          onChange={(e) => setSearchTerm(e.target.value)}
           style={{
             width: '100%',
             maxWidth: '400px',
@@ -530,15 +519,8 @@ export default function CastManagement() {
               <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                 <input
                   type="text"
-                  inputMode="text"
-                  lang="ja"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
                   value={newPositionName}
-                  onChange={handleChange((value) => setNewPositionName(value))}
-                  onCompositionStart={compositionProps.onCompositionStart}
-                  onCompositionEnd={compositionProps.onCompositionEnd((value) => setNewPositionName(value))}
+                  onChange={(e) => setNewPositionName(e.target.value)}
                   placeholder="新しい役職名"
                   style={{
                     flex: 1,
@@ -662,15 +644,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
-                  inputMode="text"
-                  lang="ja"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
                   value={editingCast.name || ''}
-                  onChange={handleChange((value) => setEditingCast({...editingCast, name: value}))}
-                  onCompositionStart={compositionProps.onCompositionStart}
-                  onCompositionEnd={compositionProps.onCompositionEnd((value) => setEditingCast({...editingCast, name: value}))}
+                  onChange={(e) => setEditingCast({...editingCast, name: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -692,15 +667,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
-                  inputMode="text"
-                  lang="ja"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
                   value={editingCast.twitter || ''}
-                  onChange={handleChange((value) => setEditingCast({...editingCast, twitter: value}))}
-                  onCompositionStart={compositionProps.onCompositionStart}
-                  onCompositionEnd={compositionProps.onCompositionEnd((value) => setEditingCast({...editingCast, twitter: value}))}
+                  onChange={(e) => setEditingCast({...editingCast, twitter: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -722,15 +690,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
-                  inputMode="text"
-                  lang="ja"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
                   value={editingCast.instagram || ''}
-                  onChange={handleChange((value) => setEditingCast({...editingCast, instagram: value}))}
-                  onCompositionStart={compositionProps.onCompositionStart}
-                  onCompositionEnd={compositionProps.onCompositionEnd((value) => setEditingCast({...editingCast, instagram: value}))}
+                  onChange={(e) => setEditingCast({...editingCast, instagram: e.target.value})}
                   style={{
                     width: '100%',
                     padding: '8px 12px',

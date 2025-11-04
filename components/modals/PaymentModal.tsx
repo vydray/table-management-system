@@ -1,7 +1,6 @@
 import { FC } from 'react'
 import { NumberPad } from './NumberPad'
 import { getRoundedTotal } from '../../utils/calculations'
-import { useCompositionInput } from '../../hooks/useCompositionInput'
 
 interface PaymentModalProps {
   isOpen: boolean
@@ -63,9 +62,6 @@ export const PaymentModal: FC<PaymentModalProps> = ({
   onCompleteCheckout,
   onClose
 }) => {
-  // IME対応入力フック
-  const { compositionProps, handleChange } = useCompositionInput()
-
   if (!isOpen) return null
 
   // カード手数料の計算（残りの支払額に対して適用）
@@ -339,15 +335,8 @@ export const PaymentModal: FC<PaymentModalProps> = ({
               <div style={{ marginLeft: `${100 * layoutScale}px`, marginBottom: `${15 * layoutScale}px` }}>
                 <input
                   type="text"
-                  inputMode="text"
-                  lang="ja"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
                   value={paymentData.otherMethod}
-                  onChange={handleChange((value) => onChangeOtherMethod(value))}
-                  onCompositionStart={compositionProps.onCompositionStart}
-                  onCompositionEnd={compositionProps.onCompositionEnd((value) => onChangeOtherMethod(value))}
+                  onChange={(e) => onChangeOtherMethod(e.target.value)}
                   placeholder="PayPay、LINE Pay等"
                   style={{
                     width: '100%',

@@ -4,7 +4,6 @@ import { useReceiptSettingsData } from '../../hooks/useReceiptSettingsData'
 import { useLogoUpload } from '../../hooks/useLogoUpload'
 import { useReceiptTemplate } from '../../hooks/useReceiptTemplate'
 import { usePrinterConnection } from '../../hooks/usePrinterConnection'
-import { useCompositionInput } from '../../hooks/useCompositionInput'
 
 export default function ReceiptSettings() {
   // フックを使用
@@ -38,9 +37,6 @@ export default function ReceiptSettings() {
     disconnectPrinter,
     testDirectPrint
   } = usePrinterConnection()
-
-  // IME対応入力フック
-  const { compositionProps, handleChange } = useCompositionInput()
 
   // 初期ロード
   useEffect(() => {
@@ -238,7 +234,7 @@ export default function ReceiptSettings() {
           marginBottom: '20px'
         }}>
           <div>
-            <label style={{ 
+            <label style={{
               display: 'block',
               marginBottom: '8px',
               fontWeight: 'bold',
@@ -248,15 +244,8 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="text"
-              inputMode="text"
-              lang="ja"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
               value={settings.store_name}
-              onChange={handleChange((value) => setSettings({ ...settings, store_name: value }))}
-              onCompositionStart={compositionProps.onCompositionStart}
-              onCompositionEnd={compositionProps.onCompositionEnd((value) => setSettings({ ...settings, store_name: value }))}
+              onChange={(e) => setSettings({ ...settings, store_name: e.target.value })}
               placeholder="例：○○店"
               style={{
                 width: '100%',
@@ -269,7 +258,7 @@ export default function ReceiptSettings() {
           </div>
 
           <div>
-            <label style={{ 
+            <label style={{
               display: 'block',
               marginBottom: '8px',
               fontWeight: 'bold',
@@ -279,15 +268,8 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="text"
-              inputMode="text"
-              lang="ja"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
               value={settings.store_postal_code}
-              onChange={handleChange((value) => setSettings({ ...settings, store_postal_code: value }))}
-              onCompositionStart={compositionProps.onCompositionStart}
-              onCompositionEnd={compositionProps.onCompositionEnd((value) => setSettings({ ...settings, store_postal_code: value }))}
+              onChange={(e) => setSettings({ ...settings, store_postal_code: e.target.value })}
               placeholder="例：123-4567"
               style={{
                 width: '100%',
@@ -301,7 +283,7 @@ export default function ReceiptSettings() {
         </div>
 
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ 
+          <label style={{
             display: 'block',
             marginBottom: '8px',
             fontWeight: 'bold',
@@ -311,15 +293,8 @@ export default function ReceiptSettings() {
           </label>
           <input
             type="text"
-            inputMode="text"
-            lang="ja"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
             value={settings.store_address}
-            onChange={handleChange((value) => setSettings({ ...settings, store_address: value }))}
-            onCompositionStart={compositionProps.onCompositionStart}
-            onCompositionEnd={compositionProps.onCompositionEnd((value) => setSettings({ ...settings, store_address: value }))}
+            onChange={(e) => setSettings({ ...settings, store_address: e.target.value })}
             placeholder="例：東京都渋谷区○○1-2-3 ○○ビル4F"
             style={{
               width: '100%',
@@ -338,7 +313,7 @@ export default function ReceiptSettings() {
           marginBottom: '20px'
         }}>
           <div>
-            <label style={{ 
+            <label style={{
               display: 'block',
               marginBottom: '8px',
               fontWeight: 'bold',
@@ -348,15 +323,8 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="text"
-              inputMode="text"
-              lang="ja"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
               value={settings.store_phone}
-              onChange={handleChange((value) => setSettings({ ...settings, store_phone: value }))}
-              onCompositionStart={compositionProps.onCompositionStart}
-              onCompositionEnd={compositionProps.onCompositionEnd((value) => setSettings({ ...settings, store_phone: value }))}
+              onChange={(e) => setSettings({ ...settings, store_phone: e.target.value })}
               placeholder="例：03-1234-5678"
               style={{
                 width: '100%',
@@ -400,7 +368,7 @@ export default function ReceiptSettings() {
           marginBottom: '20px'
         }}>
           <div>
-            <label style={{ 
+            <label style={{
               display: 'block',
               marginBottom: '8px',
               fontWeight: 'bold',
@@ -410,15 +378,8 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="text"
-              inputMode="text"
-              lang="ja"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
               value={settings.business_hours}
-              onChange={handleChange((value) => setSettings({ ...settings, business_hours: value }))}
-              onCompositionStart={compositionProps.onCompositionStart}
-              onCompositionEnd={compositionProps.onCompositionEnd((value) => setSettings({ ...settings, business_hours: value }))}
+              onChange={(e) => setSettings({ ...settings, business_hours: e.target.value })}
               placeholder="例：18:00-24:00"
               style={{
                 width: '100%',
@@ -431,7 +392,7 @@ export default function ReceiptSettings() {
           </div>
 
           <div>
-            <label style={{ 
+            <label style={{
               display: 'block',
               marginBottom: '8px',
               fontWeight: 'bold',
@@ -441,15 +402,8 @@ export default function ReceiptSettings() {
             </label>
             <input
               type="text"
-              inputMode="text"
-              lang="ja"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
               value={settings.closed_days}
-              onChange={handleChange((value) => setSettings({ ...settings, closed_days: value }))}
-              onCompositionStart={compositionProps.onCompositionStart}
-              onCompositionEnd={compositionProps.onCompositionEnd((value) => setSettings({ ...settings, closed_days: value }))}
+              onChange={(e) => setSettings({ ...settings, closed_days: e.target.value })}
               placeholder="例：日曜日・祝日"
               style={{
                 width: '100%',
@@ -476,7 +430,7 @@ export default function ReceiptSettings() {
         </h3>
         
         {settings.receipt_templates.map((template, index) => (
-          <div key={index} style={{ 
+          <div key={index} style={{
             display: 'flex',
             gap: '10px',
             alignItems: 'center',
@@ -484,15 +438,8 @@ export default function ReceiptSettings() {
           }}>
             <input
               type="text"
-              inputMode="text"
-              lang="ja"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
               value={template.name}
-              onChange={handleChange((value) => updateTemplate(index, 'name', value))}
-              onCompositionStart={compositionProps.onCompositionStart}
-              onCompositionEnd={compositionProps.onCompositionEnd((value) => updateTemplate(index, 'name', value))}
+              onChange={(e) => updateTemplate(index, 'name', e.target.value)}
               placeholder="表示名"
               style={{
                 width: '150px',
@@ -504,15 +451,8 @@ export default function ReceiptSettings() {
             />
             <input
               type="text"
-              inputMode="text"
-              lang="ja"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
               value={template.text}
-              onChange={handleChange((value) => updateTemplate(index, 'text', value))}
-              onCompositionStart={compositionProps.onCompositionStart}
-              onCompositionEnd={compositionProps.onCompositionEnd((value) => updateTemplate(index, 'text', value))}
+              onChange={(e) => updateTemplate(index, 'text', e.target.value)}
               placeholder="但し書き内容"
               style={{
                 flex: 1,
@@ -759,8 +699,6 @@ export default function ReceiptSettings() {
               </label>
               <input
                 type="text"
-              inputMode="text"
-              lang="ja"
                 value={settings.invoice_number}
                 onChange={(e) => setSettings({ ...settings, invoice_number: e.target.value })}
                 placeholder="T1234567890123"
@@ -786,8 +724,6 @@ export default function ReceiptSettings() {
               </label>
               <input
                 type="text"
-              inputMode="text"
-              lang="ja"
                 value={settings.store_registration_number}
                 onChange={(e) => setSettings({ ...settings, store_registration_number: e.target.value })}
                 placeholder="例：T1234567890123"
