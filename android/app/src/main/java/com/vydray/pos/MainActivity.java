@@ -26,19 +26,6 @@ public class MainActivity extends BridgeActivity {
         // Bluetooth権限をリクエスト（Android 12以降）
         requestBluetoothPermissions();
 
-        // システムUIを正しく設定
-        getWindow().setFlags(
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-        );
-
-        // ステータスバーとナビゲーションバーを考慮したレイアウト
-        View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        );
-
         // Force WebView to render properly on initial load
         new Handler().postDelayed(new Runnable() {
             @Override

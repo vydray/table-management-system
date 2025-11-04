@@ -9,8 +9,8 @@ export default function Document() {
         <meta name="theme-color" content="#ff9800" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
 
-        {/* レスポンシブビューポート設定 */}
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+        {/* レスポンシブビューポート設定 - IME対応のためuser-scalable=yesに変更 */}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
 
         {/* Android用の追加設定 */}
         <meta name="mobile-web-app-capable" content="yes" />
