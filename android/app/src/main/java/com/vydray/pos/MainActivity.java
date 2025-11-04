@@ -45,13 +45,19 @@ public class MainActivity extends BridgeActivity {
             public void run() {
                 WebView webView = getBridge().getWebView();
                 if (webView != null) {
-                    webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                    // IME対応のためソフトウェアレンダリングを使用
+                    // LAYER_TYPE_HARDWAREはIMEと互換性がない場合がある
+                    webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 
                     // WebSettingsで追加設定
                     android.webkit.WebSettings settings = webView.getSettings();
                     settings.setJavaScriptEnabled(true);
                     settings.setDomStorageEnabled(true);
                     settings.setDatabaseEnabled(true);
+
+                    // IME（日本語入力）のための設定
+                    settings.setDefaultTextEncodingName("UTF-8");
+                    settings.setSupportMultipleWindows(false);
 
                     // console.logをlogcatに出力
                     webView.setWebChromeClient(new WebChromeClient() {
