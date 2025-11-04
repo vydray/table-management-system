@@ -12,6 +12,14 @@ html, body {
   height: 100%;
 }
 
+/* 入力フィールドでは選択とIMEを許可 */
+input, textarea, select {
+  user-select: auto !important;
+  -webkit-user-select: auto !important;
+  touch-action: auto !important;
+  pointer-events: auto !important;
+}
+
 /* モーダルが開いていない時のみタッチを無効化 */
 body:not(.modal-open) {
   touch-action: none;
