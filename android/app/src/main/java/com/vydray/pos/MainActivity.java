@@ -5,6 +5,8 @@ import android.os.Handler;
 import android.webkit.WebView;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.content.Context;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -56,6 +58,17 @@ public class MainActivity extends BridgeActivity {
 
                     // キーボード入力を確実に受け取る
                     webView.requestFocus();
+
+                    // IMEを強制的に有効化
+                    webView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                            if (imm != null) {
+                                imm.restartInput(webView);
+                            }
+                        }
+                    });
 
                     webView.requestLayout();
                     webView.invalidate();
