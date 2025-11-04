@@ -195,9 +195,11 @@ export default function AttendanceStatus() {
             maxWidth: '400px'
           }}>
             <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>ステータス追加</h3>
-            
+
             <input
               type="text"
+              inputMode="text"
+              lang="ja"
               placeholder="ステータス名"
               value={newStatusName}
               onChange={(e) => setNewStatusName(e.target.value)}
@@ -289,9 +291,11 @@ export default function AttendanceStatus() {
             maxWidth: '400px'
           }}>
             <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>ステータス編集</h3>
-            
+
             <input
               type="text"
+              inputMode="text"
+              lang="ja"
               placeholder="ステータス名"
               value={newStatusName}
               onChange={(e) => setNewStatusName(e.target.value)}

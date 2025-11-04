@@ -170,6 +170,8 @@ export default function CastManagement() {
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
+          inputMode="text"
+          lang="ja"
           placeholder="名前、役職、ステータスで検索..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -519,6 +521,8 @@ export default function CastManagement() {
               <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                 <input
                   type="text"
+                  inputMode="text"
+                  lang="ja"
                   value={newPositionName}
                   onChange={(e) => setNewPositionName(e.target.value)}
                   placeholder="新しい役職名"
@@ -644,6 +648,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
+                  inputMode="text"
+                  lang="ja"
                   value={editingCast.name || ''}
                   onChange={(e) => setEditingCast({...editingCast, name: e.target.value})}
                   style={{
@@ -667,6 +673,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
+                  inputMode="text"
+                  lang="ja"
                   value={editingCast.twitter || ''}
                   onChange={(e) => setEditingCast({...editingCast, twitter: e.target.value})}
                   style={{
@@ -690,6 +698,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
+                  inputMode="text"
+                  lang="ja"
                   value={editingCast.instagram || ''}
                   onChange={(e) => setEditingCast({...editingCast, instagram: e.target.value})}
                   style={{
@@ -713,6 +723,8 @@ export default function CastManagement() {
                 </label>
                 <input
                   type="text"
+                  inputMode="text"
+                  lang="ja"
                   value={editingCast.birthday || ''}
                   onChange={(e) => {
                     const value = e.target.value.replace(/\D/g, '').slice(0, 4)

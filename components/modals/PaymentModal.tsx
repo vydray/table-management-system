@@ -335,6 +335,8 @@ export const PaymentModal: FC<PaymentModalProps> = ({
               <div style={{ marginLeft: `${100 * layoutScale}px`, marginBottom: `${15 * layoutScale}px` }}>
                 <input
                   type="text"
+                  inputMode="text"
+                  lang="ja"
                   value={paymentData.otherMethod}
                   onChange={(e) => onChangeOtherMethod(e.target.value)}
                   placeholder="PayPay、LINE Pay等"
