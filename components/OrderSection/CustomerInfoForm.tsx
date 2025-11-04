@@ -60,7 +60,10 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
         <input
           type="text"
           inputMode="text"
-                  lang="ja"
+          lang="ja"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
           value={guestName}
           onChange={(e) => onUpdateFormData({ guestName: e.target.value })}
           placeholder="お客様名を入力"

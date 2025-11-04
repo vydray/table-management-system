@@ -43,6 +43,11 @@ public class MainActivity extends BridgeActivity {
                 WebView webView = getBridge().getWebView();
                 if (webView != null) {
                     webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
+                    // IME（入力メソッド）を有効化
+                    webView.setFocusable(true);
+                    webView.setFocusableInTouchMode(true);
+
                     webView.requestLayout();
                     webView.invalidate();
 
