@@ -11,9 +11,12 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
+import android.content.Context;
+import android.view.inputmethod.InputMethodManager;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
+import com.capacitorjs.plugins.keyboard.KeyboardPlugin;
 
 public class MainActivity extends BridgeActivity {
     private static final int BLUETOOTH_PERMISSION_REQUEST_CODE = 100;
@@ -21,6 +24,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SiiPrinterPlugin.class);
+        registerPlugin(KeyboardPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Bluetooth権限をリクエスト（Android 12以降）
@@ -52,6 +56,19 @@ public class MainActivity extends BridgeActivity {
                     // WebViewの追加設定
                     settings.setBuiltInZoomControls(false);
                     settings.setDisplayZoomControls(false);
+
+                    // WebViewにフォーカスリスナーを追加してキーボードを強制表示
+                    webView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                        @Override
+                        public void onFocusChange(View v, boolean hasFocus) {
+                            if (hasFocus) {
+                                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                                if (imm != null) {
+                                    imm.showSoftInput(v, InputMethodManager.SHOW_IMPLICIT);
+                                }
+                            }
+                        }
+                    });
 
                     // console.logをlogcatに出力
                     webView.setWebChromeClient(new WebChromeClient() {

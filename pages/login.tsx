@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import { Keyboard } from '@capacitor/keyboard'
 
 export default function Login() {
   const router = useRouter()
@@ -8,6 +9,15 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // 入力フィールドにフォーカスが当たったときにキーボードを表示
+  const handleInputFocus = async () => {
+    try {
+      await Keyboard.show()
+    } catch (error) {
+      console.log('Keyboard API not available or error:', error)
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,6 +76,7 @@ export default function Login() {
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                onFocus={handleInputFocus}
                 placeholder="ユーザー名を入力"
                 required
                 disabled={loading}
@@ -80,6 +91,7 @@ export default function Login() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={handleInputFocus}
                 placeholder="パスワードを入力"
                 required
                 disabled={loading}
