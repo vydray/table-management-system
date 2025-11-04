@@ -3,6 +3,7 @@ import { useProductData } from '../../hooks/useProductData'
 import { useProductCategory } from '../../hooks/useProductCategory'
 import { useProductModal } from '../../hooks/useProductModal'
 import { useProductHandlers } from '../../hooks/useProductHandlers'
+import { useCompositionInput } from '../../hooks/useCompositionInput'
 
 export default function ProductManagement() {
   // フックを使用
@@ -50,6 +51,9 @@ export default function ProductManagement() {
     setNewProductNeedsCast,
     closeModal
   )
+
+  // IME対応入力フック
+  const { compositionProps, handleChange } = useCompositionInput()
 
   useEffect(() => {
     loadCategories()
@@ -118,10 +122,15 @@ export default function ProductManagement() {
           <input
             type="text"
             inputMode="text"
-              lang="ja"
+            lang="ja"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
             placeholder="商品名"
             value={newProductName}
-            onChange={(e) => setNewProductName(e.target.value)}
+            onChange={handleChange((value) => setNewProductName(value))}
+            onCompositionStart={compositionProps.onCompositionStart}
+            onCompositionEnd={compositionProps.onCompositionEnd((value) => setNewProductName(value))}
             style={{
               width: '100%',
               padding: '10px',
@@ -406,9 +415,14 @@ export default function ProductManagement() {
               <input
                 type="text"
                 inputMode="text"
-              lang="ja"
+                lang="ja"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
                 value={newProductName}
-                onChange={(e) => setNewProductName(e.target.value)}
+                onChange={handleChange((value) => setNewProductName(value))}
+                onCompositionStart={compositionProps.onCompositionStart}
+                onCompositionEnd={compositionProps.onCompositionEnd((value) => setNewProductName(value))}
                 style={{
                   width: '100%',
                   padding: '10px',

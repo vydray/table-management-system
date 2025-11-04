@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useCompositionInput } from '../../hooks/useCompositionInput'
 
 interface CustomerInfoFormProps {
   guestName: string
@@ -23,6 +24,9 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
 }) => {
   const [showCastDropdown, setShowCastDropdown] = useState(false)
   const [castFilter, setCastFilter] = useState<'all' | 'attending'>('all')
+
+  // IME対応入力フック
+  const { compositionProps, handleChange } = useCompositionInput()
 
   // ドロップダウン外クリックで閉じる
   useEffect(() => {
@@ -65,7 +69,9 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
           autoCorrect="off"
           autoCapitalize="off"
           value={guestName}
-          onChange={(e) => onUpdateFormData({ guestName: e.target.value })}
+          onChange={handleChange((value) => onUpdateFormData({ guestName: value }))}
+          onCompositionStart={compositionProps.onCompositionStart}
+          onCompositionEnd={compositionProps.onCompositionEnd((value) => onUpdateFormData({ guestName: value }))}
           placeholder="お客様名を入力"
           style={{
             flex: 1,

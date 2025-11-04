@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useCategoryData } from '../../hooks/useCategoryData'
 import { useCategoryModal } from '../../hooks/useCategoryModal'
+import { useCompositionInput } from '../../hooks/useCompositionInput'
 
 export default function CategoryManagement() {
   const {
@@ -39,6 +40,9 @@ export default function CategoryManagement() {
     }
   }
 
+  // IME対応入力フック
+  const { compositionProps, handleChange } = useCompositionInput()
+
   useEffect(() => {
     loadCategories()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -72,10 +76,15 @@ export default function CategoryManagement() {
         <input
           type="text"
           inputMode="text"
-              lang="ja"
+          lang="ja"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
           placeholder="カテゴリー名"
           value={newCategoryName}
-          onChange={(e) => setNewCategoryName(e.target.value)}
+          onChange={handleChange((value) => setNewCategoryName(value))}
+          onCompositionStart={compositionProps.onCompositionStart}
+          onCompositionEnd={compositionProps.onCompositionEnd((value) => setNewCategoryName(value))}
           onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
           style={{
             flex: 1,
@@ -268,8 +277,13 @@ export default function CategoryManagement() {
               type="text"
               inputMode="text"
               lang="ja"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
               value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
+              onChange={handleChange((value) => setNewCategoryName(value))}
+              onCompositionStart={compositionProps.onCompositionStart}
+              onCompositionEnd={compositionProps.onCompositionEnd((value) => setNewCategoryName(value))}
               style={{
                 width: '100%',
                 padding: '12px',
