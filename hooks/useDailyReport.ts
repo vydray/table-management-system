@@ -73,30 +73,23 @@ export const useDailyReport = () => {
         .single()
 
       if (data) {
-        setDailyReportData({
+        // 売上データは常にリアルタイムで計算されるため、調整項目とSNSデータだけを更新
+        setDailyReportData(prev => ({
+          ...prev,
           date: data.business_date,
           eventName: data.event_name || '',
           weather: data.weather,
-          totalReceipt: data.total_receipt || 0,
-          totalSales: data.total_sales || 0,
-          cashReceipt: data.cash_receipt || 0,
-          cardReceipt: data.card_receipt || 0,
-          payPayReceipt: data.paypay_receipt || 0,
-          otherSales: data.other_sales || 0,
           notTransmittedReceipt: data.not_transmitted_receipt || 0,
           notTransmittedAmount: data.not_transmitted_amount || 0,
           unpaidAmount: data.unpaid_amount || 0,
           incomeAmount: data.income_amount || 0,
           expenseAmount: data.expense_amount || 0,
-          balance: data.balance || 0,
-          staffCount: data.staff_count || 0,
-          castCount: data.cast_count || 0,
           remarks: data.remarks || '',
           twitterFollowers: data.twitter_followers || 0,
           instagramFollowers: data.instagram_followers || 0,
           tiktokFollowers: data.tiktok_followers || 0,
           dailyPaymentTotal: data.daily_payment_total || 0
-        })
+        }))
       }
     } catch (error) {
       console.error('Error loading daily report:', error)

@@ -64,27 +64,24 @@ export const useDailyReportOperations = (
     // 勤怠データから人数と日払いを取得（businessDate形式で渡す）
     const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(businessDate, activeAttendanceStatuses)
 
-    // 保存されたデータ（調整項目とSNS）を読み込む
-    await loadDailyReport(businessDate)
+    // 先に最新の売上データを設定
+    setDailyReportData(prev => ({
+      ...prev,
+      date: displayDate,
+      totalReceipt: latestSalesData.orderCount,
+      totalSales: latestSalesData.totalSales,
+      cashReceipt: latestSalesData.cashSales,
+      cardReceipt: latestSalesData.cardSales,
+      payPayReceipt: 0,
+      otherSales: latestSalesData.otherSales,
+      balance: latestSalesData.totalSales,
+      staffCount: staffCount,
+      castCount: castCount,
+      dailyPaymentTotal: dailyPaymentTotal
+    }))
 
-    // loadDailyReportの状態更新が反映されるまで待機
-    setTimeout(() => {
-      // loadDailyReportで読み込まれたデータに最新の売上データを上書き
-      setDailyReportData(prev => ({
-        ...prev,
-        date: displayDate,
-        totalReceipt: latestSalesData.orderCount,
-        totalSales: latestSalesData.totalSales,
-        cashReceipt: latestSalesData.cashSales,
-        cardReceipt: latestSalesData.cardSales,
-        payPayReceipt: 0,
-        otherSales: latestSalesData.otherSales,
-        balance: latestSalesData.totalSales,
-        staffCount: staffCount,
-        castCount: castCount,
-        dailyPaymentTotal: prev.dailyPaymentTotal > 0 ? prev.dailyPaymentTotal : dailyPaymentTotal
-      }))
-    }, 100)
+    // その後、保存されたデータ（調整項目とSNS）を読み込んで追加
+    await loadDailyReport(businessDate)
 
     setShowDailyReportModal(true)
   }
