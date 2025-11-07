@@ -164,26 +164,41 @@ export function useKeyboardAutoAttach() {
           if (newFocus && newFocus.tagName === 'INPUT' && newFocus !== activeInputRef.current) {
             keyboard.hideKeyboard();
             activeInputRef.current = null;
+            return;
           }
-          // それ以外の場合（キーボードボタンクリック等）は、元のinputにフォーカスを戻す
-          // ただし、キーボードが閉じられている場合（オーバーレイクリック）はフォーカスを戻さない
-          else if (newFocus !== activeInputRef.current && activeInputRef.current) {
-            // キーボードがまだ表示されているか確認
-            if (keyboard.isVisible) {
+
+          // 完了ボタンや閉じるボタンがクリックされた場合は、フォーカスを戻さない
+          const isCloseButton = newFocus && (
+            newFocus instanceof HTMLElement &&
+            (newFocus.classList.contains('close-key') ||
+             newFocus.closest('.close-key'))
+          );
+
+          if (isCloseButton) {
+            // 完了ボタンがクリックされた場合はフォーカスを戻さず、キーボードを閉じる
+            activeInputRef.current = null;
+            return;
+          }
+
+          // それ以外の場合（キーボードの通常ボタンクリック等）
+          if (newFocus !== activeInputRef.current && activeInputRef.current) {
+            // キーボードのボタン（完了以外）がクリックされた場合はフォーカスを戻す
+            const isKeyboardButton = newFocus && newFocus instanceof HTMLElement &&
+              (newFocus.classList.contains('key') ||
+               newFocus.closest('.japanese-keyboard'));
+
+            if (isKeyboardButton && keyboard.isVisible) {
+              // キーボードのボタンがクリックされた場合はフォーカスを戻す
               const cursorPos = activeInputRef.current.value.length;
               activeInputRef.current.focus();
-              // フォーカス後にカーソル位置を復元
               setTimeout(() => {
                 if (activeInputRef.current) {
                   activeInputRef.current.setSelectionRange(cursorPos, cursorPos);
                 }
               }, 0);
-            } else {
-              // キーボードが閉じられた場合はフォーカスを外す
-              if (activeInputRef.current) {
-                activeInputRef.current.blur();
-                activeInputRef.current = null;
-              }
+            } else if (!keyboard.isVisible) {
+              // キーボードが閉じられている場合はクリーンアップ
+              activeInputRef.current = null;
             }
           }
         }, 100);
