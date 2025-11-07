@@ -287,6 +287,7 @@ export default function JapaneseKeyboard({ onChange, getInputValue }: JapaneseKe
             </>
           )}
         </div>
+        </div>
       </div>
       <style jsx>{`
         .japanese-keyboard {
