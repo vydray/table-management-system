@@ -67,21 +67,24 @@ export const useDailyReportOperations = (
       // 保存されたデータ（調整項目とSNS）を読み込む
       await loadDailyReport(businessDate)
 
-      // loadDailyReportで読み込まれたデータに最新の売上データを上書き
-      setDailyReportData(prev => ({
-        ...prev,
-        date: day.date,
-        totalReceipt: latestSalesData.orderCount,
-        totalSales: latestSalesData.totalSales,
-        cashReceipt: latestSalesData.cashSales,
-        cardReceipt: latestSalesData.cardSales,
-        payPayReceipt: 0,
-        otherSales: latestSalesData.otherSales,
-        balance: latestSalesData.totalSales,
-        staffCount: staffCount,
-        castCount: castCount,
-        dailyPaymentTotal: prev.dailyPaymentTotal || dailyPaymentTotal
-      }))
+      // loadDailyReportの状態更新が反映されるまで待機
+      setTimeout(() => {
+        // loadDailyReportで読み込まれたデータに最新の売上データを上書き
+        setDailyReportData(prev => ({
+          ...prev,
+          date: day.date,
+          totalReceipt: latestSalesData.orderCount,
+          totalSales: latestSalesData.totalSales,
+          cashReceipt: latestSalesData.cashSales,
+          cardReceipt: latestSalesData.cardSales,
+          payPayReceipt: 0,
+          otherSales: latestSalesData.otherSales,
+          balance: latestSalesData.totalSales,
+          staffCount: staffCount,
+          castCount: castCount,
+          dailyPaymentTotal: prev.dailyPaymentTotal > 0 ? prev.dailyPaymentTotal : dailyPaymentTotal
+        }))
+      }, 100)
     }
 
     setShowDailyReportModal(true)
