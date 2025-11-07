@@ -103,35 +103,28 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
   };
 
   return (
-    <div
-      className="japanese-keyboard"
-      onMouseDown={(e) => {
-        // キーボードのボタンクリック時にフォーカスが外れないようにする
-        e.preventDefault();
-      }}
-      onTouchStart={(e) => {
-        // タッチ時もフォーカスが外れないようにする
-        e.preventDefault();
-      }}
-    >
+    <div className="japanese-keyboard">
       <div className="keyboard-content">
         {/* モード切り替えボタン */}
         <div className="mode-buttons">
           <button
             className={mode === 'hiragana' ? 'active' : ''}
             onClick={() => setMode('hiragana')}
+            tabIndex={-1}
           >
             あ
           </button>
           <button
             className={mode === 'alphabet' ? 'active' : ''}
             onClick={() => setMode('alphabet')}
+            tabIndex={-1}
           >
             A
           </button>
           <button
             className={mode === 'number' ? 'active' : ''}
             onClick={() => setMode('number')}
+            tabIndex={-1}
           >
             123
           </button>
@@ -149,6 +142,7 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
                       className={`key ${key === '' ? 'empty' : ''}`}
                       onClick={() => handleKeyPress(key)}
                       disabled={key === ''}
+                      tabIndex={-1}
                     >
                       {key}
                     </button>
@@ -157,11 +151,11 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
               ))}
               {/* 特殊キー行 */}
               <div className="key-row special-row">
-                <button className="key special" onClick={handleDakuten}>゛</button>
-                <button className="key special" onClick={handleHandakuten}>゜</button>
-                <button className="key special" onClick={handleSmall}>小</button>
-                <button className="key wide" onClick={handleSpace}>スペース</button>
-                <button className="key special" onClick={handleBackspace}>⌫</button>
+                <button className="key special" onClick={handleDakuten} tabIndex={-1}>゛</button>
+                <button className="key special" onClick={handleHandakuten} tabIndex={-1}>゜</button>
+                <button className="key special" onClick={handleSmall} tabIndex={-1}>小</button>
+                <button className="key wide" onClick={handleSpace} tabIndex={-1}>スペース</button>
+                <button className="key special" onClick={handleBackspace} tabIndex={-1}>⌫</button>
               </div>
             </>
           )}
@@ -175,6 +169,7 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
                       key={keyIndex}
                       className="key"
                       onClick={() => handleKeyPress(key)}
+                      tabIndex={-1}
                     >
                       {key}
                     </button>
@@ -186,11 +181,12 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
                 <button
                   className={`key special ${isShift ? 'active' : ''}`}
                   onClick={() => setIsShift(!isShift)}
+                  tabIndex={-1}
                 >
                   ⇧
                 </button>
-                <button className="key wide" onClick={handleSpace}>Space</button>
-                <button className="key special" onClick={handleBackspace}>⌫</button>
+                <button className="key wide" onClick={handleSpace} tabIndex={-1}>Space</button>
+                <button className="key special" onClick={handleBackspace} tabIndex={-1}>⌫</button>
               </div>
             </>
           )}
@@ -204,6 +200,7 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
                       key={keyIndex}
                       className="key"
                       onClick={() => handleKeyPress(key)}
+                      tabIndex={-1}
                     >
                       {key}
                     </button>
@@ -212,15 +209,15 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
               ))}
               {/* 特殊キー行 */}
               <div className="key-row special-row">
-                <button className="key wide" onClick={handleSpace}>Space</button>
-                <button className="key special" onClick={handleBackspace}>⌫</button>
+                <button className="key wide" onClick={handleSpace} tabIndex={-1}>Space</button>
+                <button className="key special" onClick={handleBackspace} tabIndex={-1}>⌫</button>
               </div>
             </>
           )}
         </div>
 
         {/* 閉じるボタン */}
-        <button className="close-button" onClick={handleClose}>
+        <button className="close-button" onClick={handleClose} tabIndex={-1}>
           閉じる
         </button>
       </div>
