@@ -74,9 +74,9 @@ export const useDailyReport = () => {
 
       if (data) {
         // 売上データは常にリアルタイムで計算されるため、調整項目とSNSデータだけを更新
+        // 日付は上書きしない（openDailyReportで設定済み）
         setDailyReportData(prev => ({
           ...prev,
-          date: data.business_date,
           eventName: data.event_name || '',
           weather: data.weather,
           notTransmittedReceipt: data.not_transmitted_receipt || 0,
