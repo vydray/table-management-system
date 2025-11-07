@@ -79,7 +79,14 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
   }, [mode]);
 
   const handleOverlayClick = () => {
-    onClose();
+    // フォーカスされているinput要素があればblurする
+    if (document.activeElement instanceof HTMLInputElement) {
+      document.activeElement.blur();
+    }
+    // 少し待ってからonCloseを呼ぶ（blurが完了するまで）
+    setTimeout(() => {
+      onClose();
+    }, 50);
   };
 
   // ローマ字→ひらがな変換処理
@@ -306,7 +313,7 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.3);
+          background: transparent;
           z-index: 9998;
         }
 
