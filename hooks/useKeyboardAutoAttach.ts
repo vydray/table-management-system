@@ -19,6 +19,9 @@ export function useKeyboardAutoAttach() {
       // disabledの場合は除外（readOnlyはチェックしない）
       if (target.disabled) return;
 
+      // 手動でキーボードを管理する要素は除外
+      if (target.getAttribute('data-manual-keyboard') === 'true') return;
+
       // 既にinputMode="none"が設定されている場合はスキップ（無限ループ防止）
       if (target.getAttribute('inputMode') === 'none') {
         // カスタムキーボードを表示

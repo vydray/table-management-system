@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useKeyboard } from '../contexts/KeyboardContext';
 
 interface CustomInputProps {
@@ -20,16 +21,18 @@ export default function CustomInput({
   required = false,
 }: CustomInputProps) {
   const keyboard = useKeyboard();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.blur();
     if (!disabled) {
-      keyboard.showKeyboard(value, onChange, () => value);
+      keyboard.showKeyboard(value, onChange, () => inputRef.current?.value || '');
     }
   };
 
   return (
     <input
+      ref={inputRef}
       type={type === 'number' ? 'tel' : 'text'}
       inputMode="none"
       value={value}
@@ -40,6 +43,7 @@ export default function CustomInput({
       className={className}
       required={required}
       readOnly
+      data-manual-keyboard="true"
     />
   );
 }
