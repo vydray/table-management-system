@@ -48,44 +48,43 @@ export const useDailyReportOperations = (
 
   // 日別詳細を開く（リアルタイム対応）
   const openDailyReport = async (day: DayData) => {
-    setSelectedDate(day.date)
+    // day.dateはISO形式（"2025-11-05"）で渡される
+    const businessDate = day.date
+
+    // 表示用の日付を作成（"11月5日"形式）
+    const dateObj = new Date(businessDate + 'T00:00:00')
+    const displayDate = `${dateObj.getMonth() + 1}月${dateObj.getDate()}日`
+
+    setSelectedDate(displayDate)
     setCalculatedCashReceipt(null) // 現金計算結果をリセット
 
-    // 日付を解析して業務日を取得
-    const matches = day.date.match(/(\d+)月(\d+)日/)
-    if (matches) {
-      const month = parseInt(matches[1])
-      const dayNum = parseInt(matches[2])
-      const businessDate = new Date(selectedYear, month - 1, dayNum).toISOString().slice(0, 10)
+    // 常に最新の売上データを取得（businessDate形式で渡す）
+    const latestSalesData = await getLatestSalesData(businessDate, businessDayStartHour)
 
-      // 常に最新の売上データを取得（businessDate形式で渡す）
-      const latestSalesData = await getLatestSalesData(businessDate, businessDayStartHour)
+    // 勤怠データから人数と日払いを取得（businessDate形式で渡す）
+    const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(businessDate, activeAttendanceStatuses)
 
-      // 勤怠データから人数と日払いを取得（businessDate形式で渡す）
-      const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(businessDate, activeAttendanceStatuses)
+    // 保存されたデータ（調整項目とSNS）を読み込む
+    await loadDailyReport(businessDate)
 
-      // 保存されたデータ（調整項目とSNS）を読み込む
-      await loadDailyReport(businessDate)
-
-      // loadDailyReportの状態更新が反映されるまで待機
-      setTimeout(() => {
-        // loadDailyReportで読み込まれたデータに最新の売上データを上書き
-        setDailyReportData(prev => ({
-          ...prev,
-          date: day.date,
-          totalReceipt: latestSalesData.orderCount,
-          totalSales: latestSalesData.totalSales,
-          cashReceipt: latestSalesData.cashSales,
-          cardReceipt: latestSalesData.cardSales,
-          payPayReceipt: 0,
-          otherSales: latestSalesData.otherSales,
-          balance: latestSalesData.totalSales,
-          staffCount: staffCount,
-          castCount: castCount,
-          dailyPaymentTotal: prev.dailyPaymentTotal > 0 ? prev.dailyPaymentTotal : dailyPaymentTotal
-        }))
-      }, 100)
-    }
+    // loadDailyReportの状態更新が反映されるまで待機
+    setTimeout(() => {
+      // loadDailyReportで読み込まれたデータに最新の売上データを上書き
+      setDailyReportData(prev => ({
+        ...prev,
+        date: displayDate,
+        totalReceipt: latestSalesData.orderCount,
+        totalSales: latestSalesData.totalSales,
+        cashReceipt: latestSalesData.cashSales,
+        cardReceipt: latestSalesData.cardSales,
+        payPayReceipt: 0,
+        otherSales: latestSalesData.otherSales,
+        balance: latestSalesData.totalSales,
+        staffCount: staffCount,
+        castCount: castCount,
+        dailyPaymentTotal: prev.dailyPaymentTotal > 0 ? prev.dailyPaymentTotal : dailyPaymentTotal
+      }))
+    }, 100)
 
     setShowDailyReportModal(true)
   }
