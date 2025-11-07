@@ -105,8 +105,12 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
   return (
     <div
       className="japanese-keyboard"
-      onPointerDown={(e) => {
+      onMouseDown={(e) => {
         // キーボードのボタンクリック時にフォーカスが外れないようにする
+        e.preventDefault();
+      }}
+      onTouchStart={(e) => {
+        // タッチ時もフォーカスが外れないようにする
         e.preventDefault();
       }}
     >
