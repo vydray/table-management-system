@@ -58,8 +58,9 @@ export function useKeyboardAutoAttach() {
                 // Reset React's internal value tracker to force change detection
                 const tracker = (activeInputRef.current as any)._valueTracker;
                 if (tracker) {
-                  tracker.setValue('');
-                  console.log('[useKeyboardAutoAttach] Reset React value tracker');
+                  // 新しい値と確実に異なる値にリセット（空文字列の場合は特殊文字）
+                  tracker.setValue(newValue === '' ? '\u0000' : '');
+                  console.log('[useKeyboardAutoAttach] Reset React value tracker to detect change');
                 }
 
                 const inputEvent = new Event('input', { bubbles: true });
@@ -123,8 +124,9 @@ export function useKeyboardAutoAttach() {
               // Reset React's internal value tracker to force change detection
               const tracker = (activeInputRef.current as any)._valueTracker;
               if (tracker) {
-                tracker.setValue('');
-                console.log('[useKeyboardAutoAttach] Reset initial React value tracker');
+                // 新しい値と確実に異なる値にリセット（空文字列の場合は特殊文字）
+                tracker.setValue(newValue === '' ? '\u0000' : '');
+                console.log('[useKeyboardAutoAttach] Reset initial React value tracker to detect change');
               }
 
               const inputEvent = new Event('input', { bubbles: true });
