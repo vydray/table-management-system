@@ -66,12 +66,19 @@ interface JapaneseKeyboardProps {
   onChange: (value: string) => void;
   onClose: () => void;
   getInputValue: () => string;
+  preferredMode?: KeyboardMode;
+  deleteFromFront?: boolean;
 }
 
-export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: JapaneseKeyboardProps) {
-  const [mode, setMode] = useState<KeyboardMode>('romaji');
+export default function JapaneseKeyboard({ onChange, onClose, getInputValue, preferredMode = 'romaji', deleteFromFront = false }: JapaneseKeyboardProps) {
+  const [mode, setMode] = useState<KeyboardMode>(preferredMode);
   const [isShift, setIsShift] = useState(false);
   const [romajiBuffer, setRomajiBuffer] = useState('');
+
+  // preferredModeが変わったらモードを更新
+  useEffect(() => {
+    setMode(preferredMode);
+  }, [preferredMode]);
 
   // モード変更時にバッファをクリア
   useEffect(() => {
@@ -152,7 +159,13 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
     } else {
       // 入力値から削除
       const currentValue = getInputValue();
-      onChange(currentValue.slice(0, -1));
+      if (deleteFromFront) {
+        // 先頭文字を削除
+        onChange(currentValue.slice(1));
+      } else {
+        // 末尾文字を削除
+        onChange(currentValue.slice(0, -1));
+      }
     }
   };
 
@@ -206,10 +219,10 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
   ];
 
   const numberKeys = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    ['0', '.', '-'],
+    ['1', '2', '3', '⌫'],
+    ['4', '5', '6', ''],
+    ['7', '8', '9', ''],
+    ['.', '0', '-', ''],
   ];
 
   const getModeLabel = () => {
@@ -236,6 +249,7 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
                       key={keyIndex}
                       className="key"
                       onClick={() => handleKeyPress(key)}
+                      onMouseDown={(e) => e.preventDefault()}
                       tabIndex={-1}
                     >
                       {key}
@@ -248,6 +262,7 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
                 <button
                   className={`key shift ${isShift ? 'active' : ''}`}
                   onClick={() => setIsShift(!isShift)}
+                  onMouseDown={(e) => e.preventDefault()}
                   tabIndex={-1}
                 >
                   ⇧
@@ -257,24 +272,25 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
                     key={keyIndex}
                     className="key"
                     onClick={() => handleKeyPress(key)}
+                    onMouseDown={(e) => e.preventDefault()}
                     tabIndex={-1}
                   >
                     {key}
                   </button>
                 ))}
-                <button className="key backspace" onClick={handleBackspace} tabIndex={-1}>
+                <button className="key backspace" onClick={handleBackspace} onMouseDown={(e) => e.preventDefault()} tabIndex={-1}>
                   ⌫
                 </button>
               </div>
               {/* 最下段：モード切り替え、スペース、Enter */}
               <div className="key-row bottom-row">
-                <button className="key mode-switch" onClick={handleModeSwitch} tabIndex={-1}>
+                <button className="key mode-switch" onClick={handleModeSwitch} onMouseDown={(e) => e.preventDefault()} tabIndex={-1}>
                   {getModeLabel()}
                 </button>
-                <button className="key space" onClick={handleSpace} tabIndex={-1}>
+                <button className="key space" onClick={handleSpace} onMouseDown={(e) => e.preventDefault()} tabIndex={-1}>
                   Space
                 </button>
-                <button className="key enter-key" onClick={handleClose} tabIndex={-1}>
+                <button className="key enter-key" onClick={handleClose} onMouseDown={(e) => e.preventDefault()} tabIndex={-1}>
                   Enter
                 </button>
               </div>
@@ -283,46 +299,52 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
 
           {mode === 'number' && (
             <>
-              {/* 最初の3行 */}
-              {numberKeys.slice(0, 3).map((row, rowIndex) => (
+              {/* 全4行 */}
+              {numberKeys.map((row, rowIndex) => (
                 <div key={rowIndex} className="key-row">
-                  {row.map((key, keyIndex) => (
-                    <button
-                      key={keyIndex}
-                      className="key"
-                      onClick={() => handleKeyPress(key)}
-                      tabIndex={-1}
-                    >
-                      {key}
-                    </button>
-                  ))}
+                  {row.map((key, keyIndex) => {
+                    if (key === '') {
+                      // 空のスペース
+                      return <div key={keyIndex} className="key" style={{ visibility: 'hidden' }}></div>
+                    } else if (key === '⌫') {
+                      // バックスペースボタン
+                      return (
+                        <button
+                          key={keyIndex}
+                          className="key backspace"
+                          onClick={handleBackspace}
+                          onMouseDown={(e) => e.preventDefault()}
+                          tabIndex={-1}
+                        >
+                          {key}
+                        </button>
+                      )
+                    } else {
+                      // 通常のキー
+                      return (
+                        <button
+                          key={keyIndex}
+                          className="key"
+                          onClick={() => handleKeyPress(key)}
+                          onMouseDown={(e) => e.preventDefault()}
+                          tabIndex={-1}
+                        >
+                          {key}
+                        </button>
+                      )
+                    }
+                  })}
                 </div>
               ))}
-              {/* 4行目：0 . - × */}
-              <div className="key-row">
-                {numberKeys[3].map((key, keyIndex) => (
-                  <button
-                    key={keyIndex}
-                    className="key"
-                    onClick={() => handleKeyPress(key)}
-                    tabIndex={-1}
-                  >
-                    {key}
-                  </button>
-                ))}
-                <button className="key backspace" onClick={handleBackspace} tabIndex={-1}>
-                  ⌫
-                </button>
-              </div>
               {/* 最下段：モード切り替え、スペース、Enter */}
               <div className="key-row bottom-row">
-                <button className="key mode-switch" onClick={handleModeSwitch} tabIndex={-1}>
+                <button className="key mode-switch" onClick={handleModeSwitch} onMouseDown={(e) => e.preventDefault()} tabIndex={-1}>
                   {getModeLabel()}
                 </button>
-                <button className="key space" onClick={handleSpace} tabIndex={-1}>
+                <button className="key space" onClick={handleSpace} onMouseDown={(e) => e.preventDefault()} tabIndex={-1}>
                   Space
                 </button>
-                <button className="key enter-key" onClick={handleClose} tabIndex={-1}>
+                <button className="key enter-key" onClick={handleClose} onMouseDown={(e) => e.preventDefault()} tabIndex={-1}>
                   Enter
                 </button>
               </div>

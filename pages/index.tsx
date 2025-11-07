@@ -853,9 +853,11 @@ const finishCheckout = () => {
   {/* 差分の数字を左側に配置 */}
   <span style={{
     position: 'absolute',
-    left: '170px',
+    left: '220px',
+    top: '50%',
+    transform: 'translateY(-50%)',
     fontWeight: 'bold',
-    fontSize: '24px',
+    fontSize: '44px',
     color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
     zIndex: 100
   }}>
@@ -872,13 +874,18 @@ const finishCheckout = () => {
     style={{
       cursor: 'pointer',
       userSelect: 'none',
-      textAlign: 'center'
+      textAlign: 'center',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '80px',
+      flex: 1
     }}
   >
     {!showBusinessDaySummary ? (
       <span>📋 テーブル管理システム</span>
     ) : businessDaySummary ? (
-      <div style={{ fontSize: '18px', lineHeight: '1.3' }}>
+      <div style={{ fontSize: '52px', lineHeight: '1.3' }}>
         <div style={{ fontWeight: 'bold', color: '#FF9800' }}>
           総売上: ¥{businessDaySummary.totalSales.toLocaleString()}
         </div>
@@ -894,8 +901,11 @@ const finishCheckout = () => {
   <span style={{
     position: 'absolute',
     right: '20px',
-    fontSize: '24px',
-    fontFamily: 'monospace'
+    top: '50%',
+    transform: 'translateY(-50%)',
+    fontSize: '44px',
+    fontFamily: 'monospace',
+    fontWeight: 'bold'
   }}>
     {currentTime}
   </span>
