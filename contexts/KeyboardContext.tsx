@@ -17,7 +17,10 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
 
   const showKeyboard = (initialValue: string, onUpdate: (value: string) => void) => {
     setValue(initialValue);
-    setOnUpdateCallback(() => onUpdate);
+    // Reactで関数を状態として保存する場合、関数でラップして返す必要がある
+    // () => onUpdate だと、onUpdate関数を返すだけの関数になってしまう
+    // 正しくは、引数を受け取ってonUpdateに渡す関数を作る
+    setOnUpdateCallback(() => (val: string) => onUpdate(val));
     setIsVisible(true);
   };
 
