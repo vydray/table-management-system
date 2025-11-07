@@ -263,7 +263,7 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
                   </button>
                 ))}
                 <button className="key backspace" onClick={handleBackspace} tabIndex={-1}>
-                  ×
+                  ⌫
                 </button>
               </div>
               {/* 最下段：モード切り替え、スペース、Enter */}
@@ -311,7 +311,7 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
                   </button>
                 ))}
                 <button className="key backspace" onClick={handleBackspace} tabIndex={-1}>
-                  ×
+                  ⌫
                 </button>
               </div>
               {/* 最下段：モード切り替え、スペース、Enter */}
@@ -399,8 +399,7 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
         }
 
         .key.enter-key {
-          flex: 3;
-          min-width: 180px;
+          min-width: 162px;
           background: #4CAF50;
           color: white;
           font-weight: bold;
@@ -412,8 +411,8 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
         }
 
         .key.space {
-          flex: 2;
-          min-width: 150px;
+          flex: 1;
+          min-width: 200px;
         }
 
         @media (max-width: 600px) {
