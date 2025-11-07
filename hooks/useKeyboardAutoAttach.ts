@@ -25,6 +25,11 @@ export function useKeyboardAutoAttach() {
         const currentValue = target.value;
         activeInputRef.current = target;
 
+        // 入力フィールドを画面上部にスクロール
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+
         keyboard.showKeyboard(currentValue, (newValue) => {
           if (activeInputRef.current) {
             activeInputRef.current.value = newValue;
@@ -51,6 +56,11 @@ export function useKeyboardAutoAttach() {
       // フォーカスを維持したままカスタムキーボードを表示
       const currentValue = target.value;
       activeInputRef.current = target;
+
+      // 入力フィールドを画面上部にスクロール
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
 
       keyboard.showKeyboard(currentValue, (newValue) => {
         if (activeInputRef.current) {

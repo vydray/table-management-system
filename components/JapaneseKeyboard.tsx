@@ -105,7 +105,7 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
   return (
     <div
       className="japanese-keyboard"
-      onMouseDown={(e) => {
+      onPointerDown={(e) => {
         // キーボードのボタンクリック時にフォーカスが外れないようにする
         e.preventDefault();
       }}
@@ -228,11 +228,11 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
           left: 0;
           right: 0;
           background: #e8e8e8;
-          padding: 15px;
-          padding-bottom: calc(15px + env(safe-area-inset-bottom));
+          padding: 12px;
+          padding-bottom: calc(12px + env(safe-area-inset-bottom));
           box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
           z-index: 9999;
-          max-height: 60vh;
+          max-height: 45vh;
           overflow-y: auto;
         }
 
@@ -243,17 +243,17 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
 
         .mode-buttons {
           display: flex;
-          gap: 15px;
-          margin-bottom: 15px;
+          gap: 12px;
+          margin-bottom: 12px;
           justify-content: center;
         }
 
         .mode-buttons button {
-          padding: 15px 30px;
+          padding: 12px 24px;
           border: 2px solid #ccc;
           background: white;
           border-radius: 8px;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: bold;
           cursor: pointer;
           transition: all 0.2s;
@@ -267,25 +267,25 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
 
         .keyboard-keys {
           background: white;
-          padding: 15px;
-          border-radius: 12px;
-          margin-bottom: 15px;
+          padding: 12px;
+          border-radius: 10px;
+          margin-bottom: 12px;
         }
 
         .key-row {
           display: flex;
-          gap: 8px;
-          margin-bottom: 8px;
+          gap: 6px;
+          margin-bottom: 6px;
           justify-content: center;
         }
 
         .key {
-          min-width: 70px;
-          height: 70px;
+          min-width: 60px;
+          height: 60px;
           border: 1px solid #ccc;
           background: white;
-          border-radius: 8px;
-          font-size: 24px;
+          border-radius: 6px;
+          font-size: 22px;
           cursor: pointer;
           transition: all 0.1s;
           display: flex;
@@ -306,7 +306,7 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
         }
 
         .key.wide {
-          min-width: 200px;
+          min-width: 180px;
         }
 
         .key.special {
@@ -320,17 +320,17 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
         }
 
         .special-row {
-          margin-top: 12px;
+          margin-top: 10px;
         }
 
         .close-button {
           width: 100%;
-          padding: 16px;
+          padding: 14px;
           background: #ff9800;
           color: white;
           border: none;
           border-radius: 8px;
-          font-size: 18px;
+          font-size: 16px;
           font-weight: bold;
           cursor: pointer;
           transition: background 0.2s;
@@ -343,13 +343,17 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
 
         @media (max-width: 600px) {
           .key {
-            min-width: 50px;
-            height: 55px;
-            font-size: 20px;
+            min-width: 45px;
+            height: 50px;
+            font-size: 18px;
           }
 
           .key.wide {
-            min-width: 150px;
+            min-width: 130px;
+          }
+
+          .japanese-keyboard {
+            max-height: 40vh;
           }
         }
       `}</style>
