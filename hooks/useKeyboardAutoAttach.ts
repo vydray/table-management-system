@@ -166,15 +166,25 @@ export function useKeyboardAutoAttach() {
             activeInputRef.current = null;
           }
           // それ以外の場合（キーボードボタンクリック等）は、元のinputにフォーカスを戻す
+          // ただし、キーボードが閉じられている場合（オーバーレイクリック）はフォーカスを戻さない
           else if (newFocus !== activeInputRef.current && activeInputRef.current) {
-            const cursorPos = activeInputRef.current.value.length;
-            activeInputRef.current.focus();
-            // フォーカス後にカーソル位置を復元
-            setTimeout(() => {
+            // キーボードがまだ表示されているか確認
+            if (keyboard.isVisible) {
+              const cursorPos = activeInputRef.current.value.length;
+              activeInputRef.current.focus();
+              // フォーカス後にカーソル位置を復元
+              setTimeout(() => {
+                if (activeInputRef.current) {
+                  activeInputRef.current.setSelectionRange(cursorPos, cursorPos);
+                }
+              }, 0);
+            } else {
+              // キーボードが閉じられた場合はフォーカスを外す
               if (activeInputRef.current) {
-                activeInputRef.current.setSelectionRange(cursorPos, cursorPos);
+                activeInputRef.current.blur();
+                activeInputRef.current = null;
               }
-            }, 0);
+            }
           }
         }, 100);
       }

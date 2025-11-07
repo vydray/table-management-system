@@ -78,10 +78,7 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
     setRomajiBuffer('');
   }, [mode]);
 
-  const handleClose = () => {
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
+  const handleOverlayClick = () => {
     onClose();
   };
 
@@ -212,9 +209,15 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
     }
   };
 
+  const handleKeyboardClick = (e: React.MouseEvent) => {
+    // キーボード本体のクリックでは閉じない
+    e.stopPropagation();
+  };
+
   return (
-    <div className="japanese-keyboard">
-      <div className="keyboard-content">
+    <div className="keyboard-overlay" onClick={handleOverlayClick}>
+      <div className="japanese-keyboard" onClick={handleKeyboardClick}>
+        <div className="keyboard-content">
         {/* ローマ字バッファ表示 */}
         {mode === 'romaji' && romajiBuffer && (
           <div className="romaji-buffer">
@@ -293,14 +296,20 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
             </>
           )}
         </div>
-
-        {/* 閉じるボタン */}
-        <button className="close-button" onClick={handleClose} tabIndex={-1}>
-          閉じる
-        </button>
       </div>
+    </div>
 
       <style jsx>{`
+        .keyboard-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.3);
+          z-index: 9998;
+        }
+
         .japanese-keyboard {
           position: fixed;
           bottom: 0;
@@ -386,24 +395,6 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
         .key.space {
           flex: 1;
           min-width: 200px;
-        }
-
-        .close-button {
-          width: 100%;
-          padding: 14px;
-          background: #ff9800;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-size: 16px;
-          font-weight: bold;
-          cursor: pointer;
-          transition: background 0.2s;
-          touch-action: manipulation;
-        }
-
-        .close-button:active {
-          background: #e68900;
         }
 
         @media (max-width: 600px) {
