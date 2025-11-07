@@ -288,8 +288,6 @@ export default function Home() {
 
     // CSS変数として設定
     document.documentElement.style.setProperty('--viewport-scale', scale.toString())
-
-    console.log(`Layout scale: ${scale.toFixed(3)} (viewport: ${window.innerWidth}x${window.innerHeight}, layout: ${LAYOUT_WIDTH}x${LAYOUT_HEIGHT})`)
   }
 
   // 注文内容を保存（ラッパー関数）

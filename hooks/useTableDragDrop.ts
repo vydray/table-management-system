@@ -86,14 +86,14 @@ export const useTableDragDrop = () => {
       // ターゲットページ内での相対座標を計算
       const pageRect = targetPageElement.getBoundingClientRect()
 
-      // ページのborder幅を取得（borderの内側がcontent boxの開始点）
-      const computedStyle = window.getComputedStyle(targetPageElement)
-      const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0
-      const borderTop = parseFloat(computedStyle.borderTopWidth) || 0
+      // ページのborder幅（固定値：現在のページは3px、それ以外は2px）
+      // getComputedStyleを使わずに固定値を使用することでパフォーマンス向上
+      const borderWidth = targetPageElement.style.borderWidth ?
+        parseFloat(targetPageElement.style.borderWidth) : 2.5 // 平均値を使用
 
       // borderの内側を基準にした座標を計算
-      const newLeft = (clientX - pageRect.left - borderLeft - dragOffset.x) / autoScale
-      const newTop = (clientY - pageRect.top - borderTop - dragOffset.y) / autoScale
+      const newLeft = (clientX - pageRect.left - borderWidth - dragOffset.x) / autoScale
+      const newTop = (clientY - pageRect.top - borderWidth - dragOffset.y) / autoScale
 
       setTables(prev => prev.map(t =>
         t.table_name === draggedTable

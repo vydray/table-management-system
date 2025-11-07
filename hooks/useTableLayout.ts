@@ -45,7 +45,8 @@ export const useTableLayout = () => {
       })))
 
       const maxPage = Math.max(...data.map((t) => t.page_number || 1), 1)
-      setPageCount(maxPage)
+      // 現在のpageCountと比較して、大きい方を使用（新規ページを維持）
+      setPageCount(prev => Math.max(prev, maxPage))
 
       setLoading(false)
       return data

@@ -107,8 +107,6 @@ export const useReceiptsData = () => {
         return false
       }
 
-      console.log('Deleting receipt:', receiptId, 'by user:', userId)
-
       const { error } = await supabase
         .from('orders')
         .update({

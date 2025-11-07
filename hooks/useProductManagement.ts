@@ -10,27 +10,21 @@ export const useProductManagement = () => {
   // 商品データをAPIから取得
   const loadProducts = async () => {
     try {
-      console.log('商品データ読み込み開始...')
-
       // ログインチェック
       const isLoggedIn = localStorage.getItem('isLoggedIn')
       if (!isLoggedIn) {
-        console.log('未ログインのため商品データ読み込みをスキップ')
         return
       }
 
       // 店舗IDを取得
       const storeId = getCurrentStoreId()
       if (!storeId) {
-        console.log('店舗IDが取得できないため商品データ読み込みをスキップ')
         return
       }
 
       // APIに店舗IDを渡す
       const res = await fetch(`/api/products?storeId=${storeId}`)
       const data = await res.json()
-
-      console.log('APIレスポンス:', data)
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to fetch products')
@@ -58,7 +52,6 @@ export const useProductManagement = () => {
           })
       })
 
-      console.log('変換後のデータ:', productData)
       setProductCategories(productData)
     } catch (error) {
       console.error('Error loading products:', error)
