@@ -60,7 +60,6 @@ function AppContent({ Component, pageProps }: AppProps) {
       <Component {...pageProps} />
       {keyboard.isVisible && (
         <JapaneseKeyboard
-          value={keyboard.value}
           onChange={keyboard.updateValue}
           onClose={keyboard.hideKeyboard}
           getInputValue={keyboard.getInputValue}

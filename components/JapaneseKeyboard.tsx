@@ -3,13 +3,12 @@ import { useState } from 'react';
 type KeyboardMode = 'hiragana' | 'alphabet' | 'number';
 
 interface JapaneseKeyboardProps {
-  value: string;
   onChange: (value: string) => void;
   onClose: () => void;
   getInputValue: () => string;
 }
 
-export default function JapaneseKeyboard({ value, onChange, onClose, getInputValue }: JapaneseKeyboardProps) {
+export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: JapaneseKeyboardProps) {
   const [mode, setMode] = useState<KeyboardMode>('hiragana');
   const [isShift, setIsShift] = useState(false);
 
