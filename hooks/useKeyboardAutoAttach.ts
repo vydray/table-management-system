@@ -79,7 +79,7 @@ export function useKeyboardAutoAttach() {
           } else {
             console.warn('[useKeyboardAutoAttach] activeInputRef.current is null');
           }
-        });
+        }, () => activeInputRef.current?.value || '');
         return;
       }
 
@@ -144,7 +144,7 @@ export function useKeyboardAutoAttach() {
         } else {
           console.warn('[useKeyboardAutoAttach] Initial activeInputRef.current is null');
         }
-      });
+      }, () => activeInputRef.current?.value || '');
     };
 
     const handleInputBlur = (e: FocusEvent) => {

@@ -6,9 +6,10 @@ interface JapaneseKeyboardProps {
   value: string;
   onChange: (value: string) => void;
   onClose: () => void;
+  getInputValue: () => string;
 }
 
-export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseKeyboardProps) {
+export default function JapaneseKeyboard({ value, onChange, onClose, getInputValue }: JapaneseKeyboardProps) {
   const [mode, setMode] = useState<KeyboardMode>('hiragana');
   const [isShift, setIsShift] = useState(false);
 
@@ -50,24 +51,31 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
 
   const handleKeyPress = (key: string) => {
     if (key === '') return;
-    console.log('[JapaneseKeyboard] handleKeyPress:', key, 'current value:', value);
-    const newValue = value + key;
+    const currentValue = getInputValue();
+    console.log('[JapaneseKeyboard] handleKeyPress:', key, 'current value:', currentValue);
+    const newValue = currentValue + key;
     console.log('[JapaneseKeyboard] calling onChange with:', newValue);
     onChange(newValue);
   };
 
   const handleBackspace = () => {
-    onChange(value.slice(0, -1));
+    const currentValue = getInputValue();
+    console.log('[JapaneseKeyboard] handleBackspace, current value:', currentValue);
+    const newValue = currentValue.slice(0, -1);
+    console.log('[JapaneseKeyboard] handleBackspace, new value:', newValue);
+    onChange(newValue);
   };
 
   const handleSpace = () => {
-    onChange(value + ' ');
+    const currentValue = getInputValue();
+    onChange(currentValue + ' ');
   };
 
   // 濁点変換
   const handleDakuten = () => {
-    if (value.length === 0) return;
-    const lastChar = value[value.length - 1];
+    const currentValue = getInputValue();
+    if (currentValue.length === 0) return;
+    const lastChar = currentValue[currentValue.length - 1];
     const dakutenMap: { [key: string]: string } = {
       'か': 'が', 'き': 'ぎ', 'く': 'ぐ', 'け': 'げ', 'こ': 'ご',
       'さ': 'ざ', 'し': 'じ', 'す': 'ず', 'せ': 'ぜ', 'そ': 'ぞ',
@@ -75,33 +83,35 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
       'は': 'ば', 'ひ': 'び', 'ふ': 'ぶ', 'へ': 'べ', 'ほ': 'ぼ',
     };
     if (dakutenMap[lastChar]) {
-      onChange(value.slice(0, -1) + dakutenMap[lastChar]);
+      onChange(currentValue.slice(0, -1) + dakutenMap[lastChar]);
     }
   };
 
   // 半濁点変換
   const handleHandakuten = () => {
-    if (value.length === 0) return;
-    const lastChar = value[value.length - 1];
+    const currentValue = getInputValue();
+    if (currentValue.length === 0) return;
+    const lastChar = currentValue[currentValue.length - 1];
     const handakutenMap: { [key: string]: string } = {
       'は': 'ぱ', 'ひ': 'ぴ', 'ふ': 'ぷ', 'へ': 'ぺ', 'ほ': 'ぽ',
     };
     if (handakutenMap[lastChar]) {
-      onChange(value.slice(0, -1) + handakutenMap[lastChar]);
+      onChange(currentValue.slice(0, -1) + handakutenMap[lastChar]);
     }
   };
 
   // 小文字変換
   const handleSmall = () => {
-    if (value.length === 0) return;
-    const lastChar = value[value.length - 1];
+    const currentValue = getInputValue();
+    if (currentValue.length === 0) return;
+    const lastChar = currentValue[currentValue.length - 1];
     const smallMap: { [key: string]: string } = {
       'あ': 'ぁ', 'い': 'ぃ', 'う': 'ぅ', 'え': 'ぇ', 'お': 'ぉ',
       'や': 'ゃ', 'ゆ': 'ゅ', 'よ': 'ょ',
       'つ': 'っ', 'わ': 'ゎ',
     };
     if (smallMap[lastChar]) {
-      onChange(value.slice(0, -1) + smallMap[lastChar]);
+      onChange(currentValue.slice(0, -1) + smallMap[lastChar]);
     }
   };
 

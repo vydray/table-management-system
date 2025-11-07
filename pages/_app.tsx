@@ -63,6 +63,7 @@ function AppContent({ Component, pageProps }: AppProps) {
           value={keyboard.value}
           onChange={keyboard.updateValue}
           onClose={keyboard.hideKeyboard}
+          getInputValue={keyboard.getInputValue}
         />
       )}
     </>

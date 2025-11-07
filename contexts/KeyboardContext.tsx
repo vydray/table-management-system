@@ -3,9 +3,10 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 interface KeyboardContextType {
   isVisible: boolean;
   value: string;
-  showKeyboard: (initialValue: string, onUpdate: (value: string) => void) => void;
+  showKeyboard: (initialValue: string, onUpdate: (value: string) => void, getInputValue: () => string) => void;
   hideKeyboard: () => void;
   updateValue: (newValue: string) => void;
+  getInputValue: () => string;
 }
 
 const KeyboardContext = createContext<KeyboardContextType | undefined>(undefined);
@@ -14,13 +15,15 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
   const [isVisible, setIsVisible] = useState(false);
   const [value, setValue] = useState('');
   const [onUpdateCallback, setOnUpdateCallback] = useState<((value: string) => void) | null>(null);
+  const [getInputValueCallback, setGetInputValueCallback] = useState<(() => string) | null>(null);
 
-  const showKeyboard = (initialValue: string, onUpdate: (value: string) => void) => {
+  const showKeyboard = (initialValue: string, onUpdate: (value: string) => void, getInputValue: () => string) => {
     setValue(initialValue);
     // Reactで関数を状態として保存する場合、関数でラップして返す必要がある
     // () => onUpdate だと、onUpdate関数を返すだけの関数になってしまう
     // 正しくは、引数を受け取ってonUpdateに渡す関数を作る
     setOnUpdateCallback(() => (val: string) => onUpdate(val));
+    setGetInputValueCallback(() => getInputValue);
     setIsVisible(true);
   };
 
@@ -28,6 +31,7 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
     setIsVisible(false);
     setValue('');
     setOnUpdateCallback(null);
+    setGetInputValueCallback(null);
   };
 
   const updateValue = (newValue: string) => {
@@ -45,6 +49,13 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getInputValue = () => {
+    if (getInputValueCallback) {
+      return getInputValueCallback();
+    }
+    return '';
+  };
+
   return (
     <KeyboardContext.Provider
       value={{
@@ -53,6 +64,7 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
         showKeyboard,
         hideKeyboard,
         updateValue,
+        getInputValue,
       }}
     >
       {children}
