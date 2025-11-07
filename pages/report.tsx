@@ -363,27 +363,33 @@ export default function Report() {
 
         {/* 業務日報モーダル */}
         {showDailyReportModal && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '10px',
-              width: '90%',
-              maxWidth: '900px',
-              maxHeight: '90vh',
-              overflow: 'auto',
-              position: 'relative'
-            }}>
+          <div
+            onClick={() => setShowDailyReportModal(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '10px',
+                width: '90%',
+                maxWidth: '900px',
+                maxHeight: '90vh',
+                overflow: 'auto',
+                position: 'relative'
+              }}
+            >
               {/* モーダルヘッダー */}
               <div style={{
                 padding: '20px',
@@ -861,24 +867,30 @@ export default function Report() {
 
         {/* 月間目標設定モーダル */}
         {showTargetSetting && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '10px',
-              padding: '30px',
-              minWidth: '400px'
-            }}>
+          <div
+            onClick={() => setShowTargetSetting(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '10px',
+                padding: '30px',
+                minWidth: '400px'
+              }}
+            >
               <h3 style={{ margin: '0 0 20px 0' }}>月間目標設定</h3>
               
               <div style={{ marginBottom: '20px' }}>

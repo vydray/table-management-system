@@ -99,7 +99,8 @@ export const PaymentModal: FC<PaymentModalProps> = ({
       />
       
       {/* モーダル本体 */}
-      <div 
+      <div
+        onClick={(e) => e.stopPropagation()}
         style={{
           position: 'fixed',
           top: '50%',

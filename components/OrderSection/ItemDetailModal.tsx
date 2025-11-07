@@ -38,8 +38,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   } = useItemEditing(item.price, item.quantity, index, onUpdatePrice, onUpdateQuantity)
 
   return (
-    <div className="item-detail-modal">
-      <div 
+    <div className="item-detail-modal" onClick={onClose}>
+      <div
         ref={modalContentRef}
         className="item-detail-content"
         onClick={(e) => e.stopPropagation()}

@@ -175,25 +175,31 @@ export default function AttendanceStatus() {
 
       {/* ステータス追加モーダル */}
       {showAddStatus && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '10px',
-            padding: '30px',
-            width: '90%',
-            maxWidth: '400px'
-          }}>
+        <div
+          onClick={closeAddModal}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '10px',
+              padding: '30px',
+              width: '90%',
+              maxWidth: '400px'
+            }}
+          >
             <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>ステータス追加</h3>
 
             <input
@@ -271,25 +277,31 @@ export default function AttendanceStatus() {
 
       {/* ステータス編集モーダル */}
       {showEditStatus && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '10px',
-            padding: '30px',
-            width: '90%',
-            maxWidth: '400px'
-          }}>
+        <div
+          onClick={closeEditModal}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '10px',
+              padding: '30px',
+              width: '90%',
+              maxWidth: '400px'
+            }}
+          >
             <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>ステータス編集</h3>
 
             <input
