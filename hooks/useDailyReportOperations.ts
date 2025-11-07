@@ -51,18 +51,18 @@ export const useDailyReportOperations = (
     setSelectedDate(day.date)
     setCalculatedCashReceipt(null) // 現金計算結果をリセット
 
-    // 常に最新の売上データを取得
-    const latestSalesData = await getLatestSalesData(day.date, businessDayStartHour)
-
-    // 勤怠データから人数と日払いを取得
-    const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(day.date, activeAttendanceStatuses)
-
     // 日付を解析して業務日を取得
     const matches = day.date.match(/(\d+)月(\d+)日/)
     if (matches) {
       const month = parseInt(matches[1])
       const dayNum = parseInt(matches[2])
       const businessDate = new Date(selectedYear, month - 1, dayNum).toISOString().slice(0, 10)
+
+      // 常に最新の売上データを取得（businessDate形式で渡す）
+      const latestSalesData = await getLatestSalesData(businessDate, businessDayStartHour)
+
+      // 勤怠データから人数と日払いを取得（businessDate形式で渡す）
+      const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(businessDate, activeAttendanceStatuses)
 
       // 保存されたデータ（調整項目とSNS）を読み込む
       await loadDailyReport(businessDate)
@@ -95,8 +95,16 @@ export const useDailyReportOperations = (
     if (!selectedDate) return
 
     try {
-      const latestSalesData = await getLatestSalesData(selectedDate, businessDayStartHour)
-      const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(selectedDate, activeAttendanceStatuses)
+      // 日付を解析して業務日を取得
+      const matches = selectedDate.match(/(\d+)月(\d+)日/)
+      if (!matches) return
+
+      const month = parseInt(matches[1])
+      const dayNum = parseInt(matches[2])
+      const businessDate = new Date(selectedYear, month - 1, dayNum).toISOString().slice(0, 10)
+
+      const latestSalesData = await getLatestSalesData(businessDate, businessDayStartHour)
+      const { staffCount, castCount, dailyPaymentTotal } = await getAttendanceCountsAndPayments(businessDate, activeAttendanceStatuses)
 
       setDailyReportData(prev => ({
         ...prev,
