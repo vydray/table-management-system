@@ -103,7 +103,13 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
   };
 
   return (
-    <div className="japanese-keyboard">
+    <div
+      className="japanese-keyboard"
+      onMouseDown={(e) => {
+        // キーボードのボタンクリック時にフォーカスが外れないようにする
+        e.preventDefault();
+      }}
+    >
       <div className="keyboard-content">
         {/* モード切り替えボタン */}
         <div className="mode-buttons">
