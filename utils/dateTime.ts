@@ -95,3 +95,32 @@ export const getBusinessDayRangeDates = (
 
   return { start, end }
 }
+
+/**
+ * 指定日時から営業日（YYYY-MM-DD）を計算
+ * @param datetime 日時
+ * @param businessDayStartHour 営業日の開始時刻（例: 15）
+ * @returns 営業日（YYYY-MM-DD形式）
+ *
+ * 例: datetime="2025-11-08 03:03:24", businessDayStartHour=15の場合
+ * 3時は15時より前なので、前日の営業日とみなす
+ * return: "2025-11-07"
+ *
+ * 例: datetime="2025-11-08 16:00:00", businessDayStartHour=15の場合
+ * 16時は15時以降なので、当日の営業日とみなす
+ * return: "2025-11-08"
+ */
+export const getBusinessDateFromDateTime = (
+  datetime: Date,
+  businessDayStartHour: number
+): string => {
+  const hour = datetime.getHours()
+  const businessDate = new Date(datetime)
+
+  // 営業開始時刻より前の場合は前日の営業日とする
+  if (hour < businessDayStartHour) {
+    businessDate.setDate(businessDate.getDate() - 1)
+  }
+
+  return getDateString(businessDate)
+}

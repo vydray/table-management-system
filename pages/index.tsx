@@ -205,7 +205,30 @@ export default function Home() {
 
       // 今日の営業日範囲を計算
       const today = new Date()
-      const { start, end } = getBusinessDayRangeDates(today, businessDayStartHour)
+      const currentHour = today.getHours()
+
+      // 現在時刻が営業日開始時刻より前の場合は、前日を基準にする
+      let baseDate = today
+      if (currentHour < businessDayStartHour) {
+        baseDate = new Date(today)
+        baseDate.setDate(baseDate.getDate() - 1)
+      }
+
+      const { start, end } = getBusinessDayRangeDates(baseDate, businessDayStartHour)
+
+      // タイムゾーン変換なしで文字列比較するため、YYYY-MM-DD HH:mm:ss形式に変換
+      const formatDateTime = (date: Date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        const seconds = String(date.getSeconds()).padStart(2, '0')
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+      }
+
+      const startStr = formatDateTime(start)
+      const endStr = formatDateTime(end)
 
       // 営業日内の伝票を取得
       const { data, error } = await supabase
@@ -213,8 +236,8 @@ export default function Home() {
         .select('total_incl_tax')
         .eq('store_id', storeId)
         .not('checkout_datetime', 'is', null)
-        .gte('checkout_datetime', start.toISOString())
-        .lt('checkout_datetime', end.toISOString())
+        .gte('checkout_datetime', startStr)
+        .lt('checkout_datetime', endStr)
 
       if (error) throw error
 
