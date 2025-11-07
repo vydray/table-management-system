@@ -232,7 +232,8 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
         <div className="keyboard-keys">
           {(mode === 'romaji' || mode === 'alphabet') && (
             <>
-              {(mode === 'romaji' ? romajiKeys : alphabetKeys).map((row, rowIndex) => (
+              {/* 1行目と2行目 */}
+              {(mode === 'romaji' ? romajiKeys : alphabetKeys).slice(0, 2).map((row, rowIndex) => (
                 <div key={rowIndex} className="key-row">
                   {row.map((key, keyIndex) => (
                     <button
@@ -246,8 +247,8 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
                   ))}
                 </div>
               ))}
-              {/* 最下段：Shift、スペース、モード切り替え、削除、完了 */}
-              <div className="key-row bottom-row">
+              {/* 3行目：Shift + 文字キー + 削除 */}
+              <div className="key-row">
                 <button
                   className={`key shift ${isShift ? 'active' : ''}`}
                   onClick={() => setIsShift(!isShift)}
@@ -255,17 +256,30 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
                 >
                   ⇧
                 </button>
-                <button className="key space" onClick={handleSpace} tabIndex={-1}>
-                  Space
+                {(mode === 'romaji' ? romajiKeys : alphabetKeys)[2].map((key, keyIndex) => (
+                  <button
+                    key={keyIndex}
+                    className="key"
+                    onClick={() => handleKeyPress(key)}
+                    tabIndex={-1}
+                  >
+                    {key}
+                  </button>
+                ))}
+                <button className="key backspace" onClick={handleBackspace} tabIndex={-1}>
+                  ×
                 </button>
+              </div>
+              {/* 最下段：モード切り替え、スペース、Enter */}
+              <div className="key-row bottom-row">
                 <button className="key mode-switch" onClick={handleModeSwitch} tabIndex={-1}>
                   {getModeLabel()}
                 </button>
-                <button className="key backspace" onClick={handleBackspace} tabIndex={-1}>
-                  ⌫
+                <button className="key space" onClick={handleSpace} tabIndex={-1}>
+                  Space
                 </button>
-                <button className="key close-key" onClick={handleClose} tabIndex={-1}>
-                  完了
+                <button className="key enter-key" onClick={handleClose} tabIndex={-1}>
+                  Enter
                 </button>
               </div>
             </>
@@ -273,7 +287,8 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
 
           {mode === 'number' && (
             <>
-              {numberKeys.map((row, rowIndex) => (
+              {/* 最初の3行 */}
+              {numberKeys.slice(0, 3).map((row, rowIndex) => (
                 <div key={rowIndex} className="key-row">
                   {row.map((key, keyIndex) => (
                     <button
@@ -287,19 +302,32 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
                   ))}
                 </div>
               ))}
-              {/* 最下段：スペース、モード切り替え、削除、完了 */}
-              <div className="key-row bottom-row">
-                <button className="key space" onClick={handleSpace} tabIndex={-1}>
-                  Space
+              {/* 4行目：0 . - × */}
+              <div className="key-row">
+                {numberKeys[3].map((key, keyIndex) => (
+                  <button
+                    key={keyIndex}
+                    className="key"
+                    onClick={() => handleKeyPress(key)}
+                    tabIndex={-1}
+                  >
+                    {key}
+                  </button>
+                ))}
+                <button className="key backspace" onClick={handleBackspace} tabIndex={-1}>
+                  ×
                 </button>
+              </div>
+              {/* 最下段：モード切り替え、スペース、Enter */}
+              <div className="key-row bottom-row">
                 <button className="key mode-switch" onClick={handleModeSwitch} tabIndex={-1}>
                   {getModeLabel()}
                 </button>
-                <button className="key backspace" onClick={handleBackspace} tabIndex={-1}>
-                  ⌫
+                <button className="key space" onClick={handleSpace} tabIndex={-1}>
+                  Space
                 </button>
-                <button className="key close-key" onClick={handleClose} tabIndex={-1}>
-                  完了
+                <button className="key enter-key" onClick={handleClose} tabIndex={-1}>
+                  Enter
                 </button>
               </div>
             </>
@@ -385,8 +413,9 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
           font-weight: bold;
         }
 
-        .key.close-key {
-          min-width: 60px;
+        .key.enter-key {
+          flex: 3;
+          min-width: 180px;
           background: #4CAF50;
           color: white;
           font-weight: bold;
@@ -398,8 +427,8 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
         }
 
         .key.space {
-          flex: 1;
-          min-width: 200px;
+          flex: 2;
+          min-width: 150px;
         }
 
         @media (max-width: 600px) {

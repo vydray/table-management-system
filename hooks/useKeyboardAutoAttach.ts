@@ -167,15 +167,15 @@ export function useKeyboardAutoAttach() {
             return;
           }
 
-          // 完了ボタンや閉じるボタンがクリックされた場合は、フォーカスを戻さない
-          const isCloseButton = newFocus && (
+          // Enterボタンがクリックされた場合は、フォーカスを戻さない
+          const isEnterButton = newFocus && (
             newFocus instanceof HTMLElement &&
-            (newFocus.classList.contains('close-key') ||
-             newFocus.closest('.close-key'))
+            (newFocus.classList.contains('enter-key') ||
+             newFocus.closest('.enter-key'))
           );
 
-          if (isCloseButton) {
-            // 完了ボタンがクリックされた場合はフォーカスを戻さず、キーボードを閉じる
+          if (isEnterButton) {
+            // Enterボタンがクリックされた場合はフォーカスを戻さず、キーボードを閉じる
             activeInputRef.current = null;
             return;
           }
