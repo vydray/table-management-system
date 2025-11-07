@@ -94,11 +94,19 @@ export function useKeyboardAutoAttach() {
     const handleInputBlur = (e: FocusEvent) => {
       const target = e.target as HTMLInputElement;
       if (target === activeInputRef.current) {
-        // キーボードを閉じる（別の要素にフォーカスが移った場合のみ）
+        // キーボードを閉じる（別のinput要素にフォーカスが移った場合のみ）
+        // キーボードのボタンをクリックした場合は閉じない
         setTimeout(() => {
-          if (document.activeElement !== activeInputRef.current) {
+          const newFocus = document.activeElement;
+
+          // 新しいフォーカス先が別のinput要素の場合のみキーボードを閉じる
+          if (newFocus && newFocus.tagName === 'INPUT' && newFocus !== activeInputRef.current) {
             keyboard.hideKeyboard();
             activeInputRef.current = null;
+          }
+          // それ以外の場合（キーボードボタンクリック等）は、元のinputにフォーカスを戻す
+          else if (newFocus !== activeInputRef.current && activeInputRef.current) {
+            activeInputRef.current.focus();
           }
         }, 100);
       }
