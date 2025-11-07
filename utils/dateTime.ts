@@ -27,28 +27,27 @@ export const getDateString = (date: Date): string => {
 
 /**
  * 営業日の開始時刻と終了時刻を計算
- * @param date 基準日（営業日の終了日）
+ * @param date 基準日（営業日の開始日）
  * @param businessDayStartHour 営業日の開始時刻（例: 13）
  * @returns { startTime: string, endTime: string } YYYY-MM-DD HH:mm:ss形式
  *
  * 例: date="2025-11-04", businessDayStartHour=13の場合
- * startTime: "2025-11-03 13:00:00"
- * endTime:   "2025-11-04 12:59:59"
- * （11月4日の営業日 = 11月3日13:00～11月4日13:00の直前）
+ * startTime: "2025-11-04 13:00:00"
+ * endTime:   "2025-11-05 12:59:59"
+ * （11月4日の営業日 = 11月4日13:00～11月5日13:00の直前）
  */
 export const getBusinessDayRange = (
   date: Date,
   businessDayStartHour: number
 ): { startTime: string; endTime: string } => {
-  // 終了時刻 = 指定日の営業開始時刻の直前
-  const end = new Date(date)
-  end.setHours(businessDayStartHour, 0, 0, 0)
-  end.setSeconds(-1) // 13:00の直前（12:59:59）
-
-  // 開始時刻 = 前日の営業開始時刻
+  // 開始時刻 = 指定日の営業開始時刻
   const start = new Date(date)
-  start.setDate(start.getDate() - 1)
   start.setHours(businessDayStartHour, 0, 0, 0)
+
+  // 終了時刻 = 翌日の営業開始時刻の直前
+  const end = new Date(start)
+  end.setDate(end.getDate() + 1)
+  end.setSeconds(-1) // 翌日13:00の直前（12:59:59）
 
   return {
     startTime: getJapanTimeString(start),
@@ -58,7 +57,7 @@ export const getBusinessDayRange = (
 
 /**
  * 営業日の開始時刻と終了時刻を計算（文字列版）
- * @param dateStr 基準日（営業日の終了日、YYYY-MM-DD形式）
+ * @param dateStr 基準日（営業日の開始日、YYYY-MM-DD形式）
  * @param businessDayStartHour 営業日の開始時刻（例: 13）
  * @returns { startTime: string, endTime: string } YYYY-MM-DD HH:mm:ss形式
  */
@@ -72,27 +71,27 @@ export const getBusinessDayRangeFromString = (
 
 /**
  * 営業日の開始・終了時刻を計算（Dateオブジェクト版）
- * @param date 基準日（営業日の終了日）
+ * @param date 基準日（営業日の開始日）
  * @param businessDayStartHour 営業日の開始時刻（例: 13）
  * @returns { start: Date, end: Date }
  *
  * 例: date="2025-11-04", businessDayStartHour=13の場合
- * start: 2025-11-03 13:00:00
- * end:   2025-11-04 13:00:00
- * （11月4日の営業日 = 11月3日13:00～11月4日13:00）
+ * start: 2025-11-04 13:00:00
+ * end:   2025-11-05 13:00:00
+ * （11月4日の営業日 = 11月4日13:00～11月5日13:00）
  */
 export const getBusinessDayRangeDates = (
   date: Date,
   businessDayStartHour: number
 ): { start: Date; end: Date } => {
-  // 終了時刻 = 指定日の営業開始時刻
-  const end = new Date(date)
-  end.setHours(businessDayStartHour, 0, 0, 0)
-
-  // 開始時刻 = 前日の営業開始時刻
+  // 開始時刻 = 指定日の営業開始時刻
   const start = new Date(date)
-  start.setDate(start.getDate() - 1)
   start.setHours(businessDayStartHour, 0, 0, 0)
+
+  // 終了時刻 = 翌日の営業開始時刻
+  const end = new Date(date)
+  end.setDate(end.getDate() + 1)
+  end.setHours(businessDayStartHour, 0, 0, 0)
 
   return { start, end }
 }
