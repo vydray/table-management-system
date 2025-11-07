@@ -163,11 +163,14 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
   };
 
   const handleClose = () => {
-    // フォーカスを外してキーボードを閉じる
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
+    // 先にキーボードを閉じる（これでisVisibleがfalseになる）
     onClose();
+    // 少し待ってからフォーカスを外す（handleInputBlurでフォーカスが戻されないようにする）
+    setTimeout(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }, 50);
   };
 
   // 次のモードに切り替え
