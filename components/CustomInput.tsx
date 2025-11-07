@@ -24,7 +24,7 @@ export default function CustomInput({
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.blur();
     if (!disabled) {
-      keyboard.showKeyboard(value, onChange);
+      keyboard.showKeyboard(value, onChange, () => value);
     }
   };
 
