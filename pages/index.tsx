@@ -862,21 +862,34 @@ const finishCheckout = () => {
     {attendingCastCount - occupiedTableCount}
   </span>
 
-  {/* タイトルは中央に（クリック可能） */}
-  <span
+  {/* タイトルは中央に（クリック可能・切り替え表示） */}
+  <div
     onClick={async () => {
-      if (!showBusinessDaySummary) {
-        await loadTodayBusinessDaySummary()
-      }
+      // 毎回データを取得
+      await loadTodayBusinessDaySummary()
       setShowBusinessDaySummary(!showBusinessDaySummary)
     }}
     style={{
       cursor: 'pointer',
-      userSelect: 'none'
+      userSelect: 'none',
+      textAlign: 'center'
     }}
   >
-    📋 テーブル管理システム
-  </span>
+    {!showBusinessDaySummary ? (
+      <span>📋 テーブル管理システム</span>
+    ) : businessDaySummary ? (
+      <div style={{ fontSize: '18px', lineHeight: '1.3' }}>
+        <div style={{ fontWeight: 'bold', color: '#FF9800' }}>
+          総売上: ¥{businessDaySummary.totalSales.toLocaleString()}
+        </div>
+        <div style={{ fontWeight: 'bold', color: '#FF9800' }}>
+          組数: {businessDaySummary.orderCount}組
+        </div>
+      </div>
+    ) : (
+      <span>📋 テーブル管理システム</span>
+    )}
+  </div>
 
   <span style={{
     position: 'absolute',
@@ -887,51 +900,6 @@ const finishCheckout = () => {
     {currentTime}
   </span>
 </div>
-
-{/* 営業日サマリー表示 */}
-{showBusinessDaySummary && businessDaySummary && (
-  <div
-    onClick={() => setShowBusinessDaySummary(false)}
-    style={{
-      position: 'fixed',
-      top: '80px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      backgroundColor: 'rgba(255, 255, 255, 0.98)',
-      padding: '20px 40px',
-      borderRadius: '12px',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-      zIndex: 1000,
-      cursor: 'pointer',
-      border: '3px solid #FF9800'
-    }}
-  >
-    <div style={{
-      fontSize: '20px',
-      fontWeight: 'bold',
-      marginBottom: '10px',
-      color: '#FF9800',
-      textAlign: 'center'
-    }}>
-      📊 今日の営業日
-    </div>
-    <div style={{
-      fontSize: '24px',
-      fontWeight: 'bold',
-      marginBottom: '8px',
-      color: '#333'
-    }}>
-      総売上: ¥{businessDaySummary.totalSales.toLocaleString()}
-    </div>
-    <div style={{
-      fontSize: '24px',
-      fontWeight: 'bold',
-      color: '#333'
-    }}>
-      組数: {businessDaySummary.orderCount}組
-    </div>
-  </div>
-)}
 
 {/* ⭐ ページ切り替え矢印のみ（右側中央） */}
         {maxPageNumber > 1 && (
