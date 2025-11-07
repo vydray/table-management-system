@@ -61,7 +61,10 @@ export function useKeyboardAutoAttach() {
 
                 const inputEvent = new Event('input', { bubbles: true });
                 activeInputRef.current.dispatchEvent(inputEvent);
-                console.log('[useKeyboardAutoAttach] Event dispatched successfully');
+
+                // カーソルを末尾に移動
+                activeInputRef.current.setSelectionRange(newValue.length, newValue.length);
+                console.log('[useKeyboardAutoAttach] Event dispatched successfully, cursor moved to end');
               } catch (error) {
                 console.error('[useKeyboardAutoAttach] Error dispatching event:', error);
               }
@@ -118,7 +121,10 @@ export function useKeyboardAutoAttach() {
 
               const inputEvent = new Event('input', { bubbles: true });
               activeInputRef.current.dispatchEvent(inputEvent);
-              console.log('[useKeyboardAutoAttach] Initial event dispatched successfully');
+
+              // カーソルを末尾に移動
+              activeInputRef.current.setSelectionRange(newValue.length, newValue.length);
+              console.log('[useKeyboardAutoAttach] Initial event dispatched successfully, cursor moved to end');
             } catch (error) {
               console.error('[useKeyboardAutoAttach] Error dispatching initial event:', error);
             }
