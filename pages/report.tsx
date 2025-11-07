@@ -1005,15 +1005,7 @@ export default function Report() {
           onClose={() => setShowCashCountModal(false)}
           cashReceipt={dailyReportData.cashReceipt}
           registerAmount={registerAmount}
-          businessDate={(() => {
-            const matches = selectedDate.match(/(\d+)月(\d+)日/)
-            if (matches) {
-              const month = parseInt(matches[1])
-              const day = parseInt(matches[2])
-              return new Date(selectedYear, month - 1, day).toISOString().slice(0, 10)
-            }
-            return ''
-          })()}
+          businessDate={dailyReportData.date}
           onComplete={handleCashCountComplete}
         />
       </div>
