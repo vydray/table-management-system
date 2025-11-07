@@ -40,7 +40,7 @@ export const useTableDragDrop = () => {
     event: React.MouseEvent | React.TouchEvent,
     autoScale: number,
     canvasElement: HTMLElement | null,
-    tables: Array<{ table_name: string; position_top: number; position_left: number }>,
+    tables: Array<{ table_name: string; position_top: number; position_left: number; page_number?: number }>,
     setTables: (updater: (prev: any[]) => any[]) => void
   ) => {
     if (!draggedTable || !canvasElement) return
@@ -55,20 +55,57 @@ export const useTableDragDrop = () => {
       clientY = event.clientY
     }
 
-    const canvasRect = canvasElement.getBoundingClientRect()
-    const newLeft = (clientX - canvasRect.left - dragOffset.x) / autoScale
-    const newTop = (clientY - canvasRect.top - dragOffset.y) / autoScale
+    // 全ページエレメントを取得して、マウス/指の位置がどのページの上にあるかを判定
+    const pageElements = canvasElement.querySelectorAll('[id^="canvas-area-"]')
+    let targetPageNumber = 1
+    let targetPageElement: Element | null = null
 
-    setTables(prev => prev.map(t =>
-      t.table_name === draggedTable
-        ? { ...t, position_left: newLeft, position_top: newTop }
-        : t
-    ))
+    for (const pageEl of Array.from(pageElements)) {
+      const rect = pageEl.getBoundingClientRect()
+      if (clientX >= rect.left && clientX <= rect.right &&
+          clientY >= rect.top && clientY <= rect.bottom) {
+        const pageNum = parseInt(pageEl.id.replace('canvas-area-', ''))
+        if (!isNaN(pageNum)) {
+          targetPageNumber = pageNum
+          targetPageElement = pageEl
+          break
+        }
+      }
+    }
+
+    // ターゲットページが見つからない場合は、現在のテーブルのページを維持
+    if (!targetPageElement) {
+      const currentTable = tables.find(t => t.table_name === draggedTable)
+      if (currentTable) {
+        targetPageNumber = currentTable.page_number || 1
+        targetPageElement = canvasElement.querySelector(`#canvas-area-${targetPageNumber}`)
+      }
+    }
+
+    if (targetPageElement) {
+      // ターゲットページ内での相対座標を計算
+      const pageRect = targetPageElement.getBoundingClientRect()
+
+      // ページのborder幅を取得（borderの内側がcontent boxの開始点）
+      const computedStyle = window.getComputedStyle(targetPageElement)
+      const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0
+      const borderTop = parseFloat(computedStyle.borderTopWidth) || 0
+
+      // borderの内側を基準にした座標を計算
+      const newLeft = (clientX - pageRect.left - borderLeft - dragOffset.x) / autoScale
+      const newTop = (clientY - pageRect.top - borderTop - dragOffset.y) / autoScale
+
+      setTables(prev => prev.map(t =>
+        t.table_name === draggedTable
+          ? { ...t, position_left: newLeft, position_top: newTop, page_number: targetPageNumber }
+          : t
+      ))
+    }
   }
 
   // ドラッグ終了
   const handleDragEnd = async (
-    tables: Array<{ table_name: string; position_top: number; position_left: number }>
+    tables: Array<{ table_name: string; position_top: number; position_left: number; page_number?: number }>
   ) => {
     if (!draggedTable) return
 
@@ -80,7 +117,8 @@ export const useTableDragDrop = () => {
       .from('table_status')
       .update({
         position_top: table.position_top,
-        position_left: table.position_left
+        position_left: table.position_left,
+        page_number: table.page_number || 1
       })
       .eq('table_name', draggedTable)
       .eq('store_id', storeId)
