@@ -64,11 +64,10 @@ const romajiToHiragana: { [key: string]: string } = {
 
 interface JapaneseKeyboardProps {
   onChange: (value: string) => void;
-  onClose: () => void;
   getInputValue: () => string;
 }
 
-export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: JapaneseKeyboardProps) {
+export default function JapaneseKeyboard({ onChange, getInputValue }: JapaneseKeyboardProps) {
   const [mode, setMode] = useState<KeyboardMode>('romaji');
   const [isShift, setIsShift] = useState(false);
   const [romajiBuffer, setRomajiBuffer] = useState('');
@@ -78,16 +77,6 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
     setRomajiBuffer('');
   }, [mode]);
 
-  const handleOverlayClick = () => {
-    // フォーカスされているinput要素があればblurする
-    if (document.activeElement instanceof HTMLInputElement) {
-      document.activeElement.blur();
-    }
-    // 少し待ってからonCloseを呼ぶ（blurが完了するまで）
-    setTimeout(() => {
-      onClose();
-    }, 50);
-  };
 
   // ローマ字→ひらがな変換処理
   const convertRomaji = (buffer: string): { converted: string; remaining: string } => {
@@ -216,14 +205,9 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
     }
   };
 
-  const handleKeyboardClick = (e: React.MouseEvent) => {
-    // キーボード本体のクリックでは閉じない
-    e.stopPropagation();
-  };
-
   return (
-    <div className="keyboard-overlay" onClick={handleOverlayClick}>
-      <div className="japanese-keyboard" onClick={handleKeyboardClick}>
+    <>
+      <div className="japanese-keyboard">
         <div className="keyboard-content">
         {/* ローマ字バッファ表示 */}
         {mode === 'romaji' && romajiBuffer && (
@@ -304,19 +288,7 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
           )}
         </div>
       </div>
-    </div>
-
       <style jsx>{`
-        .keyboard-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 45vh;
-          background: transparent;
-          z-index: 9998;
-        }
-
         .japanese-keyboard {
           position: fixed;
           bottom: 0;
@@ -421,15 +393,11 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
             min-width: 150px;
           }
 
-          .keyboard-overlay {
-            bottom: 40vh;
-          }
-
           .japanese-keyboard {
             max-height: 40vh;
           }
         }
       `}</style>
-    </div>
+    </>
   );
 }
