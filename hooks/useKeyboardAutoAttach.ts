@@ -205,13 +205,41 @@ export function useKeyboardAutoAttach() {
       }
     };
 
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      // キーボードが表示されていない場合は何もしない
+      if (!keyboard.isVisible) return;
+
+      // クリックされた要素がキーボード内部の場合は何もしない
+      const isKeyboardClick = target.closest('.japanese-keyboard');
+      if (isKeyboardClick) return;
+
+      // クリックされた要素がアクティブなinput要素の場合は何もしない
+      if (target === activeInputRef.current) return;
+
+      // クリックされた要素が別のinput要素の場合は、そちらにフォーカスが移るので何もしない
+      // （handleInputFocusが自動的に処理する）
+      if (target.tagName === 'INPUT') return;
+
+      // それ以外の場合は、キーボードを閉じてinputのフォーカスを外す
+      if (activeInputRef.current) {
+        activeInputRef.current.blur();
+        keyboard.hideKeyboard();
+        activeInputRef.current = null;
+      }
+    };
+
     // 全てのinput要素にフォーカス/ブラーイベントリスナーを追加
     document.addEventListener('focusin', handleInputFocus, true);
     document.addEventListener('focusout', handleInputBlur, true);
+    // キーボード以外をタップしたときにキーボードを閉じる
+    document.addEventListener('mousedown', handleClickOutside, true);
 
     return () => {
       document.removeEventListener('focusin', handleInputFocus, true);
       document.removeEventListener('focusout', handleInputBlur, true);
+      document.removeEventListener('mousedown', handleClickOutside, true);
     };
   }, [keyboard]);
 }
