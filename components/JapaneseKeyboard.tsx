@@ -114,18 +114,21 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
   // ローマ字モードのキー入力
   const handleRomajiKey = (key: string) => {
     const newBuffer = romajiBuffer + key;
+    const currentValue = getInputValue();
     console.log('[Romaji] Buffer:', newBuffer);
 
     const { converted, remaining } = convertRomaji(newBuffer);
 
     if (converted) {
-      // 変換成功
-      const currentValue = getInputValue();
-      onChange(currentValue + converted);
+      // 変換成功：現在の値から古いバッファ分を削除して、変換後の文字を追加
+      const valueWithoutOldBuffer = currentValue.substring(0, currentValue.length - romajiBuffer.length);
+      onChange(valueWithoutOldBuffer + converted + remaining);
       setRomajiBuffer(remaining);
       console.log('[Romaji] Converted:', converted, 'Remaining:', remaining);
     } else {
-      // まだ変換できない（バッファに溜める）
+      // まだ変換できない：inputに新しいバッファを表示
+      const valueWithoutOldBuffer = currentValue.substring(0, currentValue.length - romajiBuffer.length);
+      onChange(valueWithoutOldBuffer + newBuffer);
       setRomajiBuffer(newBuffer);
     }
   };
@@ -221,13 +224,6 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
     <>
       <div className="japanese-keyboard">
         <div className="keyboard-content">
-        {/* ローマ字バッファ表示 */}
-        {mode === 'romaji' && romajiBuffer && (
-          <div className="romaji-buffer">
-            {romajiBuffer}
-          </div>
-        )}
-
         {/* キーボード本体 */}
         <div className="keyboard-keys">
           {(mode === 'romaji' || mode === 'alphabet') && (
@@ -353,17 +349,6 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
         .keyboard-content {
           max-width: 1000px;
           margin: 0 auto;
-        }
-
-        .romaji-buffer {
-          background: white;
-          padding: 8px 12px;
-          border-radius: 6px;
-          margin-bottom: 8px;
-          font-size: 18px;
-          font-weight: bold;
-          color: #ff9800;
-          text-align: center;
         }
 
         .keyboard-keys {
