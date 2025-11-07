@@ -46,6 +46,29 @@ export default function CashCountModal({
     }
   }
 
+  // フォーカス時の処理：カーソルを末尾に移動、0の場合は空にする
+  const handleNumberFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const input = e.target
+    const value = input.value
+
+    // 0の場合は空にする
+    if (value === '0') {
+      input.value = ''
+    }
+
+    // カーソルを末尾に移動
+    setTimeout(() => {
+      const len = input.value.length
+      input.setSelectionRange(len, len)
+    }, 0)
+  }
+
+  // 数字のみ許可
+  const handleNumberChange = (value: string, setter: (val: number) => void) => {
+    const numericValue = value.replace(/[^0-9]/g, '')
+    setter(numericValue === '' ? 0 : Number(numericValue))
+  }
+
   // 完了処理
   const handleComplete = async () => {
     const result = await saveCashCount(registerAmount)
@@ -150,10 +173,10 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       ref={(el) => { inputRefs.current[0] = el }}
-                      type="number"
-                      inputMode="numeric"
+                      type="text"
                       value={bills.tenThousand}
-                      onChange={(e) => setBills({...bills, tenThousand: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onChange={(e) => handleNumberChange(e.target.value, (val) => setBills({...bills, tenThousand: val}))}
+                      onFocus={handleNumberFocus}
                       onKeyDown={(e) => handleKeyDown(e, 0)}
                       style={{
                         width: '80px',
@@ -162,7 +185,6 @@ export default function CashCountModal({
                         border: '1px solid #ddd',
                         borderRadius: '5px'
                       }}
-                      min="0"
                     />
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
@@ -175,10 +197,10 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       ref={(el) => { inputRefs.current[1] = el }}
-                      type="number"
-                      inputMode="numeric"
+                      type="text"
                       value={bills.fiveThousand}
-                      onChange={(e) => setBills({...bills, fiveThousand: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onChange={(e) => handleNumberChange(e.target.value, (val) => setBills({...bills, fiveThousand: val}))}
+                      onFocus={handleNumberFocus}
                       onKeyDown={(e) => handleKeyDown(e, 1)}
                       style={{
                         width: '80px',
@@ -187,7 +209,6 @@ export default function CashCountModal({
                         border: '1px solid #ddd',
                         borderRadius: '5px'
                       }}
-                      min="0"
                     />
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
@@ -200,10 +221,10 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       ref={(el) => { inputRefs.current[2] = el }}
-                      type="number"
-                      inputMode="numeric"
+                      type="text"
                       value={bills.twoThousand}
-                      onChange={(e) => setBills({...bills, twoThousand: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onChange={(e) => handleNumberChange(e.target.value, (val) => setBills({...bills, twoThousand: val}))}
+                      onFocus={handleNumberFocus}
                       onKeyDown={(e) => handleKeyDown(e, 2)}
                       style={{
                         width: '80px',
@@ -212,7 +233,6 @@ export default function CashCountModal({
                         border: '1px solid #ddd',
                         borderRadius: '5px'
                       }}
-                      min="0"
                     />
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
@@ -225,10 +245,10 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       ref={(el) => { inputRefs.current[3] = el }}
-                      type="number"
-                      inputMode="numeric"
+                      type="text"
                       value={bills.thousand}
-                      onChange={(e) => setBills({...bills, thousand: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onChange={(e) => handleNumberChange(e.target.value, (val) => setBills({...bills, thousand: val}))}
+                      onFocus={handleNumberFocus}
                       onKeyDown={(e) => handleKeyDown(e, 3)}
                       style={{
                         width: '80px',
@@ -237,7 +257,6 @@ export default function CashCountModal({
                         border: '1px solid #ddd',
                         borderRadius: '5px'
                       }}
-                      min="0"
                     />
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
@@ -279,10 +298,10 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       ref={(el) => { inputRefs.current[4] = el }}
-                      type="number"
-                      inputMode="numeric"
+                      type="text"
                       value={coins.fiveHundred}
-                      onChange={(e) => setCoins({...coins, fiveHundred: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, fiveHundred: val}))}
+                      onFocus={handleNumberFocus}
                       onKeyDown={(e) => handleKeyDown(e, 4)}
                       style={{
                         width: '80px',
@@ -291,7 +310,6 @@ export default function CashCountModal({
                         border: '1px solid #ddd',
                         borderRadius: '5px'
                       }}
-                      min="0"
                     />
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
@@ -304,10 +322,10 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       ref={(el) => { inputRefs.current[5] = el }}
-                      type="number"
-                      inputMode="numeric"
+                      type="text"
                       value={coins.hundred}
-                      onChange={(e) => setCoins({...coins, hundred: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, hundred: val}))}
+                      onFocus={handleNumberFocus}
                       onKeyDown={(e) => handleKeyDown(e, 5)}
                       style={{
                         width: '80px',
@@ -316,7 +334,6 @@ export default function CashCountModal({
                         border: '1px solid #ddd',
                         borderRadius: '5px'
                       }}
-                      min="0"
                     />
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
@@ -329,10 +346,10 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       ref={(el) => { inputRefs.current[6] = el }}
-                      type="number"
-                      inputMode="numeric"
+                      type="text"
                       value={coins.fifty}
-                      onChange={(e) => setCoins({...coins, fifty: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, fifty: val}))}
+                      onFocus={handleNumberFocus}
                       onKeyDown={(e) => handleKeyDown(e, 6)}
                       style={{
                         width: '80px',
@@ -341,7 +358,6 @@ export default function CashCountModal({
                         border: '1px solid #ddd',
                         borderRadius: '5px'
                       }}
-                      min="0"
                     />
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
@@ -354,10 +370,10 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       ref={(el) => { inputRefs.current[7] = el }}
-                      type="number"
-                      inputMode="numeric"
+                      type="text"
                       value={coins.ten}
-                      onChange={(e) => setCoins({...coins, ten: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, ten: val}))}
+                      onFocus={handleNumberFocus}
                       onKeyDown={(e) => handleKeyDown(e, 7)}
                       style={{
                         width: '80px',
@@ -366,7 +382,6 @@ export default function CashCountModal({
                         border: '1px solid #ddd',
                         borderRadius: '5px'
                       }}
-                      min="0"
                     />
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
@@ -379,10 +394,10 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       ref={(el) => { inputRefs.current[8] = el }}
-                      type="number"
-                      inputMode="numeric"
+                      type="text"
                       value={coins.five}
-                      onChange={(e) => setCoins({...coins, five: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, five: val}))}
+                      onFocus={handleNumberFocus}
                       onKeyDown={(e) => handleKeyDown(e, 8)}
                       style={{
                         width: '80px',
@@ -391,7 +406,6 @@ export default function CashCountModal({
                         border: '1px solid #ddd',
                         borderRadius: '5px'
                       }}
-                      min="0"
                     />
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
@@ -404,10 +418,10 @@ export default function CashCountModal({
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <input
                       ref={(el) => { inputRefs.current[9] = el }}
-                      type="number"
-                      inputMode="numeric"
+                      type="text"
                       value={coins.one}
-                      onChange={(e) => setCoins({...coins, one: e.target.value === '' ? 0 : Number(e.target.value)})}
+                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, one: val}))}
+                      onFocus={handleNumberFocus}
                       onKeyDown={(e) => handleKeyDown(e, 9)}
                       style={{
                         width: '80px',
@@ -416,7 +430,6 @@ export default function CashCountModal({
                         border: '1px solid #ddd',
                         borderRadius: '5px'
                       }}
-                      min="0"
                     />
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>

@@ -515,9 +515,12 @@ export default function Report() {
                           </td>
                           <td style={{ backgroundColor: '#fff', padding: '8px', textAlign: 'right', border: '1px solid #999' }}>
                             <input
-                              type="number"
+                              type="text"
                               value={dailyReportData.notTransmittedReceipt}
-                              onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedReceipt: Number(e.target.value)})}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '')
+                                setDailyReportData({...dailyReportData, notTransmittedReceipt: val === '' ? 0 : Number(val)})
+                              }}
                               style={{
                                 width: '100%',
                                 padding: '4px',
@@ -535,9 +538,12 @@ export default function Report() {
                           </td>
                           <td style={{ backgroundColor: '#fff', padding: '8px', textAlign: 'right', border: '1px solid #999' }}>
                             <input
-                              type="number"
+                              type="text"
                               value={dailyReportData.notTransmittedAmount}
-                              onChange={(e) => setDailyReportData({...dailyReportData, notTransmittedAmount: Number(e.target.value)})}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '')
+                                setDailyReportData({...dailyReportData, notTransmittedAmount: val === '' ? 0 : Number(val)})
+                              }}
                               style={{
                                 width: '100%',
                                 padding: '4px',
@@ -555,9 +561,12 @@ export default function Report() {
                           </td>
                           <td style={{ backgroundColor: '#fff', padding: '8px', textAlign: 'right', border: '1px solid #999' }}>
                             <input
-                              type="number"
+                              type="text"
                               value={dailyReportData.unpaidAmount}
-                              onChange={(e) => setDailyReportData({...dailyReportData, unpaidAmount: Number(e.target.value)})}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '')
+                                setDailyReportData({...dailyReportData, unpaidAmount: val === '' ? 0 : Number(val)})
+                              }}
                               style={{
                                 width: '100%',
                                 padding: '4px',
@@ -575,9 +584,12 @@ export default function Report() {
                           </td>
                           <td style={{ backgroundColor: '#fff', padding: '8px', textAlign: 'right', border: '1px solid #999' }}>
                             <input
-                              type="number"
+                              type="text"
                               value={dailyReportData.expenseAmount}
-                              onChange={(e) => setDailyReportData({...dailyReportData, expenseAmount: Number(e.target.value)})}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '')
+                                setDailyReportData({...dailyReportData, expenseAmount: val === '' ? 0 : Number(val)})
+                              }}
                               style={{
                                 width: '100%',
                                 padding: '4px',
@@ -595,9 +607,12 @@ export default function Report() {
                           </td>
                           <td style={{ backgroundColor: '#fff', padding: '8px', textAlign: 'right', border: '1px solid #999' }}>
                             <input
-                              type="number"
+                              type="text"
                               value={dailyReportData.dailyPaymentTotal}
-                              onChange={(e) => setDailyReportData({...dailyReportData, dailyPaymentTotal: Number(e.target.value)})}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '')
+                                setDailyReportData({...dailyReportData, dailyPaymentTotal: val === '' ? 0 : Number(val)})
+                              }}
                               style={{
                                 width: '100%',
                                 padding: '4px',
@@ -756,9 +771,12 @@ export default function Report() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px', alignItems: 'center' }}>
                           <label style={{ fontSize: '14px' }}>Twitter</label>
                           <input
-                            type="number"
+                            type="text"
                             value={dailyReportData.twitterFollowers}
-                            onChange={(e) => setDailyReportData({...dailyReportData, twitterFollowers: Number(e.target.value)})}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '')
+                              setDailyReportData({...dailyReportData, twitterFollowers: val === '' ? 0 : Number(val)})
+                            }}
                             style={{
                               padding: '4px',
                               border: '1px solid #ddd',
@@ -770,9 +788,12 @@ export default function Report() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px', alignItems: 'center', marginTop: '5px' }}>
                           <label style={{ fontSize: '14px' }}>Instagram</label>
                           <input
-                            type="number"
+                            type="text"
                             value={dailyReportData.instagramFollowers}
-                            onChange={(e) => setDailyReportData({...dailyReportData, instagramFollowers: Number(e.target.value)})}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '')
+                              setDailyReportData({...dailyReportData, instagramFollowers: val === '' ? 0 : Number(val)})
+                            }}
                             style={{
                               padding: '4px',
                               border: '1px solid #ddd',
@@ -784,9 +805,12 @@ export default function Report() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px', alignItems: 'center', marginTop: '5px' }}>
                           <label style={{ fontSize: '14px' }}>TikTok</label>
                           <input
-                            type="number"
+                            type="text"
                             value={dailyReportData.tiktokFollowers}
-                            onChange={(e) => setDailyReportData({...dailyReportData, tiktokFollowers: Number(e.target.value)})}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '')
+                              setDailyReportData({...dailyReportData, tiktokFollowers: val === '' ? 0 : Number(val)})
+                            }}
                             style={{
                               padding: '4px',
                               border: '1px solid #ddd',
