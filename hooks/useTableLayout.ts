@@ -228,6 +228,29 @@ export const useTableLayout = () => {
     return true
   }
 
+  // 全テーブルの位置とページ番号を一括保存
+  const saveAllTablePositions = async () => {
+    const storeId = localStorage.getItem('currentStoreId') || '1'
+
+    try {
+      for (const table of tables) {
+        await supabase
+          .from('table_status')
+          .update({
+            position_top: table.position_top,
+            position_left: table.position_left,
+            page_number: table.page_number || 1
+          })
+          .eq('table_name', table.table_name)
+          .eq('store_id', storeId)
+      }
+      return true
+    } catch (error) {
+      console.error('Error saving table positions:', error)
+      return false
+    }
+  }
+
   return {
     // State
     tables,
@@ -245,6 +268,7 @@ export const useTableLayout = () => {
     updateTablePosition,
     updateAllTableSizes,
     addPage,
-    deletePage
+    deletePage,
+    saveAllTablePositions
   }
 }

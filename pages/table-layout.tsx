@@ -41,6 +41,8 @@ export default function TableLayoutEdit() {
   const [tableSize, setTableSize] = useState({ width: 130, height: 123 })
   const [tableSizeInput, setTableSizeInput] = useState({ width: '130', height: '123' })
   const [isUpdatingSize, setIsUpdatingSize] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
 
   // 画面比率関連の状態
@@ -68,7 +70,8 @@ export default function TableLayoutEdit() {
     updateTableDisplayName,
     updateAllTableSizes,
     addPage,
-    deletePage
+    deletePage,
+    saveAllTablePositions
   } = useTableLayout()
 
   // カスタムフック - テーブル整列
@@ -176,6 +179,30 @@ export default function TableLayoutEdit() {
     setIsUpdatingSize(false)
   }
 
+  // 保存ボタンハンドラー
+  const handleSaveChanges = async () => {
+    setIsSaving(true)
+    const success = await saveAllTablePositions()
+    setIsSaving(false)
+
+    if (success) {
+      setHasUnsavedChanges(false)
+      alert('保存しました')
+    } else {
+      alert('保存に失敗しました')
+    }
+  }
+
+  // 戻るボタンハンドラー
+  const handleBack = () => {
+    if (hasUnsavedChanges) {
+      if (confirm('保存されていない変更があります。破棄してもよろしいですか？')) {
+        router.push('/')
+      }
+    } else {
+      router.push('/')
+    }
+  }
 
   // ダブルクリックで編集
   const handleDoubleClick = (table: TableLayout) => {
@@ -212,12 +239,30 @@ export default function TableLayoutEdit() {
       }}>
         {/* ヘッダー */}
         <div style={headerStyle}>
-          <button onClick={() => router.push('/')} style={backButtonStyle}>
+          <button onClick={handleBack} style={backButtonStyle}>
             ←
           </button>
           <h1 style={{ ...headerTitleStyle, flex: 1 }}>
-            🎨 テーブル配置編集
+            🎨 テーブル配置編集{hasUnsavedChanges && ' *'}
           </h1>
+          <button
+            onClick={handleSaveChanges}
+            disabled={isSaving || !hasUnsavedChanges}
+            style={{
+              padding: '8px 16px',
+              fontSize: '14px',
+              backgroundColor: hasUnsavedChanges ? '#4CAF50' : '#ccc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: hasUnsavedChanges && !isSaving ? 'pointer' : 'not-allowed',
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+              marginRight: '8px'
+            }}
+          >
+            {isSaving ? '保存中...' : '💾 保存'}
+          </button>
           <button
             onClick={() => {
               // モーダルを開く際に現在の値を入力欄にセット
@@ -653,6 +698,7 @@ export default function TableLayoutEdit() {
                       onTouchMove={(e) => {
                         e.preventDefault()
                         handleDragMove(e, autoScale, canvasRef.current, tables, setTables)
+                        setHasUnsavedChanges(true)
                       }}
                       onTouchEnd={() => handleDragEnd(tables)}
                     >
@@ -1141,7 +1187,7 @@ export default function TableLayoutEdit() {
 
       {/* グローバルイベントリスナー */}
       <div
-        style={{ 
+        style={{
           position: 'fixed',
           top: 0,
           left: 0,
@@ -1150,13 +1196,17 @@ export default function TableLayoutEdit() {
           pointerEvents: draggedTable ? 'auto' : 'none',
           zIndex: draggedTable ? 999 : -1
         }}
-        onMouseMove={(e) => handleDragMove(e, autoScale, canvasRef.current, tables, setTables)}
+        onMouseMove={(e) => {
+          handleDragMove(e, autoScale, canvasRef.current, tables, setTables)
+          if (draggedTable) setHasUnsavedChanges(true)
+        }}
         onMouseUp={() => handleDragEnd(tables)}
         onMouseLeave={() => handleDragEnd(tables)}
         onTouchMove={(e) => {
           if (draggedTable) {
             e.preventDefault()
             handleDragMove(e, autoScale, canvasRef.current, tables, setTables)
+            setHasUnsavedChanges(true)
           }
         }}
         onTouchEnd={() => handleDragEnd(tables)}

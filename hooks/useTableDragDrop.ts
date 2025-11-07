@@ -102,26 +102,10 @@ export const useTableDragDrop = () => {
     }
   }
 
-  // ドラッグ終了
-  const handleDragEnd = async (
+  // ドラッグ終了（保存は保存ボタンで一括実行）
+  const handleDragEnd = (
     tables: Array<{ table_name: string; position_top: number; position_left: number; page_number?: number }>
   ) => {
-    if (!draggedTable) return
-
-    const table = tables.find(t => t.table_name === draggedTable)
-    if (!table) return
-
-    const storeId = localStorage.getItem('currentStoreId') || '1'
-    await supabase
-      .from('table_status')
-      .update({
-        position_top: table.position_top,
-        position_left: table.position_left,
-        page_number: table.page_number || 1
-      })
-      .eq('table_name', draggedTable)
-      .eq('store_id', storeId)
-
     setDraggedTable(null)
   }
 
