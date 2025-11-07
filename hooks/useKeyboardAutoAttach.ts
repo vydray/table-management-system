@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useKeyboard } from '../contexts/KeyboardContext';
 
 export function useKeyboardAutoAttach() {
   const keyboard = useKeyboard();
+  const activeInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const handleInputFocus = (e: FocusEvent) => {
@@ -15,44 +16,81 @@ export function useKeyboardAutoAttach() {
       const excludedTypes = ['date', 'checkbox', 'radio', 'file', 'submit', 'button', 'reset', 'image'];
       if (excludedTypes.includes(target.type)) return;
 
-      // readOnlyまたはdisabledの場合は除外
-      if (target.readOnly || target.disabled) return;
+      // disabledの場合は除外（readOnlyはチェックしない）
+      if (target.disabled) return;
 
-      // カスタムキーボードを表示
-      target.blur(); // ネイティブキーボードを非表示
+      // 既にinputMode="none"が設定されている場合はスキップ（無限ループ防止）
+      if (target.getAttribute('inputMode') === 'none') {
+        // カスタムキーボードを表示
+        const currentValue = target.value;
+        activeInputRef.current = target;
 
+        keyboard.showKeyboard(currentValue, (newValue) => {
+          if (activeInputRef.current) {
+            activeInputRef.current.value = newValue;
+
+            // React用のイベントトリガー
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+              window.HTMLInputElement.prototype,
+              'value'
+            )?.set;
+
+            if (nativeInputValueSetter) {
+              nativeInputValueSetter.call(activeInputRef.current, newValue);
+              const inputEvent = new Event('input', { bubbles: true });
+              activeInputRef.current.dispatchEvent(inputEvent);
+            }
+          }
+        });
+        return;
+      }
+
+      // 初回フォーカス時：inputMode="none"を設定
+      target.setAttribute('inputMode', 'none');
+
+      // フォーカスを維持したままカスタムキーボードを表示
       const currentValue = target.value;
+      activeInputRef.current = target;
 
       keyboard.showKeyboard(currentValue, (newValue) => {
-        target.value = newValue;
+        if (activeInputRef.current) {
+          activeInputRef.current.value = newValue;
 
-        // onChangeイベントを手動でトリガー
-        const event = new Event('input', { bubbles: true });
-        target.dispatchEvent(event);
+          // React用のイベントトリガー
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype,
+            'value'
+          )?.set;
 
-        // React用のイベントもトリガー
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-          window.HTMLInputElement.prototype,
-          'value'
-        )?.set;
-
-        if (nativeInputValueSetter) {
-          nativeInputValueSetter.call(target, newValue);
-          const inputEvent = new Event('input', { bubbles: true });
-          target.dispatchEvent(inputEvent);
+          if (nativeInputValueSetter) {
+            nativeInputValueSetter.call(activeInputRef.current, newValue);
+            const inputEvent = new Event('input', { bubbles: true });
+            activeInputRef.current.dispatchEvent(inputEvent);
+          }
         }
       });
-
-      // inputMode="none"を設定してネイティブキーボードを完全にブロック
-      target.setAttribute('inputMode', 'none');
-      target.setAttribute('readonly', 'true');
     };
 
-    // 全てのinput要素にフォーカスイベントリスナーを追加
+    const handleInputBlur = (e: FocusEvent) => {
+      const target = e.target as HTMLInputElement;
+      if (target === activeInputRef.current) {
+        // キーボードを閉じる（別の要素にフォーカスが移った場合のみ）
+        setTimeout(() => {
+          if (document.activeElement !== activeInputRef.current) {
+            keyboard.hideKeyboard();
+            activeInputRef.current = null;
+          }
+        }, 100);
+      }
+    };
+
+    // 全てのinput要素にフォーカス/ブラーイベントリスナーを追加
     document.addEventListener('focusin', handleInputFocus, true);
+    document.addEventListener('focusout', handleInputBlur, true);
 
     return () => {
       document.removeEventListener('focusin', handleInputFocus, true);
+      document.removeEventListener('focusout', handleInputBlur, true);
     };
   }, [keyboard]);
 }

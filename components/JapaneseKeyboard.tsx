@@ -12,6 +12,14 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
   const [mode, setMode] = useState<KeyboardMode>('hiragana');
   const [isShift, setIsShift] = useState(false);
 
+  const handleClose = () => {
+    // フォーカスを外してからキーボードを閉じる
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    onClose();
+  };
+
   // ひらがなキー配列（あかさたな順）
   const hiraganaKeys = [
     ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'],
@@ -202,7 +210,7 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
         </div>
 
         {/* 閉じるボタン */}
-        <button className="close-button" onClick={onClose}>
+        <button className="close-button" onClick={handleClose}>
           閉じる
         </button>
       </div>
@@ -214,31 +222,32 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
           left: 0;
           right: 0;
           background: #e8e8e8;
-          padding: 10px;
+          padding: 15px;
+          padding-bottom: calc(15px + env(safe-area-inset-bottom));
           box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
           z-index: 9999;
-          max-height: 50vh;
+          max-height: 60vh;
           overflow-y: auto;
         }
 
         .keyboard-content {
-          max-width: 800px;
+          max-width: 1000px;
           margin: 0 auto;
         }
 
         .mode-buttons {
           display: flex;
-          gap: 10px;
-          margin-bottom: 10px;
+          gap: 15px;
+          margin-bottom: 15px;
           justify-content: center;
         }
 
         .mode-buttons button {
-          padding: 10px 20px;
+          padding: 15px 30px;
           border: 2px solid #ccc;
           background: white;
-          border-radius: 5px;
-          font-size: 16px;
+          border-radius: 8px;
+          font-size: 20px;
           font-weight: bold;
           cursor: pointer;
           transition: all 0.2s;
@@ -252,31 +261,32 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
 
         .keyboard-keys {
           background: white;
-          padding: 10px;
-          border-radius: 10px;
-          margin-bottom: 10px;
+          padding: 15px;
+          border-radius: 12px;
+          margin-bottom: 15px;
         }
 
         .key-row {
           display: flex;
-          gap: 5px;
-          margin-bottom: 5px;
+          gap: 8px;
+          margin-bottom: 8px;
           justify-content: center;
         }
 
         .key {
-          min-width: 50px;
-          height: 50px;
+          min-width: 70px;
+          height: 70px;
           border: 1px solid #ccc;
           background: white;
-          border-radius: 5px;
-          font-size: 18px;
+          border-radius: 8px;
+          font-size: 24px;
           cursor: pointer;
           transition: all 0.1s;
           display: flex;
           align-items: center;
           justify-content: center;
           user-select: none;
+          touch-action: manipulation;
         }
 
         .key:active {
@@ -290,7 +300,7 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
         }
 
         .key.wide {
-          min-width: 150px;
+          min-width: 200px;
         }
 
         .key.special {
@@ -304,20 +314,21 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
         }
 
         .special-row {
-          margin-top: 10px;
+          margin-top: 12px;
         }
 
         .close-button {
           width: 100%;
-          padding: 12px;
+          padding: 16px;
           background: #ff9800;
           color: white;
           border: none;
-          border-radius: 5px;
-          font-size: 16px;
+          border-radius: 8px;
+          font-size: 18px;
           font-weight: bold;
           cursor: pointer;
           transition: background 0.2s;
+          touch-action: manipulation;
         }
 
         .close-button:active {
@@ -326,13 +337,13 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
 
         @media (max-width: 600px) {
           .key {
-            min-width: 35px;
-            height: 45px;
-            font-size: 16px;
+            min-width: 50px;
+            height: 55px;
+            font-size: 20px;
           }
 
           .key.wide {
-            min-width: 120px;
+            min-width: 150px;
           }
         }
       `}</style>
