@@ -2,6 +2,7 @@ import React from 'react'
 import { OrderItem } from '../../types'
 import { useItemEditing } from '../../hooks/useItemEditing'
 import { useModalPosition } from '../../hooks/useModalPosition'
+import { NumericInput } from '../NumericInput'
 
 interface ItemDetailModalProps {
   item: OrderItem
@@ -54,22 +55,20 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           {isEditingPrice ? (
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               <span>¥</span>
-              <input
-                type="number"
-                value={tempPrice}
-                onChange={(e) => setTempPrice(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') handlePriceSubmit()
-                }}
-                style={{
-                  width: '100px',
-                  padding: '5px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px'
-                }}
-                autoFocus
-              />
-              <button 
+              <div style={{ flex: 1 }}>
+                <NumericInput
+                  value={tempPrice}
+                  onChange={(value) => setTempPrice(value.toString())}
+                  placeholder="価格を入力"
+                  min={0}
+                  width="100px"
+                  style={{
+                    padding: '5px',
+                    fontSize: '16px'
+                  }}
+                />
+              </div>
+              <button
                 onClick={handlePriceSubmit}
                 style={{
                   padding: '5px 10px',
@@ -97,9 +96,9 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               </button>
             </div>
           ) : (
-            <span 
+            <span
               onClick={() => setIsEditingPrice(true)}
-              style={{ 
+              style={{
                 cursor: 'pointer',
                 textDecoration: 'underline',
                 color: '#0066cc'
@@ -114,23 +113,18 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           <label>個数:</label>
           {isEditingQuantity ? (
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="number"
+              <NumericInput
                 value={tempQuantity}
-                onChange={(e) => setTempQuantity(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') handleQuantitySubmit()
-                }}
+                onChange={(value) => setTempQuantity(value.toString())}
+                placeholder="個数を入力"
+                min={1}
+                width="80px"
                 style={{
-                  width: '80px',
                   padding: '5px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px'
+                  fontSize: '16px'
                 }}
-                min="1"
-                autoFocus
               />
-              <button 
+              <button
                 onClick={handleQuantitySubmit}
                 style={{
                   padding: '5px 10px',
@@ -158,9 +152,9 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               </button>
             </div>
           ) : (
-            <span 
+            <span
               onClick={() => setIsEditingQuantity(true)}
-              style={{ 
+              style={{
                 cursor: 'pointer',
                 textDecoration: 'underline',
                 color: '#0066cc',

@@ -3,6 +3,7 @@ import { useProductData } from '../../hooks/useProductData'
 import { useProductCategory } from '../../hooks/useProductCategory'
 import { useProductModal } from '../../hooks/useProductModal'
 import { useProductHandlers } from '../../hooks/useProductHandlers'
+import { NumericInput } from '../NumericInput'
 
 export default function ProductManagement() {
   // フックを使用
@@ -136,18 +137,12 @@ export default function ProductManagement() {
           <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
             価格 *
           </label>
-          <input
-            type="number"
+          <NumericInput
+            value={newProductPrice === '' ? 0 : Number(newProductPrice)}
+            onChange={(value) => setNewProductPrice(value.toString())}
             placeholder="0"
-            value={newProductPrice}
-            onChange={(e) => setNewProductPrice(e.target.value)}
-            style={{
-              width: '200px',
-              padding: '10px',
-              fontSize: '16px',
-              border: '1px solid #ddd',
-              borderRadius: '5px'
-            }}
+            min={0}
+            width="200px"
           />
         </div>
 
@@ -429,17 +424,12 @@ export default function ProductManagement() {
               <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                 価格 *
               </label>
-              <input
-                type="number"
-                value={newProductPrice}
-                onChange={(e) => setNewProductPrice(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  fontSize: '16px',
-                  border: '1px solid #ddd',
-                  borderRadius: '5px'
-                }}
+              <NumericInput
+                value={newProductPrice === '' ? 0 : Number(newProductPrice)}
+                onChange={(value) => setNewProductPrice(value.toString())}
+                placeholder="0"
+                min={0}
+                width="100%"
               />
             </div>
 

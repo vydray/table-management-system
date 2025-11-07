@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useSystemSettings } from '../../hooks/useSystemSettings'
+import { NumericInput } from '../NumericInput'
 
 export default function SystemSettings() {
   const {
@@ -41,7 +42,7 @@ export default function SystemSettings() {
       msOverflowStyle: '-ms-autohiding-scrollbar'
     }}>
       <div style={{ marginBottom: '30px' }}>
-        <label style={{ 
+        <label style={{
           display: 'block',
           fontSize: '16px',
           fontWeight: 'bold',
@@ -50,17 +51,14 @@ export default function SystemSettings() {
           消費税率
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <input
-            type="number"
-            value={taxRate === 0 ? '' : taxRate}
-            onChange={(e) => setTaxRate(e.target.value === '' ? 0 : Number(e.target.value))}
-            style={{
-              padding: '10px',
-              fontSize: '16px',
-              border: '1px solid #ddd',
-              borderRadius: '5px',
-              width: '100px'
-            }}
+          <NumericInput
+            value={taxRate}
+            onChange={(value) => setTaxRate(value)}
+            placeholder="0"
+            min={0}
+            max={100}
+            allowDecimal={true}
+            width="100px"
           />
           <span style={{ fontSize: '16px' }}>%</span>
         </div>
@@ -76,17 +74,14 @@ export default function SystemSettings() {
           サービス料率
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <input
-            type="number"
-            value={serviceFeeRate === 0 ? '' : serviceFeeRate}
-            onChange={(e) => setServiceFeeRate(e.target.value === '' ? 0 : Number(e.target.value))}
-            style={{
-              padding: '10px',
-              fontSize: '16px',
-              border: '1px solid #ddd',
-              borderRadius: '5px',
-              width: '100px'
-            }}
+          <NumericInput
+            value={serviceFeeRate}
+            onChange={(value) => setServiceFeeRate(value)}
+            placeholder="0"
+            min={0}
+            max={100}
+            allowDecimal={true}
+            width="100px"
           />
           <span style={{ fontSize: '16px' }}>%</span>
         </div>
@@ -102,17 +97,14 @@ export default function SystemSettings() {
           カード手数料率
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <input
-            type="number"
-            value={cardFeeRate === 0 ? '' : cardFeeRate}
-            onChange={(e) => setCardFeeRate(e.target.value === '' ? 0 : Number(e.target.value))}
-            style={{
-              padding: '10px',
-              fontSize: '16px',
-              border: '1px solid #ddd',
-              borderRadius: '5px',
-              width: '100px'
-            }}
+          <NumericInput
+            value={cardFeeRate}
+            onChange={(value) => setCardFeeRate(value)}
+            placeholder="0"
+            min={0}
+            max={100}
+            allowDecimal={true}
+            width="100px"
           />
           <span style={{ fontSize: '16px' }}>%</span>
         </div>
@@ -235,7 +227,7 @@ export default function SystemSettings() {
       </div>
 
       <div style={{ marginBottom: '30px' }}>
-        <label style={{ 
+        <label style={{
           display: 'block',
           fontSize: '16px',
           fontWeight: 'bold',
@@ -244,22 +236,16 @@ export default function SystemSettings() {
           レジ金
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <input
-            type="number"
-            value={registerAmount === 0 ? '' : registerAmount}
-            onChange={(e) => setRegisterAmount(e.target.value === '' ? 0 : Number(e.target.value))}
-            step="1000"
-            style={{
-              padding: '10px',
-              fontSize: '16px',
-              border: '1px solid #ddd',
-              borderRadius: '5px',
-              width: '150px'
-            }}
+          <NumericInput
+            value={registerAmount}
+            onChange={(value) => setRegisterAmount(value)}
+            placeholder="0"
+            min={0}
+            width="150px"
           />
           <span style={{ fontSize: '16px' }}>円</span>
         </div>
-        <p style={{ 
+        <p style={{
           color: '#666',
           fontSize: '13px',
           margin: '5px 0'

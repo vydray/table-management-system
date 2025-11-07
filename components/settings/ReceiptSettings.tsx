@@ -4,6 +4,7 @@ import { useReceiptSettingsData } from '../../hooks/useReceiptSettingsData'
 import { useLogoUpload } from '../../hooks/useLogoUpload'
 import { useReceiptTemplate } from '../../hooks/useReceiptTemplate'
 import { usePrinterConnection } from '../../hooks/usePrinterConnection'
+import { NumericInput } from '../NumericInput'
 
 export default function ReceiptSettings() {
   // フックを使用
@@ -557,7 +558,7 @@ export default function ReceiptSettings() {
 
         {settings.show_revenue_stamp && (
           <div>
-            <label style={{ 
+            <label style={{
               display: 'block',
               marginBottom: '8px',
               fontWeight: 'bold',
@@ -565,17 +566,12 @@ export default function ReceiptSettings() {
             }}>
               収入印紙が必要な金額（円以上）
             </label>
-            <input
-              type="number"
-              value={settings.revenue_stamp_threshold === 0 ? '' : settings.revenue_stamp_threshold}
-              onChange={(e) => setSettings({ ...settings, revenue_stamp_threshold: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-              style={{
-                width: '200px',
-                padding: '10px',
-                fontSize: '14px',
-                border: '1px solid #ddd',
-                borderRadius: '5px'
-              }}
+            <NumericInput
+              value={settings.revenue_stamp_threshold}
+              onChange={(value) => setSettings({ ...settings, revenue_stamp_threshold: value })}
+              placeholder="0"
+              min={0}
+              width="200px"
             />
             <p style={{ 
               marginTop: '5px',
@@ -811,17 +807,12 @@ export default function ReceiptSettings() {
           }}>
             現在のレシート番号
           </label>
-          <input
-            type="number"
-            value={settings.current_receipt_number === 0 ? '' : settings.current_receipt_number}
-            onChange={(e) => setSettings({ ...settings, current_receipt_number: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-            style={{
-              width: '200px',
-              padding: '10px',
-              fontSize: '14px',
-              border: '1px solid #ddd',
-              borderRadius: '5px'
-            }}
+          <NumericInput
+            value={settings.current_receipt_number}
+            onChange={(value) => setSettings({ ...settings, current_receipt_number: value })}
+            placeholder="0"
+            min={0}
+            width="200px"
           />
           <p style={{ 
             marginTop: '5px',
