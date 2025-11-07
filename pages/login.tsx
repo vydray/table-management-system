@@ -116,8 +116,10 @@ export default function Login() {
           height: 100vh;
           display: flex;
           justify-content: center;
-          align-items: center;
+          align-items: flex-start;
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          overflow-y: auto;
+          padding: 40px 0;
         }
 
         .login-box {
