@@ -233,20 +233,24 @@ export const useTableLayout = () => {
     const storeId = localStorage.getItem('currentStoreId') || '1'
 
     try {
-      for (const table of tables) {
-        await supabase
-          .from('table_status')
-          .update({
-            position_top: table.position_top,
-            position_left: table.position_left,
-            page_number: table.page_number || 1
-          })
-          .eq('table_name', table.table_name)
-          .eq('store_id', storeId)
-      }
+      // Promise.allで並列保存（高速化）
+      await Promise.all(
+        tables.map(table =>
+          supabase
+            .from('table_status')
+            .update({
+              position_top: table.position_top,
+              position_left: table.position_left,
+              page_number: table.page_number || 1
+            })
+            .eq('table_name', table.table_name)
+            .eq('store_id', storeId)
+        )
+      )
       return true
     } catch (error) {
       console.error('Error saving table positions:', error)
+      alert(`保存エラー: ${error}`)
       return false
     }
   }

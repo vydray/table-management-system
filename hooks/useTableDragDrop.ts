@@ -55,30 +55,36 @@ export const useTableDragDrop = () => {
       clientY = event.clientY
     }
 
-    // 全ページエレメントを取得して、マウス/指の位置がどのページの上にあるかを判定
-    const pageElements = canvasElement.querySelectorAll('[id^="canvas-area-"]')
-    let targetPageNumber = 1
-    let targetPageElement: Element | null = null
+    // 現在のテーブルのページを取得
+    const currentTable = tables.find(t => t.table_name === draggedTable)
+    const currentPageNumber = currentTable?.page_number || 1
 
-    for (const pageEl of Array.from(pageElements)) {
-      const rect = pageEl.getBoundingClientRect()
-      if (clientX >= rect.left && clientX <= rect.right &&
-          clientY >= rect.top && clientY <= rect.bottom) {
-        const pageNum = parseInt(pageEl.id.replace('canvas-area-', ''))
-        if (!isNaN(pageNum)) {
-          targetPageNumber = pageNum
-          targetPageElement = pageEl
-          break
+    // まず現在のページのエレメントを取得（高速化：querySelectorAllを避ける）
+    let targetPageElement = canvasElement.querySelector(`#canvas-area-${currentPageNumber}`) as Element | null
+    let targetPageNumber = currentPageNumber
+
+    if (targetPageElement) {
+      const currentPageRect = targetPageElement.getBoundingClientRect()
+
+      // 現在のページ内にいるかチェック
+      if (clientX >= currentPageRect.left && clientX <= currentPageRect.right &&
+          clientY >= currentPageRect.top && clientY <= currentPageRect.bottom) {
+        // 現在のページ内にいる場合はそのまま使用
+      } else {
+        // 現在のページ外の場合のみ、他のページを探す
+        const pageElements = canvasElement.querySelectorAll('[id^="canvas-area-"]')
+        for (const pageEl of Array.from(pageElements)) {
+          const rect = pageEl.getBoundingClientRect()
+          if (clientX >= rect.left && clientX <= rect.right &&
+              clientY >= rect.top && clientY <= rect.bottom) {
+            const pageNum = parseInt(pageEl.id.replace('canvas-area-', ''))
+            if (!isNaN(pageNum)) {
+              targetPageNumber = pageNum
+              targetPageElement = pageEl
+              break
+            }
+          }
         }
-      }
-    }
-
-    // ターゲットページが見つからない場合は、現在のテーブルのページを維持
-    if (!targetPageElement) {
-      const currentTable = tables.find(t => t.table_name === draggedTable)
-      if (currentTable) {
-        targetPageNumber = currentTable.page_number || 1
-        targetPageElement = canvasElement.querySelector(`#canvas-area-${targetPageNumber}`)
       }
     }
 
@@ -87,7 +93,6 @@ export const useTableDragDrop = () => {
       const pageRect = targetPageElement.getBoundingClientRect()
 
       // ページのborder幅（固定値2.5px = 平均値）
-      // getComputedStyleを使わずに固定値を使用することでパフォーマンス向上
       const borderWidth = 2.5
 
       // borderの内側を基準にした座標を計算
