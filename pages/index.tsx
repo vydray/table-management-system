@@ -6,7 +6,7 @@ import { OrderSection } from '../components/OrderSection'
 import { TableData } from '../types'
 import { getCurrentStoreId } from '../utils/storeContext'
 import { calculateSubtotal, calculateServiceTax, getRoundedTotal, getRoundingAdjustment } from '../utils/calculations'
-import { getJapanTimeString, getDateString } from '../utils/dateTime'
+import { getJapanTimeString, getDateString, getBusinessDayRangeDates } from '../utils/dateTime'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -135,6 +135,13 @@ export default function Home() {
   const [showMenu, setShowMenu] = useState(false)
   const [attendingCasts, setAttendingCasts] = useState<string[]>([])
 
+  // 営業日サマリー表示用の状態
+  const [showBusinessDaySummary, setShowBusinessDaySummary] = useState(false)
+  const [businessDaySummary, setBusinessDaySummary] = useState<{
+    totalSales: number
+    orderCount: number
+  } | null>(null)
+
   // フォームの状態
   const [formData, setFormData] = useState({
     guestName: '',
@@ -178,6 +185,50 @@ export default function Home() {
     } catch (error) {
       console.error('Error loading attending casts:', error)
       setAttendingCasts([])
+    }
+  }
+
+  // 今日の営業日サマリーを取得
+  const loadTodayBusinessDaySummary = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+
+      // 営業日開始時刻を取得
+      const { data: settingData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('setting_key', 'business_day_start_hour')
+        .eq('store_id', storeId)
+        .single()
+
+      const businessDayStartHour = settingData ? parseInt(settingData.setting_value) : 5
+
+      // 今日の営業日範囲を計算
+      const today = new Date()
+      const { start, end } = getBusinessDayRangeDates(today, businessDayStartHour)
+
+      // 営業日内の伝票を取得
+      const { data, error } = await supabase
+        .from('orders')
+        .select('total_incl_tax')
+        .eq('store_id', storeId)
+        .not('checkout_datetime', 'is', null)
+        .gte('checkout_datetime', start.toISOString())
+        .lt('checkout_datetime', end.toISOString())
+
+      if (error) throw error
+
+      // 総売上と組数を計算
+      const totalSales = data?.reduce((sum, order) => sum + (order.total_incl_tax || 0), 0) || 0
+      const orderCount = data?.length || 0
+
+      setBusinessDaySummary({
+        totalSales,
+        orderCount
+      })
+    } catch (error) {
+      console.error('Error loading business day summary:', error)
+      setBusinessDaySummary(null)
     }
   }
 
@@ -788,7 +839,7 @@ const finishCheckout = () => {
       }}>
 <div className="header" style={{ justifyContent: 'center' }}>
   {/* ハンバーガーメニューボタン */}
-  <button 
+  <button
     className="menu-button"
     onClick={() => setShowMenu(!showMenu)}
     style={{
@@ -798,7 +849,7 @@ const finishCheckout = () => {
   >
     <span className="menu-icon">☰</span>
   </button>
-  
+
   {/* 差分の数字を左側に配置 */}
   <span style={{
     position: 'absolute',
@@ -811,8 +862,21 @@ const finishCheckout = () => {
     {attendingCastCount - occupiedTableCount}
   </span>
 
-  {/* タイトルは中央に */}
-  📋 テーブル管理システム
+  {/* タイトルは中央に（クリック可能） */}
+  <span
+    onClick={async () => {
+      if (!showBusinessDaySummary) {
+        await loadTodayBusinessDaySummary()
+      }
+      setShowBusinessDaySummary(!showBusinessDaySummary)
+    }}
+    style={{
+      cursor: 'pointer',
+      userSelect: 'none'
+    }}
+  >
+    📋 テーブル管理システム
+  </span>
 
   <span style={{
     position: 'absolute',
@@ -823,7 +887,52 @@ const finishCheckout = () => {
     {currentTime}
   </span>
 </div>
-        
+
+{/* 営業日サマリー表示 */}
+{showBusinessDaySummary && businessDaySummary && (
+  <div
+    onClick={() => setShowBusinessDaySummary(false)}
+    style={{
+      position: 'fixed',
+      top: '80px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      backgroundColor: 'rgba(255, 255, 255, 0.98)',
+      padding: '20px 40px',
+      borderRadius: '12px',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+      zIndex: 1000,
+      cursor: 'pointer',
+      border: '3px solid #FF9800'
+    }}
+  >
+    <div style={{
+      fontSize: '20px',
+      fontWeight: 'bold',
+      marginBottom: '10px',
+      color: '#FF9800',
+      textAlign: 'center'
+    }}>
+      📊 今日の営業日
+    </div>
+    <div style={{
+      fontSize: '24px',
+      fontWeight: 'bold',
+      marginBottom: '8px',
+      color: '#333'
+    }}>
+      総売上: ¥{businessDaySummary.totalSales.toLocaleString()}
+    </div>
+    <div style={{
+      fontSize: '24px',
+      fontWeight: 'bold',
+      color: '#333'
+    }}>
+      組数: {businessDaySummary.orderCount}組
+    </div>
+  </div>
+)}
+
 {/* ⭐ ページ切り替え矢印のみ（右側中央） */}
         {maxPageNumber > 1 && (
           <div style={{
