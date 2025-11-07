@@ -51,6 +51,14 @@ export function useKeyboardAutoAttach() {
               try {
                 console.log('[useKeyboardAutoAttach] Triggering native input event');
                 nativeInputValueSetter.call(activeInputRef.current, newValue);
+
+                // Reset React's internal value tracker to force change detection
+                const tracker = (activeInputRef.current as any)._valueTracker;
+                if (tracker) {
+                  tracker.setValue('');
+                  console.log('[useKeyboardAutoAttach] Reset React value tracker');
+                }
+
                 const inputEvent = new Event('input', { bubbles: true });
                 activeInputRef.current.dispatchEvent(inputEvent);
                 console.log('[useKeyboardAutoAttach] Event dispatched successfully');
@@ -100,6 +108,14 @@ export function useKeyboardAutoAttach() {
             try {
               console.log('[useKeyboardAutoAttach] Triggering initial native input event');
               nativeInputValueSetter.call(activeInputRef.current, newValue);
+
+              // Reset React's internal value tracker to force change detection
+              const tracker = (activeInputRef.current as any)._valueTracker;
+              if (tracker) {
+                tracker.setValue('');
+                console.log('[useKeyboardAutoAttach] Reset initial React value tracker');
+              }
+
               const inputEvent = new Event('input', { bubbles: true });
               activeInputRef.current.dispatchEvent(inputEvent);
               console.log('[useKeyboardAutoAttach] Initial event dispatched successfully');
