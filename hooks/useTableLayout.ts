@@ -234,9 +234,9 @@ export const useTableLayout = () => {
 
     try {
       // Promise.allで並列保存（高速化）
-      await Promise.all(
-        tables.map(table =>
-          supabase
+      const results = await Promise.all(
+        tables.map(async (table) => {
+          const { data, error } = await supabase
             .from('table_status')
             .update({
               position_top: table.position_top,
@@ -245,8 +245,16 @@ export const useTableLayout = () => {
             })
             .eq('table_name', table.table_name)
             .eq('store_id', storeId)
-        )
+
+          if (error) {
+            console.error(`Failed to save ${table.table_name}:`, error)
+            throw error
+          }
+          return data
+        })
       )
+
+      console.log(`Saved ${results.length} tables successfully`)
       return true
     } catch (error) {
       console.error('Error saving table positions:', error)
