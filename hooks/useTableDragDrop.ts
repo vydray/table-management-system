@@ -86,10 +86,9 @@ export const useTableDragDrop = () => {
       // ターゲットページ内での相対座標を計算
       const pageRect = targetPageElement.getBoundingClientRect()
 
-      // ページのborder幅（固定値：現在のページは3px、それ以外は2px）
+      // ページのborder幅（固定値2.5px = 平均値）
       // getComputedStyleを使わずに固定値を使用することでパフォーマンス向上
-      const borderWidth = targetPageElement.style.borderWidth ?
-        parseFloat(targetPageElement.style.borderWidth) : 2.5 // 平均値を使用
+      const borderWidth = 2.5
 
       // borderの内側を基準にした座標を計算
       const newLeft = (clientX - pageRect.left - borderWidth - dragOffset.x) / autoScale
