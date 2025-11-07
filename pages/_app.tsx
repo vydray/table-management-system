@@ -2,10 +2,17 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import type { AppProps } from 'next/app'
 import '../styles/globals.css'
+import { KeyboardProvider, useKeyboard } from '../contexts/KeyboardContext'
+import JapaneseKeyboard from '../components/JapaneseKeyboard'
+import { useKeyboardAutoAttach } from '../hooks/useKeyboardAutoAttach'
 
-export default function App({ Component, pageProps }: AppProps) {
+function AppContent({ Component, pageProps }: AppProps) {
+  const keyboard = useKeyboard();
   const router = useRouter()
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+
+  // 全てのinput要素に自動的にカスタムキーボードをアタッチ
+  useKeyboardAutoAttach();
 
   useEffect(() => {
     // ログインページは認証チェックをスキップ
@@ -48,5 +55,24 @@ export default function App({ Component, pageProps }: AppProps) {
     )
   }
 
-  return <Component {...pageProps} />
+  return (
+    <>
+      <Component {...pageProps} />
+      {keyboard.isVisible && (
+        <JapaneseKeyboard
+          value={keyboard.value}
+          onChange={keyboard.updateValue}
+          onClose={keyboard.hideKeyboard}
+        />
+      )}
+    </>
+  )
+}
+
+export default function App(props: AppProps) {
+  return (
+    <KeyboardProvider>
+      <AppContent {...props} />
+    </KeyboardProvider>
+  )
 }

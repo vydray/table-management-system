@@ -61,7 +61,6 @@ export default function Login() {
               <label htmlFor="username">ユーザー名</label>
               <input
                 type="text"
-                inputMode="text"
                 lang="ja"
                 id="username"
                 value={username}
@@ -76,7 +75,7 @@ export default function Login() {
             <div className="form-group">
               <label htmlFor="password">パスワード</label>
               <input
-                type="password"
+                type="text"
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
