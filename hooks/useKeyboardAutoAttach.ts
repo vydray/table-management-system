@@ -62,9 +62,14 @@ export function useKeyboardAutoAttach() {
                 const inputEvent = new Event('input', { bubbles: true });
                 activeInputRef.current.dispatchEvent(inputEvent);
 
-                // カーソルを末尾に移動
-                activeInputRef.current.setSelectionRange(newValue.length, newValue.length);
-                console.log('[useKeyboardAutoAttach] Event dispatched successfully, cursor moved to end');
+                // カーソルを末尾に移動（Reactの再レンダリング後に実行）
+                setTimeout(() => {
+                  if (activeInputRef.current) {
+                    activeInputRef.current.setSelectionRange(newValue.length, newValue.length);
+                    console.log('[useKeyboardAutoAttach] Cursor moved to end');
+                  }
+                }, 0);
+                console.log('[useKeyboardAutoAttach] Event dispatched successfully');
               } catch (error) {
                 console.error('[useKeyboardAutoAttach] Error dispatching event:', error);
               }
@@ -122,9 +127,14 @@ export function useKeyboardAutoAttach() {
               const inputEvent = new Event('input', { bubbles: true });
               activeInputRef.current.dispatchEvent(inputEvent);
 
-              // カーソルを末尾に移動
-              activeInputRef.current.setSelectionRange(newValue.length, newValue.length);
-              console.log('[useKeyboardAutoAttach] Initial event dispatched successfully, cursor moved to end');
+              // カーソルを末尾に移動（Reactの再レンダリング後に実行）
+              setTimeout(() => {
+                if (activeInputRef.current) {
+                  activeInputRef.current.setSelectionRange(newValue.length, newValue.length);
+                  console.log('[useKeyboardAutoAttach] Initial cursor moved to end');
+                }
+              }, 0);
+              console.log('[useKeyboardAutoAttach] Initial event dispatched successfully');
             } catch (error) {
               console.error('[useKeyboardAutoAttach] Error dispatching initial event:', error);
             }
@@ -152,7 +162,14 @@ export function useKeyboardAutoAttach() {
           }
           // それ以外の場合（キーボードボタンクリック等）は、元のinputにフォーカスを戻す
           else if (newFocus !== activeInputRef.current && activeInputRef.current) {
+            const cursorPos = activeInputRef.current.value.length;
             activeInputRef.current.focus();
+            // フォーカス後にカーソル位置を復元
+            setTimeout(() => {
+              if (activeInputRef.current) {
+                activeInputRef.current.setSelectionRange(cursorPos, cursorPos);
+              }
+            }, 0);
           }
         }, 100);
       }
