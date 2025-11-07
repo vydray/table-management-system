@@ -312,7 +312,7 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
           top: 0;
           left: 0;
           right: 0;
-          bottom: 0;
+          bottom: 45vh;
           background: transparent;
           z-index: 9998;
         }
@@ -419,6 +419,10 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue }: J
 
           .key.space {
             min-width: 150px;
+          }
+
+          .keyboard-overlay {
+            bottom: 40vh;
           }
 
           .japanese-keyboard {
