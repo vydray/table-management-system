@@ -233,23 +233,32 @@ export const useTableLayout = () => {
     const storeId = localStorage.getItem('currentStoreId') || '1'
 
     try {
+      console.log(`Saving ${tables.length} tables...`)
+
       // Promise.allで並列保存（高速化）
       const results = await Promise.all(
         tables.map(async (table) => {
+          const updateData = {
+            position_top: Math.round(table.position_top),
+            position_left: Math.round(table.position_left),
+            page_number: table.page_number || 1
+          }
+
+          console.log(`Saving ${table.table_name}:`, updateData)
+
           const { data, error } = await supabase
             .from('table_status')
-            .update({
-              position_top: table.position_top,
-              position_left: table.position_left,
-              page_number: table.page_number || 1
-            })
+            .update(updateData)
             .eq('table_name', table.table_name)
             .eq('store_id', storeId)
+            .select()
 
           if (error) {
             console.error(`Failed to save ${table.table_name}:`, error)
             throw error
           }
+
+          console.log(`Saved ${table.table_name}:`, data)
           return data
         })
       )
@@ -258,7 +267,7 @@ export const useTableLayout = () => {
       return true
     } catch (error) {
       console.error('Error saving table positions:', error)
-      alert(`保存エラー: ${error}`)
+      alert(`保存エラー: ${JSON.stringify(error)}`)
       return false
     }
   }
