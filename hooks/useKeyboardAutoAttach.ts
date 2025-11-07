@@ -28,14 +28,9 @@ export function useKeyboardAutoAttach() {
         const currentValue = target.value;
         activeInputRef.current = target;
 
-        // フォームまたは親コンテナを画面上部にスクロール
+        // 必要に応じて画面をスクロール（最小限の移動）
         setTimeout(() => {
-          const container = target.closest('form') || target.closest('.login-box') || target.closest('[class*="box"]') || target.parentElement;
-          if (container) {
-            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          } else {
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
+          target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
         }, 100);
 
         keyboard.showKeyboard(currentValue, (newValue) => {
@@ -94,14 +89,9 @@ export function useKeyboardAutoAttach() {
       const currentValue = target.value;
       activeInputRef.current = target;
 
-      // フォームまたは親コンテナを画面上部にスクロール
+      // 必要に応じて画面をスクロール（最小限の移動）
       setTimeout(() => {
-        const container = target.closest('form') || target.closest('.login-box') || target.closest('[class*="box"]') || target.parentElement;
-        if (container) {
-          container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }, 100);
 
       keyboard.showKeyboard(currentValue, (newValue) => {
