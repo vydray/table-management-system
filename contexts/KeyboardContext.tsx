@@ -31,9 +31,17 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
   };
 
   const updateValue = (newValue: string) => {
+    console.log('[KeyboardContext] updateValue called with:', newValue);
+    console.log('[KeyboardContext] onUpdateCallback exists:', !!onUpdateCallback);
     setValue(newValue);
     if (onUpdateCallback) {
-      onUpdateCallback(newValue);
+      try {
+        console.log('[KeyboardContext] calling onUpdateCallback');
+        onUpdateCallback(newValue);
+        console.log('[KeyboardContext] onUpdateCallback completed');
+      } catch (error) {
+        console.error('[KeyboardContext] Error in onUpdateCallback:', error);
+      }
     }
   };
 

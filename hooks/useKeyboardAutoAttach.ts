@@ -36,7 +36,9 @@ export function useKeyboardAutoAttach() {
         }, 100);
 
         keyboard.showKeyboard(currentValue, (newValue) => {
+          console.log('[useKeyboardAutoAttach] Callback called with:', newValue);
           if (activeInputRef.current) {
+            console.log('[useKeyboardAutoAttach] Setting input value to:', newValue);
             activeInputRef.current.value = newValue;
 
             // React用のイベントトリガー
@@ -46,10 +48,20 @@ export function useKeyboardAutoAttach() {
             )?.set;
 
             if (nativeInputValueSetter) {
-              nativeInputValueSetter.call(activeInputRef.current, newValue);
-              const inputEvent = new Event('input', { bubbles: true });
-              activeInputRef.current.dispatchEvent(inputEvent);
+              try {
+                console.log('[useKeyboardAutoAttach] Triggering native input event');
+                nativeInputValueSetter.call(activeInputRef.current, newValue);
+                const inputEvent = new Event('input', { bubbles: true });
+                activeInputRef.current.dispatchEvent(inputEvent);
+                console.log('[useKeyboardAutoAttach] Event dispatched successfully');
+              } catch (error) {
+                console.error('[useKeyboardAutoAttach] Error dispatching event:', error);
+              }
+            } else {
+              console.warn('[useKeyboardAutoAttach] nativeInputValueSetter not found');
             }
+          } else {
+            console.warn('[useKeyboardAutoAttach] activeInputRef.current is null');
           }
         });
         return;
@@ -73,7 +85,9 @@ export function useKeyboardAutoAttach() {
       }, 100);
 
       keyboard.showKeyboard(currentValue, (newValue) => {
+        console.log('[useKeyboardAutoAttach] Initial callback called with:', newValue);
         if (activeInputRef.current) {
+          console.log('[useKeyboardAutoAttach] Setting initial input value to:', newValue);
           activeInputRef.current.value = newValue;
 
           // React用のイベントトリガー
@@ -83,10 +97,20 @@ export function useKeyboardAutoAttach() {
           )?.set;
 
           if (nativeInputValueSetter) {
-            nativeInputValueSetter.call(activeInputRef.current, newValue);
-            const inputEvent = new Event('input', { bubbles: true });
-            activeInputRef.current.dispatchEvent(inputEvent);
+            try {
+              console.log('[useKeyboardAutoAttach] Triggering initial native input event');
+              nativeInputValueSetter.call(activeInputRef.current, newValue);
+              const inputEvent = new Event('input', { bubbles: true });
+              activeInputRef.current.dispatchEvent(inputEvent);
+              console.log('[useKeyboardAutoAttach] Initial event dispatched successfully');
+            } catch (error) {
+              console.error('[useKeyboardAutoAttach] Error dispatching initial event:', error);
+            }
+          } else {
+            console.warn('[useKeyboardAutoAttach] Initial nativeInputValueSetter not found');
           }
+        } else {
+          console.warn('[useKeyboardAutoAttach] Initial activeInputRef.current is null');
         }
       });
     };

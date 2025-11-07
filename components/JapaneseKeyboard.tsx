@@ -50,7 +50,10 @@ export default function JapaneseKeyboard({ value, onChange, onClose }: JapaneseK
 
   const handleKeyPress = (key: string) => {
     if (key === '') return;
-    onChange(value + key);
+    console.log('[JapaneseKeyboard] handleKeyPress:', key, 'current value:', value);
+    const newValue = value + key;
+    console.log('[JapaneseKeyboard] calling onChange with:', newValue);
+    onChange(newValue);
   };
 
   const handleBackspace = () => {
