@@ -73,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .eq('store_id', targetStoreId)
 
       const { data: categoriesData } = await supabase
-        .from('categories')
+        .from('product_categories')
         .select('id, name')
         .eq('store_id', targetStoreId)
 
