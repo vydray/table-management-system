@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { getBusinessDateFromDateTime } from '../../../utils/dateTime'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -57,12 +58,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { data: settings } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['consumption_tax_rate', 'service_charge_rate'])
+        .in('setting_key', ['consumption_tax_rate', 'service_charge_rate', 'business_day_cutoff_hour'])
         .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
 
       // 設定値を取得
       const consumptionTaxRate = settings?.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10
       const serviceChargeRate = settings?.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15
+      const businessDayCutoffHour = settings?.find(s => s.setting_key === 'business_day_cutoff_hour')?.setting_value || 6
 
       // 商品合計（税込）
       const subtotalIncTax = orderItems.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0)
@@ -82,6 +84,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // 端数調整額を計算
       const roundingAdjustment = totalAmount - (subtotalIncTax + serviceTax)
 
+      // 営業日を計算
+      const checkoutDate = new Date(checkoutTime)
+      const orderDate = getBusinessDateFromDateTime(checkoutDate, Number(businessDayCutoffHour))
+
       // 1. ordersテーブルに注文を保存（店舗IDを含む）
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
@@ -89,6 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           receipt_number: `${tableId}-${Date.now()}`,
           visit_datetime: currentData.entry_time,
           checkout_datetime: checkoutTime,
+          order_date: orderDate + 'T00:00:00.000Z',
           table_number: tableId,
           staff_name: castName || currentData.cast_name,
           guest_name: guestName || currentData.guest_name,
