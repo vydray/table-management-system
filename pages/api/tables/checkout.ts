@@ -66,6 +66,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const serviceChargeRate = settings?.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15
       const businessDayCutoffHour = settings?.find(s => s.setting_key === 'business_day_cutoff_hour')?.setting_value || 6
 
+      // 商品マスタとカテゴリーマスタを取得（カテゴリー情報を設定するため）
+      const { data: products } = await supabase
+        .from('products')
+        .select('id, name, category_id')
+        .eq('store_id', targetStoreId)
+
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('id, name')
+        .eq('store_id', targetStoreId)
+
       // 商品合計（税込）
       const subtotalIncTax = orderItems.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0)
       
@@ -122,10 +133,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const itemsToInsert = orderItems.map((item: OrderItem) => {
           const unitPriceExclTax = Math.round(item.price / (1 + consumptionTaxRate))
           const taxAmount = item.price - unitPriceExclTax
-          
+
+          // 商品名からカテゴリーを検索
+          const product = products?.find(p => p.name === item.name)
+          const category = categoriesData?.find(c => c.id === product?.category_id)
+
           return {
             order_id: orderData.id,
-            category: '',
+            category: category?.name || null,
             product_name: item.name,
             cast_name: item.cast || null,
             unit_price: item.price,
