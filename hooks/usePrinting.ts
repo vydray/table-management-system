@@ -174,15 +174,15 @@ export const usePrinting = () => {
         cardFeeRate: Number(settings?.find(s => s.setting_key === 'card_fee_rate')?.setting_value || 0) / 100
       }
 
-      const { data: receiptSettings } = await supabase
-        .from('receipt_settings')
+      const { data: storeSettings } = await supabase
+        .from('store_settings')
         .select('*')
         .eq('store_id', storeId)
         .single()
 
       let defaultReceiptNote = 'お品代として'
-      if (receiptSettings?.receipt_templates && Array.isArray(receiptSettings.receipt_templates)) {
-        const defaultTemplate = receiptSettings.receipt_templates.find((t: { is_default: boolean }) => t.is_default)
+      if (storeSettings?.receipt_templates && Array.isArray(storeSettings.receipt_templates)) {
+        const defaultTemplate = storeSettings.receipt_templates.find((t: { is_default: boolean }) => t.is_default)
         if (defaultTemplate) {
           defaultReceiptNote = defaultTemplate.text
         }
@@ -226,16 +226,16 @@ export const usePrinting = () => {
         const totalWithCardFee = roundedTotal + cardFee
 
         await printer.printReceipt({
-          storeName: receiptSettings?.store_name || '店舗名',
-          storeAddress: receiptSettings?.store_address || '',
-          storePhone: receiptSettings?.store_phone || '',
-          storePostalCode: receiptSettings?.store_postal_code || '',
-          storeRegistrationNumber: receiptSettings?.store_registration_number || '',
+          storeName: storeSettings?.store_name || '店舗名',
+          storeAddress: storeSettings?.store_address || '',
+          storePhone: storeSettings?.store_phone || '',
+          storePostalCode: storeSettings?.store_postal_code || '',
+          storeRegistrationNumber: storeSettings?.store_registration_number || '',
           receiptNumber: checkoutResult?.receiptNumber || 'R' + Date.now(),
           receiptTo: receiptTo,
           receiptNote: receiptNote,
-          showRevenueStamp: receiptSettings?.show_revenue_stamp ?? true,
-          revenueStampThreshold: receiptSettings?.revenue_stamp_threshold || 50000,
+          showRevenueStamp: storeSettings?.show_revenue_stamp ?? true,
+          revenueStampThreshold: storeSettings?.revenue_stamp_threshold || 50000,
           tableName: currentTable,
           guestName: formData.guestName || '（未入力）',
           castName: formData.castName || '（未選択）',

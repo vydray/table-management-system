@@ -28,8 +28,8 @@ export const useReceiptPrint = () => {
       const storeId = getCurrentStoreId()
 
       // 店舗設定を取得
-      const { data: receiptSettings } = await supabase
-        .from('receipt_settings')
+      const { data: storeSettings } = await supabase
+        .from('store_settings')
         .select('*')
         .eq('store_id', storeId)
         .single()
@@ -67,8 +67,8 @@ export const useReceiptPrint = () => {
 
       // デフォルトの但し書きを取得
       let defaultReceiptNote = 'お品代として'
-      if (receiptSettings?.receipt_templates && Array.isArray(receiptSettings.receipt_templates)) {
-        const defaultTemplate = receiptSettings.receipt_templates.find((t: { is_default: boolean }) => t.is_default)
+      if (storeSettings?.receipt_templates && Array.isArray(storeSettings.receipt_templates)) {
+        const defaultTemplate = storeSettings.receipt_templates.find((t: { is_default: boolean }) => t.is_default)
         if (defaultTemplate) {
           defaultReceiptNote = defaultTemplate.text
         }
@@ -84,11 +84,11 @@ export const useReceiptPrint = () => {
       // 領収書印刷データを準備
       const receiptData = {
         // 店舗情報
-        storeName: receiptSettings?.store_name || '店舗名',
-        storeAddress: receiptSettings?.store_address || '',
-        storePhone: receiptSettings?.store_phone || '',
-        storePostalCode: receiptSettings?.store_postal_code || '',
-        storeRegistrationNumber: receiptSettings?.store_registration_number || '',
+        storeName: storeSettings?.store_name || '店舗名',
+        storeAddress: storeSettings?.store_address || '',
+        storePhone: storeSettings?.store_phone || '',
+        storePostalCode: storeSettings?.store_postal_code || '',
+        storeRegistrationNumber: storeSettings?.store_registration_number || '',
 
         // 領収書情報
         receiptNumber: selectedReceipt.receipt_number,
@@ -96,8 +96,8 @@ export const useReceiptPrint = () => {
         receiptNote: receiptNote,
 
         // 収入印紙設定
-        showRevenueStamp: receiptSettings?.show_revenue_stamp ?? true,
-        revenueStampThreshold: receiptSettings?.revenue_stamp_threshold || 50000,
+        showRevenueStamp: storeSettings?.show_revenue_stamp ?? true,
+        revenueStampThreshold: storeSettings?.revenue_stamp_threshold || 50000,
 
         // 基本情報
         tableName: selectedReceipt.table_number,
