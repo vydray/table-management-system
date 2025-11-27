@@ -1,11 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseServerClient } from '@/lib/supabase'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getBusinessDateFromDateTime } from '../../../utils/dateTime'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-)
+const supabase = getSupabaseServerClient()
 
 interface OrderItem {
   name: string

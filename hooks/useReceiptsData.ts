@@ -1,13 +1,8 @@
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { getCurrentStoreId, getCurrentUserId } from '../utils/storeContext'
 import { getBusinessDayRangeDates } from '../utils/dateTime'
 import { Receipt, OrderItem } from '../types/receipt'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export const useReceiptsData = () => {
   const [receipts, setReceipts] = useState<Receipt[]>([])

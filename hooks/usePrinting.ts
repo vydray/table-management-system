@@ -1,13 +1,8 @@
 import { useRouter } from 'next/router'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { getCurrentStoreId } from '../utils/storeContext'
 import { printer } from '../utils/bluetoothPrinter'
 import { calculateSubtotal, calculateServiceTax } from '../utils/calculations'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 interface OrderItem {
   name: string

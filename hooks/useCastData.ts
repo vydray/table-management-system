@@ -1,11 +1,6 @@
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { getCurrentStoreId } from '../utils/storeContext'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 // getCurrentStoreIdの結果を数値に変換するヘルパー関数
 const getStoreIdAsNumber = (): number => {

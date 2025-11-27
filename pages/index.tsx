@@ -7,12 +7,7 @@ import { TableData } from '../types'
 import { getCurrentStoreId } from '../utils/storeContext'
 import { calculateSubtotal, calculateServiceTax, getRoundedTotal, getRoundingAdjustment } from '../utils/calculations'
 import { getJapanTimeString, getDateString, getBusinessDayRangeDates } from '../utils/dateTime'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 // 新しいコンポーネントのインポート
 import { LoadingOverlay } from '../components/LoadingOverlay'
