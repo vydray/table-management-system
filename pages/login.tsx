@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import { supabase } from '@/lib/supabase'
 
 export default function Login() {
   const router = useRouter()
@@ -24,13 +25,20 @@ export default function Login() {
       const data = await res.json()
 
       if (res.ok) {
+        // Supabase Authセッションを設定（RLS用）
+        if (data.session?.access_token && data.session?.refresh_token) {
+          await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token
+          })
+        }
+
         localStorage.setItem('isLoggedIn', 'true')
         localStorage.setItem('username', data.username)
         localStorage.setItem('userId', data.userId.toString())
         localStorage.setItem('currentStoreId', data.storeId.toString())
         localStorage.setItem('userRole', data.role)
 
-        console.log(`ログイン成功: ${data.username} (店舗ID: ${data.storeId})`)
         router.push('/')
       } else {
         setError(data.error || 'ログインに失敗しました')

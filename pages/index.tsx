@@ -544,10 +544,16 @@ const handleMenuClick = (item: string) => {
       break
     case 'logout':
       if (confirm('ログアウトしますか？')) {
+        // Supabase Authセッションをクリア（RLS用）
+        supabase.auth.signOut()
         // ローカルストレージをクリア
         localStorage.removeItem('storeId')
         localStorage.removeItem('storeName')
         localStorage.removeItem('isLoggedIn')
+        localStorage.removeItem('username')
+        localStorage.removeItem('userId')
+        localStorage.removeItem('currentStoreId')
+        localStorage.removeItem('userRole')
         // ログイン画面へ遷移
         router.push('/login')
       }
