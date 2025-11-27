@@ -741,9 +741,50 @@ FOR ALL USING (
 
 ### 今後の課題
 
-1. **キャスト個別のRLS**
-   - 現状: 店舗単位でのアクセス制御
-   - 将来: キャストは自分のシフトのみ編集可能にする等
+1. **キャスト個別のRLS（給料明細など）**
+   - 現状: 店舗単位でのアクセス制御（store_idのみ）
+   - 将来: 給料明細などキャスト個人のデータは本人のみ閲覧可能にする
+
+   **実装方針:**
+   ```sql
+   -- 給料テーブル（新規作成時）
+   CREATE TABLE cast_salaries (
+     id SERIAL PRIMARY KEY,
+     store_id INTEGER NOT NULL,
+     cast_id INTEGER NOT NULL,  -- ← 必須：個人識別用
+     year_month VARCHAR(7),
+     base_salary INTEGER,
+     bonus INTEGER,
+     deductions INTEGER,
+     net_salary INTEGER,
+     created_at TIMESTAMP DEFAULT NOW()
+   );
+
+   -- 個人データ用RLSポリシー
+   CREATE POLICY "salary_own_or_admin" ON cast_salaries
+   FOR SELECT USING (
+     -- 管理者は自店舗の全員分見れる
+     (
+       (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'manager')
+       AND store_id = (auth.jwt() -> 'app_metadata' ->> 'store_id')::integer
+     )
+     OR
+     -- キャストは自分のだけ
+     (
+       cast_id = (auth.jwt() -> 'app_metadata' ->> 'user_id')::integer
+       AND store_id = (auth.jwt() -> 'app_metadata' ->> 'store_id')::integer
+     )
+   );
+   ```
+
+   **データフロー:**
+   ```
+   [orders等] → 管理者がAPI経由で集計 → [cast_salaries] → キャストが閲覧
+                (service_role使用)        (cast_id でRLS)
+   ```
+
+   **注意:** 既存テーブル（orders等）にcast_idがない場合でも、
+   集計結果を新しいテーブルに保存することで個人RLSを実現できる。
 
 2. **監査ログ**
    - 誰がいつどのデータにアクセスしたかのログ
@@ -764,3 +805,4 @@ FOR ALL USING (
 | 2025-11-28 | 初版作成 |
 | 2025-11-28 | 全テーブルRLSポリシーSQL追加 |
 | 2025-11-28 | 具体的な実装ガイド追加（コード例含む） |
+| 2025-11-28 | 将来の給料明細RLS設計を追加 |
