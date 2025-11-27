@@ -76,13 +76,13 @@ export const useReportSettings = () => {
   const loadMonthlyTargets = async (year: number, month: number) => {
     try {
       const storeId = getCurrentStoreId()
-      const yearMonth = `${year}-${String(month).padStart(2, '0')}`
 
       const { data } = await supabase
         .from('monthly_targets')
         .select('*')
         .eq('store_id', storeId)
-        .eq('year_month', yearMonth)
+        .eq('year', year)
+        .eq('month', month)
         .single()
 
       if (data) {
@@ -102,17 +102,17 @@ export const useReportSettings = () => {
   const saveMonthlyTargets = async (year: number, month: number) => {
     try {
       const storeId = getCurrentStoreId()
-      const yearMonth = `${year}-${String(month).padStart(2, '0')}`
 
       const { error } = await supabase
         .from('monthly_targets')
         .upsert({
           store_id: storeId,
-          year_month: yearMonth,
+          year: year,
+          month: month,
           sales_target: tempTargets.salesTarget,
           customer_target: tempTargets.customerTarget
         }, {
-          onConflict: 'store_id,year_month'
+          onConflict: 'store_id,year,month'
         })
 
       if (error) throw error
