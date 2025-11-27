@@ -91,7 +91,6 @@ export const useAttendanceStatusData = () => {
       }
 
       const storeId = getCurrentStoreId()
-      console.log('Adding status with store_id:', storeId)
 
       const { error } = await supabase
         .from('attendance_statuses')

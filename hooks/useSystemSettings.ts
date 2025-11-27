@@ -116,7 +116,6 @@ export const useSystemSettings = () => {
   const saveSettings = async () => {
     // 連打防止
     if (saving) {
-      console.log('Already saving, skipping...')
       return
     }
 
@@ -130,8 +129,6 @@ export const useSystemSettings = () => {
         alert('店舗情報が取得できません。再ログインしてください。')
         return
       }
-
-      console.log('Saving settings for store:', storeId)
 
       // 端数処理の文字列を数値に変換: 切り上げ=0, 切り捨て=1, 四捨五入=2
       const roundingMethodMap: { [key: string]: number } = {
@@ -152,8 +149,6 @@ export const useSystemSettings = () => {
       ]
 
       for (const setting of settingsToSave) {
-        console.log('Saving setting:', setting.setting_key, '=', setting.setting_value)
-
         try {
           // 既存のレコードを確認
           const { data: existing } = await supabase

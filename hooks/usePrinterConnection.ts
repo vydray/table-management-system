@@ -37,24 +37,14 @@ export const usePrinterConnection = () => {
   // Bluetoothプリンター接続
   const connectBluetoothPrinter = async () => {
     if (printerConnected) {
-      console.log('既に接続済みです')
       return
     }
 
     setIsConnecting(true)
     try {
-      console.log('=== Bluetooth接続開始 ===')
-
       await printer.enable()
-      console.log('✓ Bluetooth有効化成功')
 
       const devices = await printer.getPairedDevices()
-      console.log(`✓ ${devices.length}個のデバイスが見つかりました`)
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      devices.forEach((device: any, index: number) => {
-        console.log(`  [${index + 1}] ${device.name || '(名前なし)'} - ${device.address || '(アドレス不明)'}`)
-      })
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mp20 = devices.find((device: any) => {
@@ -65,16 +55,11 @@ export const usePrinterConnection = () => {
                          (name.toUpperCase().includes('B20') || name.toUpperCase().includes('B-20'))
         const hasAddress = address.length > 0
 
-        console.log(`  検証: ${name} (${address}) - 名前一致: ${nameMatch}, アドレス有: ${hasAddress}`)
-
         return nameMatch || (hasAddress && name.length === 0)
       })
 
       if (mp20) {
-        console.log(`✓ プリンター発見: ${mp20.name} (${mp20.address})`)
-
         await printer.connect(mp20.address)
-        console.log('✓ 接続成功!')
 
         setPrinterConnected(true)
         setPrinterAddress(mp20.address)
@@ -124,7 +109,6 @@ export const usePrinterConnection = () => {
       return false
     } finally {
       setIsConnecting(false)
-      console.log('=== Bluetooth接続処理終了 ===')
     }
   }
 

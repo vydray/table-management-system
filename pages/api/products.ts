@@ -15,8 +15,6 @@ export default async function handler(
     // storeIdをクエリパラメータから取得（ない場合はデフォルト値1）
     const storeId = req.query.storeId ? parseInt(req.query.storeId as string) : 1
     
-    console.log('商品API呼び出し - 店舗ID:', storeId)
-
     // カテゴリー取得（推し優先表示フラグも含む）
     const { data: categories, error: catError } = await supabase
       .from('product_categories')
@@ -41,8 +39,6 @@ export default async function handler(
       console.error('商品取得エラー:', prodError)
       throw prodError
     }
-
-    console.log(`取得結果 - カテゴリー: ${categories?.length || 0}件, 商品: ${products?.length || 0}件`)
 
     res.status(200).json({ 
       categories: categories || [], 

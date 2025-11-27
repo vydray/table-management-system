@@ -11,17 +11,14 @@ export const useCompositionInput = () => {
   const lastValue = useRef('')
 
   const handleCompositionStart = useCallback(() => {
-    console.log('[IME] Composition started')
     isComposing.current = true
   }, [])
 
   const handleCompositionUpdate = useCallback(() => {
-    console.log('[IME] Composition updating')
     isComposing.current = true
   }, [])
 
   const handleCompositionEnd = useCallback(() => {
-    console.log('[IME] Composition ended')
     isComposing.current = false
   }, [])
 
@@ -29,7 +26,6 @@ export const useCompositionInput = () => {
     (callback: (value: string) => void) => {
       return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const newValue = e.target.value
-        console.log('[IME] onChange:', newValue, 'isComposing:', isComposing.current)
 
         // Android WebViewでは常に更新を許可（IME状態に関係なく）
         // これによりIME変換中もリアルタイムで表示が更新される
@@ -44,7 +40,6 @@ export const useCompositionInput = () => {
     (callback: (value: string) => void) => {
       return (e: React.CompositionEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const finalValue = (e.target as HTMLInputElement | HTMLTextAreaElement).value
-        console.log('[IME] Composition ended with value:', finalValue)
         isComposing.current = false
 
         // 最終確定値を更新

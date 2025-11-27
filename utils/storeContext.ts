@@ -47,7 +47,6 @@ export const getCurrentStoreId = (): number => {
   // ログインページ以外でログインしていない場合はリダイレクト
   const isLoggedIn = localStorage.getItem('isLoggedIn')
   if (!isLoggedIn && window.location.pathname !== '/login') {
-    console.log('未ログインのためログインページへリダイレクト')
     window.location.href = '/login'
   }
   

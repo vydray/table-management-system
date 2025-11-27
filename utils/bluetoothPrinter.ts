@@ -33,7 +33,6 @@ export class BluetoothPrinter {
     
     try {
       await plugin.enable();
-      console.log('Bluetooth enabled');
     } catch (error) {
       console.error('Enable error:', error);
       throw error;
@@ -49,7 +48,6 @@ export class BluetoothPrinter {
     
     try {
       const result = await plugin.getPairedDevices();
-      console.log('Paired devices:', result.devices);
       return result.devices || [];
     } catch (error) {
       console.error('Get paired devices error:', error);
@@ -66,11 +64,8 @@ export class BluetoothPrinter {
 
     for (let attempt = 1; attempt <= retries + 1; attempt++) {
       try {
-        console.log(`接続試行 ${attempt}/${retries + 1}...`);
-
         // 既に接続されている場合は一度切断
         if (this.isConnected) {
-          console.log('既存の接続を切断します');
           try {
             await plugin.disconnect();
             // 切断後少し待つ
@@ -81,7 +76,6 @@ export class BluetoothPrinter {
           this.isConnected = false;
         }
 
-        console.log(`プリンター (${address}) に接続中...`);
         await plugin.connect({ address });
 
         // 接続成功後、少し待って確認
@@ -89,7 +83,6 @@ export class BluetoothPrinter {
 
         this.isConnected = true;
         this.currentAddress = address;
-        console.log(`✓ プリンター接続成功: ${address}`);
         return; // 成功したら終了
 
       } catch (error: any) {
@@ -100,7 +93,6 @@ export class BluetoothPrinter {
 
         // 最後の試行でなければリトライ
         if (attempt < retries + 1) {
-          console.log(`${attempt + 1}秒後にリトライします...`);
           await new Promise(resolve => setTimeout(resolve, attempt * 1000));
         } else {
           // 全ての試行が失敗
@@ -254,7 +246,6 @@ export class BluetoothPrinter {
         paymentOtherMethod: orderData.paymentOtherMethod,
         timestamp: orderData.timestamp
       });
-      console.log('Order slip printed successfully');
     } catch (error) {
       console.error('Print order slip error:', error);
       throw error;
@@ -303,7 +294,6 @@ export class BluetoothPrinter {
     
     try {
       await plugin.printReceipt(receiptData);
-      console.log('Receipt printed successfully');
     } catch (error) {
       console.error('Print receipt error:', error);
       throw error;

@@ -5,7 +5,6 @@ import { getCurrentStoreId } from '../utils/storeContext'
 // getCurrentStoreIdの結果を数値に変換するヘルパー関数
 const getStoreIdAsNumber = (): number => {
   const storeId = getCurrentStoreId()
-  console.log('getCurrentStoreId result:', storeId)
 
   let numericId: number
   if (typeof storeId === 'string') {
@@ -16,8 +15,6 @@ const getStoreIdAsNumber = (): number => {
     console.error('Invalid store ID type:', typeof storeId, storeId)
     numericId = 1
   }
-
-  console.log('Store ID conversion:', { original: storeId, numeric: numericId })
 
   if (isNaN(numericId) || numericId <= 0) {
     console.error('Invalid store ID:', storeId)
@@ -66,7 +63,6 @@ export const useCastData = () => {
   const loadCasts = async () => {
     try {
       const storeId = getStoreIdAsNumber()
-      console.log('Loading casts for store_id:', storeId)
 
       if (!storeId || storeId === 0) {
         console.error('Invalid store_id, cannot load casts')
@@ -84,7 +80,6 @@ export const useCastData = () => {
         throw error
       }
 
-      console.log('Loaded casts:', data)
       setCasts(data || [])
     } catch (error) {
       console.error('Failed to load casts:', error)
@@ -106,7 +101,6 @@ export const useCastData = () => {
       }
 
       const storeId = getStoreIdAsNumber()
-      console.log('Current store_id:', storeId)
 
       if (!storeId || storeId === 0) {
         alert('店舗情報が取得できません。ページを再読み込みしてください。')
@@ -126,8 +120,6 @@ export const useCastData = () => {
         experience_date: editingCast.experience_date || null,
         hire_date: editingCast.hire_date || null
       }
-
-      console.log('新規キャスト追加:', newCast)
 
       const { error } = await supabase
         .from('casts')

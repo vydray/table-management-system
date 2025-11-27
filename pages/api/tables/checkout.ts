@@ -13,8 +13,6 @@ interface OrderItem {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    console.log('受信データ:', req.body)
-    
     const { 
       tableId, 
       checkoutTime, 
@@ -123,8 +121,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         throw orderError
       }
 
-      console.log('作成された注文:', orderData)
-
       // 2. order_itemsに明細を保存（店舗IDを含む）
       if (orderItems && orderItems.length > 0 && orderData) {
         const itemsToInsert = orderItems.map((item: OrderItem) => {
@@ -198,7 +194,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (updateError) throw updateError
 
-      console.log('会計処理完了')
       res.status(200).json({ success: true, totalAmount })
     } catch (error) {
       console.error('Checkout error:', error)
