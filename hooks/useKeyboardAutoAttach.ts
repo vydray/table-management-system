@@ -34,12 +34,9 @@ export function useKeyboardAutoAttach() {
         }, 100);
 
         keyboard.showKeyboard(currentValue, (newValue) => {
-          console.log('[useKeyboardAutoAttach] Callback called with:', newValue);
           if (activeInputRef.current) {
-            console.log('[useKeyboardAutoAttach] Setting input value to:', newValue);
             activeInputRef.current.value = newValue;
 
-            // React用のイベントトリガー
             const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
               window.HTMLInputElement.prototype,
               'value'
@@ -47,36 +44,25 @@ export function useKeyboardAutoAttach() {
 
             if (nativeInputValueSetter) {
               try {
-                console.log('[useKeyboardAutoAttach] Triggering native input event');
                 nativeInputValueSetter.call(activeInputRef.current, newValue);
 
-                // Reset React's internal value tracker to force change detection
                 const tracker = (activeInputRef.current as any)._valueTracker;
                 if (tracker) {
-                  // 新しい値と確実に異なる値にリセット（空文字列の場合は特殊文字）
                   tracker.setValue(newValue === '' ? '\u0000' : '');
-                  console.log('[useKeyboardAutoAttach] Reset React value tracker to detect change');
                 }
 
                 const inputEvent = new Event('input', { bubbles: true });
                 activeInputRef.current.dispatchEvent(inputEvent);
 
-                // カーソルを末尾に移動（Reactの再レンダリング後に実行）
                 setTimeout(() => {
                   if (activeInputRef.current) {
                     activeInputRef.current.setSelectionRange(newValue.length, newValue.length);
-                    console.log('[useKeyboardAutoAttach] Cursor moved to end');
                   }
                 }, 0);
-                console.log('[useKeyboardAutoAttach] Event dispatched successfully');
               } catch (error) {
-                console.error('[useKeyboardAutoAttach] Error dispatching event:', error);
+                console.error('[useKeyboardAutoAttach] Error:', error);
               }
-            } else {
-              console.warn('[useKeyboardAutoAttach] nativeInputValueSetter not found');
             }
-          } else {
-            console.warn('[useKeyboardAutoAttach] activeInputRef.current is null');
           }
         }, () => activeInputRef.current?.value || '');
         return;
@@ -95,12 +81,9 @@ export function useKeyboardAutoAttach() {
       }, 100);
 
       keyboard.showKeyboard(currentValue, (newValue) => {
-        console.log('[useKeyboardAutoAttach] Initial callback called with:', newValue);
         if (activeInputRef.current) {
-          console.log('[useKeyboardAutoAttach] Setting initial input value to:', newValue);
           activeInputRef.current.value = newValue;
 
-          // React用のイベントトリガー
           const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
             window.HTMLInputElement.prototype,
             'value'
@@ -108,36 +91,25 @@ export function useKeyboardAutoAttach() {
 
           if (nativeInputValueSetter) {
             try {
-              console.log('[useKeyboardAutoAttach] Triggering initial native input event');
               nativeInputValueSetter.call(activeInputRef.current, newValue);
 
-              // Reset React's internal value tracker to force change detection
               const tracker = (activeInputRef.current as any)._valueTracker;
               if (tracker) {
-                // 新しい値と確実に異なる値にリセット（空文字列の場合は特殊文字）
                 tracker.setValue(newValue === '' ? '\u0000' : '');
-                console.log('[useKeyboardAutoAttach] Reset initial React value tracker to detect change');
               }
 
               const inputEvent = new Event('input', { bubbles: true });
               activeInputRef.current.dispatchEvent(inputEvent);
 
-              // カーソルを末尾に移動（Reactの再レンダリング後に実行）
               setTimeout(() => {
                 if (activeInputRef.current) {
                   activeInputRef.current.setSelectionRange(newValue.length, newValue.length);
-                  console.log('[useKeyboardAutoAttach] Initial cursor moved to end');
                 }
               }, 0);
-              console.log('[useKeyboardAutoAttach] Initial event dispatched successfully');
             } catch (error) {
-              console.error('[useKeyboardAutoAttach] Error dispatching initial event:', error);
+              console.error('[useKeyboardAutoAttach] Error:', error);
             }
-          } else {
-            console.warn('[useKeyboardAutoAttach] Initial nativeInputValueSetter not found');
           }
-        } else {
-          console.warn('[useKeyboardAutoAttach] Initial activeInputRef.current is null');
         }
       }, () => activeInputRef.current?.value || '');
     };

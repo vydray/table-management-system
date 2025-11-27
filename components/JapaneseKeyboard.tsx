@@ -122,18 +122,14 @@ export default function JapaneseKeyboard({ onChange, onClose, getInputValue, pre
   const handleRomajiKey = (key: string) => {
     const newBuffer = romajiBuffer + key;
     const currentValue = getInputValue();
-    console.log('[Romaji] Buffer:', newBuffer);
 
     const { converted, remaining } = convertRomaji(newBuffer);
 
     if (converted) {
-      // 変換成功：現在の値から古いバッファ分を削除して、変換後の文字を追加
       const valueWithoutOldBuffer = currentValue.substring(0, currentValue.length - romajiBuffer.length);
       onChange(valueWithoutOldBuffer + converted + remaining);
       setRomajiBuffer(remaining);
-      console.log('[Romaji] Converted:', converted, 'Remaining:', remaining);
     } else {
-      // まだ変換できない：inputに新しいバッファを表示
       const valueWithoutOldBuffer = currentValue.substring(0, currentValue.length - romajiBuffer.length);
       onChange(valueWithoutOldBuffer + newBuffer);
       setRomajiBuffer(newBuffer);
