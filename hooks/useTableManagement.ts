@@ -170,13 +170,14 @@ export const useTableManagement = () => {
 
       // 有効な勤怠ステータスを取得
       const { data: statusData } = await supabase
-        .from('system_settings')
-        .select('setting_value')
+        .from('attendance_statuses')
+        .select('name')
         .eq('store_id', storeId)
-        .eq('setting_key', 'active_attendance_statuses')
-        .single()
+        .eq('is_active', true)
 
-      const activeStatuses = statusData ? JSON.parse(statusData.setting_value) : ['出勤']
+      const activeStatuses = statusData && statusData.length > 0
+        ? statusData.map(s => s.name)
+        : ['出勤']
 
       // 当日の出勤キャストを取得
       const { data: attendanceData, error } = await supabase

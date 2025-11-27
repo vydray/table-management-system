@@ -59,14 +59,13 @@ export const useReportSettings = () => {
     try {
       const storeId = getCurrentStoreId()
       const { data } = await supabase
-        .from('system_settings')
-        .select('setting_value')
+        .from('attendance_statuses')
+        .select('name')
         .eq('store_id', storeId)
-        .eq('setting_key', 'active_attendance_statuses')
-        .single()
+        .eq('is_active', true)
 
-      if (data) {
-        setActiveAttendanceStatuses(JSON.parse(data.setting_value))
+      if (data && data.length > 0) {
+        setActiveAttendanceStatuses(data.map(s => s.name))
       }
     } catch (error) {
       console.error('Error loading active attendance statuses:', error)
