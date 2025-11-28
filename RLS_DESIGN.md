@@ -21,7 +21,7 @@
 - 悪意あるユーザーが全店舗のデータを閲覧・改ざんできる
 - **個人情報保護法違反のリスク**
 
-**現在のステータス：** 🔴 未実装
+**現在のステータス：** ✅ 実装済み（2025-11-28）
 
 **影響範囲：** 3システム全て（POS、シフト管理、VI Admin）
 
@@ -798,6 +798,89 @@ FOR ALL USING (
 
 ---
 
+## vi-admin用RLSポリシー（現在の設定）
+
+### 背景と試行錯誤
+
+vi-adminは**カスタム認証**（bcrypt + Cookie）+ **Supabase Auth連携**を使用。
+
+**試行1: `TO anon`ポリシー** → ❌ 失敗
+- vi-adminはSupabase Authでログインしているため、`authenticated`ロールで接続
+- `TO anon`ポリシーは`anon`ロールにのみ適用されるため、機能しなかった
+
+**試行2: `TO public`ポリシー（全ロール対象）** → ✅ 成功
+- `TO`句なしでポリシーを作成すると`{public}`（全ロール）に適用される
+- `anon`も`authenticated`も両方アクセス可能
+
+### 現在の設定（2025-11-28）
+
+全テーブルに以下のポリシーが適用済み：
+
+```sql
+-- 全ロール許可ポリシー（TOなし = {public}）
+CREATE POLICY "allow_all_access" ON [table_name]
+FOR ALL USING (true) WITH CHECK (true);
+```
+
+### セキュリティ考慮
+
+| システム | 認証方式 | RLSの扱い |
+|---------|---------|----------|
+| **vi-admin** | bcrypt + Supabase Auth | `allow_all_access`で全アクセス許可 |
+| **シフトアプリ** | Supabase Auth（LINE連携） | 将来：auth.jwt()で店舗別制限 |
+| **POS** | Supabase Auth | 将来：auth.jwt()で店舗別制限 |
+
+**リスク軽減:**
+- vi-adminにはログイン認証がある（admin_usersテーブル）
+- PC専用アプリで、社内利用のみ
+- anon keyが漏洩しても、vi-adminのログインが必要
+
+### 適用済みポリシーSQL
+
+```sql
+-- 全テーブルに適用済み（25テーブル）
+DO $$
+DECLARE
+    t TEXT;
+    tables TEXT[] := ARRAY['casts', 'stores', 'system_settings', 'orders', 'order_items',
+        'attendance', 'products', 'payments', 'shifts', 'admin_users', 'users',
+        'current_order_items', 'table_status', 'monthly_targets', 'product_categories',
+        'store_settings', 'cast_positions', 'attendance_statuses', 'shift_requests',
+        'shift_locks', 'store_line_configs', 'line_register_requests',
+        'admin_emergency_logins', 'cash_counts', 'daily_reports'];
+BEGIN
+    FOREACH t IN ARRAY tables LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+        EXECUTE format('DROP POLICY IF EXISTS "allow_anon_all" ON %I', t);
+        EXECUTE format('CREATE POLICY "allow_all_access" ON %I FOR ALL USING (true) WITH CHECK (true)', t);
+    END LOOP;
+END $$;
+```
+
+### 確認方法
+
+```sql
+SELECT tablename, policyname, roles
+FROM pg_policies
+WHERE schemaname = 'public'
+ORDER BY tablename;
+```
+
+### 将来の店舗別RLS（シフトアプリ・POS用）
+
+他アプリ完成時に、店舗別制限ポリシーを**追加**する：
+
+```sql
+-- 例：castsテーブルに店舗別制限を追加
+CREATE POLICY "casts_store_restriction" ON casts
+FOR ALL TO authenticated
+USING (store_id = (auth.jwt() -> 'app_metadata' ->> 'store_id')::integer);
+```
+
+`allow_all_access`と併存させることで、vi-adminは引き続き全データアクセス可能。
+
+---
+
 ## 更新履歴
 
 | 日付 | 変更内容 |
@@ -806,3 +889,7 @@ FOR ALL USING (
 | 2025-11-28 | 全テーブルRLSポリシーSQL追加 |
 | 2025-11-28 | 具体的な実装ガイド追加（コード例含む） |
 | 2025-11-28 | 将来の給料明細RLS設計を追加 |
+| 2025-11-28 | vi-admin用anon追加ポリシー追加 |
+| 2025-11-28 | **anon追加ポリシー実行完了**（25テーブル） |
+| 2025-11-28 | ❌ `TO anon`ポリシー失敗（authenticated roleで接続していた） |
+| 2025-11-28 | ✅ `allow_all_access`ポリシー（{public}）で解決 |
