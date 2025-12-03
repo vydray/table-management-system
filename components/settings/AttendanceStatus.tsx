@@ -55,12 +55,7 @@ export default function AttendanceStatus() {
 
   return (
   <div style={{
-    height: '100%',
-    overflowY: 'auto',
-    paddingBottom: '100px', // 下部に余裕を持たせる
-    WebkitOverflowScrolling: 'touch', // iOSスムーズスクロール
-    msOverflowStyle: '-ms-autohiding-scrollbar', // IE/Edge
-    position: 'relative' // Androidでの位置固定問題対策
+    position: 'relative'
   }}>
     <div style={{
       display: 'flex',
