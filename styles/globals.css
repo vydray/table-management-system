@@ -99,7 +99,6 @@ body.modal-open {
 
 .table.occupied {
   background: linear-gradient(135deg, #e8f4ff 0%, #d4e8ff 100%);
-  border-left: 4px solid #007AFF;
   color: #1d1d1f;
 }
 
