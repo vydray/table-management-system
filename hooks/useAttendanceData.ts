@@ -202,8 +202,9 @@ export const useAttendanceData = () => {
       // 3. 既存の勤怠がある人を除外（cast_nameで比較）
       const existingCastNames = new Set(existingAttendance?.map(a => a.cast_name) || [])
       const newShifts = shifts.filter(s => {
-        const casts = s.casts as unknown as { name: string }
-        const castName = casts?.name
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const castData = s.casts as any
+        const castName = castData?.name as string | undefined
         return castName && !existingCastNames.has(castName)
       })
 
@@ -223,16 +224,20 @@ export const useAttendanceData = () => {
       const statusName = presentStatus?.name || '出勤'
 
       // 5. 新しい勤怠データを追加
-      const newRows: AttendanceRow[] = newShifts.map((shift, i) => ({
-        id: `new-bulk-${Date.now()}-${i}`,
-        cast_name: (shift.casts as unknown as { name: string })?.name || '',
-        check_in_time: shift.start_time ? shift.start_time.slice(0, 5) : '',
-        check_out_time: '',
-        status: statusName,
-        late_minutes: 0,
-        break_minutes: 0,
-        daily_payment: 0
-      }))
+      const newRows: AttendanceRow[] = newShifts.map((shift, i) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const castData = shift.casts as any
+        return {
+          id: `new-bulk-${Date.now()}-${i}`,
+          cast_name: (castData?.name as string) || '',
+          check_in_time: shift.start_time ? shift.start_time.slice(0, 5) : '',
+          check_out_time: '',
+          status: statusName,
+          late_minutes: 0,
+          break_minutes: 0,
+          daily_payment: 0
+        }
+      })
 
       // 既存の空でない行 + 新しい行
       const existingValidRows = attendanceRows.filter(row => row.cast_name)
