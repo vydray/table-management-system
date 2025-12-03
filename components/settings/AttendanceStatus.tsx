@@ -97,18 +97,38 @@ export default function AttendanceStatus() {
       </div>
 
       <div style={{ backgroundColor: 'white', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+        {/* ヘッダー行 */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '50px 1fr 100px 60px 60px',
+          gap: '10px',
+          padding: '12px 20px',
+          backgroundColor: '#f5f5f5',
+          borderBottom: '2px solid #e0e0e0',
+          fontWeight: 'bold',
+          fontSize: '14px',
+          color: '#666'
+        }}>
+          <div style={{ textAlign: 'center' }}>色</div>
+          <div>項目</div>
+          <div style={{ textAlign: 'center' }}>出勤扱い</div>
+          <div style={{ textAlign: 'center' }}>編集</div>
+          <div style={{ textAlign: 'center' }}>削除</div>
+        </div>
+        {/* データ行 */}
         {attendanceStatuses.map((status, index) => (
           <div
             key={status.id}
             style={{
-              padding: '15px 20px',
+              display: 'grid',
+              gridTemplateColumns: '50px 1fr 100px 60px 60px',
+              gap: '10px',
+              padding: '12px 20px',
               borderBottom: index < attendanceStatuses.length - 1 ? '1px solid #eee' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
+              alignItems: 'center'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
               <div
                 style={{
                   width: '30px',
@@ -117,53 +137,48 @@ export default function AttendanceStatus() {
                   backgroundColor: status.color
                 }}
               />
-              <span style={{ fontSize: '16px', fontWeight: '500' }}>{status.name}</span>
             </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <label style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                cursor: 'pointer'
-              }}>
-                <input
-                  type="checkbox"
-                  checked={status.is_active}
-                  onChange={() => toggleStatusActive(status.id, status.is_active)}
-                  style={{
-                    width: '18px',
-                    height: '18px',
-                    cursor: 'pointer'
-                  }}
-                />
-                <span style={{ fontSize: '14px', color: status.is_active ? '#4CAF50' : '#666' }}>
-                  {status.is_active ? '有効' : '無効'}
-                </span>
-              </label>
+            <div style={{ fontSize: '16px', fontWeight: '500' }}>{status.name}</div>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <input
+                type="checkbox"
+                checked={status.is_active}
+                onChange={() => toggleStatusActive(status.id, status.is_active)}
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  cursor: 'pointer',
+                  accentColor: '#4CAF50'
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
               <button
                 onClick={() => openEditModal(status)}
                 style={{
-                  padding: '5px 15px',
+                  padding: '6px 12px',
                   backgroundColor: '#2196F3',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '3px',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '13px'
                 }}
               >
                 編集
               </button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
               <button
                 onClick={() => deleteStatus(status.id)}
                 style={{
-                  padding: '5px 15px',
+                  padding: '6px 12px',
                   backgroundColor: '#ff4444',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '3px',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '13px'
                 }}
               >
                 削除
