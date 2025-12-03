@@ -92,14 +92,15 @@ body.modal-open {
 }
 
 .table.empty {
-  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-  color: #2e7d32;
-  border: 2px dashed #81c784;
+  background: #ffffff;
+  color: #86868b;
+  border: 1px solid #e0e0e0;
 }
 
 .table.occupied {
-  background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
-  border-left: 4px solid #007AFF;
+  background: linear-gradient(135deg, #fff0f5 0%, #ffe4ec 100%);
+  border-left: 4px solid #FF6B9D;
+  color: #1d1d1f;
 }
 
 .table:hover {
@@ -140,11 +141,11 @@ body.modal-open {
 }
 
 .empty {
-  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  background: #ffffff;
 }
 
 .occupied {
-  background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+  background: linear-gradient(135deg, #fff0f5 0%, #ffe4ec 100%);
 }
 
 /* ヘッダー - 薄緑デザイン */
