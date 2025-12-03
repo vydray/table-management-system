@@ -92,19 +92,17 @@ body.modal-open {
 }
 
 .table.empty {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: #ffffff;
   color: #86868b;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .table.occupied {
-  background: rgba(0, 122, 255, 0.15);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: #ffffff;
   color: #1d1d1f;
-  border: 1px solid rgba(0, 122, 255, 0.3);
+  border: none;
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.2);
 }
 
 .table:hover {
@@ -145,11 +143,11 @@ body.modal-open {
 }
 
 .empty {
-  background: rgba(255, 255, 255, 0.7);
+  background: #ffffff;
 }
 
 .occupied {
-  background: rgba(0, 122, 255, 0.15);
+  background: #ffffff;
 }
 
 /* ヘッダー - 青デザイン */
