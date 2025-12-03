@@ -15,44 +15,25 @@ VALUES ('新店舗名', 'NEW_STORE');
 
 追加後、`store_id` を確認しておく（以降の設定で使用）。
 
-### 1.2 ユーザー作成（vi-admin 店舗管理ページで自動作成可能）
-
-→ **vi-admin の店舗管理ページ（/stores）で店舗追加時に自動作成されます**
-
-店舗追加時に以下のユーザーを同時に作成：
-
-| ユーザー種別 | テーブル | パスワード保存方式 | 必須 |
-|------------|---------|------------------|------|
-| POSユーザー | `users` | 平文 | 必須 |
-| vi-adminユーザー | `admin_users` | bcryptハッシュ | 任意 |
-
-**注意**:
-- POSパスワードは平文保存（POSシステムの仕様）
-- vi-adminパスワードはbcryptハッシュ化
-- 作成後は「ユーザー」ボタンからID/PASS確認・編集可能
-
-### 1.3 store_line_configsテーブル
+### 1.2 store_line_configsテーブル
 
 → **vi-admin の LINE設定ページで設定可能**（後述のMessaging API設定後）
 
-### 1.4 attendance_statuses（勤怠ステータス）
-
-→ **vi-admin の勤怠管理ページ（/attendance）で設定可能**
-
-デフォルトで使用できるステータス例:
-- 出勤、遅刻、早退、リクエスト出勤（時間入力あり）
-- 当日欠勤、事前欠勤、公休（時間入力なし）
-
-### 1.5 RLS設定（新テーブル作成時のみ）
+### 1.3 RLS設定（新テーブル作成時のみ）
 
 新しいテーブルを作成した場合は、RLSポリシーを追加：
 
 ```sql
 ALTER TABLE [新テーブル名] ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "allow_all_access" ON [新テーブル名]
-FOR ALL USING (true) WITH CHECK (true);
+-- store_id カラムがあるテーブルの場合
+CREATE POLICY "[テーブル名]_all_own_store" ON [新テーブル名]
+FOR ALL USING (
+  store_id = (auth.jwt() -> 'app_metadata' ->> 'store_id')::integer
+);
 ```
+
+※ 既存テーブルのRLSポリシーは `RLS_APPLY.sql` で一括管理されています。
 
 ---
 
@@ -230,30 +211,19 @@ if (context && context.liffId === liffId3) {
 |------|-----|
 | LINE Developers Console | https://developers.line.biz/ |
 | LINE Official Account Manager | https://manager.line.biz/ |
-| vi-admin 店舗管理 | https://vi-admin-vydray.vercel.app/stores |
 | vi-admin LINE設定 | https://vi-admin-vydray.vercel.app/line-settings |
-| vi-admin 勤怠管理 | https://vi-admin-vydray.vercel.app/attendance |
 | Vercel Dashboard | https://vercel.com/dashboard |
 | Supabase Dashboard | https://supabase.com/dashboard |
 
 ### 店舗ごとに設定が必要なもの
 
-1. **vi-admin 店舗管理**: 店舗追加 + POS/vi-adminユーザー作成
+1. **データベース**: storesテーブルに店舗追加
 2. **LINE Developers**: Messaging APIチャンネル作成
 3. **LINE Developers**: LINE ログインチャンネル + LIFF作成
 4. **LINE Official Account Manager**: リッチメニュー作成
 5. **Vercel環境変数**: LIFF ID追加
-6. **vi-admin LINE設定**: LINE連携設定
-7. **vi-admin 勤怠管理**: 勤怠ステータス設定（任意）
-8. **コード**: LIFF判定ロジック追加（デプロイ）
-
-### デフォルト時間設定
-
-| 機能 | デフォルト時間 |
-|------|--------------|
-| シフト提出（LINE Bot/Web） | 18:00〜24:00 |
-| シフト管理（vi-admin/Web） | 18:00〜24:00 |
-| 勤怠管理（vi-admin） | 18:00〜24:00 |
+6. **vi-admin**: LINE設定ページで設定
+7. **コード**: LIFF判定ロジック追加（デプロイ）
 
 ---
 
@@ -262,6 +232,3 @@ if (context && context.liffId === liffId3) {
 | 日付 | 変更内容 |
 |------|----------|
 | 2025-11-30 | 初版作成 |
-| 2025-12-01 | vi-admin店舗管理でPOS/vi-adminユーザー自動作成機能追加 |
-| 2025-12-01 | 勤怠ステータス設定機能追加（当日欠勤など） |
-| 2025-12-01 | デフォルト時間を18:00〜24:00に統一 |

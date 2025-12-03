@@ -43,7 +43,7 @@ export const supabase = new Proxy({} as SupabaseClient, {
 
 // Server-side client with service role key (for API routes)
 export function getSupabaseServerClient(): SupabaseClient {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_KEY
-  if (!serviceRoleKey) throw new Error('SUPABASE_SERVICE_KEY is not defined')
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceRoleKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not defined')
   return createClient(getSupabaseUrl(), serviceRoleKey)
 }
