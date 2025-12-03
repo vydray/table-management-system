@@ -102,8 +102,7 @@ export default function CastManagement() {
     }}>
       {/* 固定ヘッダー部分 */}
       <div style={{ flexShrink: 0, padding: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>キャスト管理</h2>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '20px' }}>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
               onClick={() => openNewCastModal({
