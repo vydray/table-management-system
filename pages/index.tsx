@@ -853,7 +853,7 @@ const finishCheckout = () => {
   return (
     <>
       <Head>
-        <title>📋 テーブル管理システム</title>
+        <title>テーブル管理</title>
       </Head>
 
       <div id="layout" className="responsive-layout" onClick={(e) => {
@@ -880,9 +880,9 @@ const finishCheckout = () => {
     left: '220px',
     top: '50%',
     transform: 'translateY(-50%)',
-    fontWeight: 'bold',
+    fontWeight: '600',
     fontSize: '44px',
-    color: attendingCastCount - occupiedTableCount > 0 ? '#4CAF50' : '#F44336',
+    color: attendingCastCount - occupiedTableCount > 0 ? '#34C759' : '#FF3B30',
     zIndex: 100
   }}>
     {attendingCastCount - occupiedTableCount}
@@ -907,101 +907,107 @@ const finishCheckout = () => {
     }}
   >
     {!showBusinessDaySummary ? (
-      <span>📋 テーブル管理システム</span>
+      <span style={{ color: '#1d1d1f' }}>テーブル管理</span>
     ) : businessDaySummary ? (
-      <div style={{ fontSize: '52px', lineHeight: '1.3' }}>
-        <div style={{ fontWeight: 'bold', color: '#FF9800' }}>
+      <div style={{ fontSize: '48px', lineHeight: '1.4' }}>
+        <div style={{ fontWeight: '600', color: '#007AFF' }}>
           総売上: ¥{businessDaySummary.totalSales.toLocaleString()}
         </div>
-        <div style={{ fontWeight: 'bold', color: '#FF9800' }}>
+        <div style={{ fontWeight: '600', color: '#007AFF' }}>
           組数: {businessDaySummary.orderCount}組
         </div>
       </div>
     ) : (
-      <span>📋 テーブル管理システム</span>
+      <span style={{ color: '#1d1d1f' }}>テーブル管理</span>
     )}
   </div>
 
   <span style={{
     position: 'absolute',
-    right: '20px',
+    right: '30px',
     top: '50%',
     transform: 'translateY(-50%)',
-    fontSize: '44px',
-    fontFamily: 'monospace',
-    fontWeight: 'bold'
+    fontSize: '42px',
+    fontFamily: '-apple-system, BlinkMacSystemFont, monospace',
+    fontWeight: '500',
+    color: '#1d1d1f',
+    letterSpacing: '-1px'
   }}>
     {currentTime}
   </span>
 </div>
 
-{/* ⭐ ページ切り替え矢印のみ（右側中央） */}
+{/* ページ切り替え - Apple風 */}
         {maxPageNumber > 1 && (
           <div style={{
             position: 'fixed',
-            right: '10px',
+            right: '15px',
             top: '50%',
             transform: 'translateY(-50%)',
             zIndex: 100,
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px',
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            padding: '10px',
-            borderRadius: '10px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+            gap: '12px',
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            padding: '14px',
+            borderRadius: '16px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
           }}>
-            {/* 左矢印（前のページへ） */}
+            {/* 前のページへ */}
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
               style={{
-                width: '45px',
-                height: '45px',
-                backgroundColor: currentPage === 1 ? '#ccc' : '#FF9800',
+                width: '48px',
+                height: '48px',
+                backgroundColor: currentPage === 1 ? '#e5e5ea' : '#007AFF',
                 color: 'white',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '12px',
                 cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                fontSize: '20px',
+                fontSize: '18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: currentPage === 1 ? 0.5 : 1,
-                transition: 'all 0.3s ease'
+                transition: 'all 0.2s ease',
+                boxShadow: currentPage === 1 ? 'none' : '0 2px 8px rgba(0, 122, 255, 0.3)'
               }}
             >
               ◀
             </button>
-            
-            {/* 現在のページ表示（オプション） */}
+
+            {/* 現在のページ表示 */}
             <div style={{
               textAlign: 'center',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              color: '#FF9800'
+              fontSize: '15px',
+              fontWeight: '600',
+              color: '#1d1d1f'
             }}>
               {currentPage}/{maxPageNumber}
             </div>
-            
-            {/* 右矢印（次のページへ） */}
+
+            {/* 次のページへ */}
             <button
               onClick={() => setCurrentPage(Math.min(maxPageNumber, currentPage + 1))}
               disabled={currentPage === maxPageNumber}
               style={{
-                width: '45px',
-                height: '45px',
-                backgroundColor: currentPage === maxPageNumber ? '#ccc' : '#FF9800',
+                width: '48px',
+                height: '48px',
+                backgroundColor: currentPage === maxPageNumber ? '#e5e5ea' : '#007AFF',
                 color: 'white',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '12px',
                 cursor: currentPage === maxPageNumber ? 'not-allowed' : 'pointer',
-                fontSize: '20px',
+                fontSize: '18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: currentPage === maxPageNumber ? 0.5 : 1,
-                transition: 'all 0.3s ease'
+                transition: 'all 0.2s ease',
+                boxShadow: currentPage === maxPageNumber ? 'none' : '0 2px 8px rgba(0, 122, 255, 0.3)'
               }}
             >
               ▶
@@ -1086,20 +1092,25 @@ const finishCheckout = () => {
             alignItems: 'center',
             justifyContent: 'space-between',
             margin: 0,
-            padding: window.innerWidth <= 1024 ? '12px 15px' : '20px',
-            background: '#ff9800',
+            padding: window.innerWidth <= 1024 ? '14px 18px' : '22px 28px',
+            background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
             color: 'white',
-            fontSize: window.innerWidth <= 1024 ? '16px' : '20px'
+            fontSize: window.innerWidth <= 1024 ? '17px' : '21px',
+            fontWeight: '600',
+            letterSpacing: '-0.3px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              📌 {currentTable} の操作
+              {currentTable} の操作
               {modalMode === 'edit' && (
                 <span style={{
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  color: '#000'
+                  fontSize: '17px',
+                  fontWeight: '600',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  padding: '6px 14px',
+                  borderRadius: '20px'
                 }}>
-                  滞在時間: {tables[currentTable]?.elapsed || '0分'}
+                  滞在: {tables[currentTable]?.elapsed || '0分'}
                 </span>
               )}
             </div>
@@ -1471,25 +1482,28 @@ const finishCheckout = () => {
                 </div>
               </div>
 
-              {/* 会計伝票印刷ボタン */}
+              {/* 会計伝票印刷ボタン - Apple風 */}
               {orderItems.length > 0 && (
                 <button
                   onClick={printOrderSlip}
                   style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#2196f3',
+                    padding: '10px 18px',
+                    backgroundColor: '#007AFF',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '5px',
+                    borderRadius: '10px',
                     fontSize: '14px',
+                    fontWeight: '600',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '5px',
-                    whiteSpace: 'nowrap'
+                    gap: '6px',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 8px rgba(0, 122, 255, 0.3)',
+                    transition: 'all 0.2s ease'
                   }}
                 >
-                  🖨️ 会計伝票印刷
+                  会計伝票印刷
                 </button>
               )}
             </div>
@@ -1572,15 +1586,15 @@ const finishCheckout = () => {
                   推し:
                 </label>
 
-                {/* 50音フィルターボタン */}
+                {/* 50音フィルターボタン - Apple風 */}
                 <div style={{
                   display: 'flex',
-                  gap: '5px',
+                  gap: '6px',
                   flexWrap: 'wrap',
-                  marginBottom: '10px',
-                  padding: '10px',
-                  backgroundColor: '#f5f5f5',
-                  borderRadius: '8px'
+                  marginBottom: '12px',
+                  padding: '12px',
+                  backgroundColor: '#f5f5f7',
+                  borderRadius: '12px'
                 }}>
                   {['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ', 'その他'].map(kana => (
                     <button
@@ -1588,15 +1602,17 @@ const finishCheckout = () => {
                       type="button"
                       onClick={() => setCastFilter(kana === '全' ? '' : kana)}
                       style={{
-                        padding: '8px 12px',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        backgroundColor: castFilter === (kana === '全' ? '' : kana) ? '#FF9800' : 'white',
-                        color: castFilter === (kana === '全' ? '' : kana) ? 'white' : '#333',
-                        border: '2px solid #FF9800',
-                        borderRadius: '6px',
+                        padding: '10px 14px',
+                        fontSize: '15px',
+                        fontWeight: '600',
+                        backgroundColor: castFilter === (kana === '全' ? '' : kana) ? '#007AFF' : 'white',
+                        color: castFilter === (kana === '全' ? '' : kana) ? 'white' : '#1d1d1f',
+                        border: 'none',
+                        borderRadius: '10px',
                         cursor: 'pointer',
-                        minWidth: '45px'
+                        minWidth: '48px',
+                        transition: 'all 0.2s ease',
+                        boxShadow: castFilter === (kana === '全' ? '' : kana) ? '0 2px 8px rgba(0, 122, 255, 0.3)' : '0 1px 3px rgba(0, 0, 0, 0.1)'
                       }}
                     >
                       {kana}
@@ -1604,17 +1620,17 @@ const finishCheckout = () => {
                   ))}
                 </div>
 
-                {/* カスタムリストボックス（スクロール可能） */}
+                {/* カスタムリストボックス - Apple風 */}
                 <div
                   className="hide-scrollbar"
                   style={{
                     width: '100%',
                     flex: 1,
                     minHeight: 0,
-                    border: '2px solid #ddd',
-                    borderRadius: '6px',
+                    border: 'none',
+                    borderRadius: '14px',
                     overflowY: 'auto',
-                    backgroundColor: 'white'
+                    backgroundColor: '#f5f5f7'
                   }}
                 >
                   {(() => {
@@ -1649,13 +1665,16 @@ const finishCheckout = () => {
                         <div
                           onClick={() => setFormData({ ...formData, castName: '' })}
                           style={{
-                            padding: '12px 15px',
-                            fontSize: '18px',
+                            padding: '14px 18px',
+                            margin: '4px 6px',
+                            fontSize: '17px',
+                            fontWeight: '500',
                             cursor: 'pointer',
-                            backgroundColor: formData.castName === '' ? '#FF9800' : 'white',
-                            color: formData.castName === '' ? 'white' : '#999',
-                            borderBottom: '1px solid #eee',
-                            fontStyle: formData.castName === '' ? 'normal' : 'italic'
+                            backgroundColor: formData.castName === '' ? '#007AFF' : 'white',
+                            color: formData.castName === '' ? 'white' : '#86868b',
+                            borderRadius: '10px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: formData.castName === '' ? '0 2px 8px rgba(0, 122, 255, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
                           }}
                         >
                           -- 推しを選択 --
@@ -1665,13 +1684,16 @@ const finishCheckout = () => {
                             key={name}
                             onClick={() => setFormData({ ...formData, castName: name })}
                             style={{
-                              padding: '12px 15px',
-                              fontSize: '18px',
+                              padding: '14px 18px',
+                              margin: '4px 6px',
+                              fontSize: '17px',
+                              fontWeight: '500',
                               cursor: 'pointer',
-                              backgroundColor: formData.castName === name ? '#FF9800' : 'white',
-                              color: formData.castName === name ? 'white' : '#333',
-                              borderBottom: '1px solid #eee',
-                              transition: 'background-color 0.2s'
+                              backgroundColor: formData.castName === name ? '#007AFF' : 'white',
+                              color: formData.castName === name ? 'white' : '#1d1d1f',
+                              borderRadius: '10px',
+                              transition: 'all 0.2s ease',
+                              boxShadow: formData.castName === name ? '0 2px 8px rgba(0, 122, 255, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
                             }}
                           >
                             {name}
