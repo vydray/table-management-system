@@ -88,306 +88,266 @@ export default function CastManagement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const gridColumns = '1fr 120px 100px 80px 70px'
+
   return (
-  <div style={{
-    backgroundColor: '#fff',
-    borderRadius: '10px',
-    padding: '20px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    paddingBottom: '100px',
-    position: 'relative'
-  }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>キャスト管理</h2>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={() => openNewCastModal({
-              id: 0,
-              store_id: 0,
-              name: '',
-              line_number: null,
-              twitter: null,
-              password: null,
-              instagram: null,
-              password2: null,
-              photo: null,
-              attributes: null,
-              is_writer: null,
-              submission_date: null,
-              back_number: null,
-              status: '体験',
-              sales_previous_day: null,
-              cast_point: null,
-              show_in_pos: false,
-              birthday: null,
-              created_at: null,
-              updated_at: null,
-              resignation_date: null,
-              attendance_certificate: null,
-              residence_record: null,
-              contract_documents: null,
-              submission_contract: null,
-              employee_name: null,
-              experience_date: null,
-              hire_date: null
-            })}
+    <div style={{
+      backgroundColor: '#fff',
+      borderRadius: '10px',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden'
+    }}>
+      {/* 固定ヘッダー部分 */}
+      <div style={{ flexShrink: 0, padding: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>キャスト管理</h2>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => openNewCastModal({
+                id: 0,
+                store_id: 0,
+                name: '',
+                line_number: null,
+                twitter: null,
+                password: null,
+                instagram: null,
+                password2: null,
+                photo: null,
+                attributes: null,
+                is_writer: null,
+                submission_date: null,
+                back_number: null,
+                status: '体験',
+                sales_previous_day: null,
+                cast_point: null,
+                show_in_pos: false,
+                birthday: null,
+                created_at: null,
+                updated_at: null,
+                resignation_date: null,
+                attendance_certificate: null,
+                residence_record: null,
+                contract_documents: null,
+                submission_contract: null,
+                employee_name: null,
+                experience_date: null,
+                hire_date: null
+              })}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#2196F3',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              新規追加
+            </button>
+            <button
+              onClick={openPositionModal}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#4CAF50',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              役職管理
+            </button>
+          </div>
+        </div>
+
+        {/* 検索バー */}
+        <div style={{ marginBottom: '20px' }}>
+          <input
+            type="text"
+            inputMode="text"
+            lang="ja"
+            placeholder="名前、役職、ステータスで検索..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             style={{
-              padding: '8px 16px',
-              backgroundColor: '#2196F3',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '6px',
+              width: '100%',
+              maxWidth: '400px',
+              padding: '10px 15px',
+              border: '1px solid #e5e5e7',
+              borderRadius: '8px',
               fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer'
+              outline: 'none'
             }}
-          >
-            新規追加
-          </button>
-          <button
-            onClick={openPositionModal}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#4CAF50',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer'
-            }}
-          >
-            役職管理
-          </button>
+          />
+        </div>
+
+        {/* テーブルヘッダー（固定） */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: gridColumns,
+          gap: '10px',
+          padding: '12px 16px',
+          backgroundColor: '#f0f0f0',
+          borderRadius: '8px 8px 0 0',
+          borderBottom: '2px solid #e0e0e0',
+          fontWeight: '600',
+          fontSize: '14px',
+          color: '#333'
+        }}>
+          <div>名前</div>
+          <div>役職</div>
+          <div>ステータス</div>
+          <div style={{ textAlign: 'center' }}>POS表示</div>
+          <div style={{ textAlign: 'center' }}>操作</div>
         </div>
       </div>
 
-      {/* 検索バー */}
-      <div style={{ marginBottom: '20px' }}>
-        <input
-          type="text"
-          inputMode="text"
-          lang="ja"
-          placeholder="名前、役職、ステータスで検索..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            width: '100%',
-            maxWidth: '400px',
-            padding: '10px 15px',
-            border: '1px solid #e5e5e7',
-            borderRadius: '8px',
-            fontSize: '14px',
-            outline: 'none'
-          }}
-        />
-      </div>
-
-      {/* キャスト一覧テーブル */}
-      <div style={{ 
-      backgroundColor: '#f8f8f8',
-      borderRadius: '8px',
-      padding: '1px'
-    }}>
-      <div style={{ 
-        // maxHeight: '600px', を削除
-        // overflowY: 'auto' を削除
+      {/* スクロール部分（キャストリスト） */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '0 20px 100px 20px'
       }}>
-        <table data-cast-table style={{ 
-          width: '100%',
-          borderCollapse: 'collapse',
-          backgroundColor: '#fff'
+        <div style={{
+          backgroundColor: '#fff',
+          borderRadius: '0 0 8px 8px',
+          border: '1px solid #e5e5e7',
+          borderTop: 'none'
         }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f0f0f0' }}>
-                <th style={{ 
-                  padding: '12px 16px',
-                  textAlign: 'left',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#333',
-                  backgroundColor: '#f0f0f0',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>名前</th>
-                <th style={{ 
-                  padding: '12px 16px',
-                  textAlign: 'left',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#333',
-                  backgroundColor: '#f0f0f0',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>役職</th>
-                <th style={{ 
-                  padding: '12px 16px',
-                  textAlign: 'left',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#333',
-                  backgroundColor: '#f0f0f0',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>ステータス</th>
-                <th style={{ 
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#333',
-                  backgroundColor: '#f0f0f0',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>POS表示</th>
-                <th style={{ 
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#333',
-                  backgroundColor: '#f0f0f0',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCasts.map((cast) => (
-                <tr key={cast.id} style={{ 
-                  borderBottom: '1px solid #e5e5e7',
-                  backgroundColor: '#fff'
+          {filteredCasts.map((cast, index) => (
+            <div
+              key={cast.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: gridColumns,
+                gap: '10px',
+                padding: '12px 16px',
+                borderBottom: index < filteredCasts.length - 1 ? '1px solid #e5e5e7' : 'none',
+                alignItems: 'center',
+                backgroundColor: '#fff'
+              }}
+            >
+              <div style={{ fontSize: '14px' }}>
+                {cast.name || '-'}
+                {cast.resignation_date && (
+                  <span style={{
+                    marginLeft: '8px',
+                    fontSize: '12px',
+                    color: '#666'
+                  }}>
+                    ({new Date(cast.resignation_date).toLocaleDateString('ja-JP')}退店)
+                  </span>
+                )}
+              </div>
+              <div>
+                <select
+                  value={cast.attributes || ''}
+                  onChange={(e) => handleUpdateCastPosition(cast, e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    border: '1px solid #e5e5e7',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    backgroundColor: '#fff',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="">未設定</option>
+                  {positions.map(pos => (
+                    <option key={pos.id} value={pos.name}>{pos.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <select
+                  value={cast.status || '在籍'}
+                  onChange={(e) => handleUpdateCastStatus(cast, e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    border: '1px solid #e5e5e7',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    backgroundColor: getStatusColor(cast.status),
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="在籍">在籍</option>
+                  <option value="体験">体験</option>
+                  <option value="退店">退店</option>
+                </select>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <label style={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  width: '51px',
+                  height: '31px',
+                  cursor: 'pointer'
                 }}>
-                  <td style={{ 
-                    padding: '12px 16px',
-                    fontSize: '14px'
+                  <input
+                    type="checkbox"
+                    checked={cast.show_in_pos || false}
+                    onChange={() => handleToggleCastShowInPos(cast)}
+                    style={{
+                      opacity: 0,
+                      width: 0,
+                      height: 0
+                    }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: cast.show_in_pos ? '#34c759' : '#e5e5e7',
+                    borderRadius: '34px',
+                    transition: 'background-color 0.3s',
+                    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)'
                   }}>
-                    {cast.name || '-'}
-                    {cast.resignation_date && (
-                      <span style={{
-                        marginLeft: '8px',
-                        fontSize: '12px',
-                        color: '#666'
-                      }}>
-                        ({new Date(cast.resignation_date).toLocaleDateString('ja-JP')}退店)
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ 
-                    padding: '12px 16px'
-                  }}>
-                    <select
-                      value={cast.attributes || ''}
-                      onChange={(e) => handleUpdateCastPosition(cast, e.target.value)}
-                      style={{
-                        width: '100%',
-                        maxWidth: '150px',
-                        padding: '6px 10px',
-                        border: '1px solid #e5e5e7',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        backgroundColor: '#fff',
-                        color: '#000',
-                        outline: 'none',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <option value="">未設定</option>
-                      {positions.map(pos => (
-                        <option key={pos.id} value={pos.name}>{pos.name}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td style={{
-                    padding: '12px 16px'
-                  }}>
-                    <select
-                      value={cast.status || '在籍'}
-                      onChange={(e) => handleUpdateCastStatus(cast, e.target.value)}
-                      style={{
-                        width: '100%',
-                        maxWidth: '120px',
-                        padding: '6px 10px',
-                        border: '1px solid #e5e5e7',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        backgroundColor: getStatusColor(cast.status),
-                        color: '#000',
-                        outline: 'none',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <option value="在籍">在籍</option>
-                      <option value="体験">体験</option>
-                      <option value="退店">退店</option>
-                    </select>
-                  </td>
-                  <td style={{ 
-                    padding: '12px 16px',
-                    textAlign: 'center'
-                  }}>
-                    <label style={{
-                      position: 'relative',
-                      display: 'inline-block',
-                      width: '51px',
-                      height: '31px',
-                      cursor: 'pointer'
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={cast.show_in_pos || false}
-                        onChange={() => handleToggleCastShowInPos(cast)}
-                        style={{
-                          opacity: 0,
-                          width: 0,
-                          height: 0
-                        }}
-                      />
-                      <span style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: cast.show_in_pos ? '#34c759' : '#e5e5e7',
-                        borderRadius: '34px',
-                        transition: 'background-color 0.3s',
-                        boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)'
-                      }}>
-                        <span style={{
-                          position: 'absolute',
-                          content: '',
-                          height: '27px',
-                          width: '27px',
-                          left: cast.show_in_pos ? '22px' : '2px',
-                          bottom: '2px',
-                          backgroundColor: 'white',
-                          borderRadius: '50%',
-                          transition: 'left 0.3s',
-                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                        }}></span>
-                      </span>
-                    </label>
-                  </td>
-                  <td style={{ 
-                    padding: '12px 16px',
-                    textAlign: 'center'
-                  }}>
-                    <button
-                      onClick={() => openEditModal(cast)}
-                      style={{
-                        padding: '6px 16px',
-                        backgroundColor: '#007aff',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      編集
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <span style={{
+                      position: 'absolute',
+                      content: '',
+                      height: '27px',
+                      width: '27px',
+                      left: cast.show_in_pos ? '22px' : '2px',
+                      bottom: '2px',
+                      backgroundColor: 'white',
+                      borderRadius: '50%',
+                      transition: 'left 0.3s',
+                      boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                    }}></span>
+                  </span>
+                </label>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  onClick={() => openEditModal(cast)}
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: '#007aff',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  編集
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -418,18 +378,18 @@ export default function CastManagement() {
               maxWidth: '400px'
             }}
           >
-            <h3 style={{ 
-              fontSize: '18px', 
-              fontWeight: 'bold', 
-              marginBottom: '20px' 
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: 'bold',
+              marginBottom: '20px'
             }}>
               退店日の設定
             </h3>
-            
+
             <p style={{ marginBottom: '20px', color: '#666' }}>
               {retirementCast.name}さんの退店日を設定してください
             </p>
-            
+
             <input
               type="date"
               value={retirementDate}
@@ -443,11 +403,11 @@ export default function CastManagement() {
                 marginBottom: '20px'
               }}
             />
-            
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'flex-end', 
-              gap: '12px' 
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '12px'
             }}>
               <button
                 onClick={closeRetirementModal}
@@ -513,14 +473,14 @@ export default function CastManagement() {
               overflowY: 'auto'
             }}
           >
-            <h3 style={{ 
-              fontSize: '18px', 
-              fontWeight: 'bold', 
-              marginBottom: '20px' 
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: 'bold',
+              marginBottom: '20px'
             }}>
               役職管理
             </h3>
-            
+
             <div style={{ marginBottom: '20px' }}>
               <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                 <input
@@ -553,7 +513,7 @@ export default function CastManagement() {
                   追加
                 </button>
               </div>
-              
+
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {positions.map((pos) => (
                   <div key={pos.id} style={{
@@ -583,11 +543,11 @@ export default function CastManagement() {
               </div>
             </div>
 
-            <div style={{ 
-              marginTop: '24px', 
-              display: 'flex', 
-              justifyContent: 'flex-end', 
-              gap: '12px' 
+            <div style={{
+              marginTop: '24px',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '12px'
             }}>
               <button
                 onClick={closePositionModal}
@@ -638,14 +598,14 @@ export default function CastManagement() {
               overflowY: 'auto'
             }}
           >
-            <h3 style={{ 
-              fontSize: '18px', 
-              fontWeight: 'bold', 
-              marginBottom: '20px' 
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: 'bold',
+              marginBottom: '20px'
             }}>
               {isNewCast ? '新規キャスト追加' : 'キャスト編集'}
             </h3>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={{
@@ -723,11 +683,11 @@ export default function CastManagement() {
               </div>
 
               <div>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  marginBottom: '4px' 
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  marginBottom: '4px'
                 }}>
                   誕生日（4桁: 例 0401）
                 </label>
@@ -753,11 +713,11 @@ export default function CastManagement() {
               </div>
 
               <div>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  marginBottom: '4px' 
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  marginBottom: '4px'
                 }}>
                   体験入店日
                 </label>
@@ -776,11 +736,11 @@ export default function CastManagement() {
               </div>
 
               <div>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  marginBottom: '4px' 
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  marginBottom: '4px'
                 }}>
                   本入店日
                 </label>
@@ -799,11 +759,11 @@ export default function CastManagement() {
               </div>
 
               <div>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  marginBottom: '4px' 
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  marginBottom: '4px'
                 }}>
                   役職
                 </label>
@@ -834,11 +794,11 @@ export default function CastManagement() {
               </div>
 
               <div>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  marginBottom: '4px' 
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  marginBottom: '4px'
                 }}>
                   ステータス
                 </label>
@@ -869,11 +829,11 @@ export default function CastManagement() {
 
               {editingCast.status === '退店' && (
                 <div>
-                  <label style={{ 
-                    display: 'block', 
-                    fontSize: '14px', 
-                    fontWeight: '500', 
-                    marginBottom: '4px' 
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    marginBottom: '4px'
                   }}>
                     退店日
                   </label>
@@ -905,11 +865,11 @@ export default function CastManagement() {
               </div>
             </div>
 
-            <div style={{ 
-              marginTop: '24px', 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              gap: '12px' 
+            <div style={{
+              marginTop: '24px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: '12px'
             }}>
               <div>
                 {!isNewCast && editingCast?.id && (
