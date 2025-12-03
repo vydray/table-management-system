@@ -171,10 +171,15 @@ export const useAttendanceData = () => {
     try {
       const storeId = getCurrentStoreId()
 
-      // 1. 当日のシフトを取得
+      // 1. 当日のシフトを取得（cast_idとcastsテーブルをjoin）
       const { data: shifts, error: shiftsError } = await supabase
         .from('shifts')
-        .select('cast_name, start_time, end_time')
+        .select(`
+          cast_id,
+          start_time,
+          end_time,
+          casts!inner(name)
+        `)
         .eq('store_id', storeId)
         .eq('date', selectedDate)
 
@@ -194,9 +199,12 @@ export const useAttendanceData = () => {
 
       if (attendanceError) throw attendanceError
 
-      // 3. 既存の勤怠がある人を除外
+      // 3. 既存の勤怠がある人を除外（cast_nameで比較）
       const existingCastNames = new Set(existingAttendance?.map(a => a.cast_name) || [])
-      const newShifts = shifts.filter(s => !existingCastNames.has(s.cast_name))
+      const newShifts = shifts.filter(s => {
+        const castName = (s.casts as { name: string })?.name
+        return castName && !existingCastNames.has(castName)
+      })
 
       if (newShifts.length === 0) {
         alert('登録済みでないシフトがありません')
@@ -206,7 +214,7 @@ export const useAttendanceData = () => {
       // 4. 新しい勤怠データを追加
       const newRows: AttendanceRow[] = newShifts.map((shift, i) => ({
         id: `new-bulk-${Date.now()}-${i}`,
-        cast_name: shift.cast_name,
+        cast_name: (shift.casts as { name: string })?.name || '',
         check_in_time: shift.start_time ? shift.start_time.slice(0, 5) : '',
         check_out_time: '',
         status: '出勤',
