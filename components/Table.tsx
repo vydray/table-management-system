@@ -41,8 +41,12 @@ export const Table: FC<TableProps> = ({
     }
     
     // 振動フィードバック（Android対応）
-    if ('vibrate' in navigator) {
-      navigator.vibrate(10); // 10ms振動
+    try {
+      if ('vibrate' in navigator) {
+        navigator.vibrate(10); // 10ms振動
+      }
+    } catch {
+      // ブラウザで振動が許可されていない場合は無視
     }
     
     setStartPos({ x, y, time: Date.now() })
@@ -52,8 +56,12 @@ export const Table: FC<TableProps> = ({
         if (!isLongPress.current) {
           isLongPress.current = true
           // 長押し成功時も振動
-          if ('vibrate' in navigator) {
-            navigator.vibrate(50); // 50ms振動
+          try {
+            if ('vibrate' in navigator) {
+              navigator.vibrate(50); // 50ms振動
+            }
+          } catch {
+            // ブラウザで振動が許可されていない場合は無視
           }
           onStartMoveMode(tableId)
         }
@@ -108,10 +116,10 @@ export const Table: FC<TableProps> = ({
         height: `${tableSize.height}px`,
         padding: `${5 * scale}px`,
         borderRadius: `${16 * scale}px`,
-        fontSize: `${20 * scale}px`
+        fontSize: `${20 * scale}px`,
+        touchAction: 'manipulation'
       }}
       onTouchStart={(e) => {
-        e.preventDefault()
         const touch = e.touches[0]
         handleStart(touch.clientX, touch.clientY)
       }}
@@ -119,8 +127,7 @@ export const Table: FC<TableProps> = ({
         const touch = e.touches[0]
         handleMove(touch.clientX, touch.clientY)
       }}
-      onTouchEnd={(e) => {
-        e.preventDefault()
+      onTouchEnd={() => {
         handleEnd()
       }}
       onMouseDown={(e) => {
