@@ -165,6 +165,83 @@ export const useAttendanceData = () => {
     }
   }
 
+  // 当日シフトから一括登録
+  const bulkRegisterFromShifts = async (selectedDate: string) => {
+    setLoading(true)
+    try {
+      const storeId = getCurrentStoreId()
+
+      // 1. 当日のシフトを取得
+      const { data: shifts, error: shiftsError } = await supabase
+        .from('shifts')
+        .select('cast_name, start_time, end_time')
+        .eq('store_id', storeId)
+        .eq('date', selectedDate)
+
+      if (shiftsError) throw shiftsError
+
+      if (!shifts || shifts.length === 0) {
+        alert('本日のシフトデータがありません')
+        return
+      }
+
+      // 2. 既存の勤怠データを取得
+      const { data: existingAttendance, error: attendanceError } = await supabase
+        .from('attendance')
+        .select('cast_name')
+        .eq('store_id', storeId)
+        .eq('date', selectedDate)
+
+      if (attendanceError) throw attendanceError
+
+      // 3. 既存の勤怠がある人を除外
+      const existingCastNames = new Set(existingAttendance?.map(a => a.cast_name) || [])
+      const newShifts = shifts.filter(s => !existingCastNames.has(s.cast_name))
+
+      if (newShifts.length === 0) {
+        alert('登録済みでないシフトがありません')
+        return
+      }
+
+      // 4. 新しい勤怠データを追加
+      const newRows: AttendanceRow[] = newShifts.map((shift, i) => ({
+        id: `new-bulk-${Date.now()}-${i}`,
+        cast_name: shift.cast_name,
+        check_in_time: shift.start_time ? shift.start_time.slice(0, 5) : '',
+        check_out_time: '',
+        status: '出勤',
+        late_minutes: 0,
+        break_minutes: 0,
+        daily_payment: 0
+      }))
+
+      // 既存の空でない行 + 新しい行
+      const existingValidRows = attendanceRows.filter(row => row.cast_name)
+      const emptyRowsNeeded = Math.max(0, 5 - existingValidRows.length - newRows.length)
+      const emptyRows: AttendanceRow[] = []
+      for (let i = 0; i < emptyRowsNeeded; i++) {
+        emptyRows.push({
+          id: `new-empty-${Date.now()}-${i}`,
+          cast_name: '',
+          check_in_time: '',
+          check_out_time: '',
+          status: '未設定',
+          late_minutes: 0,
+          break_minutes: 0,
+          daily_payment: 0
+        })
+      }
+
+      setAttendanceRows([...existingValidRows, ...newRows, ...emptyRows])
+      alert(`${newRows.length}人のシフトを追加しました（保存ボタンで確定）`)
+    } catch (error) {
+      console.error('Error bulk registering:', error)
+      alert('一括登録に失敗しました')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // 行を削除
   const deleteRow = async (index: number, selectedDate: string) => {
     const row = attendanceRows[index]
@@ -208,6 +285,7 @@ export const useAttendanceData = () => {
     loadAttendance,
     saveAttendance,
     deleteRow,
-    initializeRows
+    initializeRows,
+    bulkRegisterFromShifts
   }
 }

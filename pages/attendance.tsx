@@ -35,7 +35,8 @@ export default function Attendance() {
     loadCasts,
     loadAttendance,
     saveAttendance,
-    deleteRow: deleteRowFromDB
+    deleteRow: deleteRowFromDB,
+    bulkRegisterFromShifts
   } = useAttendanceData()
 
   // カスタムフック - 行管理
@@ -949,31 +950,61 @@ export default function Attendance() {
             flexShrink: 0,
             boxShadow: '0 -2px 8px rgba(0,0,0,0.1)'
           }}>
-          <button
-            onClick={addRow}
-            style={{
-              padding: '12px 28px',
-              backgroundColor: 'white',
-              border: '2px solid #FF9800',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: '#FF9800',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#FFF3E0'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'white'
-            }}
-          >
-            <span style={{ fontSize: '20px' }}>+</span> 行を追加
-          </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => bulkRegisterFromShifts(selectedDate)}
+              disabled={loading}
+              style={{
+                padding: '12px 20px',
+                backgroundColor: 'white',
+                border: '2px solid #4CAF50',
+                borderRadius: '5px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#4CAF50',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+                opacity: loading ? 0.7 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) e.currentTarget.style.backgroundColor = '#E8F5E9'
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) e.currentTarget.style.backgroundColor = 'white'
+              }}
+            >
+              📋 シフトから一括登録
+            </button>
+
+            <button
+              onClick={addRow}
+              style={{
+                padding: '12px 28px',
+                backgroundColor: 'white',
+                border: '2px solid #FF9800',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#FF9800',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#FFF3E0'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'white'
+              }}
+            >
+              <span style={{ fontSize: '20px' }}>+</span> 行を追加
+            </button>
+          </div>
 
           <button
             onClick={handleSave}
