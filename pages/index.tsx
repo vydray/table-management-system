@@ -189,14 +189,14 @@ export default function Home() {
       const storeId = getCurrentStoreId()
 
       // 営業日開始時刻を取得
-      const { data: settingData } = await supabase
+      const { data: settingData, error: settingError } = await supabase
         .from('system_settings')
         .select('setting_value')
         .eq('setting_key', 'business_day_start_hour')
         .eq('store_id', storeId)
         .single()
 
-      const businessDayStartHour = settingData ? parseInt(settingData.setting_value) : 5
+      const businessDayStartHour = (!settingError && settingData) ? parseInt(settingData.setting_value) : 5
 
       // 今日の営業日範囲を計算
       const today = new Date()

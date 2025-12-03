@@ -20,14 +20,14 @@ export const useSystemSettings = () => {
       const storeId = getCurrentStoreId()
 
       // 営業日開始時刻を取得
-      const { data: businessDayData } = await supabase
+      const { data: businessDayData, error: businessDayError } = await supabase
         .from('system_settings')
         .select('setting_value')
         .eq('store_id', storeId)
         .eq('setting_key', 'business_day_start_hour')
         .single()
 
-      if (businessDayData) {
+      if (!businessDayError && businessDayData) {
         setBusinessDayStartHour(Number(businessDayData.setting_value))
       }
 

@@ -20,18 +20,18 @@ export const useReportSettings = () => {
   const loadBusinessDayStartHour = async () => {
     try {
       const storeId = getCurrentStoreId()
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('system_settings')
         .select('setting_value')
         .eq('store_id', storeId)
         .eq('setting_key', 'business_day_start_hour')
         .single()
 
-      if (data) {
+      if (!error && data) {
         setBusinessDayStartHour(Number(data.setting_value))
       }
-    } catch (error) {
-      console.error('Error loading business day start hour:', error)
+    } catch {
+      // エラー時はデフォルト値を使用
     }
   }
 
