@@ -53,6 +53,11 @@ export default function CastManagement() {
     setSearchTerm,
     statusFilter,
     setStatusFilter,
+    positionFilter,
+    setPositionFilter,
+    posFilter,
+    setPosFilter,
+    positionOptions,
     filteredCasts
   } = useCastSearch(casts)
 
@@ -178,36 +183,70 @@ export default function CastManagement() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
-              width: '100%',
-              maxWidth: '300px',
-              padding: '10px 15px',
+              flex: 1,
+              minWidth: '150px',
+              maxWidth: '250px',
+              padding: '8px 12px',
               border: '1px solid #e5e5e7',
               borderRadius: '8px',
               fontSize: '14px',
               outline: 'none'
             }}
           />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {['all', '在籍', '体験', '退店'].map((status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  borderRadius: '20px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  backgroundColor: statusFilter === status ? '#2196F3' : '#f0f0f0',
-                  color: statusFilter === status ? '#fff' : '#666',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {status === 'all' ? '全て' : status}
-              </button>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #e5e5e7',
+              borderRadius: '8px',
+              fontSize: '14px',
+              backgroundColor: '#fff',
+              cursor: 'pointer',
+              minWidth: '100px'
+            }}
+          >
+            <option value="all">ステータス</option>
+            <option value="在籍">在籍</option>
+            <option value="体験">体験</option>
+            <option value="退店">退店</option>
+          </select>
+          <select
+            value={positionFilter}
+            onChange={(e) => setPositionFilter(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #e5e5e7',
+              borderRadius: '8px',
+              fontSize: '14px',
+              backgroundColor: '#fff',
+              cursor: 'pointer',
+              minWidth: '100px'
+            }}
+          >
+            <option value="all">役職</option>
+            <option value="none">未設定</option>
+            {positionOptions.map(pos => (
+              <option key={pos} value={pos}>{pos}</option>
             ))}
-          </div>
+          </select>
+          <select
+            value={posFilter}
+            onChange={(e) => setPosFilter(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #e5e5e7',
+              borderRadius: '8px',
+              fontSize: '14px',
+              backgroundColor: '#fff',
+              cursor: 'pointer',
+              minWidth: '100px'
+            }}
+          >
+            <option value="all">POS表示</option>
+            <option value="on">ON</option>
+            <option value="off">OFF</option>
+          </select>
         </div>
 
         {/* テーブルヘッダー（固定） */}
