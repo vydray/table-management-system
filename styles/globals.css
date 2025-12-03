@@ -92,8 +92,9 @@ body.modal-open {
 }
 
 .table.empty {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  color: #86868b;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  color: #2e7d32;
+  border: 2px dashed #81c784;
 }
 
 .table.occupied {
@@ -139,25 +140,25 @@ body.modal-open {
 }
 
 .empty {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
 }
 
 .occupied {
   background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
 }
 
-/* ヘッダー - Apple風デザイン */
+/* ヘッダー - 薄緑デザイン */
 .header {
   position: absolute;
   top: 0;
   left: 0;
   width: 2176px;
   height: 160px;
-  background: rgba(255, 255, 255, 0.72);
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   text-align: center;
   line-height: 160px;
   font-size: 56px;
