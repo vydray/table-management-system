@@ -55,7 +55,8 @@ export default function AttendanceStatus() {
 
   return (
   <div style={{
-    position: 'relative'
+    position: 'relative',
+    paddingBottom: '100px'
   }}>
     <div style={{
       display: 'flex',
