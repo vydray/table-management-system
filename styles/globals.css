@@ -98,8 +98,8 @@ body.modal-open {
 }
 
 .table.occupied {
-  background: linear-gradient(135deg, #fff0f5 0%, #ffe4ec 100%);
-  border-left: 4px solid #FF6B9D;
+  background: linear-gradient(135deg, #e8f4ff 0%, #d4e8ff 100%);
+  border-left: 4px solid #007AFF;
   color: #1d1d1f;
 }
 
@@ -145,7 +145,7 @@ body.modal-open {
 }
 
 .occupied {
-  background: linear-gradient(135deg, #fff0f5 0%, #ffe4ec 100%);
+  background: linear-gradient(135deg, #e8f4ff 0%, #d4e8ff 100%);
 }
 
 /* ヘッダー - 青デザイン */
