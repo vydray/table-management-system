@@ -189,8 +189,9 @@ body.modal-open {
   left: 50px;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.05);
-  border: none;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   padding: 18px;
   font-size: 48px;
@@ -203,12 +204,13 @@ body.modal-open {
 
 .menu-button:hover {
   transform: translateY(-50%) scale(1.02);
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .menu-button:active {
   transform: translateY(-50%) scale(0.98);
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(240, 240, 240, 0.95);
 }
 
 /* サイドメニュー - Apple風 */
