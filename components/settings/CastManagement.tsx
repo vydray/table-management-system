@@ -51,6 +51,8 @@ export default function CastManagement() {
   const {
     searchTerm,
     setSearchTerm,
+    statusFilter,
+    setStatusFilter,
     filteredCasts
   } = useCastSearch(casts)
 
@@ -166,18 +168,18 @@ export default function CastManagement() {
           </div>
         </div>
 
-        {/* 検索バー */}
-        <div style={{ marginBottom: '20px' }}>
+        {/* 検索バー + フィルター */}
+        <div style={{ marginBottom: '20px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             type="text"
             inputMode="text"
             lang="ja"
-            placeholder="名前、役職、ステータスで検索..."
+            placeholder="名前、役職で検索..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
               width: '100%',
-              maxWidth: '400px',
+              maxWidth: '300px',
               padding: '10px 15px',
               border: '1px solid #e5e5e7',
               borderRadius: '8px',
@@ -185,6 +187,27 @@ export default function CastManagement() {
               outline: 'none'
             }}
           />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {['all', '在籍', '体験', '退店'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  backgroundColor: statusFilter === status ? '#2196F3' : '#f0f0f0',
+                  color: statusFilter === status ? '#fff' : '#666',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {status === 'all' ? '全て' : status}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* テーブルヘッダー（固定） */}
