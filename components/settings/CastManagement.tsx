@@ -94,12 +94,8 @@ export default function CastManagement() {
     borderRadius: '10px',
     padding: '20px',
     boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    height: '100%',
-    overflowY: 'auto',
-    paddingBottom: '100px', // 下部に余裕を持たせる
-    WebkitOverflowScrolling: 'touch', // iOSスムーズスクロール
-    msOverflowStyle: '-ms-autohiding-scrollbar', // IE/Edge
-    position: 'relative' // Androidでの位置固定問題対策
+    paddingBottom: '100px',
+    position: 'relative'
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>キャスト管理</h2>
@@ -202,11 +198,7 @@ export default function CastManagement() {
           borderCollapse: 'collapse',
           backgroundColor: '#fff'
         }}>
-            <thead style={{ 
-              position: 'sticky',
-              top: 0,
-              zIndex: 10
-            }}>
+            <thead>
               <tr style={{ backgroundColor: '#f0f0f0' }}>
                 <th style={{ 
                   padding: '12px 16px',
