@@ -202,7 +202,8 @@ export const useAttendanceData = () => {
       // 3. 既存の勤怠がある人を除外（cast_nameで比較）
       const existingCastNames = new Set(existingAttendance?.map(a => a.cast_name) || [])
       const newShifts = shifts.filter(s => {
-        const castName = (s.casts as { name: string })?.name
+        const casts = s.casts as unknown as { name: string }
+        const castName = casts?.name
         return castName && !existingCastNames.has(castName)
       })
 
@@ -211,13 +212,23 @@ export const useAttendanceData = () => {
         return
       }
 
-      // 4. 新しい勤怠データを追加
+      // 4. attendance_statusesからcode='present'のステータス名を取得
+      const { data: presentStatus } = await supabase
+        .from('attendance_statuses')
+        .select('name')
+        .eq('store_id', storeId)
+        .eq('code', 'present')
+        .single()
+
+      const statusName = presentStatus?.name || '出勤'
+
+      // 5. 新しい勤怠データを追加
       const newRows: AttendanceRow[] = newShifts.map((shift, i) => ({
         id: `new-bulk-${Date.now()}-${i}`,
-        cast_name: (shift.casts as { name: string })?.name || '',
+        cast_name: (shift.casts as unknown as { name: string })?.name || '',
         check_in_time: shift.start_time ? shift.start_time.slice(0, 5) : '',
         check_out_time: '',
-        status: '出勤',
+        status: statusName,
         late_minutes: 0,
         break_minutes: 0,
         daily_payment: 0

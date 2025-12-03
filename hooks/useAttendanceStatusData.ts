@@ -5,24 +5,28 @@ import { getCurrentStoreId } from '../utils/storeContext'
 export interface AttendanceStatusItem {
   id: string
   store_id: string
-  name: string
+  name: string  // ステータス表示名
+  code: string | null  // プログラムから参照するためのコード（例: 'present', 'late', 'absent'）
   color: string
   is_active: boolean
-  order_index: number
+  order_index: number  // 表示順序
 }
 
 export const useAttendanceStatusData = () => {
   const [attendanceStatuses, setAttendanceStatuses] = useState<AttendanceStatusItem[]>([])
 
-  // デフォルトステータスを作成
+  // デフォルトステータスを作成（LINE_BOT_DESIGN.mdの8種類に対応）
   const createDefaultStatuses = async () => {
     const storeId = getCurrentStoreId()
     const defaultStatuses = [
-      { name: '出勤', color: '#4CAF50', is_active: true, order_index: 0 },
-      { name: '遅刻', color: '#FF9800', is_active: false, order_index: 1 },
-      { name: '早退', color: '#2196F3', is_active: false, order_index: 2 },
-      { name: '欠勤', color: '#F44336', is_active: false, order_index: 3 },
-      { name: '有給', color: '#9C27B0', is_active: false, order_index: 4 }
+      { name: '出勤', code: 'present', color: '#22c55e', is_active: true, order_index: 0 },
+      { name: '当欠', code: 'same_day_absence', color: '#ef4444', is_active: false, order_index: 1 },
+      { name: '事前欠勤', code: 'advance_absence', color: '#f97316', is_active: false, order_index: 2 },
+      { name: '無欠', code: 'no_call_no_show', color: '#dc2626', is_active: false, order_index: 3 },
+      { name: '遅刻', code: 'late', color: '#eab308', is_active: false, order_index: 4 },
+      { name: '早退', code: 'early_leave', color: '#a855f7', is_active: false, order_index: 5 },
+      { name: '公欠', code: 'excused', color: '#3b82f6', is_active: false, order_index: 6 },
+      { name: 'リクエスト出勤', code: 'request_shift', color: '#06b6d4', is_active: false, order_index: 7 }
     ]
 
     const statusesToInsert = defaultStatuses.map(status => ({
@@ -72,7 +76,8 @@ export const useAttendanceStatusData = () => {
   const addAttendanceStatus = async (
     statusName: string,
     statusColor: string,
-    statuses: AttendanceStatusItem[]
+    statuses: AttendanceStatusItem[],
+    statusCode?: string
   ): Promise<boolean> => {
     if (!statusName.trim()) {
       alert('ステータス名を入力してください')
@@ -90,12 +95,22 @@ export const useAttendanceStatusData = () => {
         return false
       }
 
+      // codeが指定されている場合、重複チェック
+      if (statusCode) {
+        const codeExists = statuses.some(s => s.code === statusCode)
+        if (codeExists) {
+          alert(`コード「${statusCode}」は既に使用されています`)
+          return false
+        }
+      }
+
       const storeId = getCurrentStoreId()
 
       const { error } = await supabase
         .from('attendance_statuses')
         .insert({
           name: statusName.trim(),
+          code: statusCode || null,
           color: statusColor,
           is_active: false,
           order_index: statuses.length,
@@ -126,7 +141,8 @@ export const useAttendanceStatusData = () => {
     statusId: string,
     statusName: string,
     statusColor: string,
-    statuses: AttendanceStatusItem[]
+    statuses: AttendanceStatusItem[],
+    statusCode?: string
   ): Promise<boolean> => {
     if (!statusName.trim()) {
       alert('ステータス名を入力してください')
@@ -145,10 +161,20 @@ export const useAttendanceStatusData = () => {
         return false
       }
 
+      // codeが指定されている場合、編集中以外で重複チェック
+      if (statusCode) {
+        const codeExists = statuses.some(s => s.id !== statusId && s.code === statusCode)
+        if (codeExists) {
+          alert(`コード「${statusCode}」は既に使用されています`)
+          return false
+        }
+      }
+
       const { error } = await supabase
         .from('attendance_statuses')
         .update({
           name: statusName.trim(),
+          code: statusCode !== undefined ? (statusCode || null) : undefined,
           color: statusColor
         })
         .eq('id', statusId)
