@@ -907,18 +907,18 @@ const finishCheckout = () => {
     }}
   >
     {!showBusinessDaySummary ? (
-      <span style={{ color: '#1d1d1f' }}>テーブル管理</span>
+      <span style={{ color: 'white' }}>テーブル管理</span>
     ) : businessDaySummary ? (
       <div style={{ fontSize: '48px', lineHeight: '1.4' }}>
-        <div style={{ fontWeight: '600', color: '#007AFF' }}>
+        <div style={{ fontWeight: '600', color: 'white' }}>
           総売上: ¥{businessDaySummary.totalSales.toLocaleString()}
         </div>
-        <div style={{ fontWeight: '600', color: '#007AFF' }}>
+        <div style={{ fontWeight: '600', color: 'white' }}>
           組数: {businessDaySummary.orderCount}組
         </div>
       </div>
     ) : (
-      <span style={{ color: '#1d1d1f' }}>テーブル管理</span>
+      <span style={{ color: 'white' }}>テーブル管理</span>
     )}
   </div>
 
@@ -930,7 +930,7 @@ const finishCheckout = () => {
     fontSize: '42px',
     fontFamily: '-apple-system, BlinkMacSystemFont, monospace',
     fontWeight: '500',
-    color: '#1d1d1f',
+    color: 'white',
     letterSpacing: '-1px'
   }}>
     {currentTime}
