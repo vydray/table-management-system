@@ -59,10 +59,39 @@ export const useTableLayout = () => {
   ) => {
     if (!tableName) return false
     const storeId = getCurrentStoreId()
+
+    // 現在のページにある既存テーブルを取得
+    const existingTablesOnPage = tables.filter(
+      t => t.is_visible && (t.page_number || 1) === currentViewPage
+    )
+
+    // 新しいテーブルの位置を計算（既存テーブルと重ならないように）
+    let newTop = 100
+    let newLeft = 100
+    const spacing = 20 // テーブル間の余白
+
+    if (existingTablesOnPage.length > 0) {
+      // 最後に追加されたテーブルの位置を基準にする
+      const lastTable = existingTablesOnPage[existingTablesOnPage.length - 1]
+      newLeft = lastTable.position_left + (lastTable.table_width || tableSize.width) + spacing
+
+      // 画面右端を超えたら次の行へ
+      if (newLeft + tableSize.width > 1200) {
+        newLeft = 100
+        // 一番下のテーブルを見つけて、その下に配置
+        const maxBottom = Math.max(
+          ...existingTablesOnPage.map(t => t.position_top + (t.table_height || tableSize.height))
+        )
+        newTop = maxBottom + spacing
+      } else {
+        newTop = lastTable.position_top
+      }
+    }
+
     const newTable = {
       table_name: tableName,
-      position_top: 100,
-      position_left: 100,
+      position_top: newTop,
+      position_left: newLeft,
       table_width: tableSize.width,
       table_height: tableSize.height,
       is_visible: true,
