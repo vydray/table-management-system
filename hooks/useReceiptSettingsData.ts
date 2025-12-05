@@ -60,7 +60,7 @@ export const useReceiptSettingsData = () => {
       const storeId = getCurrentStoreId()
 
       const { data: storeSettings } = await supabase
-        .from('store_settings')
+        .from('receipt_settings')
         .select('*')
         .eq('store_id', storeId)
         .single()
@@ -106,7 +106,7 @@ export const useReceiptSettingsData = () => {
       const storeId = getCurrentStoreId()
 
       const { error } = await supabase
-        .from('store_settings')
+        .from('receipt_settings')
         .upsert({
           store_id: storeId,
           store_name: settings.store_name,
