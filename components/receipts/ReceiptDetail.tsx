@@ -137,6 +137,26 @@ export default function ReceiptDetail({ selectedReceipt, orderItems, onDelete }:
                   ¥{subtotal.toLocaleString()}
                 </td>
               </tr>
+              {(selectedReceipt.service_charge ?? 0) > 0 && (
+                <tr>
+                  <td colSpan={3} style={{ textAlign: 'right', padding: '8px', color: '#666' }}>
+                    サービス料:
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '8px', color: '#666' }}>
+                    ¥{(selectedReceipt.service_charge ?? 0).toLocaleString()}
+                  </td>
+                </tr>
+              )}
+              {(selectedReceipt.card_fee ?? 0) > 0 && (
+                <tr>
+                  <td colSpan={3} style={{ textAlign: 'right', padding: '8px', color: '#1565c0' }}>
+                    カード手数料:
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '8px', color: '#1565c0' }}>
+                    ¥{(selectedReceipt.card_fee ?? 0).toLocaleString()}
+                  </td>
+                </tr>
+              )}
               <tr>
                 <td colSpan={3} style={{ textAlign: 'right', padding: '8px', fontSize: '18px', fontWeight: 'bold' }}>
                   合計金額:
@@ -147,48 +167,6 @@ export default function ReceiptDetail({ selectedReceipt, orderItems, onDelete }:
               </tr>
             </tfoot>
           </table>
-
-          {/* 支払い内訳 */}
-          <div style={{
-            marginTop: '20px',
-            padding: '15px',
-            backgroundColor: '#f5f5f5',
-            borderRadius: '8px'
-          }}>
-            <h4 style={{
-              margin: '0 0 12px 0',
-              fontSize: '14px',
-              color: '#666'
-            }}>
-              支払い内訳
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(selectedReceipt.cash_amount ?? 0) > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: '#2e7d32' }}>現金</span>
-                  <span>¥{(selectedReceipt.cash_amount ?? 0).toLocaleString()}</span>
-                </div>
-              )}
-              {(selectedReceipt.credit_card_amount ?? 0) > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: '#1565c0' }}>カード</span>
-                  <span>¥{(selectedReceipt.credit_card_amount ?? 0).toLocaleString()}</span>
-                </div>
-              )}
-              {(selectedReceipt.card_fee ?? 0) > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', paddingLeft: '12px' }}>
-                  <span style={{ color: '#1565c0' }}>└ カード手数料</span>
-                  <span>¥{(selectedReceipt.card_fee ?? 0).toLocaleString()}</span>
-                </div>
-              )}
-              {(selectedReceipt.other_payment_amount ?? 0) > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: '#e65100' }}>その他</span>
-                  <span>¥{(selectedReceipt.other_payment_amount ?? 0).toLocaleString()}</span>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         <div className="no-print" style={{

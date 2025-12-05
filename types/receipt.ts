@@ -9,6 +9,8 @@ export interface Receipt {
   staff_name: string
   deleted_at?: string
   deleted_by?: number
+  // 金額内訳
+  service_charge?: number
   // 支払い情報
   cash_amount?: number
   credit_card_amount?: number
