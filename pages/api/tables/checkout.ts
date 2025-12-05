@@ -54,13 +54,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { data: settings } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['consumption_tax_rate', 'service_charge_rate', 'business_day_cutoff_hour'])
+        .in('setting_key', ['tax_rate', 'service_fee_rate', 'business_day_start_hour'])
         .eq('store_id', storeId)  // 店舗IDでフィルタ
 
-      // 設定値を取得
-      const consumptionTaxRate = settings?.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10
-      const serviceChargeRate = settings?.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15
-      const businessDayCutoffHour = settings?.find(s => s.setting_key === 'business_day_cutoff_hour')?.setting_value || 6
+      // 設定値を取得（パーセント値を小数に変換）
+      const taxRatePercent = Number(settings?.find(s => s.setting_key === 'tax_rate')?.setting_value) || 10
+      const serviceFeePercent = Number(settings?.find(s => s.setting_key === 'service_fee_rate')?.setting_value) || 15
+      const consumptionTaxRate = taxRatePercent / 100  // 10% → 0.10
+      const serviceChargeRate = serviceFeePercent / 100  // 20% → 0.20
+      const businessDayCutoffHour = Number(settings?.find(s => s.setting_key === 'business_day_start_hour')?.setting_value) || 6
 
       // 商品マスタとカテゴリーマスタを取得（カテゴリー情報を設定するため）
       const { data: products } = await supabase
