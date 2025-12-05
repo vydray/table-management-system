@@ -15,6 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from('table_status')
       .select('*')
       .eq('store_id', storeId)
+      .eq('is_visible', true)
       .order('table_name')
 
     if (error) return res.status(500).json({ error: error.message })
