@@ -2,25 +2,6 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentStoreId } from '../utils/storeContext'
 
-const getStoreIdAsNumber = (): number => {
-  const storeId = getCurrentStoreId()
-  let numericId: number
-
-  if (typeof storeId === 'string') {
-    numericId = parseInt(storeId)
-  } else if (typeof storeId === 'number') {
-    numericId = storeId
-  } else {
-    numericId = 1
-  }
-
-  if (isNaN(numericId) || numericId <= 0) {
-    return 1
-  }
-
-  return numericId
-}
-
 // 役職の型定義
 export interface Position {
   id: number
@@ -36,7 +17,7 @@ export const usePositionData = () => {
   // 役職一覧を読み込む
   const loadPositions = async () => {
     try {
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
       const { data, error } = await supabase
         .from('cast_positions')
         .select('*')
@@ -56,7 +37,7 @@ export const usePositionData = () => {
     if (!newPositionName.trim()) return false
 
     try {
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
       const maxOrder = Math.max(...positions.map(p => p.display_order), 0)
 
       const { error } = await supabase
@@ -85,7 +66,7 @@ export const usePositionData = () => {
     if (!confirm('この役職を削除しますか？')) return false
 
     try {
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('cast_positions')
         .update({ is_active: false })

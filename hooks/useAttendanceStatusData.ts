@@ -170,6 +170,7 @@ export const useAttendanceStatusData = () => {
         }
       }
 
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('attendance_statuses')
         .update({
@@ -178,6 +179,7 @@ export const useAttendanceStatusData = () => {
           color: statusColor
         })
         .eq('id', statusId)
+        .eq('store_id', storeId)
 
       if (error) {
         console.error('Supabase error:', error)
@@ -201,10 +203,12 @@ export const useAttendanceStatusData = () => {
   // ステータスの有効/無効を切り替え
   const toggleStatusActive = async (statusId: string, currentActive: boolean) => {
     try {
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('attendance_statuses')
         .update({ is_active: !currentActive })
         .eq('id', statusId)
+        .eq('store_id', storeId)
 
       if (error) throw error
 
@@ -220,10 +224,12 @@ export const useAttendanceStatusData = () => {
     if (!confirm('このステータスを削除しますか?')) return false
 
     try {
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('attendance_statuses')
         .delete()
         .eq('id', statusId)
+        .eq('store_id', storeId)
 
       if (error) throw error
 

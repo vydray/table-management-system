@@ -2,28 +2,6 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentStoreId } from '../utils/storeContext'
 
-// getCurrentStoreIdの結果を数値に変換するヘルパー関数
-const getStoreIdAsNumber = (): number => {
-  const storeId = getCurrentStoreId()
-
-  let numericId: number
-  if (typeof storeId === 'string') {
-    numericId = parseInt(storeId)
-  } else if (typeof storeId === 'number') {
-    numericId = storeId
-  } else {
-    console.error('Invalid store ID type:', typeof storeId, storeId)
-    numericId = 1
-  }
-
-  if (isNaN(numericId) || numericId <= 0) {
-    console.error('Invalid store ID:', storeId)
-    return 1
-  }
-
-  return numericId
-}
-
 // キャストの型定義
 export interface Cast {
   id: number
@@ -62,7 +40,7 @@ export const useCastData = () => {
   // キャスト一覧を読み込む
   const loadCasts = async () => {
     try {
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
 
       if (!storeId || storeId === 0) {
         console.error('Invalid store_id, cannot load casts')
@@ -100,7 +78,7 @@ export const useCastData = () => {
         return false
       }
 
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
 
       if (!storeId || storeId === 0) {
         alert('店舗情報が取得できません。ページを再読み込みしてください。')
@@ -152,7 +130,7 @@ export const useCastData = () => {
         return false
       }
 
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
 
       const updateData: Record<string, unknown> = {
         name: editingCast.name || '',
@@ -197,7 +175,7 @@ export const useCastData = () => {
     if (!confirm(`${cast.name}さんを削除しますか？`)) return false
 
     try {
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('casts')
         .delete()
@@ -219,7 +197,7 @@ export const useCastData = () => {
   // キャストの役職を更新
   const updateCastPosition = async (cast: Cast, newPosition: string) => {
     try {
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('casts')
         .update({
@@ -243,7 +221,7 @@ export const useCastData = () => {
   // キャストのステータスを更新
   const updateCastStatus = async (cast: Cast, newStatus: string) => {
     try {
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
       const updateData: Record<string, unknown> = {
         status: newStatus,
         updated_at: new Date().toISOString()
@@ -275,7 +253,7 @@ export const useCastData = () => {
   // キャストの退店処理
   const retireCast = async (cast: Cast, resignationDate: string) => {
     try {
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('casts')
         .update({
@@ -302,7 +280,7 @@ export const useCastData = () => {
   // POS表示切り替え
   const toggleCastShowInPos = async (cast: Cast) => {
     try {
-      const storeId = getStoreIdAsNumber()
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('casts')
         .update({

@@ -91,10 +91,12 @@ export const useCategoryData = () => {
         return false
       }
 
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('product_categories')
         .update({ name: categoryName })
         .eq('id', categoryId)
+        .eq('store_id', storeId)
 
       if (error) throw error
 
@@ -114,10 +116,12 @@ export const useCategoryData = () => {
     }
 
     try {
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('product_categories')
         .delete()
         .eq('id', categoryId)
+        .eq('store_id', storeId)
 
       if (error) throw error
       await loadCategories()
@@ -132,10 +136,12 @@ export const useCategoryData = () => {
   // 推し優先表示を切り替え
   const toggleOshiFirst = async (categoryId: number, currentValue: boolean) => {
     try {
+      const storeId = getCurrentStoreId()
       const { error } = await supabase
         .from('product_categories')
         .update({ show_oshi_first: !currentValue })
         .eq('id', categoryId)
+        .eq('store_id', storeId)
 
       if (error) throw error
       await loadCategories()
