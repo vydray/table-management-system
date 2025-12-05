@@ -13,6 +13,7 @@ export interface Receipt {
   cash_amount?: number
   credit_card_amount?: number
   other_payment_amount?: number
+  card_fee?: number
 }
 
 // 注文明細の型定義

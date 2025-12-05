@@ -689,7 +689,7 @@ const completeCheckout = async () => {
       currentTable,
       orderItems,
       formData,
-      paymentData,
+      { ...paymentData, cardFee },
       totalWithCardFee
     )
 

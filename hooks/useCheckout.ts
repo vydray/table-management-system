@@ -19,6 +19,7 @@ interface PaymentData {
   card: number
   other: number
   otherMethod: string
+  cardFee?: number
 }
 
 interface CheckoutResult {
@@ -56,6 +57,7 @@ export const useCheckout = () => {
           paymentCard: paymentData.card,
           paymentOther: paymentData.other,
           paymentOtherMethod: paymentData.otherMethod,
+          cardFee: paymentData.cardFee || 0,
           totalAmount: totalAmount,
           storeId: storeId
         })

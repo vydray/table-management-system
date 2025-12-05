@@ -13,9 +13,9 @@ interface OrderItem {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { 
-      tableId, 
-      checkoutTime, 
+    const {
+      tableId,
+      checkoutTime,
       orderItems,
       guestName,
       castName,
@@ -23,6 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       paymentCash,
       paymentCard,
       paymentOther,
+      cardFee,
       totalAmount,
       storeId  // 店舗IDを追加
     } = req.body
@@ -167,6 +168,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           cash_amount: paymentCash || 0,
           credit_card_amount: paymentCard || 0,
           other_payment_amount: paymentOther || 0,
+          card_fee: cardFee || 0,
           change_amount: Math.max(0, (paymentCash + paymentCard + paymentOther) - totalAmount),
           payment_method: paymentCash > 0 ? 'cash' : paymentCard > 0 ? 'card' : 'other',
           store_id: storeId  // 店舗IDを追加

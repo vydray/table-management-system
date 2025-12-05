@@ -64,7 +64,7 @@ export const useReceiptsData = () => {
           staff_name,
           deleted_at,
           deleted_by,
-          payments(cash_amount, credit_card_amount, other_payment_amount)
+          payments(cash_amount, credit_card_amount, other_payment_amount, card_fee)
         `)
         .eq('store_id', storeId)
         .not('checkout_datetime', 'is', null)
@@ -89,7 +89,8 @@ export const useReceiptsData = () => {
           deleted_by: order.deleted_by,
           cash_amount: payment?.cash_amount || 0,
           credit_card_amount: payment?.credit_card_amount || 0,
-          other_payment_amount: payment?.other_payment_amount || 0
+          other_payment_amount: payment?.other_payment_amount || 0,
+          card_fee: payment?.card_fee || 0
         }
       })
 
