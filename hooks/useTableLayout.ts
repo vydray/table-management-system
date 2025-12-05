@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentStoreId } from '@/utils/storeContext'
 
 interface TableLayout {
   table_name: string
@@ -25,7 +26,7 @@ export const useTableLayout = () => {
   // テーブルデータの読み込み
   const loadTables = async () => {
     setLoading(true)
-    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const storeId = getCurrentStoreId()
 
     const { data, error } = await supabase
       .from('table_status')
@@ -57,7 +58,7 @@ export const useTableLayout = () => {
     tableSize: { width: number; height: number }
   ) => {
     if (!tableName) return false
-    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const storeId = getCurrentStoreId()
     const newTable = {
       table_name: tableName,
       position_top: 100,
@@ -83,7 +84,7 @@ export const useTableLayout = () => {
   // テーブル削除
   const deleteTable = async (tableName: string) => {
     if (!confirm(`テーブル「${tableName}」を削除しますか？`)) return false
-    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const storeId = getCurrentStoreId()
     const { error } = await supabase
       .from('table_status')
       .delete()
@@ -99,7 +100,7 @@ export const useTableLayout = () => {
 
   // テーブル表示/非表示切り替え
   const toggleTableVisibility = async (tableName: string, isVisible: boolean) => {
-    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const storeId = getCurrentStoreId()
     const { error } = await supabase
       .from('table_status')
       .update({ is_visible: isVisible })
@@ -117,7 +118,7 @@ export const useTableLayout = () => {
 
   // テーブル表示名の更新
   const updateTableDisplayName = async (table: TableLayout) => {
-    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const storeId = getCurrentStoreId()
     const displayName = table.display_name || table.table_name
 
     const { error } = await supabase
@@ -145,7 +146,7 @@ export const useTableLayout = () => {
     tableName: string,
     position: { top: number; left: number }
   ) => {
-    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const storeId = getCurrentStoreId()
     const { error } = await supabase
       .from('table_status')
       .update({
@@ -168,7 +169,7 @@ export const useTableLayout = () => {
 
   // 全テーブルのサイズを一括更新
   const updateAllTableSizes = async (newSize: { width: number; height: number }) => {
-    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const storeId = getCurrentStoreId()
 
     for (const table of tables) {
       await supabase
@@ -209,7 +210,7 @@ export const useTableLayout = () => {
       }
     }
 
-    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const storeId = getCurrentStoreId()
     for (const table of tablesOnPage) {
       await supabase
         .from('table_status')
@@ -225,7 +226,7 @@ export const useTableLayout = () => {
 
   // 全テーブルの位置とページ番号を一括保存
   const saveAllTablePositions = async () => {
-    const storeId = localStorage.getItem('currentStoreId') || '1'
+    const storeId = getCurrentStoreId()
 
     try {
       // Promise.allで並列保存（高速化）

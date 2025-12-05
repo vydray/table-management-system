@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentStoreId } from '@/utils/storeContext'
 
 interface TableLayout {
   table_name: string
@@ -85,7 +86,7 @@ export const useTableAlignment = () => {
       }
 
       // データベース更新
-      const storeId = localStorage.getItem('currentStoreId') || '1'
+      const storeId = getCurrentStoreId()
       for (const table of alignedTables) {
         await supabase
           .from('table_status')
@@ -122,7 +123,7 @@ export const useTableAlignment = () => {
       })
 
       const allAlignedTables: TableLayout[] = []
-      const storeId = localStorage.getItem('currentStoreId') || '1'
+      const storeId = getCurrentStoreId()
 
       // 各ページごとに整列
       for (const [pageNum, pageTables] of tablesByPage.entries()) {
