@@ -9,6 +9,10 @@ export interface Receipt {
   staff_name: string
   deleted_at?: string
   deleted_by?: number
+  // 支払い情報
+  cash_amount?: number
+  credit_card_amount?: number
+  other_payment_amount?: number
 }
 
 // 注文明細の型定義

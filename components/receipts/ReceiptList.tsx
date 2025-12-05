@@ -113,13 +113,56 @@ export default function ReceiptList({
               </span>
               <span>{receipt.guest_name || '-'}様</span>
             </div>
-            <div style={{ 
-              fontSize: '22px', 
-              fontWeight: 'bold', 
+            <div style={{
+              fontSize: '22px',
+              fontWeight: 'bold',
               color: '#333',
               letterSpacing: '0.5px'
             }}>
               {formatCurrency(receipt.total_incl_tax)}
+            </div>
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              marginTop: '8px',
+              flexWrap: 'wrap'
+            }}>
+              {(receipt.cash_amount ?? 0) > 0 && (
+                <span style={{
+                  padding: '2px 8px',
+                  backgroundColor: '#e8f5e9',
+                  color: '#2e7d32',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: '500'
+                }}>
+                  現金 {formatCurrency(receipt.cash_amount ?? 0)}
+                </span>
+              )}
+              {(receipt.credit_card_amount ?? 0) > 0 && (
+                <span style={{
+                  padding: '2px 8px',
+                  backgroundColor: '#e3f2fd',
+                  color: '#1565c0',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: '500'
+                }}>
+                  カード {formatCurrency(receipt.credit_card_amount ?? 0)}
+                </span>
+              )}
+              {(receipt.other_payment_amount ?? 0) > 0 && (
+                <span style={{
+                  padding: '2px 8px',
+                  backgroundColor: '#fff3e0',
+                  color: '#e65100',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: '500'
+                }}>
+                  その他 {formatCurrency(receipt.other_payment_amount ?? 0)}
+                </span>
+              )}
             </div>
           </div>
         ))

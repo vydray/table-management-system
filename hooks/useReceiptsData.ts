@@ -63,7 +63,8 @@ export const useReceiptsData = () => {
           guest_name,
           staff_name,
           deleted_at,
-          deleted_by
+          deleted_by,
+          payments(cash_amount, credit_card_amount, other_payment_amount)
         `)
         .eq('store_id', storeId)
         .not('checkout_datetime', 'is', null)
@@ -73,7 +74,26 @@ export const useReceiptsData = () => {
 
       if (error) throw error
 
-      setReceipts(data || [])
+      // paymentsデータをフラット化
+      const receiptsWithPayment = (data || []).map(order => {
+        const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
+        return {
+          id: order.id,
+          receipt_number: order.receipt_number,
+          checkout_datetime: order.checkout_datetime,
+          table_number: order.table_number,
+          total_incl_tax: order.total_incl_tax,
+          guest_name: order.guest_name,
+          staff_name: order.staff_name,
+          deleted_at: order.deleted_at,
+          deleted_by: order.deleted_by,
+          cash_amount: payment?.cash_amount || 0,
+          credit_card_amount: payment?.credit_card_amount || 0,
+          other_payment_amount: payment?.other_payment_amount || 0
+        }
+      })
+
+      setReceipts(receiptsWithPayment)
 
       // 最初の伝票を自動選択
       if (data && data.length > 0 && !selectedReceipt) {
