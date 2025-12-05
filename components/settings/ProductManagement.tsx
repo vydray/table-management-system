@@ -399,7 +399,32 @@ export default function ProductManagement() {
             }}
           >
             <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>商品編集</h3>
-            
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                カテゴリー *
+              </label>
+              <select
+                value={newProductCategory || ''}
+                onChange={(e) => setNewProductCategory(Number(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  fontSize: '16px',
+                  border: '1px solid #ddd',
+                  borderRadius: '5px',
+                  backgroundColor: 'white'
+                }}
+              >
+                <option value="">-- カテゴリーを選択 --</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                 商品名 *
@@ -461,7 +486,7 @@ export default function ProductManagement() {
                 キャンセル
               </button>
               <button
-                onClick={() => updateProduct(editingProduct, newProductName, newProductPrice, newProductNeedsCast)}
+                onClick={() => updateProduct(editingProduct, newProductName, newProductPrice, newProductCategory, newProductNeedsCast)}
                 style={{
                   padding: '10px 20px',
                   backgroundColor: '#2196F3',

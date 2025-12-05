@@ -34,6 +34,7 @@ export const useProductHandlers = (
     editingProduct: { id: number; category_id: number } | null,
     newProductName: string,
     newProductPrice: string,
+    newProductCategory: number | null,
     newProductNeedsCast: boolean
   ) => {
     if (!editingProduct) return
@@ -42,7 +43,7 @@ export const useProductHandlers = (
       editingProduct.id,
       newProductName,
       newProductPrice,
-      editingProduct.category_id,
+      newProductCategory || editingProduct.category_id,
       newProductNeedsCast
     )
 
