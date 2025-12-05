@@ -70,14 +70,14 @@ export const useDailyReport = () => {
       if (data) {
         // 売上データは常にリアルタイムで計算されるため、調整項目とSNSデータだけを更新
         // 日付は上書きしない（openDailyReportで設定済み）
+        // DBのカラム名に合わせる
         setDailyReportData(prev => ({
           ...prev,
           eventName: data.event_name || '',
           weather: data.weather,
-          notTransmittedReceipt: data.not_transmitted_receipt || 0,
-          notTransmittedAmount: data.not_transmitted_amount || 0,
+          notTransmittedReceipt: data.unknown_receipt || 0,
+          notTransmittedAmount: data.unknown_amount || 0,
           unpaidAmount: data.unpaid_amount || 0,
-          incomeAmount: data.income_amount || 0,
           expenseAmount: data.expense_amount || 0,
           remarks: data.remarks || '',
           twitterFollowers: data.twitter_followers || 0,
@@ -97,23 +97,21 @@ export const useDailyReport = () => {
       setIsUpdating(true)
       const storeId = getCurrentStoreId()
 
+      // DBのカラム名に合わせる
       const reportToSave = {
         store_id: storeId,
         business_date: dailyReportData.date,
         event_name: dailyReportData.eventName,
         weather: dailyReportData.weather,
-        total_receipt: dailyReportData.totalReceipt,
+        order_count: dailyReportData.totalReceipt,
         total_sales: dailyReportData.totalSales,
-        cash_receipt: dailyReportData.cashReceipt,
-        card_receipt: dailyReportData.cardReceipt,
-        paypay_receipt: dailyReportData.payPayReceipt,
+        cash_sales: dailyReportData.cashReceipt,
+        card_sales: dailyReportData.cardReceipt,
         other_sales: dailyReportData.otherSales,
-        not_transmitted_receipt: dailyReportData.notTransmittedReceipt,
-        not_transmitted_amount: dailyReportData.notTransmittedAmount,
+        unknown_receipt: dailyReportData.notTransmittedReceipt,
+        unknown_amount: dailyReportData.notTransmittedAmount,
         unpaid_amount: dailyReportData.unpaidAmount,
-        income_amount: dailyReportData.incomeAmount,
         expense_amount: dailyReportData.expenseAmount,
-        balance: dailyReportData.balance,
         staff_count: dailyReportData.staffCount,
         cast_count: dailyReportData.castCount,
         remarks: dailyReportData.remarks,

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { TableData } from '../types'
 import { getCurrentStoreId } from '../utils/storeContext'
@@ -50,18 +50,25 @@ export const useTableManagement = () => {
   const [occupiedTableCount, setOccupiedTableCount] = useState(0)
 
   const isLongPress = useRef(false)
+  // レイアウトの最新値を保持するref（クロージャ問題を回避）
+  const tableLayoutsRef = useRef<typeof tableLayouts>([])
 
   // データ取得（layoutsパラメータを追加してテーブルレイアウトを受け取れるように）
-  const loadData = async (layouts?: typeof tableLayouts) => {
+  const loadData = useCallback(async (layouts?: typeof tableLayouts) => {
     try {
+      // 渡されたlayoutsか、refの最新値を使用（クロージャ問題を回避）
+      const currentLayouts = layouts || tableLayoutsRef.current
+
+      // レイアウトがまだ読み込まれていない場合はスキップ（初期ロード待ち）
+      if (!layouts && currentLayouts.length === 0) {
+        return
+      }
+
       const storeId = getCurrentStoreId()
       const res = await fetch(`/api/tables/status?storeId=${storeId}`)
       const data: TableData[] = await res.json()
 
       const tableMap: Record<string, TableData> = {}
-
-      // 渡されたlayoutsか、stateのtableLayoutsを使用
-      const currentLayouts = layouts || tableLayouts
 
       // データベースから取得したテーブルレイアウトを使用
       if (currentLayouts.length > 0) {
@@ -143,7 +150,7 @@ export const useTableManagement = () => {
     } catch (error) {
       console.error('Error loading data:', error)
     }
-  }
+  }, [])
 
   // テーブルレイアウト取得（レイアウトロード後にloadDataも呼び出す）
   const loadTableLayouts = async (shouldLoadData: boolean = true) => {
@@ -152,6 +159,8 @@ export const useTableManagement = () => {
       const res = await fetch(`/api/tables/list?storeId=${storeId}`)
       const data = await res.json()
       setTableLayouts(data)
+      // refも更新（setIntervalのクロージャ問題を回避）
+      tableLayoutsRef.current = data
 
       // 最大ページ番号を取得
       if (data && data.length > 0) {
