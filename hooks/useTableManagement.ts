@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { TableData } from '../types'
 import { getCurrentStoreId } from '../utils/storeContext'
@@ -51,8 +51,8 @@ export const useTableManagement = () => {
 
   const isLongPress = useRef(false)
 
-  // データ取得
-  const loadData = async () => {
+  // データ取得（layoutsパラメータを追加してテーブルレイアウトを受け取れるように）
+  const loadData = async (layouts?: typeof tableLayouts) => {
     try {
       const storeId = getCurrentStoreId()
       const res = await fetch(`/api/tables/status?storeId=${storeId}`)
@@ -60,10 +60,13 @@ export const useTableManagement = () => {
 
       const tableMap: Record<string, TableData> = {}
 
+      // 渡されたlayoutsか、stateのtableLayoutsを使用
+      const currentLayouts = layouts || tableLayouts
+
       // データベースから取得したテーブルレイアウトを使用
-      if (tableLayouts.length > 0) {
+      if (currentLayouts.length > 0) {
         // データベースのテーブル情報を使用
-        tableLayouts.filter(t => t.is_visible).forEach(layout => {
+        currentLayouts.filter(t => t.is_visible).forEach(layout => {
           tableMap[layout.table_name] = {
             table: layout.table_name,
             name: '',
@@ -143,8 +146,8 @@ export const useTableManagement = () => {
     }
   }
 
-  // テーブルレイアウト取得
-  const loadTableLayouts = async () => {
+  // テーブルレイアウト取得（レイアウトロード後にloadDataも呼び出す）
+  const loadTableLayouts = async (shouldLoadData: boolean = true) => {
     try {
       const storeId = getCurrentStoreId()
       const res = await fetch(`/api/tables/list?storeId=${storeId}`)
@@ -155,6 +158,11 @@ export const useTableManagement = () => {
       if (data && data.length > 0) {
         const maxPage = Math.max(...data.map((t: {page_number?: number}) => t.page_number || 1), 1)
         setMaxPageNumber(maxPage)
+      }
+
+      // レイアウトをロードしたらすぐにデータもロード（layoutsを渡す）
+      if (shouldLoadData && data && data.length > 0) {
+        await loadData(data)
       }
     } catch (error) {
       console.error('Error loading table layouts:', error)

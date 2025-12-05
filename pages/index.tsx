@@ -374,9 +374,10 @@ export default function Home() {
 
     if (isLoggedIn) {
       // ログイン済みの場合のみデータを読み込む
+      // loadTableLayoutsはレイアウトロード後にloadDataも呼び出す
       loadTableLayouts()
       loadSystemConfig()
-      loadData()
+      // loadData() は loadTableLayouts 内で呼ばれるので削除
       loadCastList()
       loadProducts()
       loadAttendingCastCount()
