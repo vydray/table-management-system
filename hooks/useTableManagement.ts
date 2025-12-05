@@ -59,11 +59,6 @@ export const useTableManagement = () => {
       // 渡されたlayoutsか、refの最新値を使用（クロージャ問題を回避）
       const currentLayouts = layouts || tableLayoutsRef.current
 
-      // レイアウトがまだ読み込まれていない場合はスキップ（初期ロード待ち）
-      if (!layouts && currentLayouts.length === 0) {
-        return
-      }
-
       const storeId = getCurrentStoreId()
       const res = await fetch(`/api/tables/status?storeId=${storeId}`)
       const data: TableData[] = await res.json()

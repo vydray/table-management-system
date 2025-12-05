@@ -263,6 +263,8 @@ export const useAttendanceStatusData = () => {
             setting_key: 'active_attendance_statuses',
             setting_value: JSON.stringify(activeStatuses),
             store_id: storeId
+          }, {
+            onConflict: 'store_id,setting_key'
           })
 
         if (error) {
