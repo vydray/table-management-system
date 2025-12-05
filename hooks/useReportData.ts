@@ -169,6 +169,7 @@ export const useReportData = () => {
           .from('orders')
           .select('*, payments(*)')
           .eq('store_id', storeId)
+          .is('deleted_at', null)
           .gte('checkout_datetime', start)
           .lt('checkout_datetime', end)
 
