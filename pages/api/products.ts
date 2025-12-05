@@ -11,10 +11,13 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  const { storeId } = req.query
+
+  if (!storeId) {
+    return res.status(400).json({ error: 'storeId is required' })
+  }
+
   try {
-    // storeIdをクエリパラメータから取得（ない場合はデフォルト値1）
-    const storeId = req.query.storeId ? parseInt(req.query.storeId as string) : 1
-    
     // カテゴリー取得（推し優先表示フラグも含む）
     const { data: categories, error: catError } = await supabase
       .from('product_categories')
