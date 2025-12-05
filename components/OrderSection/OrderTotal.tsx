@@ -4,15 +4,20 @@ interface OrderTotalProps {
   subtotal: number
   tax: number
   total: number
-  roundingAdjustment: number  // 追加
+  roundingAdjustment: number
+  serviceFeeRate: number  // サービス料率（小数: 0.15, 0.20など）
 }
 
-export const OrderTotal: React.FC<OrderTotalProps> = ({ 
-  subtotal, 
-  tax, 
+export const OrderTotal: React.FC<OrderTotalProps> = ({
+  subtotal,
+  tax,
   total,
-  roundingAdjustment  // 追加
+  roundingAdjustment,
+  serviceFeeRate
 }) => {
+  // パーセント表示用に変換（0.20 → 20）
+  const serviceFeePercent = Math.round(serviceFeeRate * 100)
+
   return (
     <div className="order-total">
       <div className="total-row">
@@ -20,7 +25,7 @@ export const OrderTotal: React.FC<OrderTotalProps> = ({
         <span>¥{subtotal.toLocaleString()}</span>
       </div>
       <div className="total-row">
-        <span>サービスtax　15%　+</span>
+        <span>サービスtax　{serviceFeePercent}%　+</span>
         <span>¥{tax.toLocaleString()}</span>
       </div>
       

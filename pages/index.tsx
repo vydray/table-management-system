@@ -1753,6 +1753,7 @@ const finishCheckout = () => {
                     serviceTax={calculateServiceTax(calculateSubtotal(orderItems), systemSettings.serviceChargeRate)}
                     roundedTotal={getRoundedTotalAmount()}
                     roundingAdjustment={getRoundingAdjustmentAmount()}
+                    serviceFeeRate={systemSettings.serviceChargeRate}
                   />
                   
                 </div>

@@ -36,6 +36,7 @@ interface OrderSectionProps {
   serviceTax: number
   roundedTotal: number
   roundingAdjustment: number
+  serviceFeeRate: number  // サービス料率
 }
 
 export const OrderSection: React.FC<OrderSectionProps> = ({
@@ -55,7 +56,8 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
   subtotal,
   serviceTax,
   roundedTotal,
-  roundingAdjustment
+  roundingAdjustment,
+  serviceFeeRate
 }) => {
   const [selectedOrderItem, setSelectedOrderItem] = useState<number | null>(null)
 
@@ -81,6 +83,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
         tax={serviceTax}
         total={roundedTotal}
         roundingAdjustment={roundingAdjustment}
+        serviceFeeRate={serviceFeeRate}
       />
 
       <div className="action-buttons">
