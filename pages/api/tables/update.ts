@@ -7,15 +7,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { tableId, guestName, castName, timeStr, visitType, storeId } = req.body
 
-    // storeIdが指定されていない場合はデフォルト値を使用
-    const targetStoreId = storeId || 1
+    if (!storeId) {
+      return res.status(400).json({ error: 'storeId is required' })
+    }
 
     // まず、該当するテーブルのレコードが存在するか確認
     const { data: existingData, error: checkError } = await supabase
       .from('table_status')
       .select('*')
       .eq('table_name', tableId)
-      .eq('store_id', targetStoreId)
+      .eq('store_id', storeId)
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116はレコードが見つからないエラー
@@ -32,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           cast_name: castName,
           entry_time: timeStr,
           visit_type: visitType,
-          store_id: targetStoreId
+          store_id: storeId
         })
 
       if (insertError) return res.status(500).json({ error: insertError.message })
@@ -47,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           visit_type: visitType
         })
         .eq('table_name', tableId)
-        .eq('store_id', targetStoreId)  // 店舗IDでもフィルタ
+        .eq('store_id', storeId)  // 店舗IDでもフィルタ
 
       if (updateError) return res.status(500).json({ error: updateError.message })
     }

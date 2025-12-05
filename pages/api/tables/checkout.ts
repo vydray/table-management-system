@@ -27,8 +27,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       storeId  // 店舗IDを追加
     } = req.body
 
-    // storeIdが指定されていない場合はデフォルト値を使用
-    const targetStoreId = storeId || 1
+    if (!storeId) {
+      return res.status(400).json({ error: 'storeId is required' })
+    }
 
     try {
       // 現在のテーブル情報を取得（店舗IDでフィルタ）
@@ -36,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('table_status')
         .select('*')
         .eq('table_name', tableId)
-        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
       
       if (fetchError) throw fetchError
 
@@ -45,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!currentData) {
         return res.status(404).json({ 
           error: 'Table not found', 
-          details: `Table ${tableId} not found in table_status for store ${targetStoreId}` 
+          details: `Table ${tableId} not found in table_status for store ${storeId}` 
         })
       }
 
@@ -54,7 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('system_settings')
         .select('setting_key, setting_value')
         .in('setting_key', ['consumption_tax_rate', 'service_charge_rate', 'business_day_cutoff_hour'])
-        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
 
       // 設定値を取得
       const consumptionTaxRate = settings?.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10
@@ -65,12 +66,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { data: products } = await supabase
         .from('products')
         .select('id, name, category_id')
-        .eq('store_id', targetStoreId)
+        .eq('store_id', storeId)
 
       const { data: categoriesData } = await supabase
         .from('product_categories')
         .select('id, name')
-        .eq('store_id', targetStoreId)
+        .eq('store_id', storeId)
 
       // 商品合計（税込）
       const subtotalIncTax = orderItems.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0)
@@ -111,7 +112,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           service_charge: serviceTax,
           rounding_adjustment: roundingAdjustment,
           total_incl_tax: totalAmount,
-          store_id: targetStoreId  // 店舗IDを追加
+          store_id: storeId  // 店舗IDを追加
         })
         .select()
         .single()
@@ -142,7 +143,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             quantity: item.quantity,
             subtotal: item.price * item.quantity,
             pack_number: 0,
-            store_id: targetStoreId  // 店舗IDを追加
+            store_id: storeId  // 店舗IDを追加
           }
         })
 
@@ -166,7 +167,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           other_payment_amount: paymentOther || 0,
           change_amount: Math.max(0, (paymentCash + paymentCard + paymentOther) - totalAmount),
           payment_method: paymentCash > 0 ? 'cash' : paymentCard > 0 ? 'card' : 'other',
-          store_id: targetStoreId  // 店舗IDを追加
+          store_id: storeId  // 店舗IDを追加
         })
 
       if (paymentError) {
@@ -178,7 +179,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('current_order_items')
         .delete()
         .eq('table_id', tableId)
-        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
 
       // 5. table_statusをクリア（店舗IDでフィルタ）
       const { error: updateError } = await supabase
@@ -190,7 +191,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           visit_type: null
         })
         .eq('table_name', tableId)
-        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
 
       if (updateError) throw updateError
 

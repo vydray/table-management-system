@@ -7,15 +7,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { fromTableId, toTableId, storeId } = req.body
 
-    // storeIdが指定されていない場合はデフォルト値を使用
-    const targetStoreId = storeId || 1
+    if (!storeId) {
+      return res.status(400).json({ error: 'storeId is required' })
+    }
 
     // 1. fromテーブルのデータを取得（店舗IDでフィルタ）
     const { data: fromData, error: fromError } = await supabase
       .from('table_status')
       .select('*')
       .eq('table_name', fromTableId)
-      .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+      .eq('store_id', storeId)  // 店舗IDでフィルタ
       .single()
 
     if (fromError || !fromData || !fromData.guest_name) {
@@ -27,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from('table_status')
       .select('guest_name')
       .eq('table_name', toTableId)
-      .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+      .eq('store_id', storeId)  // 店舗IDでフィルタ
       .single()
 
     if (toError) {
@@ -42,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             cast_name: fromData.cast_name,
             entry_time: fromData.entry_time,
             visit_type: fromData.visit_type,
-            store_id: targetStoreId
+            store_id: storeId
           })
 
         if (insertError) return res.status(500).json({ error: insertError.message })
@@ -62,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           visit_type: fromData.visit_type
         })
         .eq('table_name', toTableId)
-        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
 
       if (updateToError) return res.status(500).json({ error: updateToError.message })
     }
@@ -72,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from('current_order_items')
       .select('*')
       .eq('table_id', fromTableId)
-      .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+      .eq('store_id', storeId)  // 店舗IDでフィルタ
 
     if (!orderFetchError && orderItems && orderItems.length > 0) {
       // 注文アイテムがある場合は移動
@@ -86,7 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('current_order_items')
         .delete()
         .eq('table_id', fromTableId)
-        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)  // 店舗IDでフィルタ
 
       // 新しいテーブルIDでアイテムを追加
       await supabase
@@ -104,7 +105,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         visit_type: null
       })
       .eq('table_name', fromTableId)
-      .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+      .eq('store_id', storeId)  // 店舗IDでフィルタ
 
     if (clearFromError) return res.status(500).json({ error: clearFromError.message })
     

@@ -5,14 +5,16 @@ const supabase = getSupabaseServerClient()
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
-    // クエリパラメータから店舗IDを取得（デフォルトは1）
     const { storeId } = req.query
-    const targetStoreId = storeId || '1'
-    
+
+    if (!storeId) {
+      return res.status(400).json({ error: 'storeId is required' })
+    }
+
     const { data, error } = await supabase
       .from('table_status')
       .select('*')
-      .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+      .eq('store_id', storeId)
       .order('table_name')
 
     if (error) return res.status(500).json({ error: error.message })

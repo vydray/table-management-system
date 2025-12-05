@@ -16,16 +16,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   switch (method) {
     case 'GET': {
       const { tableId, storeId } = req.query
-      
-      // storeIdが指定されていない場合はデフォルト値を使用
-      const targetStoreId = storeId || '1'
-      
+
+      if (!storeId) {
+        return res.status(400).json({ error: 'storeId is required' })
+      }
+
       try {
         const { data, error } = await supabase
           .from('current_order_items')
           .select('*')
           .eq('table_id', tableId)
-          .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+          .eq('store_id', storeId)
         
         if (error) throw error
         
@@ -39,17 +40,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'POST': {
       const { tableId, orderItems, storeId } = req.body
-      
-      // storeIdが指定されていない場合はデフォルト値を使用
-      const targetStoreId = storeId || 1
-      
+
+      if (!storeId) {
+        return res.status(400).json({ error: 'storeId is required' })
+      }
+
       try {
         // 既存のアイテムを削除（同じ店舗のもののみ）
         const { error: deleteError } = await supabase
           .from('current_order_items')
           .delete()
           .eq('table_id', tableId)
-          .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+          .eq('store_id', storeId)
         
         if (deleteError) throw deleteError
         
@@ -61,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             cast_name: item.cast || null,
             quantity: item.quantity,
             unit_price: item.price,
-            store_id: targetStoreId  // 店舗IDを追加
+            store_id: storeId  // 店舗IDを追加
           }))
           
           const { error: insertError } = await supabase

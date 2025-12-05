@@ -12,14 +12,17 @@ export default async function handler(
   }
 
   const { storeId } = req.query
-  const targetStoreId = storeId || 1
+
+  if (!storeId) {
+    return res.status(400).json({ error: 'storeId is required' })
+  }
 
   try {
     // show_in_posがtrueのキャストのみ取得
     const { data: casts, error } = await supabase
       .from('casts')
       .select('name')
-      .eq('store_id', targetStoreId)
+      .eq('store_id', storeId)
       .eq('show_in_pos', true)  // POS表示フラグでフィルタリング
       .order('name')
 

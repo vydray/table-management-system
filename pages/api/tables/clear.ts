@@ -7,8 +7,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { tableId, storeId } = req.body
 
-    // storeIdが指定されていない場合はデフォルト値を使用
-    const targetStoreId = storeId || 1
+    if (!storeId) {
+      return res.status(400).json({ error: 'storeId is required' })
+    }
 
     try {
       // 1. 現在の注文をクリア（店舗IDでフィルタ）
@@ -16,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('current_order_items')
         .delete()
         .eq('table_id', tableId)
-        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)
       
       if (deleteOrderError) {
         console.error('Failed to delete order items:', deleteOrderError)
@@ -33,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           visit_type: null
         })
         .eq('table_name', tableId)
-        .eq('store_id', targetStoreId)  // 店舗IDでフィルタ
+        .eq('store_id', storeId)
 
       if (error) throw error
 

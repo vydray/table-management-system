@@ -6,12 +6,15 @@ const supabase = getSupabaseServerClient()
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     const { storeId } = req.query
-    const targetStoreId = storeId || '1'
-    
+
+    if (!storeId) {
+      return res.status(400).json({ error: 'storeId is required' })
+    }
+
     const { data, error } = await supabase
       .from('table_status')
       .select('*')
-      .eq('store_id', targetStoreId)
+      .eq('store_id', storeId)
       .eq('is_visible', true)
       .order('table_name')
       .order('page_number, table_name')
