@@ -14,7 +14,6 @@ export interface ReceiptSettings {
   closed_days: string
   store_registration_number: string
   revenue_stamp_threshold: number
-  menu_template: string
   invoice_enabled: boolean
   invoice_number: string
   show_tax_breakdown: boolean
@@ -40,7 +39,6 @@ export const useReceiptSettingsData = () => {
     closed_days: '',
     store_registration_number: '',
     revenue_stamp_threshold: 50000,
-    menu_template: '',
     invoice_enabled: false,
     invoice_number: '',
     show_tax_breakdown: false,
@@ -78,7 +76,6 @@ export const useReceiptSettingsData = () => {
           closed_days: storeSettings.closed_days || '',
           store_registration_number: storeSettings.store_registration_number || '',
           revenue_stamp_threshold: storeSettings.revenue_stamp_threshold ?? 50000,
-          menu_template: storeSettings.menu_template || '',
           invoice_enabled: storeSettings.invoice_enabled || false,
           invoice_number: storeSettings.invoice_number || '',
           show_tax_breakdown: storeSettings.show_tax_breakdown || false,
@@ -120,7 +117,6 @@ export const useReceiptSettingsData = () => {
           closed_days: settings.closed_days,
           store_registration_number: settings.store_registration_number,
           revenue_stamp_threshold: settings.revenue_stamp_threshold,
-          menu_template: settings.menu_template,
           invoice_enabled: settings.invoice_enabled,
           invoice_number: settings.invoice_number,
           show_tax_breakdown: settings.show_tax_breakdown,
