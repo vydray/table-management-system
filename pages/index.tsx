@@ -373,15 +373,15 @@ export default function Home() {
     const isLoggedIn = localStorage.getItem('isLoggedIn')
 
     if (isLoggedIn) {
-      // ログイン済みの場合のみデータを読み込む
-      // loadTableLayoutsはレイアウトロード後にloadDataも呼び出す
-      loadTableLayouts()
-      loadSystemConfig()
-      // loadData() は loadTableLayouts 内で呼ばれるので削除
-      loadCastList()
-      loadProducts()
-      loadAttendingCastCount()
-      loadAttendingCasts()
+      // ログイン済みの場合のみデータを読み込む（並列実行で高速化）
+      Promise.all([
+        loadTableLayouts(),  // 内部でloadDataも呼び出す
+        loadSystemConfig(),
+        loadCastList(),
+        loadProducts(),
+        loadAttendingCastCount(),
+        loadAttendingCasts()
+      ])
     }
 
     // ログイン済みの場合のみデータ更新間隔を設定

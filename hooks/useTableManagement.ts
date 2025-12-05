@@ -147,25 +147,74 @@ export const useTableManagement = () => {
     }
   }, [])
 
-  // テーブルレイアウト取得（レイアウトロード後にloadDataも呼び出す）
+  // 統合API使用：テーブルレイアウトとステータスを一度に取得
   const loadTableLayouts = async (shouldLoadData: boolean = true) => {
     try {
       const storeId = getCurrentStoreId()
-      const res = await fetch(`/api/tables/list?storeId=${storeId}`)
-      const data = await res.json()
-      setTableLayouts(data)
+      // 統合APIを使用（1回のリクエストでレイアウトとステータスを取得）
+      const res = await fetch(`/api/tables/combined?storeId=${storeId}`)
+      const { layouts, tableData } = await res.json()
+
+      setTableLayouts(layouts)
       // refも更新（setIntervalのクロージャ問題を回避）
-      tableLayoutsRef.current = data
+      tableLayoutsRef.current = layouts
 
       // 最大ページ番号を取得
-      if (data && data.length > 0) {
-        const maxPage = Math.max(...data.map((t: {page_number?: number}) => t.page_number || 1), 1)
+      if (layouts && layouts.length > 0) {
+        const maxPage = Math.max(...layouts.map((t: {page_number?: number}) => t.page_number || 1), 1)
         setMaxPageNumber(maxPage)
       }
 
-      // レイアウトをロードしたらすぐにデータもロード（layoutsを渡す）
-      if (shouldLoadData && data && data.length > 0) {
-        await loadData(data)
+      // すでにステータスデータがあるので、それを使ってテーブルマップを構築
+      if (shouldLoadData && layouts && layouts.length > 0) {
+        const tableMap: Record<string, TableData> = {}
+
+        // レイアウトから空のテーブルマップを初期化
+        layouts.filter((t: {is_visible: boolean}) => t.is_visible).forEach((layout: {table_name: string}) => {
+          tableMap[layout.table_name] = {
+            table: layout.table_name,
+            name: '',
+            oshi: '',
+            time: '',
+            visit: '',
+            elapsed: '',
+            status: 'empty'
+          }
+        })
+
+        // ステータスデータで更新
+        tableData.forEach((item: TableData) => {
+          if (!(item.table in tableMap)) return
+
+          if (item.time && item.status === 'occupied') {
+            const entryTime = new Date(item.time.replace(' ', 'T'))
+            const now = new Date()
+            let elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
+            if (elapsedMin < 0) elapsedMin = 0
+
+            let elapsedText = ''
+            if (elapsedMin >= 1440) {
+              const days = Math.floor(elapsedMin / 1440)
+              const hours = Math.floor((elapsedMin % 1440) / 60)
+              const mins = elapsedMin % 60
+              elapsedText = `${days}日${hours}時間${mins}分`
+            } else if (elapsedMin >= 60) {
+              const hours = Math.floor(elapsedMin / 60)
+              const mins = elapsedMin % 60
+              elapsedText = `${hours}時間${mins}分`
+            } else {
+              elapsedText = `${elapsedMin}分`
+            }
+
+            tableMap[item.table] = { ...item, elapsed: elapsedText }
+          } else {
+            tableMap[item.table] = item
+          }
+        })
+
+        setTables(tableMap)
+        const occupied = Object.values(tableMap).filter(table => table.status !== 'empty').length
+        setOccupiedTableCount(occupied)
       }
     } catch (error) {
       console.error('Error loading table layouts:', error)
