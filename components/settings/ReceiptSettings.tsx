@@ -326,7 +326,7 @@ export default function ReceiptSettings() {
               fontWeight: 'bold',
               fontSize: '14px'
             }}>
-              電話番号 <span style={{ color: 'red' }}>*</span>
+              電話番号
             </label>
             <input
               type="text"
