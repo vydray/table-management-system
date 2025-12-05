@@ -684,13 +684,13 @@ const completeCheckout = async () => {
   setIsProcessingCheckout(true)
 
   try {
-    // 会計処理を実行
+    // 会計処理を実行（カード手数料込みの金額を渡す）
     const result = await executeCheckout(
       currentTable,
       orderItems,
       formData,
       paymentData,
-      getRoundedTotalAmount()
+      totalWithCardFee
     )
 
     const updatedTables = { ...tables }
