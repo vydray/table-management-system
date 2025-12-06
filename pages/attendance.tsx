@@ -75,6 +75,33 @@ export default function Attendance() {
   const lateMinutesOptions = [0, 15, 30, 45, 60, 90, 120]
   const breakMinutesOptions = [0, 30, 60, 90, 120, 150, 180]
 
+  // 労働時間を計算する関数
+  const calculateWorkingTime = (checkIn: string, checkOut: string, lateMinutes: number, breakMinutes: number): string => {
+    if (!checkIn || !checkOut) return '--:--'
+
+    // 時間を分に変換
+    const [inHour, inMin] = checkIn.split(':').map(Number)
+    const [outHour, outMin] = checkOut.split(':').map(Number)
+
+    const inTotalMinutes = inHour * 60 + inMin
+    let outTotalMinutes = outHour * 60 + outMin
+
+    // 日をまたぐ場合（退勤が出勤より小さい）
+    if (outTotalMinutes < inTotalMinutes) {
+      outTotalMinutes += 24 * 60
+    }
+
+    // 労働時間 = (退勤 - 出勤) - 遅刻 - 休憩
+    const workingMinutes = outTotalMinutes - inTotalMinutes - lateMinutes - breakMinutes
+
+    if (workingMinutes <= 0) return '0:00'
+
+    const hours = Math.floor(workingMinutes / 60)
+    const minutes = workingMinutes % 60
+
+    return `${hours}:${minutes.toString().padStart(2, '0')}`
+  }
+
   useEffect(() => {
     loadCasts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -250,7 +277,7 @@ export default function Attendance() {
                       color: '#333',
                       borderBottom: '2px solid #e0e0e0',
                       backgroundColor: '#f8f8f8',
-                      width: '140px'
+                      width: '130px'
                     }}>
                       名前
                     </th>
@@ -262,31 +289,7 @@ export default function Attendance() {
                       color: '#333',
                       borderBottom: '2px solid #e0e0e0',
                       backgroundColor: '#f8f8f8',
-                      width: '100px'
-                    }}>
-                      出勤
-                    </th>
-                    <th style={{
-                      padding: '12px 8px',
-                      textAlign: 'center',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      color: '#333',
-                      borderBottom: '2px solid #e0e0e0',
-                      backgroundColor: '#f8f8f8',
-                      width: '100px'
-                    }}>
-                      退勤
-                    </th>
-                    <th style={{
-                      padding: '12px 8px',
-                      textAlign: 'center',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      color: '#333',
-                      borderBottom: '2px solid #e0e0e0',
-                      backgroundColor: '#f8f8f8',
-                      width: '100px'
+                      width: '90px'
                     }}>
                       状況
                     </th>
@@ -300,7 +303,7 @@ export default function Attendance() {
                       backgroundColor: '#f8f8f8',
                       width: '90px'
                     }}>
-                      遅刻
+                      出勤
                     </th>
                     <th style={{
                       padding: '12px 8px',
@@ -312,6 +315,30 @@ export default function Attendance() {
                       backgroundColor: '#f8f8f8',
                       width: '90px'
                     }}>
+                      退勤
+                    </th>
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#333',
+                      borderBottom: '2px solid #e0e0e0',
+                      backgroundColor: '#f8f8f8',
+                      width: '80px'
+                    }}>
+                      遅刻
+                    </th>
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#333',
+                      borderBottom: '2px solid #e0e0e0',
+                      backgroundColor: '#f8f8f8',
+                      width: '80px'
+                    }}>
                       休憩
                     </th>
                     <th style={{
@@ -322,7 +349,19 @@ export default function Attendance() {
                       color: '#333',
                       borderBottom: '2px solid #e0e0e0',
                       backgroundColor: '#f8f8f8',
-                      width: '110px'
+                      width: '80px'
+                    }}>
+                      労働
+                    </th>
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#333',
+                      borderBottom: '2px solid #e0e0e0',
+                      backgroundColor: '#f8f8f8',
+                      width: '100px'
                     }}>
                       日払
                     </th>
@@ -479,6 +518,47 @@ export default function Attendance() {
                             </div>
                           )}
                         </div>
+                      </td>
+
+                      {/* 状況 */}
+                      <td style={{ padding: '8px' }}>
+                        <select
+                          value={row.status}
+                          onChange={(e) => updateRow(index, 'status', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            border: '1px solid #d0d0d0',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            backgroundColor: row.status === '出勤' ? '#e6f7e6' :
+                                           row.status === '当欠' ? '#ffe6e6' :
+                                           row.status === '無欠' ? '#ffe6e6' :
+                                           row.status === '遅刻' ? '#fff7e6' :
+                                           row.status === '早退' ? '#fff7e6' :
+                                           row.status === '公欠' ? '#e6e6ff' :
+                                           row.status === '事前欠' ? '#f0e6ff' : '#fff',
+                            color: '#000',
+                            outline: 'none',
+                            textAlign: 'center',
+                            fontWeight: '600',
+                            WebkitAppearance: 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
+                          }}
+                          onFocus={(e) => e.currentTarget.style.borderColor = '#007AFF'}
+                          onBlur={(e) => e.currentTarget.style.borderColor = '#d0d0d0'}
+                        >
+                          <option value="未設定">未設定</option>
+                          <option value="出勤">出勤</option>
+                          <option value="当欠">当欠</option>
+                          <option value="無欠">無欠</option>
+                          <option value="遅刻">遅刻</option>
+                          <option value="早退">早退</option>
+                          <option value="公欠">公欠</option>
+                          <option value="事前欠">事前欠</option>
+                        </select>
                       </td>
 
                       {/* 出勤時間 */}
@@ -655,47 +735,6 @@ export default function Attendance() {
                         </div>
                       </td>
 
-                      {/* 状況 */}
-                      <td style={{ padding: '8px' }}>
-                        <select
-                          value={row.status}
-                          onChange={(e) => updateRow(index, 'status', e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            border: '1px solid #d0d0d0',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            backgroundColor: row.status === '出勤' ? '#e6f7e6' :
-                                           row.status === '当欠' ? '#ffe6e6' :
-                                           row.status === '無欠' ? '#ffe6e6' :
-                                           row.status === '遅刻' ? '#fff7e6' :
-                                           row.status === '早退' ? '#fff7e6' :
-                                           row.status === '公欠' ? '#e6e6ff' :
-                                           row.status === '事前欠' ? '#f0e6ff' : '#fff',
-                            color: '#000',
-                            outline: 'none',
-                            textAlign: 'center',
-                            fontWeight: '600',
-                            WebkitAppearance: 'none',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            boxSizing: 'border-box'
-                          }}
-                          onFocus={(e) => e.currentTarget.style.borderColor = '#007AFF'}
-                          onBlur={(e) => e.currentTarget.style.borderColor = '#d0d0d0'}
-                        >
-                          <option value="未設定">未設定</option>
-                          <option value="出勤">出勤</option>
-                          <option value="当欠">当欠</option>
-                          <option value="無欠">無欠</option>
-                          <option value="遅刻">遅刻</option>
-                          <option value="早退">早退</option>
-                          <option value="公欠">公欠</option>
-                          <option value="事前欠">事前欠</option>
-                        </select>
-                      </td>
-
                       {/* 遅刻 */}
                       <td style={{ padding: '8px', position: 'relative' }}>
                         <div className="time-dropdown-container" style={{ position: 'relative' }}>
@@ -865,6 +904,20 @@ export default function Attendance() {
                               ))}
                             </div>
                           )}
+                        </div>
+                      </td>
+
+                      {/* 労働時間 */}
+                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <div style={{
+                          padding: '8px 10px',
+                          backgroundColor: '#f0f8ff',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#007AFF'
+                        }}>
+                          {calculateWorkingTime(row.check_in_time, row.check_out_time, row.late_minutes, row.break_minutes)}
                         </div>
                       </td>
 

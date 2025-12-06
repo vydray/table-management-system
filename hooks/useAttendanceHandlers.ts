@@ -82,10 +82,10 @@ export const useAttendanceHandlers = (
     await saveAttendance(selectedDate)
   }
 
-  // 時間の選択肢を生成（10:00〜29:00）
+  // 時間の選択肢を生成（10:00〜33:30 = 9:30まで）
   const generateTimeOptions = () => {
     const options = ['']
-    for (let hour = 10; hour <= 29; hour++) {
+    for (let hour = 10; hour <= 33; hour++) {
       const displayHour = hour > 24 ? hour - 24 : hour
       for (const minute of ['00', '30']) {
         options.push(`${displayHour.toString().padStart(2, '0')}:${minute}`)
