@@ -4,7 +4,7 @@ import { useCashCount } from '../../hooks/useCashCount'
 interface CashCountModalProps {
   isOpen: boolean
   onClose: () => void
-  cashReceipt: number // 現金売上
+  cashReceipt: number // 理論上の現金回収額（現金売上 - 日払い - 経費 - 未収金等）
   registerAmount: number // レジ金
   businessDate: string // 営業日（YYYY-MM-DD形式）
   onComplete: (totalCash: number) => void

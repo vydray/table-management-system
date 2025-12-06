@@ -1008,7 +1008,7 @@ export default function Report() {
         <CashCountModal
           isOpen={showCashCountModal}
           onClose={() => setShowCashCountModal(false)}
-          cashReceipt={dailyReportData.cashReceipt}
+          cashReceipt={calculateCashReceipt(dailyReportData)}
           registerAmount={registerAmount}
           businessDate={dailyReportData.date}
           onComplete={handleCashCountComplete}
