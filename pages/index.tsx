@@ -33,7 +33,6 @@ export default function Home() {
   // カスタムフック - テーブル管理
   const {
     tables,
-    setTables,
     currentTable,
     setCurrentTable,
     tableLayouts,
@@ -46,10 +45,10 @@ export default function Home() {
     isMoving,
     attendingCastCount,
     occupiedTableCount,
-    setOccupiedTableCount,
     loadData,
     loadTableLayouts,
     loadAttendingCastCount,
+    mutateTableData,
     executeMove,
     startMoveMode,
     endMoveMode,
@@ -523,10 +522,10 @@ const handleMenuClick = (item: string) => {
   
   switch (item) {
     case 'refresh':
-      loadData()
+      // SWR対応: loadTableLayoutsがmutateTableDataを呼ぶのでloadDataは不要
+      loadTableLayouts()
       loadCastList()
       loadProducts()
-      loadTableLayouts()
       break
     case 'attendance':
       router.push('/attendance')
@@ -619,21 +618,6 @@ const handleMenuClick = (item: string) => {
         })
       })
 
-      // 卓数を更新するためにテーブル状態を再取得
-      const updatedTables = { ...tables }
-      updatedTables[currentTable] = {
-        ...updatedTables[currentTable],
-        name: formData.guestName || '無記名',  // 空の場合は「無記名」とする
-        oshi: formData.castName,
-        status: 'occupied',  // 必ず占有状態にする
-        time: timeStr
-      }
-      setTables(updatedTables)
-
-      // 現在の卓数を計算
-      const occupied = Object.values(updatedTables).filter(table => table.status !== 'empty').length
-      setOccupiedTableCount(occupied)
-
       if (!silent) {
       document.body.classList.remove('modal-open')  // 追加
       setShowModal(false)
@@ -693,21 +677,8 @@ const completeCheckout = async () => {
       totalWithCardFee
     )
 
-    const updatedTables = { ...tables }
-    updatedTables[currentTable] = {
-      ...updatedTables[currentTable],
-      name: '',
-      oshi: '',
-      visit: '',
-      time: '',
-      elapsed: '',
-      status: 'empty'
-    }
-    setTables(updatedTables)
-
-    // 現在の卓数を更新
-    const occupied = Object.values(updatedTables).filter(table => table.status !== 'empty').length
-    setOccupiedTableCount(occupied)
+    // SWRキャッシュを再取得してテーブル状態を更新
+    mutateTableData()
 
     // 結果を保存
     setCheckoutResult(result)

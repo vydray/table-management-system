@@ -1,7 +1,11 @@
 import { useState, useRef, useCallback } from 'react'
+import useSWR from 'swr'
 import { supabase } from '@/lib/supabase'
 import { TableData } from '../types'
 import { getCurrentStoreId } from '../utils/storeContext'
+
+// SWR用フェッチャー
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 // テーブルの位置情報（元の固定位置）
 const tablePositions = {
@@ -27,199 +31,116 @@ const tablePositions = {
   '臨時2': { top: 460, left: 660 }
 }
 
+// レイアウト型定義
+interface TableLayout {
+  table_name: string
+  display_name: string | null
+  position_top: number
+  position_left: number
+  table_width: number
+  table_height: number
+  is_visible: boolean
+  page_number: number
+}
+
+// テーブルデータを処理する関数
+const processTableData = (layouts: TableLayout[], tableData: TableData[]): Record<string, TableData> => {
+  const tableMap: Record<string, TableData> = {}
+
+  // レイアウトから空のテーブルマップを初期化
+  layouts.filter(t => t.is_visible).forEach(layout => {
+    tableMap[layout.table_name] = {
+      table: layout.table_name,
+      name: '',
+      oshi: '',
+      time: '',
+      visit: '',
+      elapsed: '',
+      status: 'empty'
+    }
+  })
+
+  // ステータスデータで更新
+  tableData.forEach((item: TableData) => {
+    if (!(item.table in tableMap)) return
+
+    if (item.time && item.status === 'occupied') {
+      const entryTime = new Date(item.time.replace(' ', 'T'))
+      const now = new Date()
+      let elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
+      if (elapsedMin < 0) elapsedMin = 0
+
+      let elapsedText = ''
+      if (elapsedMin >= 1440) {
+        const days = Math.floor(elapsedMin / 1440)
+        const hours = Math.floor((elapsedMin % 1440) / 60)
+        const mins = elapsedMin % 60
+        elapsedText = `${days}日${hours}時間${mins}分`
+      } else if (elapsedMin >= 60) {
+        const hours = Math.floor(elapsedMin / 60)
+        const mins = elapsedMin % 60
+        elapsedText = `${hours}時間${mins}分`
+      } else {
+        elapsedText = `${elapsedMin}分`
+      }
+
+      tableMap[item.table] = { ...item, elapsed: elapsedText }
+    } else {
+      tableMap[item.table] = item
+    }
+  })
+
+  return tableMap
+}
+
 export const useTableManagement = () => {
-  const [tables, setTables] = useState<Record<string, TableData>>({})
   const [currentTable, setCurrentTable] = useState('')
-  const [tableLayouts, setTableLayouts] = useState<Array<{
-    table_name: string
-    display_name: string | null
-    position_top: number
-    position_left: number
-    table_width: number
-    table_height: number
-    is_visible: boolean
-    page_number: number
-  }>>([])
   const [currentPage, setCurrentPage] = useState(1)
-  const [maxPageNumber, setMaxPageNumber] = useState(1)
   const [moveMode, setMoveMode] = useState(false)
   const [moveFromTable, setMoveFromTable] = useState('')
   const [showMoveHint, setShowMoveHint] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
   const [attendingCastCount, setAttendingCastCount] = useState(0)
-  const [occupiedTableCount, setOccupiedTableCount] = useState(0)
 
   const isLongPress = useRef(false)
-  // レイアウトの最新値を保持するref（クロージャ問題を回避）
-  const tableLayoutsRef = useRef<typeof tableLayouts>([])
+  const storeId = getCurrentStoreId()
 
-  // データ取得（layoutsパラメータを追加してテーブルレイアウトを受け取れるように）
-  const loadData = useCallback(async (layouts?: typeof tableLayouts) => {
-    try {
-      // 渡されたlayoutsか、refの最新値を使用（クロージャ問題を回避）
-      const currentLayouts = layouts || tableLayoutsRef.current
-
-      const storeId = getCurrentStoreId()
-      const res = await fetch(`/api/tables/status?storeId=${storeId}`)
-      const data: TableData[] = await res.json()
-
-      const tableMap: Record<string, TableData> = {}
-
-      // データベースから取得したテーブルレイアウトを使用
-      if (currentLayouts.length > 0) {
-        // データベースのテーブル情報を使用
-        currentLayouts.filter(t => t.is_visible).forEach(layout => {
-          tableMap[layout.table_name] = {
-            table: layout.table_name,
-            name: '',
-            oshi: '',
-            time: '',
-            visit: '',
-            elapsed: '',
-            status: 'empty'
-          }
-        })
-      } else {
-        // フォールバック：固定のテーブル位置を使用
-        Object.keys(tablePositions).forEach(tableId => {
-          tableMap[tableId] = {
-            table: tableId,
-            name: '',
-            oshi: '',
-            time: '',
-            visit: '',
-            elapsed: '',
-            status: 'empty'
-          }
-        })
-      }
-
-      // 取得したデータで更新（tableMapに存在するテーブルのみ）
-      data.forEach(item => {
-        // tableMapに定義されているテーブルのみ処理（非表示テーブルは静かにスキップ）
-        if (!(item.table in tableMap)) {
-          return
-        }
-
-        if (item.time && item.status === 'occupied') {
-          const entryTime = new Date(item.time.replace(' ', 'T'))
-          const now = new Date()
-
-          // 日付をまたぐ場合の経過時間計算
-          let elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
-
-          // 負の値になった場合（日付設定ミスなど）は0にする
-          if (elapsedMin < 0) {
-            elapsedMin = 0
-          }
-
-          // 24時間以上の場合は時間表示も追加
-          let elapsedText = ''
-          if (elapsedMin >= 1440) { // 24時間以上
-            const days = Math.floor(elapsedMin / 1440)
-            const hours = Math.floor((elapsedMin % 1440) / 60)
-            const mins = elapsedMin % 60
-            elapsedText = `${days}日${hours}時間${mins}分`
-          } else if (elapsedMin >= 60) { // 1時間以上
-            const hours = Math.floor(elapsedMin / 60)
-            const mins = elapsedMin % 60
-            elapsedText = `${hours}時間${mins}分`
-          } else {
-            elapsedText = `${elapsedMin}分`
-          }
-
-          tableMap[item.table] = {
-            ...item,
-            elapsed: elapsedText
-          }
-        } else {
-          tableMap[item.table] = item
-        }
-      })
-
-      setTables(tableMap)
-
-      const occupied = Object.values(tableMap).filter(table => table.status !== 'empty').length
-      setOccupiedTableCount(occupied)
-
-    } catch (error) {
-      console.error('Error loading data:', error)
+  // SWRでテーブルデータを取得（キャッシュ有効）
+  const { data: combinedData, mutate: mutateTableData } = useSWR<{
+    layouts: TableLayout[]
+    tableData: TableData[]
+  }>(
+    storeId ? `/api/tables/combined?storeId=${storeId}` : null,
+    fetcher,
+    {
+      revalidateOnFocus: true,      // タブ復帰時に再取得
+      dedupingInterval: 2000,       // 2秒間は重複リクエスト防止
     }
-  }, [])
+  )
 
-  // 統合API使用：テーブルレイアウトとステータスを一度に取得
-  const loadTableLayouts = async (shouldLoadData: boolean = true) => {
-    try {
-      const storeId = getCurrentStoreId()
-      // 統合APIを使用（1回のリクエストでレイアウトとステータスを取得）
-      const res = await fetch(`/api/tables/combined?storeId=${storeId}`)
-      const { layouts, tableData } = await res.json()
+  // 取得したデータを処理
+  const tableLayouts: TableLayout[] = combinedData?.layouts || []
+  const tables: Record<string, TableData> = combinedData?.layouts && combinedData?.tableData
+    ? processTableData(combinedData.layouts, combinedData.tableData)
+    : {}
 
-      setTableLayouts(layouts)
-      // refも更新（setIntervalのクロージャ問題を回避）
-      tableLayoutsRef.current = layouts
+  // 最大ページ番号
+  const maxPageNumber = tableLayouts.length > 0
+    ? Math.max(...tableLayouts.map(t => t.page_number || 1), 1)
+    : 1
 
-      // 最大ページ番号を取得
-      if (layouts && layouts.length > 0) {
-        const maxPage = Math.max(...layouts.map((t: {page_number?: number}) => t.page_number || 1), 1)
-        setMaxPageNumber(maxPage)
-      }
+  // 使用中テーブル数
+  const occupiedTableCount = Object.values(tables).filter(table => table.status !== 'empty').length
 
-      // すでにステータスデータがあるので、それを使ってテーブルマップを構築
-      if (shouldLoadData && layouts && layouts.length > 0) {
-        const tableMap: Record<string, TableData> = {}
+  // データ再取得（SWRのmutateを呼ぶ）- 互換性のため維持
+  const loadData = useCallback(async () => {
+    await mutateTableData()
+  }, [mutateTableData])
 
-        // レイアウトから空のテーブルマップを初期化
-        layouts.filter((t: {is_visible: boolean}) => t.is_visible).forEach((layout: {table_name: string}) => {
-          tableMap[layout.table_name] = {
-            table: layout.table_name,
-            name: '',
-            oshi: '',
-            time: '',
-            visit: '',
-            elapsed: '',
-            status: 'empty'
-          }
-        })
-
-        // ステータスデータで更新
-        tableData.forEach((item: TableData) => {
-          if (!(item.table in tableMap)) return
-
-          if (item.time && item.status === 'occupied') {
-            const entryTime = new Date(item.time.replace(' ', 'T'))
-            const now = new Date()
-            let elapsedMin = Math.floor((now.getTime() - entryTime.getTime()) / 60000)
-            if (elapsedMin < 0) elapsedMin = 0
-
-            let elapsedText = ''
-            if (elapsedMin >= 1440) {
-              const days = Math.floor(elapsedMin / 1440)
-              const hours = Math.floor((elapsedMin % 1440) / 60)
-              const mins = elapsedMin % 60
-              elapsedText = `${days}日${hours}時間${mins}分`
-            } else if (elapsedMin >= 60) {
-              const hours = Math.floor(elapsedMin / 60)
-              const mins = elapsedMin % 60
-              elapsedText = `${hours}時間${mins}分`
-            } else {
-              elapsedText = `${elapsedMin}分`
-            }
-
-            tableMap[item.table] = { ...item, elapsed: elapsedText }
-          } else {
-            tableMap[item.table] = item
-          }
-        })
-
-        setTables(tableMap)
-        const occupied = Object.values(tableMap).filter(table => table.status !== 'empty').length
-        setOccupiedTableCount(occupied)
-      }
-    } catch (error) {
-      console.error('Error loading table layouts:', error)
-    }
-  }
+  // テーブルレイアウト再取得（SWRのmutateを呼ぶ）- 互換性のため維持
+  const loadTableLayouts = useCallback(async () => {
+    await mutateTableData()
+  }, [mutateTableData])
 
   // 出勤中のキャスト数を取得する関数
   const loadAttendingCastCount = async () => {
@@ -280,30 +201,11 @@ export const useTableManagement = () => {
         throw new Error('移動に失敗しました')
       }
 
-      setTables(prev => {
-        const newTables = { ...prev }
-        newTables[toTable] = { ...prev[moveFromTable] }
-        newTables[moveFromTable] = {
-          table: moveFromTable,
-          name: '',
-          oshi: '',
-          time: '',
-          visit: '',
-          elapsed: '',
-          status: 'empty'
-        }
-
-        // 卓数を更新（移動しても卓数は変わらないが、念のため再計算）
-        const occupied = Object.values(newTables).filter(table => table.status !== 'empty').length
-        setOccupiedTableCount(occupied)
-
-        return newTables
-      })
-
       endMoveMode()
 
+      // SWRキャッシュを再取得
       setTimeout(() => {
-        loadData()
+        mutateTableData()
       }, 500)
 
     } catch (error) {
@@ -354,7 +256,6 @@ export const useTableManagement = () => {
   return {
     // State
     tables,
-    setTables,
     currentTable,
     setCurrentTable,
     tableLayouts,
@@ -367,13 +268,13 @@ export const useTableManagement = () => {
     isMoving,
     attendingCastCount,
     occupiedTableCount,
-    setOccupiedTableCount,
     isLongPress,
 
     // Functions
     loadData,
     loadTableLayouts,
     loadAttendingCastCount,
+    mutateTableData,  // SWRのmutateを直接エクスポート
     executeMove,
     startMoveMode,
     endMoveMode,
