@@ -181,11 +181,8 @@ export const PaymentModal: FC<PaymentModalProps> = ({
               <span style={{ fontSize: `${14 * layoutScale}px`, color: '#e91e63' }}>割引</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: `${8 * layoutScale}px` }}>
                 <span style={{ fontSize: `${14 * layoutScale}px`, color: '#e91e63' }}>-¥</span>
-                <input
-                  type="text"
-                  value={paymentData.discount ? paymentData.discount.toLocaleString() : '0'}
+                <div
                   onClick={() => onChangeActiveInput('discount')}
-                  readOnly
                   style={{
                     width: `${100 * layoutScale}px`,
                     padding: `${6 * layoutScale}px`,
@@ -194,9 +191,12 @@ export const PaymentModal: FC<PaymentModalProps> = ({
                     fontSize: `${16 * layoutScale}px`,
                     cursor: 'pointer',
                     backgroundColor: activePaymentInput === 'discount' ? '#fce4ec' : 'white',
-                    textAlign: 'right'
+                    textAlign: 'right',
+                    color: paymentData.discount > 0 ? '#333' : '#ccc'
                   }}
-                />
+                >
+                  {paymentData.discount > 0 ? paymentData.discount.toLocaleString() : '0'}
+                </div>
               </div>
             </div>
 
