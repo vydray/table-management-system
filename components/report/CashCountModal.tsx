@@ -12,16 +12,16 @@ interface CashCountModalProps {
 
 // 金種の定義
 const denominations = [
-  { key: 'tenThousand', label: '1万', value: 10000 },
-  { key: 'fiveThousand', label: '5千', value: 5000 },
-  { key: 'twoThousand', label: '2千', value: 2000 },
-  { key: 'thousand', label: '千', value: 1000 },
-  { key: 'fiveHundred', label: '500', value: 500 },
-  { key: 'hundred', label: '100', value: 100 },
-  { key: 'fifty', label: '50', value: 50 },
-  { key: 'ten', label: '10', value: 10 },
-  { key: 'five', label: '5', value: 5 },
-  { key: 'one', label: '1', value: 1 },
+  { key: 'tenThousand', label: '1万円札', value: 10000 },
+  { key: 'fiveThousand', label: '5千円札', value: 5000 },
+  { key: 'twoThousand', label: '2千円札', value: 2000 },
+  { key: 'thousand', label: '千円札', value: 1000 },
+  { key: 'fiveHundred', label: '500円玉', value: 500 },
+  { key: 'hundred', label: '100円玉', value: 100 },
+  { key: 'fifty', label: '50円玉', value: 50 },
+  { key: 'ten', label: '10円玉', value: 10 },
+  { key: 'five', label: '5円玉', value: 5 },
+  { key: 'one', label: '1円玉', value: 1 },
 ] as const
 
 type DenominationKey = typeof denominations[number]['key']
@@ -111,8 +111,8 @@ export default function CashCountModal({
   if (!isOpen) return null
 
   const numpadButtonStyle = {
-    padding: '20px 0',
-    fontSize: '24px',
+    padding: '18px 0',
+    fontSize: '22px',
     fontWeight: 'bold' as const,
     border: '1px solid #ddd',
     borderRadius: '8px',
@@ -142,7 +142,7 @@ export default function CashCountModal({
           backgroundColor: 'white',
           borderRadius: '10px',
           width: '95%',
-          maxWidth: '500px',
+          maxWidth: '600px',
           maxHeight: '95vh',
           overflow: 'auto',
           position: 'relative'
@@ -175,14 +175,15 @@ export default function CashCountModal({
         {/* 本体 */}
         <div style={{ padding: '10px', display: 'flex', gap: '10px' }}>
           {/* 左側: 金種リスト */}
-          <div style={{ flex: '0 0 140px' }}>
+          <div style={{ flex: '1 1 auto', minWidth: '200px' }}>
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '4px'
+              backgroundColor: '#f8f8f8',
+              borderRadius: '8px',
+              padding: '8px'
             }}>
               {denominations.map((denom) => {
                 const count = getDenomValue(denom.key)
+                const amount = count * denom.value
                 const isSelected = selectedDenom === denom.key
 
                 return (
@@ -190,18 +191,49 @@ export default function CashCountModal({
                     key={denom.key}
                     onClick={() => setSelectedDenom(denom.key)}
                     style={{
-                      padding: '8px 4px',
-                      backgroundColor: isSelected ? '#2196f3' : '#f5f5f5',
-                      color: isSelected ? 'white' : '#333',
-                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '10px 12px',
+                      marginBottom: '4px',
+                      backgroundColor: isSelected ? '#e3f2fd' : 'white',
+                      border: isSelected ? '2px solid #2196f3' : '1px solid #e0e0e0',
                       borderRadius: '6px',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      fontSize: '12px'
+                      cursor: 'pointer'
                     }}
                   >
-                    <div style={{ fontWeight: 'bold' }}>{denom.label}</div>
-                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{count}</div>
+                    <span style={{
+                      flex: '0 0 70px',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}>
+                      {denom.label}
+                    </span>
+                    <span style={{
+                      flex: '0 0 50px',
+                      textAlign: 'right',
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                      color: isSelected ? '#2196f3' : '#333'
+                    }}>
+                      {count}
+                    </span>
+                    <span style={{
+                      flex: '0 0 20px',
+                      fontSize: '12px',
+                      color: '#666',
+                      marginLeft: '4px'
+                    }}>
+                      枚
+                    </span>
+                    <span style={{
+                      flex: 1,
+                      textAlign: 'right',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      color: '#333'
+                    }}>
+                      ¥{amount.toLocaleString()}
+                    </span>
                   </div>
                 )
               })}
@@ -210,33 +242,32 @@ export default function CashCountModal({
             {/* 合計表示 */}
             <div style={{
               marginTop: '8px',
-              padding: '8px',
-              backgroundColor: '#f0f0f0',
-              borderRadius: '6px',
-              fontSize: '12px'
+              padding: '12px',
+              backgroundColor: '#e8e8e8',
+              borderRadius: '8px'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '14px' }}>
                 <span>合計</span>
-                <span style={{ fontWeight: 'bold', color: '#2196f3' }}>¥{total.toLocaleString()}</span>
+                <span style={{ fontWeight: 'bold', color: '#2196f3', fontSize: '16px' }}>¥{total.toLocaleString()}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '14px' }}>
                 <span>レジ金</span>
                 <span style={{ color: '#f44336' }}>-¥{registerAmount.toLocaleString()}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #ccc', paddingTop: '4px' }}>
-                <span style={{ fontWeight: 'bold' }}>回収</span>
-                <span style={{ fontWeight: 'bold', color: '#2196f3' }}>¥{cashCollection.toLocaleString()}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #ccc', paddingTop: '6px', fontSize: '14px' }}>
+                <span style={{ fontWeight: 'bold' }}>現金回収</span>
+                <span style={{ fontWeight: 'bold', color: '#2196f3', fontSize: '18px' }}>¥{cashCollection.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
           {/* 右側: テンキー */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ flex: '0 0 160px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {/* テンキーグリッド */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '6px',
+              gap: '5px',
               flex: 1
             }}>
               {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(num => (
@@ -255,7 +286,7 @@ export default function CashCountModal({
                   backgroundColor: '#ffebee',
                   color: '#f44336',
                   border: '1px solid #f44336',
-                  fontSize: '16px'
+                  fontSize: '14px'
                 }}
               >
                 AC
@@ -271,7 +302,7 @@ export default function CashCountModal({
                 style={{
                   ...numpadButtonStyle,
                   backgroundColor: '#f5f5f5',
-                  fontSize: '20px'
+                  fontSize: '18px'
                 }}
               >
                 ←
@@ -283,7 +314,7 @@ export default function CashCountModal({
               onClick={handleNext}
               style={{
                 padding: '14px',
-                fontSize: '16px',
+                fontSize: '15px',
                 fontWeight: 'bold',
                 border: 'none',
                 borderRadius: '8px',
@@ -300,7 +331,7 @@ export default function CashCountModal({
         {/* 差額表示 */}
         <div style={{
           margin: '0 10px 10px',
-          padding: '10px',
+          padding: '10px 12px',
           backgroundColor: cashCollection === cashReceipt ? '#e8f5e9' : '#ffebee',
           borderRadius: '6px',
           display: 'flex',
@@ -308,7 +339,7 @@ export default function CashCountModal({
           alignItems: 'center',
           fontSize: '14px'
         }}>
-          <span>現金売上との差額</span>
+          <span>理論値との差額</span>
           <span style={{
             fontWeight: 'bold',
             fontSize: '16px',
