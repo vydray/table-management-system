@@ -12,12 +12,14 @@ interface OrderTableProps {
   orderItems: OrderItem[]
   onItemClick: (index: number) => void
   onItemDelete: (index: number) => void
+  onUpdateQuantity?: (index: number, quantity: number) => void
 }
 
 export const OrderTable: React.FC<OrderTableProps> = ({
   orderItems,
   onItemClick,
-  onItemDelete
+  onItemDelete,
+  onUpdateQuantity
 }) => {
   const {
     getSwipeState,
@@ -73,7 +75,64 @@ export const OrderTable: React.FC<OrderTableProps> = ({
               >
                 <span className="col-name">{item.name}</span>
                 <span className="col-cast">{item.cast || ''}</span>
-                <span className="col-qty">{item.quantity}</span>
+                <span className="col-qty">
+                  {onUpdateQuantity ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (item.quantity > 1) {
+                            onUpdateQuantity(index, item.quantity - 1)
+                          }
+                        }}
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          border: 'none',
+                          borderRadius: '4px',
+                          backgroundColor: item.quantity <= 1 ? '#e0e0e0' : '#ff9800',
+                          color: item.quantity <= 1 ? '#999' : 'white',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          cursor: item.quantity <= 1 ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: 1
+                        }}
+                        disabled={item.quantity <= 1}
+                      >
+                        −
+                      </button>
+                      <span style={{ minWidth: '20px', textAlign: 'center' }}>{item.quantity}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onUpdateQuantity(index, item.quantity + 1)
+                        }}
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          border: 'none',
+                          borderRadius: '4px',
+                          backgroundColor: '#ff9800',
+                          color: 'white',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: 1
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    item.quantity
+                  )}
+                </span>
                 <span className="col-price">
                   ¥{(item.price * item.quantity).toLocaleString()}
                 </span>

@@ -76,6 +76,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
         orderItems={orderItems}
         onItemClick={setSelectedOrderItem}
         onItemDelete={onDeleteOrderItem}
+        onUpdateQuantity={onUpdateOrderItem}
       />
 
       <OrderTotal
