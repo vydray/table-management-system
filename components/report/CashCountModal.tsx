@@ -4,13 +4,12 @@ import { useCashCount } from '../../hooks/useCashCount'
 interface CashCountModalProps {
   isOpen: boolean
   onClose: () => void
-  cashReceipt: number // 理論上の現金回収額（現金売上 - 日払い - 経費 - 未収金等）
-  registerAmount: number // レジ金
-  businessDate: string // 営業日（YYYY-MM-DD形式）
+  cashReceipt: number
+  registerAmount: number
+  businessDate: string
   onComplete: (totalCash: number) => void
 }
 
-// 金種の定義
 const denominations = [
   { key: 'tenThousand', label: '1万円札', value: 10000 },
   { key: 'fiveThousand', label: '5千円札', value: 5000 },
@@ -102,6 +101,8 @@ export default function CashCountModal({
 
   if (!isOpen) return null
 
+  const selectedLabel = denominations.find(d => d.key === selectedDenom)?.label || ''
+
   return (
     <div
       onClick={onClose}
@@ -115,16 +116,19 @@ export default function CashCountModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: '12px',
         zIndex: 9999
       }}
     >
+      {/* メインモーダル（金種リスト） */}
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: 'white',
           borderRadius: '12px',
-          width: '480px',
-          overflow: 'hidden'
+          width: '320px',
+          overflow: 'hidden',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
         }}
       >
         {/* ヘッダー */}
@@ -153,173 +157,87 @@ export default function CashCountModal({
           </button>
         </div>
 
-        {/* 本体 */}
-        <div style={{ padding: '12px', display: 'flex', gap: '12px' }}>
-          {/* 左側: 金種リスト */}
-          <div style={{ width: '260px' }}>
-            {denominations.map((denom) => {
-              const count = getDenomValue(denom.key)
-              const amount = count * denom.value
-              const isSelected = selectedDenom === denom.key
+        {/* 金種リスト */}
+        <div style={{ padding: '10px' }}>
+          {denominations.map((denom) => {
+            const count = getDenomValue(denom.key)
+            const amount = count * denom.value
+            const isSelected = selectedDenom === denom.key
 
-              return (
-                <div
-                  key={denom.key}
-                  onClick={() => setSelectedDenom(denom.key)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '8px 10px',
-                    marginBottom: '3px',
-                    backgroundColor: isSelected ? '#e3f2fd' : '#fafafa',
-                    border: isSelected ? '2px solid #2196f3' : '1px solid #e0e0e0',
-                    borderRadius: '6px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <span style={{ width: '65px', fontSize: '13px' }}>{denom.label}</span>
-                  <span style={{
-                    width: '45px',
-                    textAlign: 'right',
-                    fontSize: '17px',
-                    fontWeight: 'bold',
-                    color: isSelected ? '#2196f3' : '#333'
-                  }}>
-                    {count}
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#888', marginLeft: '2px' }}>枚</span>
-                  <span style={{
-                    flex: 1,
-                    textAlign: 'right',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#555'
-                  }}>
-                    ¥{amount.toLocaleString()}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* 右側: テンキー */}
-          <div style={{ width: '180px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '4px',
-              flex: 1
-            }}>
-              {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(num => (
-                <button
-                  key={num}
-                  onClick={() => handleNumpadInput(String(num))}
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: 'bold',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    backgroundColor: 'white',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {num}
-                </button>
-              ))}
-              <button
-                onClick={handleNumpadClear}
+            return (
+              <div
+                key={denom.key}
+                onClick={() => setSelectedDenom(denom.key)}
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '10px 12px',
+                  marginBottom: '4px',
+                  backgroundColor: isSelected ? '#e3f2fd' : '#fafafa',
+                  border: isSelected ? '2px solid #2196f3' : '1px solid #e0e0e0',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                <span style={{ width: '70px', fontSize: '14px' }}>{denom.label}</span>
+                <span style={{
+                  width: '50px',
+                  textAlign: 'right',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: isSelected ? '#2196f3' : '#333'
+                }}>
+                  {count}
+                </span>
+                <span style={{ fontSize: '12px', color: '#888', marginLeft: '4px' }}>枚</span>
+                <span style={{
+                  flex: 1,
+                  textAlign: 'right',
                   fontSize: '14px',
-                  fontWeight: 'bold',
-                  border: '1px solid #ef5350',
-                  borderRadius: '6px',
-                  backgroundColor: '#ffebee',
-                  color: '#ef5350',
-                  cursor: 'pointer'
-                }}
-              >
-                AC
-              </button>
-              <button
-                onClick={() => handleNumpadInput('0')}
-                style={{
-                  fontSize: '24px',
-                  fontWeight: 'bold',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  backgroundColor: 'white',
-                  cursor: 'pointer'
-                }}
-              >
-                0
-              </button>
-              <button
-                onClick={handleNumpadBackspace}
-                style={{
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  backgroundColor: '#f5f5f5',
-                  cursor: 'pointer'
-                }}
-              >
-                ←
-              </button>
-            </div>
-            <button
-              onClick={handleNext}
-              style={{
-                marginTop: '4px',
-                padding: '12px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                border: 'none',
-                borderRadius: '6px',
-                backgroundColor: '#4caf50',
-                color: 'white',
-                cursor: 'pointer'
-              }}
-            >
-              次へ ↓
-            </button>
-          </div>
+                  fontWeight: '600',
+                  color: '#555'
+                }}>
+                  ¥{amount.toLocaleString()}
+                </span>
+              </div>
+            )
+          })}
         </div>
 
         {/* 合計エリア */}
         <div style={{
-          margin: '0 12px',
-          padding: '10px 12px',
-          backgroundColor: '#f5f5f5',
+          margin: '0 10px 10px',
+          padding: '12px',
+          backgroundColor: '#f0f0f0',
           borderRadius: '8px'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <span style={{ fontSize: '13px' }}>合計</span>
-            <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#2196f3' }}>¥{total.toLocaleString()}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '14px' }}>合計</span>
+            <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#2196f3' }}>¥{total.toLocaleString()}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <span style={{ fontSize: '13px' }}>レジ金</span>
-            <span style={{ fontSize: '14px', color: '#f44336' }}>-¥{registerAmount.toLocaleString()}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '14px' }}>レジ金</span>
+            <span style={{ fontSize: '15px', color: '#f44336' }}>-¥{registerAmount.toLocaleString()}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #ddd', paddingTop: '6px', marginTop: '4px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>現金回収</span>
-            <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#2196f3' }}>¥{cashCollection.toLocaleString()}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #ccc', paddingTop: '8px', marginTop: '4px' }}>
+            <span style={{ fontSize: '15px', fontWeight: 'bold' }}>現金回収</span>
+            <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#2196f3' }}>¥{cashCollection.toLocaleString()}</span>
           </div>
         </div>
 
         {/* 差額 */}
         <div style={{
-          margin: '8px 12px',
-          padding: '8px 12px',
+          margin: '0 10px 10px',
+          padding: '10px 12px',
           backgroundColor: cashCollection === cashReceipt ? '#e8f5e9' : '#ffebee',
-          borderRadius: '6px',
+          borderRadius: '8px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <span style={{ fontSize: '13px' }}>理論値との差額</span>
+          <span style={{ fontSize: '14px' }}>理論値との差額</span>
           <span style={{
-            fontSize: '16px',
+            fontSize: '17px',
             fontWeight: 'bold',
             color: cashCollection === cashReceipt ? '#4caf50' : '#f44336'
           }}>
@@ -328,7 +246,7 @@ export default function CashCountModal({
         </div>
 
         {/* ボタン */}
-        <div style={{ padding: '8px 12px 12px', display: 'flex', gap: '8px' }}>
+        <div style={{ padding: '0 10px 12px', display: 'flex', gap: '8px' }}>
           <button
             onClick={resetCount}
             style={{
@@ -337,7 +255,7 @@ export default function CashCountModal({
               backgroundColor: '#757575',
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '15px'
             }}
@@ -353,7 +271,7 @@ export default function CashCountModal({
               backgroundColor: isSaving ? '#bdbdbd' : '#2196f3',
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: '8px',
               cursor: isSaving ? 'not-allowed' : 'pointer',
               fontSize: '15px',
               fontWeight: 'bold'
@@ -362,6 +280,118 @@ export default function CashCountModal({
             {isSaving ? '保存中...' : '確定'}
           </button>
         </div>
+      </div>
+
+      {/* テンキーモーダル（右側） */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          width: '200px',
+          padding: '12px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        }}
+      >
+        {/* 選択中の表示 */}
+        <div style={{
+          padding: '10px',
+          marginBottom: '10px',
+          backgroundColor: '#2196f3',
+          borderRadius: '8px',
+          textAlign: 'center',
+          color: 'white'
+        }}>
+          <div style={{ fontSize: '12px', marginBottom: '2px' }}>{selectedLabel}</div>
+          <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{getDenomValue(selectedDenom)}<span style={{ fontSize: '14px' }}>枚</span></div>
+        </div>
+
+        {/* テンキー */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '6px'
+        }}>
+          {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(num => (
+            <button
+              key={num}
+              onClick={() => handleNumpadInput(String(num))}
+              style={{
+                padding: '16px 0',
+                fontSize: '22px',
+                fontWeight: 'bold',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                cursor: 'pointer'
+              }}
+            >
+              {num}
+            </button>
+          ))}
+          <button
+            onClick={handleNumpadClear}
+            style={{
+              padding: '16px 0',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              border: '1px solid #ef5350',
+              borderRadius: '8px',
+              backgroundColor: '#ffebee',
+              color: '#ef5350',
+              cursor: 'pointer'
+            }}
+          >
+            AC
+          </button>
+          <button
+            onClick={() => handleNumpadInput('0')}
+            style={{
+              padding: '16px 0',
+              fontSize: '22px',
+              fontWeight: 'bold',
+              border: '1px solid #ddd',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              cursor: 'pointer'
+            }}
+          >
+            0
+          </button>
+          <button
+            onClick={handleNumpadBackspace}
+            style={{
+              padding: '16px 0',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              border: '1px solid #ddd',
+              borderRadius: '8px',
+              backgroundColor: '#f5f5f5',
+              cursor: 'pointer'
+            }}
+          >
+            ←
+          </button>
+        </div>
+
+        {/* 次へボタン */}
+        <button
+          onClick={handleNext}
+          style={{
+            width: '100%',
+            marginTop: '10px',
+            padding: '14px',
+            fontSize: '15px',
+            fontWeight: 'bold',
+            border: 'none',
+            borderRadius: '8px',
+            backgroundColor: '#4caf50',
+            color: 'white',
+            cursor: 'pointer'
+          }}
+        >
+          次へ ↓
+        </button>
       </div>
     </div>
   )
