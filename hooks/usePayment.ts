@@ -8,9 +8,10 @@ export const usePayment = () => {
     otherMethod: '',
     discount: 0
   })
-  const [activePaymentInput, setActivePaymentInput] = useState<'cash' | 'card' | 'other' | 'discount'>('cash')
+  const [activePaymentInput, setActivePaymentInput] = useState<'cash' | 'card' | 'other' | 'discount' | null>(null)
 
   const handleNumberClick = (num: string) => {
+    if (!activePaymentInput) return
     setPaymentData(prev => {
       const currentValue = prev[activePaymentInput]
       const newValue = currentValue === 0 ? parseInt(num) : parseInt(currentValue.toString() + num)
@@ -22,6 +23,7 @@ export const usePayment = () => {
   }
 
   const handleQuickAmount = (amount: number) => {
+    if (!activePaymentInput) return
     setPaymentData(prev => ({
       ...prev,
       [activePaymentInput]: amount
@@ -29,6 +31,7 @@ export const usePayment = () => {
   }
 
   const handleDeleteNumber = () => {
+    if (!activePaymentInput) return
     setPaymentData(prev => {
       const currentValue = prev[activePaymentInput].toString()
       if (currentValue.length > 1) {
@@ -46,6 +49,7 @@ export const usePayment = () => {
   }
 
   const handleClearNumber = () => {
+    if (!activePaymentInput) return
     setPaymentData(prev => ({
       ...prev,
       [activePaymentInput]: 0
@@ -60,7 +64,7 @@ export const usePayment = () => {
       otherMethod: '',
       discount: 0
     })
-    setActivePaymentInput('cash')
+    setActivePaymentInput(null)
   }
 
   const setOtherMethod = (method: string) => {

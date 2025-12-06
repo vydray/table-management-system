@@ -13,7 +13,7 @@ interface PaymentModalProps {
     otherMethod: string
     discount: number
   }
-  activePaymentInput: 'cash' | 'card' | 'other' | 'discount'
+  activePaymentInput: 'cash' | 'card' | 'other' | 'discount' | null
   subtotal: number
   serviceTax: number
   total: number
@@ -451,7 +451,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
 
         {/* 右側：数字パッド */}
         <NumberPad
-          currentValue={paymentData[activePaymentInput]}
+          currentValue={activePaymentInput ? paymentData[activePaymentInput] : 0}
           layoutScale={layoutScale}
           onNumberClick={onNumberClick}
           onQuickAmount={onQuickAmount}

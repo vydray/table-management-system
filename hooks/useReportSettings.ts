@@ -15,8 +15,52 @@ export const useReportSettings = () => {
     customerTarget: 400
   })
   const [showTargetSetting, setShowTargetSetting] = useState(false)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
 
-  // 営業日開始時刻を読み込み
+  // 全ての設定を一括で読み込み
+  const loadAllSettings = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+
+      // 並列で全ての設定を読み込み
+      const [businessDayResult, registerResult, statusesResult] = await Promise.all([
+        supabase
+          .from('system_settings')
+          .select('setting_value')
+          .eq('store_id', storeId)
+          .eq('setting_key', 'business_day_start_hour')
+          .maybeSingle(),
+        supabase
+          .from('system_settings')
+          .select('setting_value')
+          .eq('store_id', storeId)
+          .eq('setting_key', 'register_amount')
+          .maybeSingle(),
+        supabase
+          .from('attendance_statuses')
+          .select('name')
+          .eq('store_id', storeId)
+          .eq('is_active', true)
+      ])
+
+      if (businessDayResult.data) {
+        setBusinessDayStartHour(Number(businessDayResult.data.setting_value))
+      }
+      if (registerResult.data) {
+        setRegisterAmount(Number(registerResult.data.setting_value))
+      }
+      if (statusesResult.data && statusesResult.data.length > 0) {
+        setActiveAttendanceStatuses(statusesResult.data.map(s => s.name))
+      }
+
+      setSettingsLoaded(true)
+    } catch (error) {
+      console.error('Error loading settings:', error)
+      setSettingsLoaded(true) // エラーでもフラグは立てる（デフォルト値で進む）
+    }
+  }
+
+  // 営業日開始時刻を読み込み（個別読み込み用）
   const loadBusinessDayStartHour = async () => {
     try {
       const storeId = getCurrentStoreId()
@@ -25,7 +69,7 @@ export const useReportSettings = () => {
         .select('setting_value')
         .eq('store_id', storeId)
         .eq('setting_key', 'business_day_start_hour')
-        .single()
+        .maybeSingle()
 
       if (!error && data) {
         setBusinessDayStartHour(Number(data.setting_value))
@@ -44,7 +88,7 @@ export const useReportSettings = () => {
         .select('setting_value')
         .eq('store_id', storeId)
         .eq('setting_key', 'register_amount')
-        .single()
+        .maybeSingle()
 
       if (data) {
         setRegisterAmount(Number(data.setting_value))
@@ -83,7 +127,7 @@ export const useReportSettings = () => {
         .eq('store_id', storeId)
         .eq('year', year)
         .eq('month', month)
-        .single()
+        .maybeSingle()
 
       if (data) {
         const targets = {
@@ -92,6 +136,14 @@ export const useReportSettings = () => {
         }
         setMonthlyTargets(targets)
         setTempTargets(targets)
+      } else {
+        // データがない場合はデフォルト値をセット
+        const defaultTargets = {
+          salesTarget: 12000000,
+          customerTarget: 400
+        }
+        setMonthlyTargets(defaultTargets)
+        setTempTargets(defaultTargets)
       }
     } catch (error) {
       console.error('Error loading monthly targets:', error)
@@ -136,8 +188,10 @@ export const useReportSettings = () => {
     setTempTargets,
     showTargetSetting,
     setShowTargetSetting,
+    settingsLoaded,
 
     // Functions
+    loadAllSettings,
     loadBusinessDayStartHour,
     loadRegisterAmount,
     loadActiveAttendanceStatuses,
