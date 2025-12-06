@@ -89,15 +89,20 @@ export default function Report() {
     loadMonthlyData
   )
 
-  // 初期読み込み
+  // 初回: 設定値を読み込み
   useEffect(() => {
-    loadMonthlyData(selectedYear, selectedMonth, businessDayStartHour, activeAttendanceStatuses)
-    loadMonthlyTargets(selectedYear, selectedMonth)
     loadBusinessDayStartHour()
     loadActiveAttendanceStatuses()
     loadRegisterAmount()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedYear, selectedMonth])
+  }, [])
+
+  // 設定値が読み込まれた後、または年月が変わった時にデータを読み込み
+  useEffect(() => {
+    loadMonthlyData(selectedYear, selectedMonth, businessDayStartHour, activeAttendanceStatuses)
+    loadMonthlyTargets(selectedYear, selectedMonth)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear, selectedMonth, businessDayStartHour, activeAttendanceStatuses])
 
   // 月間合計を計算
   const monthlyTotal = calculateMonthlyTotal(dailyData)
