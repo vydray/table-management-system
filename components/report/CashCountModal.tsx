@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useState } from 'react'
 import { useCashCount } from '../../hooks/useCashCount'
 
 interface CashCountModalProps {
@@ -9,6 +9,22 @@ interface CashCountModalProps {
   businessDate: string // 営業日（YYYY-MM-DD形式）
   onComplete: (totalCash: number) => void
 }
+
+// 金種の定義
+const denominations = [
+  { key: 'tenThousand', label: '1万円', value: 10000, type: 'bill' },
+  { key: 'fiveThousand', label: '5千円', value: 5000, type: 'bill' },
+  { key: 'twoThousand', label: '2千円', value: 2000, type: 'bill' },
+  { key: 'thousand', label: '千円', value: 1000, type: 'bill' },
+  { key: 'fiveHundred', label: '500円', value: 500, type: 'coin' },
+  { key: 'hundred', label: '100円', value: 100, type: 'coin' },
+  { key: 'fifty', label: '50円', value: 50, type: 'coin' },
+  { key: 'ten', label: '10円', value: 10, type: 'coin' },
+  { key: 'five', label: '5円', value: 5, type: 'coin' },
+  { key: 'one', label: '1円', value: 1, type: 'coin' },
+] as const
+
+type DenominationKey = typeof denominations[number]['key']
 
 export default function CashCountModal({
   isOpen,
@@ -32,41 +48,55 @@ export default function CashCountModal({
   const total = calculateTotal()
   const cashCollection = total - registerAmount
 
-  // 入力フィールドへの参照
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+  // 現在選択中の金種
+  const [selectedDenom, setSelectedDenom] = useState<DenominationKey>('tenThousand')
 
-  // エンターキーで次のフィールドに移動
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      const nextIndex = index + 1
-      if (nextIndex < inputRefs.current.length) {
-        inputRefs.current[nextIndex]?.focus()
-      }
+  // 金種の値を取得
+  const getDenomValue = (key: DenominationKey): number => {
+    const billKeys = ['tenThousand', 'fiveThousand', 'twoThousand', 'thousand'] as const
+    if (billKeys.includes(key as typeof billKeys[number])) {
+      return bills[key as keyof typeof bills]
+    }
+    return coins[key as keyof typeof coins]
+  }
+
+  // 金種の値を設定
+  const setDenomValue = (key: DenominationKey, value: number) => {
+    const billKeys = ['tenThousand', 'fiveThousand', 'twoThousand', 'thousand'] as const
+    if (billKeys.includes(key as typeof billKeys[number])) {
+      setBills({ ...bills, [key]: value })
+    } else {
+      setCoins({ ...coins, [key]: value })
     }
   }
 
-  // フォーカス時の処理：カーソルを末尾に移動、0の場合は空にする
-  const handleNumberFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    const input = e.target
-    const value = input.value
-
-    // 0の場合は空にする
-    if (value === '0') {
-      input.value = ''
+  // テンキー入力
+  const handleNumpadInput = (num: string) => {
+    const currentValue = getDenomValue(selectedDenom)
+    const newValue = Number(String(currentValue) + num)
+    if (newValue <= 9999) {
+      setDenomValue(selectedDenom, newValue)
     }
-
-    // カーソルを末尾に移動
-    setTimeout(() => {
-      const len = input.value.length
-      input.setSelectionRange(len, len)
-    }, 0)
   }
 
-  // 数字のみ許可
-  const handleNumberChange = (value: string, setter: (val: number) => void) => {
-    const numericValue = value.replace(/[^0-9]/g, '')
-    setter(numericValue === '' ? 0 : Number(numericValue))
+  // テンキークリア
+  const handleNumpadClear = () => {
+    setDenomValue(selectedDenom, 0)
+  }
+
+  // テンキーバックスペース
+  const handleNumpadBackspace = () => {
+    const currentValue = getDenomValue(selectedDenom)
+    const newValue = Math.floor(currentValue / 10)
+    setDenomValue(selectedDenom, newValue)
+  }
+
+  // 次の金種へ移動
+  const handleNext = () => {
+    const currentIndex = denominations.findIndex(d => d.key === selectedDenom)
+    if (currentIndex < denominations.length - 1) {
+      setSelectedDenom(denominations[currentIndex + 1].key)
+    }
   }
 
   // 完了処理
@@ -101,25 +131,25 @@ export default function CashCountModal({
         style={{
           backgroundColor: 'white',
           borderRadius: '10px',
-          width: '90%',
-          maxWidth: '600px',
-          maxHeight: '90vh',
+          width: '95%',
+          maxWidth: '700px',
+          maxHeight: '95vh',
           overflow: 'auto',
           position: 'relative'
         }}
       >
         {/* ヘッダー */}
         <div style={{
-          padding: '20px',
+          padding: '15px 20px',
           borderBottom: '2px solid #f0f0f0',
           position: 'sticky',
           top: 0,
           backgroundColor: 'white',
           zIndex: 1
         }}>
-          <h2 style={{ 
+          <h2 style={{
             margin: 0,
-            fontSize: '24px',
+            fontSize: '20px',
             textAlign: 'center'
           }}>
             レジ金計算
@@ -128,8 +158,8 @@ export default function CashCountModal({
             onClick={onClose}
             style={{
               position: 'absolute',
-              top: '20px',
-              right: '20px',
+              top: '15px',
+              right: '15px',
               background: 'none',
               border: 'none',
               fontSize: '24px',
@@ -141,397 +171,291 @@ export default function CashCountModal({
           </button>
         </div>
 
-        {/* 本体 */}
-        <div style={{ padding: '20px' }}>
-          {/* 紙幣セクション */}
+        {/* 本体 - 2カラムレイアウト */}
+        <div style={{
+          padding: '15px',
+          display: 'flex',
+          gap: '15px',
+          flexDirection: 'row',
+          flexWrap: 'wrap'
+        }}>
+          {/* 左側: 金種入力 */}
           <div style={{
-            backgroundColor: '#fff9e6',
-            padding: '20px',
-            borderRadius: '10px',
-            marginBottom: '20px'
+            flex: '1 1 300px',
+            minWidth: '280px'
           }}>
-            <h3 style={{ 
-              margin: '0 0 15px 0',
-              fontSize: '18px',
-              color: '#ff9800'
+            <div style={{
+              backgroundColor: '#f5f5f5',
+              padding: '10px',
+              borderRadius: '10px'
             }}>
-              紙幣
-            </h3>
-            
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #ffcc80' }}>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>種類</th>
-                  <th style={{ padding: '10px', textAlign: 'center' }}>枚数</th>
-                  <th style={{ padding: '10px', textAlign: 'center' }}>単位</th>
-                  <th style={{ padding: '10px', textAlign: 'right' }}>金額</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '10px' }}>1万円札</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <input
-                      ref={(el) => { inputRefs.current[0] = el }}
-                      type="text"
-                      value={bills.tenThousand}
-                      onChange={(e) => handleNumberChange(e.target.value, (val) => setBills({...bills, tenThousand: val}))}
-                      onFocus={handleNumberFocus}
-                      onKeyDown={(e) => handleKeyDown(e, 0)}
-                      style={{
-                        width: '80px',
-                        padding: '5px',
-                        textAlign: 'center',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px'
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                    ¥{(bills.tenThousand * 10000).toLocaleString()}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px' }}>5千円札</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <input
-                      ref={(el) => { inputRefs.current[1] = el }}
-                      type="text"
-                      value={bills.fiveThousand}
-                      onChange={(e) => handleNumberChange(e.target.value, (val) => setBills({...bills, fiveThousand: val}))}
-                      onFocus={handleNumberFocus}
-                      onKeyDown={(e) => handleKeyDown(e, 1)}
-                      style={{
-                        width: '80px',
-                        padding: '5px',
-                        textAlign: 'center',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px'
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                    ¥{(bills.fiveThousand * 5000).toLocaleString()}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px' }}>2千円札</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <input
-                      ref={(el) => { inputRefs.current[2] = el }}
-                      type="text"
-                      value={bills.twoThousand}
-                      onChange={(e) => handleNumberChange(e.target.value, (val) => setBills({...bills, twoThousand: val}))}
-                      onFocus={handleNumberFocus}
-                      onKeyDown={(e) => handleKeyDown(e, 2)}
-                      style={{
-                        width: '80px',
-                        padding: '5px',
-                        textAlign: 'center',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px'
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                    ¥{(bills.twoThousand * 2000).toLocaleString()}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px' }}>千円札</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <input
-                      ref={(el) => { inputRefs.current[3] = el }}
-                      type="text"
-                      value={bills.thousand}
-                      onChange={(e) => handleNumberChange(e.target.value, (val) => setBills({...bills, thousand: val}))}
-                      onFocus={handleNumberFocus}
-                      onKeyDown={(e) => handleKeyDown(e, 3)}
-                      style={{
-                        width: '80px',
-                        padding: '5px',
-                        textAlign: 'center',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px'
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                    ¥{(bills.thousand * 1000).toLocaleString()}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+              {/* 金種リスト */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {denominations.map((denom) => {
+                  const count = getDenomValue(denom.key)
+                  const amount = count * denom.value
+                  const isSelected = selectedDenom === denom.key
 
-          {/* 硬貨セクション */}
-          <div style={{
-            backgroundColor: '#f0f0f0',
-            padding: '20px',
-            borderRadius: '10px',
-            marginBottom: '20px'
-          }}>
-            <h3 style={{ 
-              margin: '0 0 15px 0',
-              fontSize: '18px',
-              color: '#666'
-            }}>
-              硬貨
-            </h3>
-            
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #ccc' }}>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>種類</th>
-                  <th style={{ padding: '10px', textAlign: 'center' }}>枚数</th>
-                  <th style={{ padding: '10px', textAlign: 'center' }}>単位</th>
-                  <th style={{ padding: '10px', textAlign: 'right' }}>金額</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '10px' }}>500円玉</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <input
-                      ref={(el) => { inputRefs.current[4] = el }}
-                      type="text"
-                      value={coins.fiveHundred}
-                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, fiveHundred: val}))}
-                      onFocus={handleNumberFocus}
-                      onKeyDown={(e) => handleKeyDown(e, 4)}
+                  return (
+                    <div
+                      key={denom.key}
+                      onClick={() => setSelectedDenom(denom.key)}
                       style={{
-                        width: '80px',
-                        padding: '5px',
-                        textAlign: 'center',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px'
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '8px 12px',
+                        backgroundColor: isSelected ? '#e3f2fd' : 'white',
+                        border: isSelected ? '2px solid #2196f3' : '1px solid #ddd',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
                       }}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                    ¥{(coins.fiveHundred * 500).toLocaleString()}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px' }}>100円玉</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <input
-                      ref={(el) => { inputRefs.current[5] = el }}
-                      type="text"
-                      value={coins.hundred}
-                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, hundred: val}))}
-                      onFocus={handleNumberFocus}
-                      onKeyDown={(e) => handleKeyDown(e, 5)}
-                      style={{
-                        width: '80px',
-                        padding: '5px',
+                    >
+                      <span style={{
+                        width: '60px',
+                        fontWeight: '500',
+                        fontSize: '14px'
+                      }}>
+                        {denom.label}
+                      </span>
+                      <span style={{
+                        flex: 1,
                         textAlign: 'center',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px'
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                    ¥{(coins.hundred * 100).toLocaleString()}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px' }}>50円玉</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <input
-                      ref={(el) => { inputRefs.current[6] = el }}
-                      type="text"
-                      value={coins.fifty}
-                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, fifty: val}))}
-                      onFocus={handleNumberFocus}
-                      onKeyDown={(e) => handleKeyDown(e, 6)}
-                      style={{
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        color: isSelected ? '#2196f3' : '#333'
+                      }}>
+                        {count}
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#666' }}>枚</span>
+                      <span style={{
                         width: '80px',
-                        padding: '5px',
-                        textAlign: 'center',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px'
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                    ¥{(coins.fifty * 50).toLocaleString()}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px' }}>10円玉</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <input
-                      ref={(el) => { inputRefs.current[7] = el }}
-                      type="text"
-                      value={coins.ten}
-                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, ten: val}))}
-                      onFocus={handleNumberFocus}
-                      onKeyDown={(e) => handleKeyDown(e, 7)}
-                      style={{
-                        width: '80px',
-                        padding: '5px',
-                        textAlign: 'center',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px'
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                    ¥{(coins.ten * 10).toLocaleString()}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px' }}>5円玉</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <input
-                      ref={(el) => { inputRefs.current[8] = el }}
-                      type="text"
-                      value={coins.five}
-                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, five: val}))}
-                      onFocus={handleNumberFocus}
-                      onKeyDown={(e) => handleKeyDown(e, 8)}
-                      style={{
-                        width: '80px',
-                        padding: '5px',
-                        textAlign: 'center',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px'
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                    ¥{(coins.five * 5).toLocaleString()}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px' }}>1円玉</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <input
-                      ref={(el) => { inputRefs.current[9] = el }}
-                      type="text"
-                      value={coins.one}
-                      onChange={(e) => handleNumberChange(e.target.value, (val) => setCoins({...coins, one: val}))}
-                      onFocus={handleNumberFocus}
-                      onKeyDown={(e) => handleKeyDown(e, 9)}
-                      style={{
-                        width: '80px',
-                        padding: '5px',
-                        textAlign: 'center',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px'
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>枚</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                    ¥{coins.one}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                        textAlign: 'right',
+                        fontWeight: 'bold',
+                        fontSize: '14px'
+                      }}>
+                        ¥{amount.toLocaleString()}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
 
-          {/* 計算結果 */}
-          <div style={{
-            backgroundColor: '#e3f2fd',
-            padding: '20px',
-            borderRadius: '10px',
-            marginBottom: '20px'
-          }}>
-            <table style={{ width: '100%', fontSize: '16px' }}>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '10px' }}>合計</td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontSize: '20px', fontWeight: 'bold' }}>
+              {/* 合計・レジ金・現金回収 */}
+              <div style={{
+                marginTop: '10px',
+                padding: '12px',
+                backgroundColor: '#e8e8e8',
+                borderRadius: '8px'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '6px 0',
+                  borderBottom: '1px solid #ccc'
+                }}>
+                  <span style={{ fontWeight: 'bold' }}>合計</span>
+                  <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#2196f3' }}>
                     ¥{total.toLocaleString()}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px' }}>レジ金</td>
-                  <td style={{ padding: '10px', textAlign: 'right', color: '#f44336' }}>
+                  </span>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '6px 0',
+                  borderBottom: '1px solid #ccc'
+                }}>
+                  <span>レジ金</span>
+                  <span style={{ color: '#f44336' }}>
                     -¥{registerAmount.toLocaleString()}
-                  </td>
-                </tr>
-                <tr style={{ borderTop: '2px solid #2196f3' }}>
-                  <td style={{ padding: '10px', fontWeight: 'bold' }}>現金回収額</td>
-                  <td style={{ 
-                    padding: '10px', 
-                    textAlign: 'right', 
-                    fontSize: '24px', 
+                  </span>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '8px 0 4px 0'
+                }}>
+                  <span style={{ fontWeight: 'bold' }}>現金回収</span>
+                  <span style={{
                     fontWeight: 'bold',
+                    fontSize: '20px',
                     color: '#2196f3'
                   }}>
                     ¥{cashCollection.toLocaleString()}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <div style={{
-              marginTop: '10px',
-              padding: '10px',
-              backgroundColor: '#bbdefb',
-              borderRadius: '5px',
-              fontSize: '14px'
-            }}>
-              <div>現金売上: ¥{cashReceipt.toLocaleString()}</div>
-              <div style={{ 
-                fontWeight: 'bold',
-                marginTop: '5px',
-                color: cashCollection === cashReceipt ? '#4caf50' : '#f44336'
-              }}>
-                差額: ¥{(cashCollection - cashReceipt).toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* ボタン */}
+          {/* 右側: テンキー */}
           <div style={{
+            flex: '0 0 180px',
             display: 'flex',
-            gap: '10px',
-            justifyContent: 'center'
+            flexDirection: 'column',
+            gap: '10px'
           }}>
+            {/* 現在選択中の表示 */}
+            <div style={{
+              padding: '10px',
+              backgroundColor: '#2196f3',
+              color: 'white',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '12px', marginBottom: '4px' }}>
+                {denominations.find(d => d.key === selectedDenom)?.label}
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                {getDenomValue(selectedDenom)}枚
+              </div>
+            </div>
+
+            {/* テンキーグリッド */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '6px'
+            }}>
+              {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(num => (
+                <button
+                  key={num}
+                  onClick={() => handleNumpadInput(String(num))}
+                  style={{
+                    padding: '15px 0',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    backgroundColor: 'white',
+                    cursor: 'pointer',
+                    transition: 'all 0.1s'
+                  }}
+                >
+                  {num}
+                </button>
+              ))}
+              <button
+                onClick={handleNumpadClear}
+                style={{
+                  padding: '15px 0',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  border: '1px solid #f44336',
+                  borderRadius: '8px',
+                  backgroundColor: '#ffebee',
+                  color: '#f44336',
+                  cursor: 'pointer'
+                }}
+              >
+                C
+              </button>
+              <button
+                onClick={() => handleNumpadInput('0')}
+                style={{
+                  padding: '15px 0',
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  backgroundColor: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                0
+              </button>
+              <button
+                onClick={handleNumpadBackspace}
+                style={{
+                  padding: '15px 0',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  backgroundColor: '#f5f5f5',
+                  cursor: 'pointer'
+                }}
+              >
+                ←
+              </button>
+            </div>
+
+            {/* 次へボタン */}
             <button
-              onClick={resetCount}
+              onClick={handleNext}
               style={{
-                padding: '12px 24px',
-                backgroundColor: '#666',
-                color: 'white',
+                padding: '12px',
+                fontSize: '14px',
+                fontWeight: 'bold',
                 border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                fontSize: '16px'
+                borderRadius: '8px',
+                backgroundColor: '#4caf50',
+                color: 'white',
+                cursor: 'pointer'
               }}
             >
-              リセット
-            </button>
-            <button
-              onClick={handleComplete}
-              disabled={isSaving}
-              style={{
-                padding: '12px 32px',
-                backgroundColor: isSaving ? '#ccc' : '#2196f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: isSaving ? 'not-allowed' : 'pointer',
-                fontSize: '16px',
-                fontWeight: 'bold'
-              }}
-            >
-              {isSaving ? '保存中...' : '確定'}
+              次へ ↓
             </button>
           </div>
+        </div>
+
+        {/* 差額表示 */}
+        <div style={{
+          margin: '0 15px',
+          padding: '10px 15px',
+          backgroundColor: cashCollection === cashReceipt ? '#e8f5e9' : '#ffebee',
+          borderRadius: '8px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>現金売上との差額</span>
+          <span style={{
+            fontWeight: 'bold',
+            fontSize: '18px',
+            color: cashCollection === cashReceipt ? '#4caf50' : '#f44336'
+          }}>
+            ¥{(cashCollection - cashReceipt).toLocaleString()}
+          </span>
+        </div>
+
+        {/* ボタン */}
+        <div style={{
+          padding: '15px',
+          display: 'flex',
+          gap: '10px',
+          justifyContent: 'center'
+        }}>
+          <button
+            onClick={resetCount}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#666',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            リセット
+          </button>
+          <button
+            onClick={handleComplete}
+            disabled={isSaving}
+            style={{
+              padding: '12px 40px',
+              backgroundColor: isSaving ? '#ccc' : '#2196f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }}
+          >
+            {isSaving ? '保存中...' : '確定'}
+          </button>
         </div>
       </div>
     </div>
