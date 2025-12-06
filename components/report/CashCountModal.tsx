@@ -12,16 +12,16 @@ interface CashCountModalProps {
 
 // 金種の定義
 const denominations = [
-  { key: 'tenThousand', label: '1万円', value: 10000, type: 'bill' },
-  { key: 'fiveThousand', label: '5千円', value: 5000, type: 'bill' },
-  { key: 'twoThousand', label: '2千円', value: 2000, type: 'bill' },
-  { key: 'thousand', label: '千円', value: 1000, type: 'bill' },
-  { key: 'fiveHundred', label: '500円', value: 500, type: 'coin' },
-  { key: 'hundred', label: '100円', value: 100, type: 'coin' },
-  { key: 'fifty', label: '50円', value: 50, type: 'coin' },
-  { key: 'ten', label: '10円', value: 10, type: 'coin' },
-  { key: 'five', label: '5円', value: 5, type: 'coin' },
-  { key: 'one', label: '1円', value: 1, type: 'coin' },
+  { key: 'tenThousand', label: '1万', value: 10000 },
+  { key: 'fiveThousand', label: '5千', value: 5000 },
+  { key: 'twoThousand', label: '2千', value: 2000 },
+  { key: 'thousand', label: '千', value: 1000 },
+  { key: 'fiveHundred', label: '500', value: 500 },
+  { key: 'hundred', label: '100', value: 100 },
+  { key: 'fifty', label: '50', value: 50 },
+  { key: 'ten', label: '10', value: 10 },
+  { key: 'five', label: '5', value: 5 },
+  { key: 'one', label: '1', value: 1 },
 ] as const
 
 type DenominationKey = typeof denominations[number]['key']
@@ -110,6 +110,16 @@ export default function CashCountModal({
 
   if (!isOpen) return null
 
+  const numpadButtonStyle = {
+    padding: '20px 0',
+    fontSize: '24px',
+    fontWeight: 'bold' as const,
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+  }
+
   return (
     <div
       onClick={onClose}
@@ -132,7 +142,7 @@ export default function CashCountModal({
           backgroundColor: 'white',
           borderRadius: '10px',
           width: '95%',
-          maxWidth: '700px',
+          maxWidth: '500px',
           maxHeight: '95vh',
           overflow: 'auto',
           position: 'relative'
@@ -140,197 +150,100 @@ export default function CashCountModal({
       >
         {/* ヘッダー */}
         <div style={{
-          padding: '15px 20px',
-          borderBottom: '2px solid #f0f0f0',
-          position: 'sticky',
-          top: 0,
-          backgroundColor: 'white',
-          zIndex: 1
+          padding: '12px 15px',
+          borderBottom: '1px solid #eee',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
-          <h2 style={{
-            margin: 0,
-            fontSize: '20px',
-            textAlign: 'center'
-          }}>
-            レジ金計算
-          </h2>
+          <h2 style={{ margin: 0, fontSize: '18px' }}>レジ金計算</h2>
           <button
             onClick={onClose}
             style={{
-              position: 'absolute',
-              top: '15px',
-              right: '15px',
               background: 'none',
               border: 'none',
               fontSize: '24px',
               cursor: 'pointer',
-              color: '#666'
+              color: '#666',
+              padding: '0 5px'
             }}
           >
             ×
           </button>
         </div>
 
-        {/* 本体 - 2カラムレイアウト */}
-        <div style={{
-          padding: '15px',
-          display: 'flex',
-          gap: '15px',
-          flexDirection: 'row',
-          flexWrap: 'wrap'
-        }}>
-          {/* 左側: 金種入力 */}
-          <div style={{
-            flex: '1 1 300px',
-            minWidth: '280px'
-          }}>
+        {/* 本体 */}
+        <div style={{ padding: '10px', display: 'flex', gap: '10px' }}>
+          {/* 左側: 金種リスト */}
+          <div style={{ flex: '0 0 140px' }}>
             <div style={{
-              backgroundColor: '#f5f5f5',
-              padding: '10px',
-              borderRadius: '10px'
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '4px'
             }}>
-              {/* 金種リスト */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {denominations.map((denom) => {
-                  const count = getDenomValue(denom.key)
-                  const amount = count * denom.value
-                  const isSelected = selectedDenom === denom.key
+              {denominations.map((denom) => {
+                const count = getDenomValue(denom.key)
+                const isSelected = selectedDenom === denom.key
 
-                  return (
-                    <div
-                      key={denom.key}
-                      onClick={() => setSelectedDenom(denom.key)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        backgroundColor: isSelected ? '#e3f2fd' : 'white',
-                        border: isSelected ? '2px solid #2196f3' : '1px solid #ddd',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s'
-                      }}
-                    >
-                      <span style={{
-                        width: '60px',
-                        fontWeight: '500',
-                        fontSize: '14px'
-                      }}>
-                        {denom.label}
-                      </span>
-                      <span style={{
-                        flex: 1,
-                        textAlign: 'center',
-                        fontSize: '18px',
-                        fontWeight: 'bold',
-                        color: isSelected ? '#2196f3' : '#333'
-                      }}>
-                        {count}
-                      </span>
-                      <span style={{ fontSize: '12px', color: '#666' }}>枚</span>
-                      <span style={{
-                        width: '80px',
-                        textAlign: 'right',
-                        fontWeight: 'bold',
-                        fontSize: '14px'
-                      }}>
-                        ¥{amount.toLocaleString()}
-                      </span>
-                    </div>
-                  )
-                })}
+                return (
+                  <div
+                    key={denom.key}
+                    onClick={() => setSelectedDenom(denom.key)}
+                    style={{
+                      padding: '8px 4px',
+                      backgroundColor: isSelected ? '#2196f3' : '#f5f5f5',
+                      color: isSelected ? 'white' : '#333',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <div style={{ fontWeight: 'bold' }}>{denom.label}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{count}</div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* 合計表示 */}
+            <div style={{
+              marginTop: '8px',
+              padding: '8px',
+              backgroundColor: '#f0f0f0',
+              borderRadius: '6px',
+              fontSize: '12px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span>合計</span>
+                <span style={{ fontWeight: 'bold', color: '#2196f3' }}>¥{total.toLocaleString()}</span>
               </div>
-
-              {/* 合計・レジ金・現金回収 */}
-              <div style={{
-                marginTop: '10px',
-                padding: '12px',
-                backgroundColor: '#e8e8e8',
-                borderRadius: '8px'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '6px 0',
-                  borderBottom: '1px solid #ccc'
-                }}>
-                  <span style={{ fontWeight: 'bold' }}>合計</span>
-                  <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#2196f3' }}>
-                    ¥{total.toLocaleString()}
-                  </span>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '6px 0',
-                  borderBottom: '1px solid #ccc'
-                }}>
-                  <span>レジ金</span>
-                  <span style={{ color: '#f44336' }}>
-                    -¥{registerAmount.toLocaleString()}
-                  </span>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '8px 0 4px 0'
-                }}>
-                  <span style={{ fontWeight: 'bold' }}>現金回収</span>
-                  <span style={{
-                    fontWeight: 'bold',
-                    fontSize: '20px',
-                    color: '#2196f3'
-                  }}>
-                    ¥{cashCollection.toLocaleString()}
-                  </span>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span>レジ金</span>
+                <span style={{ color: '#f44336' }}>-¥{registerAmount.toLocaleString()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #ccc', paddingTop: '4px' }}>
+                <span style={{ fontWeight: 'bold' }}>回収</span>
+                <span style={{ fontWeight: 'bold', color: '#2196f3' }}>¥{cashCollection.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
           {/* 右側: テンキー */}
-          <div style={{
-            flex: '0 0 180px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px'
-          }}>
-            {/* 現在選択中の表示 */}
-            <div style={{
-              padding: '10px',
-              backgroundColor: '#2196f3',
-              color: 'white',
-              borderRadius: '8px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '12px', marginBottom: '4px' }}>
-                {denominations.find(d => d.key === selectedDenom)?.label}
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
-                {getDenomValue(selectedDenom)}枚
-              </div>
-            </div>
-
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {/* テンキーグリッド */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '6px'
+              gap: '6px',
+              flex: 1
             }}>
               {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(num => (
                 <button
                   key={num}
                   onClick={() => handleNumpadInput(String(num))}
-                  style={{
-                    padding: '15px 0',
-                    fontSize: '20px',
-                    fontWeight: 'bold',
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    backgroundColor: 'white',
-                    cursor: 'pointer',
-                    transition: 'all 0.1s'
-                  }}
+                  style={numpadButtonStyle}
                 >
                   {num}
                 </button>
@@ -338,42 +251,27 @@ export default function CashCountModal({
               <button
                 onClick={handleNumpadClear}
                 style={{
-                  padding: '15px 0',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  border: '1px solid #f44336',
-                  borderRadius: '8px',
+                  ...numpadButtonStyle,
                   backgroundColor: '#ffebee',
                   color: '#f44336',
-                  cursor: 'pointer'
+                  border: '1px solid #f44336',
+                  fontSize: '16px'
                 }}
               >
-                C
+                AC
               </button>
               <button
                 onClick={() => handleNumpadInput('0')}
-                style={{
-                  padding: '15px 0',
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  backgroundColor: 'white',
-                  cursor: 'pointer'
-                }}
+                style={numpadButtonStyle}
               >
                 0
               </button>
               <button
                 onClick={handleNumpadBackspace}
                 style={{
-                  padding: '15px 0',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
+                  ...numpadButtonStyle,
                   backgroundColor: '#f5f5f5',
-                  cursor: 'pointer'
+                  fontSize: '20px'
                 }}
               >
                 ←
@@ -384,8 +282,8 @@ export default function CashCountModal({
             <button
               onClick={handleNext}
               style={{
-                padding: '12px',
-                fontSize: '14px',
+                padding: '14px',
+                fontSize: '16px',
                 fontWeight: 'bold',
                 border: 'none',
                 borderRadius: '8px',
@@ -401,18 +299,19 @@ export default function CashCountModal({
 
         {/* 差額表示 */}
         <div style={{
-          margin: '0 15px',
-          padding: '10px 15px',
+          margin: '0 10px 10px',
+          padding: '10px',
           backgroundColor: cashCollection === cashReceipt ? '#e8f5e9' : '#ffebee',
-          borderRadius: '8px',
+          borderRadius: '6px',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          fontSize: '14px'
         }}>
           <span>現金売上との差額</span>
           <span style={{
             fontWeight: 'bold',
-            fontSize: '18px',
+            fontSize: '16px',
             color: cashCollection === cashReceipt ? '#4caf50' : '#f44336'
           }}>
             ¥{(cashCollection - cashReceipt).toLocaleString()}
@@ -421,15 +320,15 @@ export default function CashCountModal({
 
         {/* ボタン */}
         <div style={{
-          padding: '15px',
+          padding: '10px',
           display: 'flex',
-          gap: '10px',
-          justifyContent: 'center'
+          gap: '10px'
         }}>
           <button
             onClick={resetCount}
             style={{
-              padding: '12px 24px',
+              flex: 1,
+              padding: '14px',
               backgroundColor: '#666',
               color: 'white',
               border: 'none',
@@ -444,7 +343,8 @@ export default function CashCountModal({
             onClick={handleComplete}
             disabled={isSaving}
             style={{
-              padding: '12px 40px',
+              flex: 2,
+              padding: '14px',
               backgroundColor: isSaving ? '#ccc' : '#2196f3',
               color: 'white',
               border: 'none',
