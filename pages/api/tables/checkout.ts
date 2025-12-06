@@ -25,6 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       paymentOther,
       cardFee,
       totalAmount,
+      discountAmount,  // 割引金額を追加
       storeId  // 店舗IDを追加
     } = req.body
 
@@ -114,6 +115,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           tax_amount: consumptionTax,
           service_charge: serviceTax,
           rounding_adjustment: roundingAdjustment,
+          discount_amount: discountAmount || 0,  // 割引金額を追加
           total_incl_tax: totalAmount,
           store_id: storeId  // 店舗IDを追加
         })

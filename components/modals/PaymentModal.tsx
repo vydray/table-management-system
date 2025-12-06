@@ -11,8 +11,9 @@ interface PaymentModalProps {
     card: number
     other: number
     otherMethod: string
+    discount: number
   }
-  activePaymentInput: 'cash' | 'card' | 'other'
+  activePaymentInput: 'cash' | 'card' | 'other' | 'discount'
   subtotal: number
   serviceTax: number
   total: number
@@ -31,9 +32,9 @@ interface PaymentModalProps {
   onQuickAmount: (amount: number) => void
   onDeleteNumber: () => void
   onClearNumber: () => void
-  onChangeActiveInput: (input: 'cash' | 'card' | 'other') => void
+  onChangeActiveInput: (input: 'cash' | 'card' | 'other' | 'discount') => void
   onChangeOtherMethod: (value: string) => void
-  onPaymentMethodClick: (method: 'cash' | 'card' | 'other') => void
+  onPaymentMethodClick: (method: 'cash' | 'card' | 'other' | 'discount') => void
   onCompleteCheckout: () => void
   onClose: () => void
 }
@@ -64,14 +65,17 @@ export const PaymentModal: FC<PaymentModalProps> = ({
 }) => {
   if (!isOpen) return null
 
+  // 割引を適用した小計
+  const subtotalAfterDiscount = roundedTotal - paymentData.discount
+
   // カード手数料の計算（残りの支払額に対して適用）
-  const remainingAmount = roundedTotal - paymentData.cash - paymentData.other
+  const remainingAmount = subtotalAfterDiscount - paymentData.cash - paymentData.other
   const cardFee = paymentData.card > 0 && cardFeeRate > 0 && remainingAmount > 0
     ? Math.floor(remainingAmount * (cardFeeRate / 100))
     : 0
 
   // カード手数料を含めた合計金額に端数処理を適用
-  const totalWithCardFeeBeforeRounding = roundedTotal + cardFee
+  const totalWithCardFeeBeforeRounding = subtotalAfterDiscount + cardFee
   const totalWithCardFee = getRoundedTotal(
     totalWithCardFeeBeforeRounding,
     systemSettings.roundingUnit,
@@ -146,9 +150,9 @@ export const PaymentModal: FC<PaymentModalProps> = ({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: `${15 * layoutScale}px`,
-              paddingBottom: `${15 * layoutScale}px`,
-              borderBottom: '2px solid #ccc'
+              marginBottom: `${10 * layoutScale}px`,
+              paddingBottom: `${10 * layoutScale}px`,
+              borderBottom: '1px solid #ddd'
             }}>
               <div>
                 <strong style={{ fontSize: `${16 * layoutScale}px` }}>
@@ -158,10 +162,41 @@ export const PaymentModal: FC<PaymentModalProps> = ({
               <div style={{
                 display: 'flex',
                 gap: `${30 * layoutScale}px`,
-                fontSize: `${16 * layoutScale}px`
+                fontSize: `${14 * layoutScale}px`
               }}>
                 <div><strong>推し：</strong>{formData.castName || ''}</div>
                 <div><strong>お客様：</strong>{formData.guestName || ''}</div>
+              </div>
+            </div>
+
+            {/* 割引表示・入力 */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: `${10 * layoutScale}px`,
+              paddingBottom: `${10 * layoutScale}px`,
+              borderBottom: '1px solid #ddd'
+            }}>
+              <span style={{ fontSize: `${14 * layoutScale}px`, color: '#e91e63' }}>割引</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: `${8 * layoutScale}px` }}>
+                <span style={{ fontSize: `${14 * layoutScale}px`, color: '#e91e63' }}>-¥</span>
+                <input
+                  type="text"
+                  value={paymentData.discount ? paymentData.discount.toLocaleString() : '0'}
+                  onClick={() => onChangeActiveInput('discount')}
+                  readOnly
+                  style={{
+                    width: `${100 * layoutScale}px`,
+                    padding: `${6 * layoutScale}px`,
+                    border: activePaymentInput === 'discount' ? '2px solid #e91e63' : '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: `${16 * layoutScale}px`,
+                    cursor: 'pointer',
+                    backgroundColor: activePaymentInput === 'discount' ? '#fce4ec' : 'white',
+                    textAlign: 'right'
+                  }}
+                />
               </div>
             </div>
 
@@ -178,7 +213,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
             <div style={{
               fontSize: `${24 * layoutScale}px`,
               fontWeight: 'bold',
-              borderTop: '1px solid #ccc',
+              borderTop: '2px solid #ccc',
               paddingTop: `${10 * layoutScale}px`,
               textAlign: 'center'
             }}>

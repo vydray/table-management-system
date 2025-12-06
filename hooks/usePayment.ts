@@ -5,9 +5,10 @@ export const usePayment = () => {
     cash: 0,
     card: 0,
     other: 0,
-    otherMethod: ''
+    otherMethod: '',
+    discount: 0
   })
-  const [activePaymentInput, setActivePaymentInput] = useState<'cash' | 'card' | 'other'>('cash')
+  const [activePaymentInput, setActivePaymentInput] = useState<'cash' | 'card' | 'other' | 'discount'>('cash')
 
   const handleNumberClick = (num: string) => {
     setPaymentData(prev => {
@@ -56,7 +57,8 @@ export const usePayment = () => {
       cash: 0,
       card: 0,
       other: 0,
-      otherMethod: ''
+      otherMethod: '',
+      discount: 0
     })
     setActivePaymentInput('cash')
   }
@@ -68,7 +70,7 @@ export const usePayment = () => {
     }))
   }
 
-  const setPaymentAmount = (type: 'cash' | 'card' | 'other', amount: number) => {
+  const setPaymentAmount = (type: 'cash' | 'card' | 'other' | 'discount', amount: number) => {
     setPaymentData(prev => ({
       ...prev,
       [type]: amount

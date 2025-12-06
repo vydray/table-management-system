@@ -269,22 +269,30 @@ export default function Home() {
   }
 
   // 支払い方法ボタンのハンドラー
-  const handlePaymentMethodClick = (method: 'cash' | 'card' | 'other') => {
+  const handlePaymentMethodClick = (method: 'cash' | 'card' | 'other' | 'discount') => {
     const total = getTotal()
     const roundedTotal = getRoundedTotal(total, systemSettings.roundingUnit, systemSettings.roundingMethod)
 
     setActivePaymentInput(method)
 
+    // 割引の場合は入力切り替えのみ
+    if (method === 'discount') {
+      return
+    }
+
+    // 割引を適用した金額
+    const subtotalAfterDiscount = roundedTotal - paymentData.discount
+
     if (method === 'cash') {
       // 現金ボタン: カードやその他に金額が入っていない場合のみ満額入力
       if (paymentData.card === 0 && paymentData.other === 0) {
-        setPaymentAmount('cash', roundedTotal)
+        setPaymentAmount('cash', subtotalAfterDiscount)
       }
     } else if (method === 'card') {
       // カードボタン: 残りの金額にカード手数料を加算して端数処理
       const cashPaid = paymentData.cash
       const otherPaid = paymentData.other
-      const remaining = roundedTotal - cashPaid - otherPaid
+      const remaining = subtotalAfterDiscount - cashPaid - otherPaid
 
       if (remaining > 0) {
         // カード手数料を計算
@@ -304,14 +312,14 @@ export default function Home() {
       const cashPaid = paymentData.cash
       const cardPaid = paymentData.card
 
-      // カード手数料を計算
-      const remainingForCardFee = roundedTotal - cashPaid
+      // カード手数料を計算（割引後の金額に対して）
+      const remainingForCardFee = subtotalAfterDiscount - cashPaid
       const cardFee = cardPaid > 0 && systemSettings.cardFeeRate > 0 && remainingForCardFee > 0
         ? Math.floor(remainingForCardFee * systemSettings.cardFeeRate)
         : 0
 
       // カード手数料を含めた合計を端数処理
-      const totalWithCardFeeBeforeRounding = roundedTotal + cardFee
+      const totalWithCardFeeBeforeRounding = subtotalAfterDiscount + cardFee
       const totalWithCardFee = getRoundedTotal(totalWithCardFeeBeforeRounding, systemSettings.roundingUnit, systemSettings.roundingMethod)
 
       const remaining = totalWithCardFee - cashPaid - cardPaid
@@ -643,14 +651,17 @@ const completeCheckout = async () => {
   const totalPaid = paymentData.cash + paymentData.card + paymentData.other
   const roundedTotal = getRoundedTotalAmount()
 
-  // カード手数料を計算
-  const remainingAmount = roundedTotal - paymentData.cash - paymentData.other
+  // 割引を適用した小計
+  const subtotalAfterDiscount = roundedTotal - paymentData.discount
+
+  // カード手数料を計算（割引後の金額に対して）
+  const remainingAmount = subtotalAfterDiscount - paymentData.cash - paymentData.other
   const cardFee = paymentData.card > 0 && systemSettings.cardFeeRate > 0 && remainingAmount > 0
     ? Math.floor(remainingAmount * systemSettings.cardFeeRate)
     : 0
 
   // カード手数料を含めた合計金額に端数処理を適用
-  const totalWithCardFeeBeforeRounding = roundedTotal + cardFee
+  const totalWithCardFeeBeforeRounding = subtotalAfterDiscount + cardFee
   const totalWithCardFee = getRoundedTotal(
     totalWithCardFeeBeforeRounding,
     systemSettings.roundingUnit,
