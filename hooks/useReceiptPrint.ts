@@ -36,16 +36,16 @@ export const useReceiptPrint = () => {
         .eq('store_id', storeId)
 
       const settings = {
-        serviceChargeRate: 0.1,
-        consumptionTaxRate: 0.1
+        serviceChargeRate: 0.15,
+        consumptionTaxRate: 0.10
       }
 
       if (systemSettings) {
         systemSettings.forEach(s => {
-          if (s.setting_key === 'service_charge_rate') {
-            settings.serviceChargeRate = parseFloat(s.setting_value)
-          } else if (s.setting_key === 'consumption_tax_rate') {
-            settings.consumptionTaxRate = parseFloat(s.setting_value)
+          if (s.setting_key === 'service_fee_rate') {
+            settings.serviceChargeRate = parseFloat(s.setting_value) / 100
+          } else if (s.setting_key === 'tax_rate') {
+            settings.consumptionTaxRate = parseFloat(s.setting_value) / 100
           }
         })
       }

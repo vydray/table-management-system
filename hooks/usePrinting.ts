@@ -78,8 +78,8 @@ export const usePrinting = () => {
         .eq('store_id', storeId)
 
       const latestSettings = {
-        consumptionTaxRate: settings?.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10,
-        serviceChargeRate: settings?.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15,
+        consumptionTaxRate: Number(settings?.find(s => s.setting_key === 'tax_rate')?.setting_value || 10) / 100,
+        serviceChargeRate: Number(settings?.find(s => s.setting_key === 'service_fee_rate')?.setting_value || 15) / 100,
         roundingUnit: settings?.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
         roundingMethod: settings?.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
         cardFeeRate: Number(settings?.find(s => s.setting_key === 'card_fee_rate')?.setting_value || 0) / 100
@@ -162,8 +162,8 @@ export const usePrinting = () => {
         .eq('store_id', storeId)
 
       const latestSettings = {
-        consumptionTaxRate: settings?.find(s => s.setting_key === 'consumption_tax_rate')?.setting_value || 0.10,
-        serviceChargeRate: settings?.find(s => s.setting_key === 'service_charge_rate')?.setting_value || 0.15,
+        consumptionTaxRate: Number(settings?.find(s => s.setting_key === 'tax_rate')?.setting_value || 10) / 100,
+        serviceChargeRate: Number(settings?.find(s => s.setting_key === 'service_fee_rate')?.setting_value || 15) / 100,
         roundingUnit: settings?.find(s => s.setting_key === 'rounding_unit')?.setting_value || 100,
         roundingMethod: settings?.find(s => s.setting_key === 'rounding_method')?.setting_value || 0,
         cardFeeRate: Number(settings?.find(s => s.setting_key === 'card_fee_rate')?.setting_value || 0) / 100
