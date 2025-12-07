@@ -24,7 +24,7 @@ export const useReceiptPrint = () => {
 
       // 店舗設定を取得
       const { data: storeSettings } = await supabase
-        .from('store_settings')
+        .from('receipt_settings')
         .select('*')
         .eq('store_id', storeId)
         .single()
