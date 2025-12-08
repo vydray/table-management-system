@@ -52,7 +52,7 @@ const processTableData = (layouts: TableLayout[], tableData: TableData[]): Recor
     tableMap[layout.table_name] = {
       table: layout.table_name,
       name: '',
-      oshi: '',
+      oshi: [],
       time: '',
       visit: '',
       elapsed: '',

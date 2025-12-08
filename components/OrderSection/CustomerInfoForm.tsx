@@ -2,15 +2,16 @@ import React, { useState, useEffect } from 'react'
 
 interface CustomerInfoFormProps {
   guestName: string
-  castName: string
+  castName: string[]
   visitType: string
   castList: string[]
   attendingCasts: string[]
   onUpdateFormData: (updates: Partial<{
     guestName: string
-    castName: string
+    castName: string[]
     visitType: string
   }>) => void
+  allowMultipleNominations?: boolean
 }
 
 export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
@@ -19,7 +20,8 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
   visitType,
   castList,
   attendingCasts,
-  onUpdateFormData
+  onUpdateFormData,
+  allowMultipleNominations = false
 }) => {
   const [showCastDropdown, setShowCastDropdown] = useState(false)
   const [castFilter, setCastFilter] = useState<'all' | 'attending'>('all')
@@ -104,7 +106,7 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
                 borderRadius: '4px',
                 fontSize: '14px',
                 backgroundColor: 'white',
-                color: castName ? '#000' : '#999',
+                color: castName.length > 0 ? '#000' : '#999',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 boxSizing: 'border-box',
@@ -112,7 +114,7 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
                 WebkitUserSelect: 'none'
               }}
             >
-              {castName || '-- 選択 --'}
+              {castName.length > 0 ? castName.join(', ') : '-- 選択 --'}
             </div>
 
             <span style={{
@@ -191,7 +193,7 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
                 }}>
                   <div
                     onClick={() => {
-                      onUpdateFormData({ castName: '' })
+                      onUpdateFormData({ castName: [] })
                       setShowCastDropdown(false)
                     }}
                     style={{
@@ -205,28 +207,51 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
-                    -- 選択 --
+                    -- クリア --
                   </div>
-                  {(castFilter === 'all' ? castList : attendingCasts).map(name => (
-                    <div
-                      key={name}
-                      onClick={() => {
-                        onUpdateFormData({ castName: name })
-                        setShowCastDropdown(false)
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        borderBottom: '1px solid #f0f0f0',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      {name}
-                    </div>
-                  ))}
+                  {(castFilter === 'all' ? castList : attendingCasts).map(name => {
+                    const isSelected = castName.includes(name)
+                    return (
+                      <div
+                        key={name}
+                        onClick={() => {
+                          if (allowMultipleNominations) {
+                            // 複数選択モード: トグル
+                            if (isSelected) {
+                              onUpdateFormData({ castName: castName.filter(n => n !== name) })
+                            } else {
+                              onUpdateFormData({ castName: [...castName, name] })
+                            }
+                          } else {
+                            // 単一選択モード: 置き換え
+                            if (isSelected) {
+                              onUpdateFormData({ castName: [] })
+                            } else {
+                              onUpdateFormData({ castName: [name] })
+                            }
+                            setShowCastDropdown(false)
+                          }
+                        }}
+                        style={{
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          borderBottom: '1px solid #f0f0f0',
+                          transition: 'background-color 0.2s',
+                          backgroundColor: isSelected ? '#e3f2fd' : 'transparent',
+                          fontWeight: isSelected ? 'bold' : 'normal'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) e.currentTarget.style.backgroundColor = '#f0f8ff'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = isSelected ? '#e3f2fd' : 'transparent'
+                        }}
+                      >
+                        {isSelected && '✓ '}{name}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}

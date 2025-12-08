@@ -10,6 +10,7 @@ export const useSystemSettings = () => {
   const [roundingUnit, setRoundingUnit] = useState(100)
   const [registerAmount, setRegisterAmount] = useState(0)
   const [cardFeeRate, setCardFeeRate] = useState(0)
+  const [allowMultipleNominations, setAllowMultipleNominations] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -105,6 +106,18 @@ export const useSystemSettings = () => {
       if (cardFeeData) {
         setCardFeeRate(Number(cardFeeData.setting_value))
       }
+
+      // 複数推し設定を取得
+      const { data: multiNominationData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('store_id', storeId)
+        .eq('setting_key', 'allow_multiple_nominations')
+        .single()
+
+      if (multiNominationData) {
+        setAllowMultipleNominations(multiNominationData.setting_value === 'true')
+      }
     } catch (error) {
       console.error('Error loading system settings:', error)
     } finally {
@@ -145,7 +158,8 @@ export const useSystemSettings = () => {
         { setting_key: 'rounding_method', setting_value: String(roundingMethodValue) },
         { setting_key: 'rounding_unit', setting_value: String(roundingUnit) },
         { setting_key: 'register_amount', setting_value: String(registerAmount) },
-        { setting_key: 'card_fee_rate', setting_value: String(cardFeeRate) }
+        { setting_key: 'card_fee_rate', setting_value: String(cardFeeRate) },
+        { setting_key: 'allow_multiple_nominations', setting_value: String(allowMultipleNominations) }
       ]
 
       for (const setting of settingsToSave) {
@@ -215,6 +229,8 @@ export const useSystemSettings = () => {
     setRegisterAmount,
     cardFeeRate,
     setCardFeeRate,
+    allowMultipleNominations,
+    setAllowMultipleNominations,
     loading,
     saving,
     loadAllSettings,

@@ -5,7 +5,7 @@ interface CastSelectorProps {
   attendingCasts: string[]
   selectedProduct: { name: string; price: number; needsCast: boolean } | null
   onSelectCast: (castName: string) => void
-  currentOshi?: string
+  currentOshi?: string[]
 }
 
 export const CastSelector: React.FC<CastSelectorProps> = ({
@@ -81,13 +81,15 @@ export const CastSelector: React.FC<CastSelectorProps> = ({
       </div>
 
       <div className="cast-list">
-        {filteredCastList.map((castName, index) => (
+        {filteredCastList.map((castName, index) => {
+          const isOshi = currentOshi?.includes(castName) ?? false
+          return (
           <div
             key={castName}
-            className={`cast-item ${castName === currentOshi && index === 0 ? 'oshi-priority' : ''}`}
+            className={`cast-item ${isOshi && index === 0 ? 'oshi-priority' : ''}`}
             onClick={() => onSelectCast(castName)}
             style={{
-              ...(castName === currentOshi && index === 0 ? {
+              ...(isOshi && index === 0 ? {
                 backgroundColor: '#ffe4b5',
                 border: '2px solid #ff9800',
                 fontWeight: 'bold'
@@ -95,7 +97,7 @@ export const CastSelector: React.FC<CastSelectorProps> = ({
             }}
           >
             {castName}
-            {castName === currentOshi && index === 0 && (
+            {isOshi && index === 0 && (
               <span style={{
                 marginLeft: '8px',
                 fontSize: '12px',
@@ -105,7 +107,8 @@ export const CastSelector: React.FC<CastSelectorProps> = ({
               </span>
             )}
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

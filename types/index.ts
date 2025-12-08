@@ -2,7 +2,7 @@
 export interface TableData {
   table: string
   name: string
-  oshi: string
+  oshi: string[]
   time: string
   visit: string
   elapsed: string

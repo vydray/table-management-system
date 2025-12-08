@@ -159,7 +159,7 @@ export const Table: FC<TableProps> = ({
         ) : (
           <>
             <strong style={{ fontSize: `${28 * scale}px` }}>{data.name}</strong>
-            <span style={{ fontSize: `${24 * scale}px` }}>推し: {data.oshi}</span>
+            <span style={{ fontSize: `${24 * scale}px` }}>推し: {Array.isArray(data.oshi) ? data.oshi.join(', ') : data.oshi}</span>
             <div className="table-elapsed" style={{ fontSize: `${26 * scale}px`, fontWeight: 'bold', marginTop: `${4 * scale}px` }}>{data.elapsed}</div>
           </>
         )}

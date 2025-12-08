@@ -139,7 +139,7 @@ export default function Home() {
   // フォームの状態
   const [formData, setFormData] = useState({
     guestName: '',
-    castName: '',
+    castName: [] as string[],
     visitType: '',
     editYear: new Date().getFullYear(),
     editMonth: new Date().getMonth() + 1,
@@ -578,7 +578,7 @@ const handleMenuClick = (item: string) => {
           alert('来店種別を選択してください')
           return
         }
-        if (!formData.castName) {
+        if (formData.castName.length === 0) {
           alert('推しを選択してください')
           return
         }
@@ -795,7 +795,7 @@ const finishCheckout = () => {
     const now = new Date()
     setFormData({
       guestName: '',
-      castName: '',
+      castName: [],
       visitType: '',
       editYear: now.getFullYear(),
       editMonth: now.getMonth() + 1,
@@ -1646,42 +1646,61 @@ const finishCheckout = () => {
                     return (
                       <>
                         <div
-                          onClick={() => setFormData({ ...formData, castName: '' })}
+                          onClick={() => setFormData({ ...formData, castName: [] })}
                           style={{
                             padding: '14px 18px',
                             margin: '4px 6px',
                             fontSize: '17px',
                             fontWeight: '500',
                             cursor: 'pointer',
-                            backgroundColor: formData.castName === '' ? '#007AFF' : 'white',
-                            color: formData.castName === '' ? 'white' : '#86868b',
+                            backgroundColor: formData.castName.length === 0 ? '#007AFF' : 'white',
+                            color: formData.castName.length === 0 ? 'white' : '#86868b',
                             borderRadius: '10px',
                             transition: 'all 0.2s ease',
-                            boxShadow: formData.castName === '' ? '0 2px 8px rgba(0, 122, 255, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
+                            boxShadow: formData.castName.length === 0 ? '0 2px 8px rgba(0, 122, 255, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
                           }}
                         >
-                          -- 推しを選択 --
+                          -- 推しをクリア --
                         </div>
-                        {filteredCasts.map(name => (
-                          <div
-                            key={name}
-                            onClick={() => setFormData({ ...formData, castName: name })}
-                            style={{
-                              padding: '14px 18px',
-                              margin: '4px 6px',
-                              fontSize: '17px',
-                              fontWeight: '500',
-                              cursor: 'pointer',
-                              backgroundColor: formData.castName === name ? '#007AFF' : 'white',
-                              color: formData.castName === name ? 'white' : '#1d1d1f',
-                              borderRadius: '10px',
-                              transition: 'all 0.2s ease',
-                              boxShadow: formData.castName === name ? '0 2px 8px rgba(0, 122, 255, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
-                            }}
-                          >
-                            {name}
-                          </div>
-                        ))}
+                        {filteredCasts.map(name => {
+                          const isSelected = formData.castName.includes(name)
+                          return (
+                            <div
+                              key={name}
+                              onClick={() => {
+                                if (systemSettings.allowMultipleNominations) {
+                                  // 複数選択モード: トグル
+                                  if (isSelected) {
+                                    setFormData({ ...formData, castName: formData.castName.filter(n => n !== name) })
+                                  } else {
+                                    setFormData({ ...formData, castName: [...formData.castName, name] })
+                                  }
+                                } else {
+                                  // 単一選択モード: 置き換え
+                                  if (isSelected) {
+                                    setFormData({ ...formData, castName: [] })
+                                  } else {
+                                    setFormData({ ...formData, castName: [name] })
+                                  }
+                                }
+                              }}
+                              style={{
+                                padding: '14px 18px',
+                                margin: '4px 6px',
+                                fontSize: '17px',
+                                fontWeight: '500',
+                                cursor: 'pointer',
+                                backgroundColor: isSelected ? '#007AFF' : 'white',
+                                color: isSelected ? 'white' : '#1d1d1f',
+                                borderRadius: '10px',
+                                transition: 'all 0.2s ease',
+                                boxShadow: isSelected ? '0 2px 8px rgba(0, 122, 255, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
+                              }}
+                            >
+                              {name}
+                            </div>
+                          )
+                        })}
                       </>
                     )
                   })()}
@@ -1736,6 +1755,7 @@ const finishCheckout = () => {
                     roundedTotal={getRoundedTotalAmount()}
                     roundingAdjustment={getRoundingAdjustmentAmount()}
                     serviceFeeRate={systemSettings.serviceChargeRate}
+                    allowMultipleNominations={systemSettings.allowMultipleNominations}
                   />
                   
                 </div>

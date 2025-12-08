@@ -12,7 +12,7 @@ interface ProductSectionProps {
   selectedProduct: { name: string; price: number; needsCast: boolean } | null
   castList: string[]
   attendingCasts: string[]
-  currentOshi?: string
+  currentOshi?: string[]
   showOshiFirst?: boolean
   onSelectCategory: (category: string) => void
   onAddProduct: (productName: string, price: number, needsCast: boolean, castName?: string) => void

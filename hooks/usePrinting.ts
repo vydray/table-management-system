@@ -21,7 +21,7 @@ interface SystemSettings {
 
 interface FormData {
   guestName: string
-  castName: string
+  castName: string[]
   visitType: string
   editYear: number
   editMonth: number
@@ -105,7 +105,7 @@ export const usePrinting = () => {
       const orderData = {
         tableName: currentTable,
         guestName: formData.guestName || '（未入力）',
-        castName: formData.castName || '（未選択）',
+        castName: formData.castName.length > 0 ? formData.castName.join(', ') : '（未選択）',
         elapsedTime: tables[currentTable]?.elapsed || '0分',
         orderItems: orderItems,
         subtotal: calculateSubtotal(orderItems),
@@ -233,7 +233,7 @@ export const usePrinting = () => {
           revenueStampThreshold: storeSettings?.revenue_stamp_threshold || 50000,
           tableName: currentTable,
           guestName: formData.guestName || '（未入力）',
-          castName: formData.castName || '（未選択）',
+          castName: formData.castName.length > 0 ? formData.castName.join(', ') : '（未選択）',
           timestamp: timestamp,
           orderItems: orderItems,
           subtotal: subtotal,

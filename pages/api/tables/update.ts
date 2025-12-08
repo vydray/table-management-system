@@ -23,6 +23,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: checkError.message })
     }
 
+    // castName を配列に変換（文字列で来た場合の互換性対応）
+    const castNameArray = Array.isArray(castName) ? castName : (castName ? [castName] : [])
+
     if (!existingData) {
       // レコードが存在しない場合は新規作成
       const { error: insertError } = await supabase
@@ -30,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .insert({
           table_name: tableId,
           guest_name: guestName,
-          cast_name: castName,
+          cast_name: castNameArray,
           entry_time: timeStr,
           visit_type: visitType,
           store_id: storeId
@@ -43,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('table_status')
         .update({
           guest_name: guestName,
-          cast_name: castName,
+          cast_name: castNameArray,
           entry_time: timeStr,
           visit_type: visitType
         })

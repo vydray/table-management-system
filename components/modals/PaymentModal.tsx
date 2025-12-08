@@ -20,7 +20,7 @@ interface PaymentModalProps {
   roundedTotal: number
   roundingAdjustment: number
   formData: {
-    castName: string
+    castName: string[]
     guestName: string
   }
   cardFeeRate: number
@@ -164,7 +164,7 @@ export const PaymentModal: FC<PaymentModalProps> = ({
                 gap: `${30 * layoutScale}px`,
                 fontSize: `${14 * layoutScale}px`
               }}>
-                <div><strong>推し：</strong>{formData.castName || ''}</div>
+                <div><strong>推し：</strong>{formData.castName.length > 0 ? formData.castName.join(', ') : ''}</div>
                 <div><strong>お客様：</strong>{formData.guestName || ''}</div>
               </div>
             </div>

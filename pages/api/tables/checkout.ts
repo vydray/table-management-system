@@ -108,7 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           checkout_datetime: checkoutTime,
           order_date: orderDate + 'T00:00:00.000Z',
           table_number: tableId,
-          staff_name: castName || currentData.cast_name,
+          staff_name: Array.isArray(castName) ? castName.join(', ') : (castName || (Array.isArray(currentData.cast_name) ? currentData.cast_name.join(', ') : currentData.cast_name)),
           guest_name: guestName || currentData.guest_name,
           visit_type: visitType || currentData.visit_type,
           subtotal_excl_tax: subtotal,

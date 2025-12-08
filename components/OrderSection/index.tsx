@@ -15,7 +15,7 @@ interface OrderSectionProps {
   /* 変更: castName, guestName, onUpdateCast, onUpdateGuestを削除して、formDataとonUpdateFormDataを追加 */
   formData: {
     guestName: string
-    castName: string
+    castName: string[]
     visitType: string
     editYear: number
     editMonth: number
@@ -25,7 +25,7 @@ interface OrderSectionProps {
   }
   onUpdateFormData: (updates: Partial<{
     guestName: string
-    castName: string
+    castName: string[]
     visitType: string
   }>) => void
   /* ここまで変更 */
@@ -37,6 +37,7 @@ interface OrderSectionProps {
   roundedTotal: number
   roundingAdjustment: number
   serviceFeeRate: number  // サービス料率
+  allowMultipleNominations?: boolean
 }
 
 export const OrderSection: React.FC<OrderSectionProps> = ({
@@ -57,7 +58,8 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
   serviceTax,
   roundedTotal,
   roundingAdjustment,
-  serviceFeeRate
+  serviceFeeRate,
+  allowMultipleNominations = false
 }) => {
   const [selectedOrderItem, setSelectedOrderItem] = useState<number | null>(null)
 
@@ -70,6 +72,7 @@ export const OrderSection: React.FC<OrderSectionProps> = ({
         castList={castList}
         attendingCasts={attendingCasts}
         onUpdateFormData={onUpdateFormData}
+        allowMultipleNominations={allowMultipleNominations}
       />
 
       <OrderTable

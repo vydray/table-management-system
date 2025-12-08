@@ -10,7 +10,7 @@ interface OrderItem {
 
 interface FormData {
   guestName: string
-  castName: string
+  castName: string[]
   visitType: string
 }
 
