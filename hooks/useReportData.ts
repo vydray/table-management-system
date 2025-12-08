@@ -82,7 +82,10 @@ export const useReportData = () => {
       const totalSales = orders.reduce((sum, order) => sum + (order.total_incl_tax || 0), 0)
       const cashSales = orders.reduce((sum, order) => {
         const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
-        return sum + (payment?.cash_amount || 0)
+        // お釣りを引いて実際の現金売上を計算
+        const cashAmount = payment?.cash_amount || 0
+        const changeAmount = payment?.change_amount || 0
+        return sum + (cashAmount - changeAmount)
       }, 0)
       const cardSales = orders.reduce((sum, order) => {
         const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
@@ -177,7 +180,10 @@ export const useReportData = () => {
           const totalSales = orders.reduce((sum, order) => sum + (order.total_incl_tax || 0), 0)
           const cashSales = orders.reduce((sum, order) => {
             const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
-            return sum + (payment?.cash_amount || 0)
+            // お釣りを引いて実際の現金売上を計算
+            const cashAmount = payment?.cash_amount || 0
+            const changeAmount = payment?.change_amount || 0
+            return sum + (cashAmount - changeAmount)
           }, 0)
           const cardSales = orders.reduce((sum, order) => {
             const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments
