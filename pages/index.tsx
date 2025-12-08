@@ -151,6 +151,9 @@ export default function Home() {
   // 50音フィルター用の状態
   const [castFilter, setCastFilter] = useState('')
 
+  // 推し選択ドロップダウンの状態
+  const [showCastDropdown, setShowCastDropdown] = useState(false)
+
   // 日付・時間ドロップダウンの開閉状態
   const [showYearDropdown, setShowYearDropdown] = useState(false)
   const [showMonthDropdown, setShowMonthDropdown] = useState(false)
@@ -491,6 +494,10 @@ export default function Home() {
         setShowDateDropdown(false)
         setShowHourDropdown(false)
         setShowMinuteDropdown(false)
+      }
+      // 推し選択ドロップダウン外クリックで閉じる
+      if (!target.closest('.cast-selector-container')) {
+        setShowCastDropdown(false)
       }
     }
 
@@ -1564,105 +1571,212 @@ const finishCheckout = () => {
               </div>
 
               {/* 右カラム: 推し選択 */}
-              <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <label style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>
-                  推し:
-                </label>
-
-                {/* 50音フィルターボタン - Apple風 */}
+              <div className="cast-selector-container" style={{ flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' }}>
+                {/* 推しラベルと追加ボタン */}
                 <div style={{
                   display: 'flex',
-                  gap: '6px',
-                  flexWrap: 'wrap',
-                  marginBottom: '12px',
-                  padding: '12px',
-                  backgroundColor: '#f5f5f7',
-                  borderRadius: '12px'
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '10px'
                 }}>
-                  {['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ', 'その他'].map(kana => (
-                    <button
-                      key={kana}
-                      type="button"
-                      onClick={() => setCastFilter(kana === '全' ? '' : kana)}
-                      style={{
-                        padding: '10px 14px',
-                        fontSize: '15px',
-                        fontWeight: '600',
-                        backgroundColor: castFilter === (kana === '全' ? '' : kana) ? '#007AFF' : 'white',
-                        color: castFilter === (kana === '全' ? '' : kana) ? 'white' : '#1d1d1f',
-                        border: 'none',
-                        borderRadius: '10px',
-                        cursor: 'pointer',
-                        minWidth: '48px',
-                        transition: 'all 0.2s ease',
-                        boxShadow: castFilter === (kana === '全' ? '' : kana) ? '0 2px 8px rgba(0, 122, 255, 0.3)' : '0 1px 3px rgba(0, 0, 0, 0.1)'
-                      }}
-                    >
-                      {kana}
-                    </button>
-                  ))}
+                  <label style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                    推し:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowCastDropdown(!showCastDropdown)}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      backgroundColor: '#007AFF',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      boxShadow: '0 2px 8px rgba(0, 122, 255, 0.3)'
+                    }}
+                  >
+                    + 追加
+                  </button>
                 </div>
 
-                {/* カスタムリストボックス - Apple風 */}
-                <div
-                  className="hide-scrollbar"
-                  style={{
-                    width: '100%',
-                    flex: 1,
-                    minHeight: 0,
-                    border: 'none',
-                    borderRadius: '14px',
-                    overflowY: 'auto',
-                    backgroundColor: '#f5f5f7'
-                  }}
-                >
-                  {(() => {
-                    const kanaMap: Record<string, string> = {
-                      'あ': 'あいうえお',
-                      'か': 'かきくけこがぎぐげご',
-                      'さ': 'さしすせそざじずぜぞ',
-                      'た': 'たちつてとだぢづでど',
-                      'な': 'なにぬねの',
-                      'は': 'はひふへほばびぶべぼぱぴぷぺぽ',
-                      'ま': 'まみむめも',
-                      'や': 'やゆよ',
-                      'ら': 'らりるれろ',
-                      'わ': 'わをん'
-                    }
-
-                    const filteredCasts = castList.filter(name => {
-                      if (!castFilter) return true
-                      const firstChar = name.charAt(0)
-
-                      // 「その他」フィルター: ひらがな以外の名前を表示
-                      if (castFilter === 'その他') {
-                        const allKana = Object.values(kanaMap).join('')
-                        return !allKana.includes(firstChar)
-                      }
-
-                      return kanaMap[castFilter]?.includes(firstChar)
-                    })
-
-                    return (
-                      <>
-                        <div
-                          onClick={() => setFormData({ ...formData, castName: [] })}
+                {/* 選択済みキャスト表示 */}
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  padding: '12px',
+                  backgroundColor: '#f5f5f7',
+                  borderRadius: '12px',
+                  minHeight: '60px',
+                  marginBottom: '12px'
+                }}>
+                  {formData.castName.length === 0 ? (
+                    <span style={{ color: '#86868b', fontSize: '15px' }}>
+                      推しが選択されていません
+                    </span>
+                  ) : (
+                    formData.castName.map(name => (
+                      <div
+                        key={name}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 12px',
+                          backgroundColor: '#007AFF',
+                          color: 'white',
+                          borderRadius: '20px',
+                          fontSize: '15px',
+                          fontWeight: '500'
+                        }}
+                      >
+                        {name}
+                        <button
+                          type="button"
+                          onClick={() => setFormData({
+                            ...formData,
+                            castName: formData.castName.filter(n => n !== name)
+                          })}
                           style={{
-                            padding: '14px 18px',
-                            margin: '4px 6px',
-                            fontSize: '17px',
-                            fontWeight: '500',
+                            background: 'rgba(255,255,255,0.3)',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '20px',
+                            height: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             cursor: 'pointer',
-                            backgroundColor: formData.castName.length === 0 ? '#007AFF' : 'white',
-                            color: formData.castName.length === 0 ? 'white' : '#86868b',
-                            borderRadius: '10px',
-                            transition: 'all 0.2s ease',
-                            boxShadow: formData.castName.length === 0 ? '0 2px 8px rgba(0, 122, 255, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
+                            fontSize: '14px',
+                            color: 'white',
+                            padding: 0
                           }}
                         >
-                          -- 推しをクリア --
-                        </div>
-                        {filteredCasts.map(name => {
+                          ×
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* キャスト選択ドロップダウン */}
+                {showCastDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '45px',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'white',
+                    borderRadius: '14px',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                    zIndex: 1000,
+                    maxHeight: '400px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden'
+                  }}>
+                    {/* ドロップダウンヘッダー */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid #e5e5e5'
+                    }}>
+                      <span style={{ fontWeight: '600', fontSize: '16px' }}>推しを選択</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowCastDropdown(false)}
+                        style={{
+                          background: '#f0f0f0',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '28px',
+                          height: '28px',
+                          cursor: 'pointer',
+                          fontSize: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    {/* 50音フィルターボタン */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '4px',
+                      flexWrap: 'wrap',
+                      padding: '10px',
+                      backgroundColor: '#f5f5f7',
+                      borderBottom: '1px solid #e5e5e5'
+                    }}>
+                      {['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ', 'その他'].map(kana => (
+                        <button
+                          key={kana}
+                          type="button"
+                          onClick={() => setCastFilter(kana === '全' ? '' : kana)}
+                          style={{
+                            padding: '6px 10px',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            backgroundColor: castFilter === (kana === '全' ? '' : kana) ? '#007AFF' : 'white',
+                            color: castFilter === (kana === '全' ? '' : kana) ? 'white' : '#1d1d1f',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            minWidth: '36px',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {kana}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* キャストリスト */}
+                    <div
+                      className="hide-scrollbar"
+                      style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        padding: '8px'
+                      }}
+                    >
+                      {(() => {
+                        const kanaMap: Record<string, string> = {
+                          'あ': 'あいうえお',
+                          'か': 'かきくけこがぎぐげご',
+                          'さ': 'さしすせそざじずぜぞ',
+                          'た': 'たちつてとだぢづでど',
+                          'な': 'なにぬねの',
+                          'は': 'はひふへほばびぶべぼぱぴぷぺぽ',
+                          'ま': 'まみむめも',
+                          'や': 'やゆよ',
+                          'ら': 'らりるれろ',
+                          'わ': 'わをん'
+                        }
+
+                        const filteredCasts = castList.filter(name => {
+                          if (!castFilter) return true
+                          const firstChar = name.charAt(0)
+
+                          if (castFilter === 'その他') {
+                            const allKana = Object.values(kanaMap).join('')
+                            return !allKana.includes(firstChar)
+                          }
+
+                          return kanaMap[castFilter]?.includes(firstChar)
+                        })
+
+                        return filteredCasts.map(name => {
                           const isSelected = formData.castName.includes(name)
                           return (
                             <div
@@ -1676,35 +1790,61 @@ const finishCheckout = () => {
                                     setFormData({ ...formData, castName: [...formData.castName, name] })
                                   }
                                 } else {
-                                  // 単一選択モード: 置き換え
-                                  if (isSelected) {
-                                    setFormData({ ...formData, castName: [] })
-                                  } else {
-                                    setFormData({ ...formData, castName: [name] })
-                                  }
+                                  // 単一選択モード: 置き換えて閉じる
+                                  setFormData({ ...formData, castName: [name] })
+                                  setShowCastDropdown(false)
                                 }
                               }}
                               style={{
-                                padding: '14px 18px',
-                                margin: '4px 6px',
-                                fontSize: '17px',
+                                padding: '12px 16px',
+                                margin: '4px 0',
+                                fontSize: '16px',
                                 fontWeight: '500',
                                 cursor: 'pointer',
-                                backgroundColor: isSelected ? '#007AFF' : 'white',
+                                backgroundColor: isSelected ? '#007AFF' : '#f5f5f7',
                                 color: isSelected ? 'white' : '#1d1d1f',
                                 borderRadius: '10px',
                                 transition: 'all 0.2s ease',
-                                boxShadow: isSelected ? '0 2px 8px rgba(0, 122, 255, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
                               }}
                             >
                               {name}
+                              {isSelected && <span>✓</span>}
                             </div>
                           )
-                        })}
-                      </>
-                    )
-                  })()}
-                </div>
+                        })
+                      })()}
+                    </div>
+
+                    {/* 完了ボタン（複数選択時） */}
+                    {systemSettings.allowMultipleNominations && (
+                      <div style={{
+                        padding: '12px',
+                        borderTop: '1px solid #e5e5e5'
+                      }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowCastDropdown(false)}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            backgroundColor: '#007AFF',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '10px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          完了
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
