@@ -18,6 +18,8 @@ export default function SystemSettings() {
     setRegisterAmount,
     cardFeeRate,
     setCardFeeRate,
+    allowMultipleNominations,
+    setAllowMultipleNominations,
     loading,
     saving,
     loadAllSettings,
@@ -175,7 +177,37 @@ export default function SystemSettings() {
       </div>
 
       <div style={{ marginBottom: '30px' }}>
-        <label style={{ 
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          cursor: 'pointer'
+        }}>
+          <input
+            type="checkbox"
+            checked={allowMultipleNominations}
+            onChange={(e) => setAllowMultipleNominations(e.target.checked)}
+            style={{
+              width: '20px',
+              height: '20px',
+              marginRight: '10px',
+              cursor: 'pointer'
+            }}
+          />
+          複数推し機能
+        </label>
+        <p style={{
+          color: '#666',
+          fontSize: '13px',
+          margin: '5px 0 0 30px'
+        }}>
+          1卓に複数の推しを設定できるようにします
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <label style={{
           display: 'block',
           fontSize: '16px',
           fontWeight: 'bold',
