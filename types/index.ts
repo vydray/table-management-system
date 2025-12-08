@@ -13,7 +13,7 @@ export interface TableData {
 // 注文アイテムの型定義
 export interface OrderItem {
   name: string
-  cast?: string
+  cast?: string[]
   quantity: number
   price: number
 }

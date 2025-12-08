@@ -17,17 +17,28 @@ export const useOrderManagement = () => {
       if (res.ok && data.length > 0) {
         interface OrderItemDB {
           product_name: string
-          cast_name: string | null
+          cast_name: string | string[] | null
           quantity: number
           unit_price: number
         }
 
-        const items = data.map((item: OrderItemDB) => ({
-          name: item.product_name,
-          cast: item.cast_name || undefined,
-          quantity: item.quantity,
-          price: item.unit_price
-        }))
+        const items = data.map((item: OrderItemDB) => {
+          // cast_nameを配列に変換（互換性のため文字列も受け付ける）
+          let castArray: string[] | undefined
+          if (item.cast_name) {
+            if (Array.isArray(item.cast_name)) {
+              castArray = item.cast_name
+            } else {
+              castArray = [item.cast_name]
+            }
+          }
+          return {
+            name: item.product_name,
+            cast: castArray,
+            quantity: item.quantity,
+            price: item.unit_price
+          }
+        })
         setOrderItems(items)
       } else {
         setOrderItems([])  // データがない場合は空配列をセット
@@ -67,19 +78,27 @@ export const useOrderManagement = () => {
     }
   }
 
+  // 配列の内容が同じかどうかを比較
+  const arraysEqual = (a?: string[], b?: string[]): boolean => {
+    if (!a && !b) return true
+    if (!a || !b) return false
+    if (a.length !== b.length) return false
+    return a.every((val, i) => val === b[i])
+  }
+
   // 商品を直接注文に追加（タップで追加）
-  const addProductToOrder = (productName: string, price: number, needsCast: boolean, castName?: string) => {
-    if (needsCast && !castName) {
+  const addProductToOrder = (productName: string, price: number, needsCast: boolean, castNames?: string[]) => {
+    if (needsCast && (!castNames || castNames.length === 0)) {
       // キャストが必要な商品を選択
       setSelectedProduct({ name: productName, price: price, needsCast: true })
       return
     }
 
-    // 既存の商品をチェック（商品名、キャスト名、価格が全て同じものを探す）
+    // 既存の商品をチェック（商品名、キャスト名配列、価格が全て同じものを探す）
     const existingItemIndex = orderItems.findIndex(item =>
       item.name === productName &&
       item.price === price &&  // 価格も一致条件に追加
-      ((!needsCast && !item.cast) || (needsCast && item.cast === castName))
+      ((!needsCast && !item.cast) || (needsCast && arraysEqual(item.cast, castNames)))
     )
 
     if (existingItemIndex >= 0) {
@@ -91,7 +110,7 @@ export const useOrderManagement = () => {
       // 新しい商品を追加（価格が異なる場合は別商品として扱う）
       const newItem: OrderItem = {
         name: productName,
-        cast: needsCast ? castName : undefined,
+        cast: needsCast ? castNames : undefined,
         quantity: 1,
         price: price
       }

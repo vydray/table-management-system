@@ -14,8 +14,9 @@ interface ProductSectionProps {
   attendingCasts: string[]
   currentOshi?: string[]
   showOshiFirst?: boolean
+  allowMultipleCasts?: boolean
   onSelectCategory: (category: string) => void
-  onAddProduct: (productName: string, price: number, needsCast: boolean, castName?: string) => void
+  onAddProduct: (productName: string, price: number, needsCast: boolean, castNames?: string[]) => void
 }
 
 export const ProductSection: React.FC<ProductSectionProps> = ({
@@ -26,6 +27,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   attendingCasts,
   currentOshi,
   showOshiFirst = false,
+  allowMultipleCasts = false,
   onSelectCategory,
   onAddProduct
 }) => {
@@ -66,6 +68,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
               selectedProduct={localSelectedProduct}
               onSelectCast={handleCastSelect}
               currentOshi={currentOshi}
+              allowMultipleCasts={allowMultipleCasts}
             />
           )}
         </div>

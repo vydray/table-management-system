@@ -202,7 +202,7 @@ export class BluetoothPrinter {
     elapsedTime: string
     orderItems: Array<{
       name: string
-      cast?: string
+      cast?: string[]
       quantity: number
       price: number
     }>
@@ -226,12 +226,17 @@ export class BluetoothPrinter {
     }
 
     try {
+      // castを文字列に変換してプラグインに渡す
+      const orderItemsForPrint = orderData.orderItems.map(item => ({
+        ...item,
+        cast: item.cast && item.cast.length > 0 ? item.cast.join(', ') : undefined
+      }))
       await plugin.printOrderSlip({
         tableName: orderData.tableName,
         guestName: orderData.guestName,
         castName: orderData.castName,
         elapsedTime: orderData.elapsedTime,
-        orderItems: orderData.orderItems,
+        orderItems: orderItemsForPrint,
         subtotal: orderData.subtotal,
         serviceTax: orderData.serviceTax,
         roundedTotal: orderData.roundedTotal,
@@ -270,7 +275,7 @@ export class BluetoothPrinter {
     revenueStampThreshold?: number  // 追加（収入印紙閾値）
     orderItems: Array<{
       name: string
-      cast?: string
+      cast?: string[]
       quantity: number
       price: number
     }>
@@ -291,9 +296,17 @@ export class BluetoothPrinter {
     if (!plugin) {
       throw new Error('SiiPrinter plugin not available');
     }
-    
+
     try {
-      await plugin.printReceipt(receiptData);
+      // castを文字列に変換してプラグインに渡す
+      const orderItemsForPrint = receiptData.orderItems.map(item => ({
+        ...item,
+        cast: item.cast && item.cast.length > 0 ? item.cast.join(', ') : undefined
+      }))
+      await plugin.printReceipt({
+        ...receiptData,
+        orderItems: orderItemsForPrint
+      });
     } catch (error) {
       console.error('Print receipt error:', error);
       throw error;

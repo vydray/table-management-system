@@ -123,13 +123,13 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             {item.name}
           </h3>
 
-          {item.cast && (
+          {item.cast && item.cast.length > 0 && (
             <p style={{
               margin: '0 0 20px 0',
               color: '#666',
               fontSize: '14px'
             }}>
-              キャスト: {item.cast}
+              キャスト: {item.cast.join(', ')}
             </p>
           )}
 

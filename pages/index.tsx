@@ -1850,6 +1850,7 @@ const finishCheckout = () => {
                     attendingCasts={attendingCasts}
                     currentOshi={formData.castName}
                     showOshiFirst={getCurrentCategoryShowOshiFirst(selectedCategory)}
+                    allowMultipleCasts={systemSettings.allowMultipleCastsPerItem}
                     onSelectCategory={(category) => {
                       setSelectedCategory(category)
                       // カテゴリー変更時に商品選択をクリア

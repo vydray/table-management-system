@@ -8,7 +8,7 @@ interface OrderItem {
   name: string
   price: number
   quantity: number
-  cast?: string
+  cast?: string[]
 }
 
 interface SystemSettings {

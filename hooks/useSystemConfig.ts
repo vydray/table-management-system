@@ -9,6 +9,7 @@ interface SystemSettings {
   roundingMethod: number
   cardFeeRate: number
   allowMultipleNominations: boolean
+  allowMultipleCastsPerItem: boolean
 }
 
 export const useSystemConfig = () => {
@@ -18,7 +19,8 @@ export const useSystemConfig = () => {
     roundingUnit: 100,
     roundingMethod: 0,
     cardFeeRate: 0,
-    allowMultipleNominations: false
+    allowMultipleNominations: false,
+    allowMultipleCastsPerItem: false
   })
 
   const loadSystemConfig = async () => {
@@ -40,7 +42,8 @@ export const useSystemConfig = () => {
           roundingUnit: Number(settings.find(s => s.setting_key === 'rounding_unit')?.setting_value) || 100,
           roundingMethod: Number(settings.find(s => s.setting_key === 'rounding_method')?.setting_value) || 0,
           cardFeeRate: Number(settings.find(s => s.setting_key === 'card_fee_rate')?.setting_value || 0) / 100,
-          allowMultipleNominations: settings.find(s => s.setting_key === 'allow_multiple_nominations')?.setting_value === 'true'
+          allowMultipleNominations: settings.find(s => s.setting_key === 'allow_multiple_nominations')?.setting_value === 'true',
+          allowMultipleCastsPerItem: settings.find(s => s.setting_key === 'allow_multiple_casts_per_item')?.setting_value === 'true'
         }
         setSystemSettings(settingsObj)
       }

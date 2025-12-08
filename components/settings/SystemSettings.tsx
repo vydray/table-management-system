@@ -20,6 +20,8 @@ export default function SystemSettings() {
     setCardFeeRate,
     allowMultipleNominations,
     setAllowMultipleNominations,
+    allowMultipleCastsPerItem,
+    setAllowMultipleCastsPerItem,
     loading,
     saving,
     loadAllSettings,
@@ -203,6 +205,36 @@ export default function SystemSettings() {
           margin: '5px 0 0 30px'
         }}>
           1卓に複数の推しを設定できるようにします
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          cursor: 'pointer'
+        }}>
+          <input
+            type="checkbox"
+            checked={allowMultipleCastsPerItem}
+            onChange={(e) => setAllowMultipleCastsPerItem(e.target.checked)}
+            style={{
+              width: '20px',
+              height: '20px',
+              marginRight: '10px',
+              cursor: 'pointer'
+            }}
+          />
+          注文明細の複数キャスト
+        </label>
+        <p style={{
+          color: '#666',
+          fontSize: '13px',
+          margin: '5px 0 0 30px'
+        }}>
+          1つの注文明細に複数のキャストを設定できるようにします（シャンパンなど共有商品用）
         </p>
       </div>
 

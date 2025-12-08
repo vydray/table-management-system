@@ -6,7 +6,7 @@ const supabase = getSupabaseServerClient()
 
 interface OrderItem {
   name: string
-  cast?: string
+  cast?: string[]
   quantity: number
   price: number
 }
@@ -141,7 +141,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             order_id: orderData.id,
             category: category?.name || null,
             product_name: item.name,
-            cast_name: item.cast || null,
+            // cast_nameを配列として保存（DBがtext[]型の場合はそのまま、空配列はnullに）
+            cast_name: item.cast && item.cast.length > 0 ? item.cast : null,
             unit_price: item.price,
             unit_price_excl_tax: unitPriceExclTax,
             tax_amount: taxAmount,

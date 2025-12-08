@@ -27,5 +27,5 @@ export interface OrderItem {
   unit_price: number
   quantity: number
   subtotal: number
-  cast_name?: string
+  cast_name?: string[]
 }

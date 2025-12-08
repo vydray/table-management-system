@@ -10,7 +10,7 @@ interface SelectedProduct {
 export const useProductSelection = (
   selectedCategory: string,
   selectedProduct: SelectedProduct | null,
-  onAddProduct: (productName: string, price: number, needsCast: boolean, castName?: string) => void
+  onAddProduct: (productName: string, price: number, needsCast: boolean, castNames?: string[]) => void
 ) => {
   const [localSelectedProduct, setLocalSelectedProduct] = useState<SelectedProduct | null>(null)
 
@@ -35,10 +35,10 @@ export const useProductSelection = (
     }
   }
 
-  // キャスト選択時の処理
-  const handleCastSelect = (castName: string) => {
+  // キャスト選択時の処理（配列を受け取る）
+  const handleCastSelect = (castNames: string[]) => {
     if (localSelectedProduct) {
-      onAddProduct(localSelectedProduct.name, localSelectedProduct.price, true, castName)
+      onAddProduct(localSelectedProduct.name, localSelectedProduct.price, true, castNames)
     }
   }
 

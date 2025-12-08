@@ -112,13 +112,13 @@ export default function ReceiptDetail({ selectedReceipt, orderItems, onDelete }:
                 <tr key={index} style={{ borderBottom: '1px solid #eee' }}>
                   <td style={{ padding: '8px' }}>
                     {item.product_name}
-                    {item.cast_name && (
-                      <span style={{ 
+                    {item.cast_name && item.cast_name.length > 0 && (
+                      <span style={{
                         display: 'block',
                         fontSize: '12px',
                         color: '#666'
                       }}>
-                        （{item.cast_name}）
+                        （{Array.isArray(item.cast_name) ? item.cast_name.join(', ') : item.cast_name}）
                       </span>
                     )}
                   </td>

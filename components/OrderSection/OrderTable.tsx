@@ -3,7 +3,7 @@ import { useSwipeToDelete } from '../../hooks/useSwipeToDelete'
 
 interface OrderItem {
   name: string
-  cast?: string
+  cast?: string[]
   quantity: number
   price: number
 }
@@ -74,7 +74,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                 onMouseLeave={() => handleMouseLeave(index)}
               >
                 <span className="col-name">{item.name}</span>
-                <span className="col-cast">{item.cast || ''}</span>
+                <span className="col-cast">{item.cast && item.cast.length > 0 ? item.cast.join(', ') : ''}</span>
                 <span className="col-qty">
                   {onUpdateQuantity ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>

@@ -5,7 +5,7 @@ const supabase = getSupabaseServerClient()
 
 interface OrderItem {
   name: string
-  cast?: string
+  cast?: string[]
   quantity: number
   price: number
 }
@@ -60,7 +60,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const itemsToInsert = orderItems.map((item: OrderItem) => ({
             table_id: tableId,
             product_name: item.name,
-            cast_name: item.cast || null,
+            // cast_nameを配列として保存（DBがtext[]型の場合はそのまま、text型の場合はJSON文字列化）
+            cast_name: item.cast && item.cast.length > 0 ? item.cast : null,
             quantity: item.quantity,
             unit_price: item.price,
             store_id: storeId  // 店舗IDを追加
