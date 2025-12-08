@@ -113,7 +113,7 @@ export const useSystemSettings = () => {
         .select('setting_value')
         .eq('store_id', storeId)
         .eq('setting_key', 'allow_multiple_nominations')
-        .single()
+        .maybeSingle()
 
       if (multiNominationData) {
         setAllowMultipleNominations(multiNominationData.setting_value === 'true')
