@@ -196,16 +196,16 @@ export const CastSelector: React.FC<CastSelectorProps> = ({
       </div>
 
       <div className="cast-list">
-        {filteredCastList.map((castName, index) => {
+        {filteredCastList.map((castName) => {
           const isOshi = currentOshi?.includes(castName) ?? false
           const isSelected = selectedCasts.includes(castName)
           return (
           <div
             key={castName}
-            className={`cast-item ${isOshi && index === 0 ? 'oshi-priority' : ''}`}
+            className={`cast-item ${isOshi ? 'oshi-priority' : ''}`}
             onClick={() => handleCastClick(castName)}
             style={{
-              ...(isOshi && index === 0 ? {
+              ...(isOshi ? {
                 backgroundColor: isSelected ? '#4CAF50' : '#ffe4b5',
                 border: '2px solid #ff9800',
                 fontWeight: 'bold'
@@ -218,7 +218,7 @@ export const CastSelector: React.FC<CastSelectorProps> = ({
           >
             {allowMultipleCasts && isSelected && '✓ '}
             {castName}
-            {isOshi && index === 0 && (
+            {isOshi && (
               <span style={{
                 marginLeft: '8px',
                 fontSize: '12px',
