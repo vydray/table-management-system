@@ -1574,103 +1574,92 @@ const finishCheckout = () => {
 
               {/* 右カラム: 推し選択 */}
               <div className="cast-selector-container" style={{ flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' }}>
-                {/* 推しラベルと追加ボタン */}
+                {/* 推しラベルと選択済みキャストと追加ボタン */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '10px'
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  marginBottom: '12px',
+                  padding: '12px',
+                  backgroundColor: '#f5f5f7',
+                  borderRadius: '12px',
+                  minHeight: '50px'
                 }}>
                   <label style={{ fontSize: '16px', fontWeight: 'bold' }}>
                     推し:
                   </label>
+
+                  {/* 選択済みキャストをタグ表示 */}
+                  {formData.castName.map(name => (
+                    <div
+                      key={name}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 10px',
+                        backgroundColor: '#007AFF',
+                        color: 'white',
+                        borderRadius: '16px',
+                        fontSize: '14px',
+                        fontWeight: '500'
+                      }}
+                    >
+                      {name}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({
+                          ...formData,
+                          castName: formData.castName.filter(n => n !== name)
+                        })}
+                        style={{
+                          background: 'rgba(255,255,255,0.3)',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '18px',
+                          height: '18px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          color: 'white',
+                          padding: 0
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* 追加ボタン */}
                   <button
                     type="button"
                     onClick={() => setShowCastDropdown(!showCastDropdown)}
                     style={{
-                      padding: '8px 16px',
+                      padding: '6px 12px',
                       fontSize: '14px',
                       fontWeight: '600',
                       backgroundColor: '#007AFF',
                       color: 'white',
                       border: 'none',
-                      borderRadius: '8px',
+                      borderRadius: '16px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '4px',
-                      boxShadow: '0 2px 8px rgba(0, 122, 255, 0.3)'
+                      gap: '4px'
                     }}
                   >
                     + 追加
                   </button>
                 </div>
 
-                {/* 選択済みキャスト表示 */}
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '8px',
-                  padding: '12px',
-                  backgroundColor: '#f5f5f7',
-                  borderRadius: '12px',
-                  minHeight: '60px',
-                  marginBottom: '12px'
-                }}>
-                  {formData.castName.length === 0 ? (
-                    <span style={{ color: '#86868b', fontSize: '15px' }}>
-                      推しが選択されていません
-                    </span>
-                  ) : (
-                    formData.castName.map(name => (
-                      <div
-                        key={name}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 12px',
-                          backgroundColor: '#007AFF',
-                          color: 'white',
-                          borderRadius: '20px',
-                          fontSize: '15px',
-                          fontWeight: '500'
-                        }}
-                      >
-                        {name}
-                        <button
-                          type="button"
-                          onClick={() => setFormData({
-                            ...formData,
-                            castName: formData.castName.filter(n => n !== name)
-                          })}
-                          style={{
-                            background: 'rgba(255,255,255,0.3)',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '20px',
-                            height: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            color: 'white',
-                            padding: 0
-                          }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-
                 {/* キャスト選択ドロップダウン */}
                 {showCastDropdown && (
                   <div style={{
                     position: 'absolute',
-                    top: '45px',
+                    top: '80px',
                     left: 0,
                     right: 0,
                     backgroundColor: 'white',
@@ -1766,7 +1755,11 @@ const finishCheckout = () => {
                           'わ': 'わをん'
                         }
 
+                        // 選択済みのキャストを除外してフィルタリング
                         const filteredCasts = castList.filter(name => {
+                          // 既に選択されている人は表示しない
+                          if (formData.castName.includes(name)) return false
+
                           if (!castFilter) return true
                           const firstChar = name.charAt(0)
 
@@ -1778,45 +1771,34 @@ const finishCheckout = () => {
                           return kanaMap[castFilter]?.includes(firstChar)
                         })
 
-                        return filteredCasts.map(name => {
-                          const isSelected = formData.castName.includes(name)
-                          return (
-                            <div
-                              key={name}
-                              onClick={() => {
-                                if (systemSettings.allowMultipleNominations) {
-                                  // 複数選択モード: トグル
-                                  if (isSelected) {
-                                    setFormData({ ...formData, castName: formData.castName.filter(n => n !== name) })
-                                  } else {
-                                    setFormData({ ...formData, castName: [...formData.castName, name] })
-                                  }
-                                } else {
-                                  // 単一選択モード: 置き換えて閉じる
-                                  setFormData({ ...formData, castName: [name] })
-                                  setShowCastDropdown(false)
-                                }
-                              }}
-                              style={{
-                                padding: '12px 16px',
-                                margin: '4px 0',
-                                fontSize: '16px',
-                                fontWeight: '500',
-                                cursor: 'pointer',
-                                backgroundColor: isSelected ? '#007AFF' : '#f5f5f7',
-                                color: isSelected ? 'white' : '#1d1d1f',
-                                borderRadius: '10px',
-                                transition: 'all 0.2s ease',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between'
-                              }}
-                            >
-                              {name}
-                              {isSelected && <span>✓</span>}
-                            </div>
-                          )
-                        })
+                        return filteredCasts.map(name => (
+                          <div
+                            key={name}
+                            onClick={() => {
+                              if (systemSettings.allowMultipleNominations) {
+                                // 複数選択モード: 追加
+                                setFormData({ ...formData, castName: [...formData.castName, name] })
+                              } else {
+                                // 単一選択モード: 置き換えて閉じる
+                                setFormData({ ...formData, castName: [name] })
+                                setShowCastDropdown(false)
+                              }
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              margin: '4px 0',
+                              fontSize: '16px',
+                              fontWeight: '500',
+                              cursor: 'pointer',
+                              backgroundColor: '#f5f5f7',
+                              color: '#1d1d1f',
+                              borderRadius: '10px',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            {name}
+                          </div>
+                        ))
                       })()}
                     </div>
 
