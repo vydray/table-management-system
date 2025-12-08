@@ -80,54 +80,61 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
       {/* 推しと来店種別の行 */}
       <div style={{
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         gap: '20px'
       }}>
         {/* 推し */}
         <div style={{
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: 'column',
           flex: 1.5,
           position: 'relative'
         }}>
-          <span style={{
-            minWidth: '50px',
-            fontWeight: 'bold',
-            fontSize: '14px'
-          }}>推し：</span>
-          <div className="cast-dropdown-container" style={{ flex: 1, position: 'relative' }}>
-            <div
+          {/* 推しを縦に表示 */}
+          {castName.length > 0 ? (
+            castName.map((name, index) => (
+              <div key={index} style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: index < castName.length - 1 ? '4px' : '0'
+              }}>
+                <span style={{
+                  minWidth: '50px',
+                  fontWeight: 'bold',
+                  fontSize: '14px'
+                }}>推し：</span>
+                <span style={{ fontSize: '14px' }}>{name}</span>
+              </div>
+            ))
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{
+                minWidth: '50px',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}>推し：</span>
+              <span style={{ fontSize: '14px', color: '#999' }}>未選択</span>
+            </div>
+          )}
+
+          {/* 変更ボタン */}
+          <div className="cast-dropdown-container" style={{ position: 'relative', marginTop: '6px' }}>
+            <button
+              type="button"
               onClick={() => setShowCastDropdown(!showCastDropdown)}
               style={{
-                width: '100%',
-                padding: '6px 10px',
-                paddingRight: '30px',
-                border: '1px solid #ddd',
+                padding: '4px 12px',
+                fontSize: '12px',
+                fontWeight: '600',
+                backgroundColor: '#007AFF',
+                color: 'white',
+                border: 'none',
                 borderRadius: '4px',
-                fontSize: '14px',
-                backgroundColor: 'white',
-                color: castName.length > 0 ? '#000' : '#999',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxSizing: 'border-box',
-                userSelect: 'none',
-                WebkitUserSelect: 'none'
+                cursor: 'pointer'
               }}
             >
-              {castName.length > 0 ? castName.join(', ') : '-- 選択 --'}
-            </div>
-
-            <span style={{
-              position: 'absolute',
-              right: '10px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              pointerEvents: 'none',
-              color: '#666',
-              fontSize: '12px'
-            }}>
-              ▼
-            </span>
+              変更
+            </button>
 
             {showCastDropdown && (
               <div style={{
