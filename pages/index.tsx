@@ -811,6 +811,7 @@ const finishCheckout = () => {
       editMinute: Math.floor(now.getMinutes() / 5) * 5
     })
     setOrderItems([])
+    setShowCastDropdown(true)  // 新規テーブル時は推し選択を開く
   } else {
     setModalMode('edit')
     const time = table.time ? new Date(table.time.replace(' ', 'T')) : new Date()
