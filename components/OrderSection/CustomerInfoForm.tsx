@@ -84,7 +84,7 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
         gap: '20px'
       }}>
         {/* 推し */}
-        <div style={{
+        <div className="cast-dropdown-container" style={{
           display: 'flex',
           flexDirection: 'column',
           flex: 1.5,
@@ -92,49 +92,72 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
         }}>
           {/* 推しを縦に表示 */}
           {castName.length > 0 ? (
-            castName.map((name, index) => (
-              <div key={index} style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: index < castName.length - 1 ? '4px' : '0'
-              }}>
+            <div style={{ display: 'flex', alignItems: 'stretch' }}>
+              {/* 左側: 推しリスト */}
+              <div style={{ flex: 1 }}>
+                {castName.map((name, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    marginBottom: index < castName.length - 1 ? '4px' : '0'
+                  }}>
+                    <span style={{
+                      minWidth: '50px',
+                      fontWeight: 'bold',
+                      fontSize: '14px'
+                    }}>推し：</span>
+                    <span style={{ fontSize: '14px' }}>{name}</span>
+                  </div>
+                ))}
+              </div>
+              {/* 右側: 変更ボタン（縦に伸びる） */}
+              <button
+                type="button"
+                onClick={() => setShowCastDropdown(!showCastDropdown)}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  backgroundColor: '#007AFF',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  alignSelf: 'stretch',
+                  marginLeft: '8px'
+                }}
+              >
+                変更
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 <span style={{
                   minWidth: '50px',
                   fontWeight: 'bold',
                   fontSize: '14px'
                 }}>推し：</span>
-                <span style={{ fontSize: '14px' }}>{name}</span>
+                <span style={{ fontSize: '14px', color: '#999' }}>未選択</span>
               </div>
-            ))
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <span style={{
-                minWidth: '50px',
-                fontWeight: 'bold',
-                fontSize: '14px'
-              }}>推し：</span>
-              <span style={{ fontSize: '14px', color: '#999' }}>未選択</span>
+              <button
+                type="button"
+                onClick={() => setShowCastDropdown(!showCastDropdown)}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  backgroundColor: '#007AFF',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                変更
+              </button>
             </div>
           )}
-
-          {/* 変更ボタン */}
-          <div className="cast-dropdown-container" style={{ position: 'relative', marginTop: '6px' }}>
-            <button
-              type="button"
-              onClick={() => setShowCastDropdown(!showCastDropdown)}
-              style={{
-                padding: '4px 12px',
-                fontSize: '12px',
-                fontWeight: '600',
-                backgroundColor: '#007AFF',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              変更
-            </button>
 
             {showCastDropdown && (
               <div style={{
@@ -262,7 +285,6 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
                 </div>
               </div>
             )}
-          </div>
         </div>
 
         {/* 来店種別 */}
