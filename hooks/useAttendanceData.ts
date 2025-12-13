@@ -11,6 +11,7 @@ interface AttendanceRow {
   late_minutes: number
   break_minutes: number
   daily_payment: number
+  costume_id: number | null
 }
 
 interface Cast {
@@ -19,9 +20,15 @@ interface Cast {
   status?: string
 }
 
+interface Costume {
+  id: number
+  name: string
+}
+
 export const useAttendanceData = () => {
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([])
   const [casts, setCasts] = useState<Cast[]>([])
+  const [costumes, setCostumes] = useState<Costume[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -37,7 +44,8 @@ export const useAttendanceData = () => {
         status: '未設定',
         late_minutes: 0,
         break_minutes: 0,
-        daily_payment: 0
+        daily_payment: 0,
+        costume_id: null
       })
     }
     return rows
@@ -58,6 +66,23 @@ export const useAttendanceData = () => {
       setCasts(data || [])
     } catch (error) {
       console.error('Error loading casts:', error)
+    }
+  }
+
+  // 衣装一覧を取得
+  const loadCostumes = async () => {
+    try {
+      const storeId = getCurrentStoreId()
+      const { data, error } = await supabase
+        .from('costumes')
+        .select('id, name')
+        .eq('store_id', storeId)
+        .order('name')
+
+      if (error) throw error
+      setCostumes(data || [])
+    } catch (error) {
+      console.error('Error loading costumes:', error)
     }
   }
 
@@ -85,12 +110,13 @@ export const useAttendanceData = () => {
           status: item.status,
           late_minutes: item.late_minutes,
           break_minutes: item.break_minutes,
-          daily_payment: item.daily_payment
+          daily_payment: item.daily_payment,
+          costume_id: item.costume_id || null
         }))
 
         // 既存データ + 空行で5行になるように調整
         const emptyRowsCount = Math.max(5 - formattedData.length, 0)
-        const emptyRows = []
+        const emptyRows: AttendanceRow[] = []
         for (let i = 0; i < emptyRowsCount; i++) {
           emptyRows.push({
             id: `new-${Date.now()}-${i}`,
@@ -100,7 +126,8 @@ export const useAttendanceData = () => {
             status: '未設定',
             late_minutes: 0,
             break_minutes: 0,
-            daily_payment: 0
+            daily_payment: 0,
+            costume_id: null
           })
         }
 
@@ -145,6 +172,7 @@ export const useAttendanceData = () => {
           late_minutes: row.late_minutes || 0,
           break_minutes: row.break_minutes || 0,
           daily_payment: row.daily_payment || 0,
+          costume_id: row.costume_id,
           role: 'cast'
         }))
 
@@ -235,7 +263,8 @@ export const useAttendanceData = () => {
           status: statusName,
           late_minutes: 0,
           break_minutes: 0,
-          daily_payment: 0
+          daily_payment: 0,
+          costume_id: null
         }
       })
 
@@ -252,7 +281,8 @@ export const useAttendanceData = () => {
           status: '未設定',
           late_minutes: 0,
           break_minutes: 0,
-          daily_payment: 0
+          daily_payment: 0,
+          costume_id: null
         })
       }
 
@@ -301,11 +331,13 @@ export const useAttendanceData = () => {
     attendanceRows,
     setAttendanceRows,
     casts,
+    costumes,
     loading,
     saving,
 
     // Functions
     loadCasts,
+    loadCostumes,
     loadAttendance,
     saveAttendance,
     deleteRow,

@@ -9,6 +9,7 @@ interface AttendanceRow {
   late_minutes: number
   break_minutes: number
   daily_payment: number
+  costume_id: number | null
 }
 
 export const useAttendanceRows = () => {
@@ -27,7 +28,8 @@ export const useAttendanceRows = () => {
       status: '未設定',
       late_minutes: 0,
       break_minutes: 0,
-      daily_payment: 0
+      daily_payment: 0,
+      costume_id: null
     }])
   }
 
@@ -35,7 +37,7 @@ export const useAttendanceRows = () => {
   const updateRow = (
     index: number,
     field: keyof AttendanceRow,
-    value: string | number,
+    value: string | number | null,
     attendanceRows: AttendanceRow[],
     setAttendanceRows: (rows: AttendanceRow[]) => void
   ) => {

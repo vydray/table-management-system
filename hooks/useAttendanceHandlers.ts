@@ -9,6 +9,7 @@ interface AttendanceRow {
   late_minutes: number
   break_minutes: number
   daily_payment: number
+  costume_id: number | null
 }
 
 export const useAttendanceHandlers = (
@@ -16,7 +17,7 @@ export const useAttendanceHandlers = (
   setAttendanceRows: React.Dispatch<React.SetStateAction<AttendanceRow[]>>,
   setShowDropdowns: React.Dispatch<React.SetStateAction<Record<string, boolean>>>,
   addRowHelper: (rows: AttendanceRow[], setRows: React.Dispatch<React.SetStateAction<AttendanceRow[]>>) => void,
-  updateRowHelper: (index: number, field: keyof AttendanceRow, value: string | number, rows: AttendanceRow[], setRows: React.Dispatch<React.SetStateAction<AttendanceRow[]>>) => void,
+  updateRowHelper: (index: number, field: keyof AttendanceRow, value: string | number | null, rows: AttendanceRow[], setRows: React.Dispatch<React.SetStateAction<AttendanceRow[]>>) => void,
   selectCastHelper: (index: number, castName: string, id: string, rows: AttendanceRow[], setRows: React.Dispatch<React.SetStateAction<AttendanceRow[]>>) => void,
   deleteRowFromDB: (index: number, date: string) => Promise<void>,
   saveAttendance: (date: string) => Promise<void>,
@@ -33,10 +34,10 @@ export const useAttendanceHandlers = (
   }
 
   // 行更新ハンドラー（金額フォーマット対応）
-  const updateRow = (index: number, field: keyof AttendanceRow, value: string | number) => {
+  const updateRow = (index: number, field: keyof AttendanceRow, value: string | number | null) => {
     // 日払い金額の場合は数値変換
     if (field === 'daily_payment') {
-      const numericValue = parseInt(value.toString().replace(/[^\d]/g, '') || '0')
+      const numericValue = parseInt((value?.toString() || '').replace(/[^\d]/g, '') || '0')
       updateRowHelper(index, field, numericValue, attendanceRows, setAttendanceRows)
     } else {
       updateRowHelper(index, field, value, attendanceRows, setAttendanceRows)

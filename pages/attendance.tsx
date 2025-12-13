@@ -24,15 +24,18 @@ export default function Attendance() {
   const [showCheckOutDropdowns, setShowCheckOutDropdowns] = useState<{[key: string]: boolean}>({})
   const [showLateDropdowns, setShowLateDropdowns] = useState<{[key: string]: boolean}>({})
   const [showBreakDropdowns, setShowBreakDropdowns] = useState<{[key: string]: boolean}>({})
+  const [showCostumeDropdowns, setShowCostumeDropdowns] = useState<{[key: string]: boolean}>({})
 
   // カスタムフック - 勤怠データ管理
   const {
     attendanceRows,
     setAttendanceRows,
     casts,
+    costumes,
     loading,
     saving,
     loadCasts,
+    loadCostumes,
     loadAttendance,
     saveAttendance,
     deleteRow: deleteRowFromDB,
@@ -104,6 +107,7 @@ export default function Attendance() {
 
   useEffect(() => {
     loadCasts()
+    loadCostumes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -121,6 +125,7 @@ export default function Attendance() {
         setShowCheckOutDropdowns({})
         setShowLateDropdowns({})
         setShowBreakDropdowns({})
+        setShowCostumeDropdowns({})
       }
     }
 
@@ -280,6 +285,18 @@ export default function Attendance() {
                       width: '130px'
                     }}>
                       名前
+                    </th>
+                    <th style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#333',
+                      borderBottom: '2px solid #e0e0e0',
+                      backgroundColor: '#f8f8f8',
+                      width: '100px'
+                    }}>
+                      衣装
                     </th>
                     <th style={{
                       padding: '12px 8px',
@@ -515,6 +532,112 @@ export default function Attendance() {
                                   })}
                                 </>
                               )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 衣装 */}
+                      <td style={{ padding: '8px', position: 'relative' }}>
+                        <div className="time-dropdown-container" style={{ position: 'relative' }}>
+                          <div
+                            onClick={() => setShowCostumeDropdowns({ [row.id]: !showCostumeDropdowns[row.id] })}
+                            style={{
+                              width: '100%',
+                              padding: '8px 10px',
+                              paddingRight: '30px',
+                              border: '1px solid #d0d0d0',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              backgroundColor: '#fff',
+                              color: row.costume_id ? '#000' : '#999',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              boxSizing: 'border-box',
+                              textAlign: 'center',
+                              userSelect: 'none',
+                              WebkitUserSelect: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#007AFF'
+                              e.currentTarget.style.backgroundColor = '#f8f8f8'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#d0d0d0'
+                              e.currentTarget.style.backgroundColor = '#fff'
+                            }}
+                          >
+                            {costumes.find(c => c.id === row.costume_id)?.name || '未選択'}
+                          </div>
+
+                          <span style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                            color: '#666',
+                            fontSize: '12px'
+                          }}>
+                            ▼
+                          </span>
+
+                          {showCostumeDropdowns[row.id] && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              maxHeight: '200px',
+                              overflowY: 'auto',
+                              backgroundColor: '#fff',
+                              border: '1px solid #007AFF',
+                              borderRadius: '6px',
+                              marginTop: '2px',
+                              zIndex: 1000,
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                            }}>
+                              <div
+                                onClick={() => {
+                                  updateRow(index, 'costume_id', null)
+                                  setShowCostumeDropdowns({})
+                                }}
+                                style={{
+                                  padding: '10px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  borderBottom: '1px solid #f0f0f0',
+                                  transition: 'background-color 0.2s',
+                                  textAlign: 'center',
+                                  color: '#999'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                              >
+                                -- 未選択 --
+                              </div>
+                              {costumes.map(costume => (
+                                <div
+                                  key={costume.id}
+                                  onClick={() => {
+                                    updateRow(index, 'costume_id', costume.id)
+                                    setShowCostumeDropdowns({})
+                                  }}
+                                  style={{
+                                    padding: '10px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    borderBottom: '1px solid #f0f0f0',
+                                    transition: 'background-color 0.2s',
+                                    textAlign: 'center',
+                                    backgroundColor: row.costume_id === costume.id ? '#e6f7ff' : 'transparent'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f8ff'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = row.costume_id === costume.id ? '#e6f7ff' : 'transparent'}
+                                >
+                                  {costume.name}
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>
